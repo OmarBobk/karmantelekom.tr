@@ -1,10 +1,9 @@
 <?php
 
+use App\Livewire\MainComponent;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return view('welcome');
-});
+Route::get('/', MainComponent::class);
 
 Route::middleware([
     'auth:sanctum',
