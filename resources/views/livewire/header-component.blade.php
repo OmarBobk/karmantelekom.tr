@@ -51,7 +51,7 @@
                 </svg>
             </button>
             <span class="text-2xl font-semibold" style="font-family: 'Poppins', sans-serif; background: linear-gradient(to right, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-                İndirmGo 
+                İndirmGo
             </span>
         </div>
 
