@@ -55,83 +55,133 @@
             </span>
         </div>
 
-        <!-- Center Navigation -->
-        <div class="hidden lg:flex items-center justify-center flex-1 mx-12">
-            <div class="flex items-center gap-x-12">
-                <a href="#" class="text-md font-medium text-gray-700 hover:text-blue-600 transition-colors duration-200">Home</a>
-                <a href="#" class="text-md font-medium text-gray-700 hover:text-blue-600 transition-colors duration-200">Categories</a>
-                <a href="#" class="text-md font-medium text-gray-700 hover:text-blue-600 transition-colors duration-200">New Arrivals</a>
-                <a href="#" class="text-md font-medium text-gray-700 hover:text-blue-600 transition-colors duration-200">Deals</a>
-                <div class="relative group">
-                    <button class="text-md font-medium text-gray-700 hover:text-blue-600 transition-colors duration-200 flex items-center gap-x-1">
-                        More
-                        <svg class="size-4 text-gray-400 group-hover:text-blue-600 transition-colors duration-200" viewBox="0 0 20 20" fill="currentColor">
-                            <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 11.168l3.71-3.938a.75.75 0 111.08 1.04l-4.25 4.5a.75.75 0 01-1.08 0l-4.25-4.5a.75.75 0 01.02-1.06z" clip-rule="evenodd" />
-                        </svg>
-                    </button>
-                    <!-- More Dropdown -->
-                    <div class="absolute left-1/2 -translate-x-1/2 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all duration-200 z-50">
-                        <div class="py-1">
-                            <a href="#" class="block px-4 py-2 text-md text-gray-700 hover:bg-gray-100">About Us</a>
-                            <a href="#" class="block px-4 py-2 text-md text-gray-700 hover:bg-gray-100">Contact</a>
-                            <a href="#" class="block px-4 py-2 text-md text-gray-700 hover:bg-gray-100">Blog</a>
-                        </div>
-                    </div>
-                </div>
-            </div>
-        </div>
+        
 
         <!-- Right side -->
         <div class="flex items-center gap-x-6">
-            <!-- Desktop Search -->
-            <div class="hidden lg:block relative">
-                <div class="relative group">
-                    <input type="text"
-                           placeholder="Search products..."
-                           x-model="searchQuery"
-                           @input.debounce.300ms="search()"
-                           class="w-72 pl-10 pr-4 py-1.5 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-4 focus:ring-blue-100 transition-all duration-200 bg-gray-50 group-hover:bg-white text-sm"
-                    >
-                    <div class="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 group-hover:text-gray-600 transition-colors duration-200">
-                        <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                        </svg>
-                    </div>
+            <!-- Desktop Search with Toggle -->
+            <div class="hidden lg:block relative" 
+                 x-data="{ 
+                     searchVisible: false,
+                     searchWidth: '40px',
+                     async toggleSearch() {
+                         if (!this.searchVisible) {
+                             this.searchVisible = true;
+                             await new Promise(resolve => setTimeout(resolve, 30));
+                             this.searchWidth = '320px'; // Slightly wider for better readability
+                             this.$refs.searchInput.focus();
+                         }
+                     }
+                 }" 
+                 @keydown.escape.window="searchVisible = false; searchWidth = '40px'">
+                
+                <!-- Single Search Container -->
+                <div class="relative flex items-center h-10">
+                    <div class="relative"
+                         :class="{ 'w-80': searchVisible }"
+                         :style="{ width: searchWidth }"
+                         @click.away="searchVisible = false; searchWidth = '40px'">
+                        
+                        <!-- Combined Search Icon/Input -->
+                        <div class="relative transition-all rounded-xl duration-300 ease-out"
+                             :class="{ 
+                                 'bg-white shadow-md ': searchVisible,
+                                 'hover:bg-gray-100': !searchVisible 
+                             }"
+                             class="rounded-xl group">
+                            
+                            <!-- The Input -->
+                            <input type="text" 
+                                   placeholder="Search for products, categories..." 
+                                   x-model="searchQuery"
+                                   @input.debounce.300ms="search()"
+                                   class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-transparent outline-none transition-all duration-300 text-sm placeholder-gray-400"
+                                   :class="{ 
+                                       'block ring-4 ring-blue-50 focus:border-blue-500': searchVisible,
+                                       'hidden': !searchVisible 
+                                   }"
+                                   x-ref="searchInput"
+                            >
 
-                    <!-- Search Results Dropdown -->
-                    <div x-show="searchQuery.length >= 2"
-                         x-cloak
-                         @click.away="searchQuery = ''; searchResults = []"
-                         class="absolute mt-2 w-full bg-white rounded-lg shadow-lg border border-gray-200 overflow-hidden z-50">
-                        <!-- Loading State -->
-                        <div x-show="isLoading" class="p-4 text-sm text-gray-500">
-                            <div class="flex items-center justify-center space-x-2">
-                                <svg class="animate-spin size-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                            <!-- The Search Icon -->
+                            <div class="absolute left-3 top-1/2 -translate-y-1/2 transition-all duration-300"
+                                 :class="{ 
+                                     'text-gray-400 group-hover:text-gray-600': searchVisible,
+                                     'text-gray-700 hover:text-gray-900 cursor-pointer': !searchVisible 
+                                 }"
+                                 @click="toggleSearch()">
+                                <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                                 </svg>
-                                <span>Searching...</span>
                             </div>
                         </div>
 
-                        <!-- Results -->
-                        <div x-show="!isLoading && searchResults.length > 0">
-                            <template x-for="result in searchResults" :key="result.title">
-                                <a :href="result.url"
-                                   class="block px-4 py-3 hover:bg-gray-50 transition duration-150 border-b border-gray-100 last:border-0">
-                                    <div class="text-sm text-gray-900" x-text="result.title"></div>
-                                </a>
-                            </template>
-                        </div>
+                        <!-- Enhanced Search Results Dropdown -->
+                        <div x-show="searchVisible && searchQuery.length >= 2" 
+                             x-cloak
+                             @click.away="searchQuery = ''; searchResults = []"
+                             x-transition:enter="transition ease-out duration-200"
+                             x-transition:enter-start="opacity-0 translate-y-1"
+                             x-transition:enter-end="opacity-100 translate-y-0"
+                             class="absolute mt-2 w-full bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-50">
+                            
+                            <!-- Loading State -->
+                            <div x-show="isLoading" 
+                                 class="p-4">
+                                <div class="flex items-center justify-center space-x-2 text-sm text-gray-500">
+                                    <svg class="animate-spin size-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                    <span>Searching...</span>
+                                </div>
+                            </div>
 
-                        <!-- No Results -->
-                        <div x-show="!isLoading && searchResults.length === 0 && searchQuery.length >= 2"
-                             class="p-4 text-sm text-gray-500 text-center">
-                            No results found for "<span x-text="searchQuery"></span>"
+                            <!-- Results -->
+                            <div x-show="!isLoading && searchResults.length > 0" 
+                                 class="max-h-[400px] overflow-y-auto">
+                                <template x-for="result in searchResults" :key="result.title">
+                                    <a :href="result.url" 
+                                       class="flex items-center px-4 py-3 hover:bg-gray-50 transition-colors duration-150 border-b border-gray-100 last:border-0 group">
+                                        <!-- Result Icon -->
+                                        <div class="flex-shrink-0 size-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors duration-150">
+                                            <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                            </svg>
+                                        </div>
+                                        <!-- Result Content -->
+                                        <div class="ml-4 flex-1">
+                                            <p class="text-sm font-medium text-gray-900 group-hover:text-blue-600" x-text="result.title"></p>
+                                            <p class="text-xs text-gray-500 mt-0.5" x-text="result.category || 'Product'"></p>
+                                        </div>
+                                    </a>
+                                </template>
+                            </div>
+
+                            <!-- No Results -->
+                            <div x-show="!isLoading && searchResults.length === 0 && searchQuery.length >= 2" 
+                                 class="p-4 text-center">
+                                <div class="text-gray-500 text-sm">
+                                    <svg class="size-6 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M12 14a3 3 0 100-6 3 3 0 000 6z"/>
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                    </svg>
+                                    <p>No results found for "<span class="font-medium" x-text="searchQuery"></span>"</p>
+                                    <p class="mt-1 text-xs text-gray-400">Try adjusting your search or filter to find what you're looking for.</p>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
             </div>
+
+            <!-- Mobile Search Button -->
+            <button @click="searchOpen = true"
+                    class="lg:hidden p-2.5 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all duration-200">
+                <svg class="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                </svg>
+            </button>
 
             <!-- Shopping Cart -->
             <div class="relative" x-data="{ cartOpen: false }">
@@ -203,14 +253,6 @@
                     </div>
                 </div>
             </div>
-
-            <!-- Mobile Search Button -->
-            <button @click="searchOpen = true"
-                    class="lg:hidden p-2.5 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all duration-200">
-                <svg class="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                </svg>
-            </button>
         </div>
     </nav>
 
