@@ -42,7 +42,7 @@
 }">
     <nav class="mx-auto flex max-w-7xl items-center justify-between p-6 lg:px-8 bg-white shadow-sm" aria-label="Global">
         <!-- Left side -->
-        <div class="flex items-center gap-x-6">
+        <div class="flex items-center gap-x-2 sm:gap-x-6">
             <button @click="sidebarOpen = true"
                     class="p-2 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-all duration-200">
                 <span class="sr-only">Open sidebar</span>
@@ -76,7 +76,7 @@
                  @keydown.escape.window="searchVisible = false; searchWidth = '40px'">
                 
                 <!-- Single Search Container -->
-                <div class="relative flex items-center h-10">
+                <div class="relative flex items-center h-10 hover:bg-gray-100 rounded-xl pr-1">
                     <div class="relative"
                          :class="{ 'w-80': searchVisible }"
                          :style="{ width: searchWidth }"
@@ -104,7 +104,7 @@
                             >
 
                             <!-- The Search Icon -->
-                            <div class="absolute left-3 top-1/2 -translate-y-1/2 transition-all duration-300"
+                            <div class="absolute left-3 top-1/2 -translate-y-1/2 transition-all duration-300 "
                                  :class="{ 
                                      'text-gray-400 group-hover:text-gray-600': searchVisible,
                                      'text-gray-700 hover:text-gray-900 cursor-pointer': !searchVisible 
