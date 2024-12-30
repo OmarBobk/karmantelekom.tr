@@ -40,7 +40,7 @@
         }
     }
 }">
-    <nav class="mx-auto flex max-w-7xl items-center justify-between p-6 lg:px-8 bg-white shadow-sm" aria-label="Global">
+    <nav class="mx-auto flex max-w-7xl items-center justify-between pt-6 pb-2 px-4 lg:px-8 bg-white shadow-sm" aria-label="Global">
         <!-- Left side -->
         <div class="flex items-center gap-x-2 sm:gap-x-6">
             <button @click="sidebarOpen = true"
@@ -402,5 +402,9 @@
                 <a href="#" class="block px-4 py-2.5 text-base font-medium text-gray-900 rounded-lg hover:bg-gray-100">Blog</a>
             </nav>
         </div>
+    </div>
+
+    <div class="mx-auto flex max-w-7xl items-center justify-between px-4 lg:px-8 bg-white text-xl">
+        Collection
     </div>
 </div>

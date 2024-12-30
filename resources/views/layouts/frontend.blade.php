@@ -17,14 +17,16 @@
         <!-- Styles -->
         @livewireStyles
     </head>
-    <body class="bg-gray-100 w-screen">
+    <body class="bg-white w-screen">
 
-        <header class="bg-white">
+        <header class="">
             <livewire:header-component />
         </header>
 
         <main class="">
+            <livewire:slider-component />
             <livewire:main-component />
+            
         </main>
 
         @livewireScripts
