@@ -127,7 +127,7 @@
                                                     <h3 class="text-xl font-semibold text-gray-900">Product {{ $i }}</h3>
                                                     <p class="text-xl font-bold text-blue-600">$99.99</p>
                                                 </div>
-                                                <div x-data="{ quantity: 0, showQuantity: false }">
+                                                <div x-data="{ quantity: 0, showQuantity: false }" @click.away="showQuantity = false; quantity = 0">
                                                     <!-- Add Button with + Icon -->
                                                     <button 
                                                         @click="showQuantity = true; quantity++" 
@@ -142,10 +142,10 @@
                                                     </button>
 
                                                     <!-- Quantity Control -->
-                                                    <div x-show="showQuantity" class="flex items-center ml-2">
+                                                    <div x-show="showQuantity" class="flex items-center mb-1 relative">
                                                         <button 
                                                             @click="if (quantity > 0) quantity--" 
-                                                            class="p-2 text-white bg-red-600 rounded-full hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition duration-200"
+                                                            class="p-2 text-white bg-blue-600 rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200"
                                                             aria-label="Decrease quantity"
                                                         >
                                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
@@ -156,12 +156,11 @@
                                                         <input 
                                                             type="text" 
                                                             x-model="quantity" 
-                                                            class="w-12 text-center border border-gray-300 rounded-md mx-2" 
-                                                            readonly
+                                                            class="w-12 h-9 text-center border border-gray-300 rounded-md mx-2"
                                                         />
                                                         <button 
                                                             @click="quantity++" 
-                                                            class="p-2 text-white bg-green-600 rounded-full hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-200"
+                                                            class="p-2 text-white bg-blue-600 rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200"
                                                             aria-label="Increase quantity"
                                                         >
                                                             <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
@@ -174,10 +173,10 @@
                                                     <button 
                                                         @click="$wire.addToCart({{ $i }}, quantity)" 
                                                         x-show="showQuantity" 
-                                                        class="ml-2 p-2 text-white bg-blue-600 rounded-full hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200"
+                                                        class="w-full text-sm ml-0 py-1 px-2 text-white bg-blue-600 rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200"
                                                         aria-label="Add to cart with quantity"
                                                     >
-                                                        Add to the Cart
+                                                        Add
                                                     </button>
                                                 </div>
                                             </div>
