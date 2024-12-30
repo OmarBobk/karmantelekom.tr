@@ -17,15 +17,15 @@
             </div>
 
             <!-- Scrollable Navigation -->
-            <nav class="relative overflow-x-auto scrollbar-hide -mb-px" 
-                 role="tablist" 
+            <nav class="relative overflow-x-auto scrollbar-hide -mb-px"
+                 role="tablist"
                  aria-label="Product categories"
                  x-ref="nav"
                  @scroll.debounce.50ms="updateScroll"
             >
                 <div class="flex flex-nowrap gap-x-8 border-b border-gray-200 pb-px">
                     @foreach(['New Arrivals', 'Best Sellers', 'Sale Items', 'Featured'] as $index => $category)
-                        <button 
+                        <button
                             wire:click="setActiveCategory({{ $index }})"
                             class="relative whitespace-nowrap pb-4 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500 rounded-sm flex-none"
                             role="tab"
@@ -33,11 +33,11 @@
                             aria-controls="panel-{{ $index }}"
                             id="tab-{{ $index }}"
                         >
-                            <span class="@if($activeCategory === $index) 
+                            <span class="@if($activeCategory === $index)
                                          text-blue-600 font-medium
-                                       @else 
+                                       @else
                                          text-gray-600 hover:text-gray-900
-                                       @endif 
+                                       @endif
                                        transition-colors duration-200">
                                 {{ $category }}
                             </span>
@@ -57,15 +57,15 @@
             <!-- Slider Container with Navigation Buttons -->
             <div class="group relative">
                 <!-- Left Navigation Button -->
-                <button 
+                <button
                     @click="scrollLeft"
-                    class="absolute -left-2 md:-left-6 top-1/2 -translate-y-1/2 h-12 w-12 
+                    class="hidden lg:flex absolute -left-2 md:-left-6 top-1/2 -translate-y-1/2 h-12 w-12
                            rounded-full bg-white shadow-xl border border-gray-200
-                           flex items-center justify-center z-10
+                           items-center justify-center z-10
                            hover:bg-gray-50 active:bg-gray-100
                            focus:outline-none focus:ring-2 focus:ring-blue-500
                            transition-all duration-200 ease-in-out
-                           md:opacity-0 md:group-hover:opacity-100"
+                           opacity-0 group-hover:opacity-100"
                     :disabled="atStart"
                     aria-label="Scroll left"
                 >
@@ -75,15 +75,15 @@
                 </button>
 
                 <!-- Right Navigation Button -->
-                <button 
+                <button
                     @click="scrollRight"
-                    class="absolute -right-2 md:-right-6 top-1/2 -translate-y-1/2 h-12 w-12 
+                    class="hidden lg:flex absolute -right-2 md:-right-6 top-1/2 -translate-y-1/2 h-12 w-12
                            rounded-full bg-white shadow-xl border border-gray-200
-                           flex items-center justify-center z-10
+                           items-center justify-center z-10
                            hover:bg-gray-50 active:bg-gray-100
                            focus:outline-none focus:ring-2 focus:ring-blue-500
                            transition-all duration-200 ease-in-out
-                           md:opacity-0 md:group-hover:opacity-100"
+                           opacity-0 group-hover:opacity-100"
                     :disabled="atEnd"
                     aria-label="Scroll right"
                 >
@@ -94,7 +94,7 @@
 
                 <!-- Slider Content -->
                 @foreach(['New Arrivals', 'Best Sellers', 'Sale Items', 'Featured'] as $index => $category)
-                    <div 
+                    <div
                         id="panel-{{ $index }}"
                         role="tabpanel"
                         aria-labelledby="tab-{{ $index }}"
@@ -107,7 +107,7 @@
                         x-transition:leave-end="opacity-0 transform -translate-x-full"
                     >
                         <div class="relative overflow-hidden">
-                            <div 
+                            <div
                                 x-ref="slider-{{ $index }}"
                                 class="flex gap-6 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory"
                                 @scroll.debounce.50ms="updateScrollButtons"
@@ -115,16 +115,71 @@
                                 @for($i = 1; $i <= 10; $i++)
                                     <div class="flex-none w-72 snap-start">
                                         <!-- Product Card -->
-                                        <div class="group relative">
-                                            <div class="aspect-w-1 aspect-h-1 w-full overflow-hidden rounded-lg bg-gray-200">
-                                                <img src="https://via.placeholder.com/300" 
-                                                     alt="Product {{ $i }}" 
-                                                     class="h-full w-full object-cover object-center group-hover:scale-105 transition-transform duration-300">
+                                        <div class="group/card relative bg-gray-50 rounded-lg">
+                                            <div class="aspect-w-1 aspect-h-1 w-full overflow-hidden h-80">
+                                                <img src="{{ asset('assets/images/product-'.$i.'.png') }}"
+                                                     alt="Product {{ $i }}"
+                                                     class="h-full w-full object-cover object-center group-hover/card:scale-105 transition-transform duration-300">
                                             </div>
-                                            <div class="mt-4 space-y-2">
-                                                <p class="text-sm text-gray-500">{{ $category }}</p>
-                                                <h3 class="text-sm font-medium text-gray-900">Product {{ $i }}</h3>
-                                                <p class="text-sm font-bold text-blue-600">$99.99</p>
+                                            <div class="p-4 flex items-center justify-between">
+                                                <div>
+                                                    <p class="text-sm text-gray-500">{{ $category }}</p>
+                                                    <h3 class="text-xl font-semibold text-gray-900">Product {{ $i }}</h3>
+                                                    <p class="text-xl font-bold text-blue-600">$99.99</p>
+                                                </div>
+                                                <div x-data="{ quantity: 0, showQuantity: false }">
+                                                    <!-- Add Button with + Icon -->
+                                                    <button 
+                                                        @click="showQuantity = true; quantity++" 
+                                                        x-show="!showQuantity"
+                                                        class="ml-2 p-2 text-white bg-gradient-to-r from-blue-500 to-blue-600 rounded-full hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200"
+                                                        aria-label="Add to cart"
+                                                    >
+                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                                        </svg>
+
+                                                    </button>
+
+                                                    <!-- Quantity Control -->
+                                                    <div x-show="showQuantity" class="flex items-center ml-2">
+                                                        <button 
+                                                            @click="if (quantity > 0) quantity--" 
+                                                            class="p-2 text-white bg-red-600 rounded-full hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 transition duration-200"
+                                                            aria-label="Decrease quantity"
+                                                        >
+                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" d="M5 12h14" />
+                                                            </svg>
+
+                                                        </button>
+                                                        <input 
+                                                            type="text" 
+                                                            x-model="quantity" 
+                                                            class="w-12 text-center border border-gray-300 rounded-md mx-2" 
+                                                            readonly
+                                                        />
+                                                        <button 
+                                                            @click="quantity++" 
+                                                            class="p-2 text-white bg-green-600 rounded-full hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 transition duration-200"
+                                                            aria-label="Increase quantity"
+                                                        >
+                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 4.5v15m7.5-7.5h-15" />
+                                                            </svg>
+                                                        </button>
+                                                    </div>
+
+                                                    <!-- Add to Cart Button -->
+                                                    <button 
+                                                        @click="$wire.addToCart({{ $i }}, quantity)" 
+                                                        x-show="showQuantity" 
+                                                        class="ml-2 p-2 text-white bg-blue-600 rounded-full hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200"
+                                                        aria-label="Add to cart with quantity"
+                                                    >
+                                                        Add to the Cart
+                                                    </button>
+                                                </div>
                                             </div>
                                         </div>
                                     </div>
@@ -165,7 +220,7 @@
                         const productWidth = activeSlider.querySelector('.flex-none').offsetWidth;
                         const gap = 24; // This matches the gap-6 (1.5rem = 24px) in your Tailwind class
                         const scrollAmount = (productWidth + gap) * 2;
-                        
+
                         activeSlider.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
                         this.updateScrollButtons();
                     }
@@ -178,7 +233,7 @@
                         const productWidth = activeSlider.querySelector('.flex-none').offsetWidth;
                         const gap = 24; // This matches the gap-6 (1.5rem = 24px) in your Tailwind class
                         const scrollAmount = (productWidth + gap) * 2;
-                        
+
                         activeSlider.scrollBy({ left: scrollAmount, behavior: 'smooth' });
                         this.updateScrollButtons();
                     }
@@ -212,7 +267,7 @@
                         // Check scroll position
                         this.atStart = nav.scrollLeft <= 0;
                         this.atEnd = nav.scrollLeft >= nav.scrollWidth - nav.offsetWidth - 1;
-                        
+
                         // Force Alpine to react to the changes
                         this.$nextTick(() => {
                             this.atStart = this.atStart;
