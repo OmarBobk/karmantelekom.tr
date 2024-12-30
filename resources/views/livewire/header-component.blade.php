@@ -64,11 +64,13 @@
                  x-data="{ 
                      searchVisible: false,
                      searchWidth: '40px',
+                     searchQuery: '',
+                     searchResults: [],
                      async toggleSearch() {
                          if (!this.searchVisible) {
                              this.searchVisible = true;
-                             await new Promise(resolve => setTimeout(resolve, 30));
-                             this.searchWidth = '320px'; // Slightly wider for better readability
+                             await new Promise(resolve => setTimeout(resolve, 300));
+                             this.searchWidth = '320px';
                              this.$refs.searchInput.focus();
                          }
                      }
@@ -76,54 +78,82 @@
                  @keydown.escape.window="searchVisible = false; searchWidth = '40px'">
                 
                 <!-- Single Search Container -->
-                <div class="relative flex items-center h-10 hover:bg-gray-100 rounded-xl pr-1">
-                    <div class="relative"
+                <div class="relative flex items-center h-10">
+                    <div class="relative outline-none"
                          :class="{ 'w-80': searchVisible }"
                          :style="{ width: searchWidth }"
-                         @click.away="searchVisible = false; searchWidth = '40px'">
+                         @click.away="if (!$event.target.closest('.search-results')) { searchVisible = false; searchWidth = '40px'; }">
                         
-                        <!-- Combined Search Icon/Input -->
-                        <div class="relative transition-all rounded-xl duration-300 ease-out"
+                        <!-- Combined Search Icon/Input Container -->
+                        <div class="relative transition-all duration-300 ease-out rounded-xl"
                              :class="{ 
-                                 'bg-white shadow-md ': searchVisible,
-                                 'hover:bg-gray-100': !searchVisible 
+                                 'bg-white shadow-lg border border-gray-200/80': searchVisible,
+                                 'hover:bg-gray-100/90': !searchVisible 
                              }"
-                             class="rounded-xl group">
+                             class="rounded-xl overflow-hidden">
                             
-                            <!-- The Input -->
-                            <input type="text" 
-                                   placeholder="Search for products, categories..." 
-                                   x-model="searchQuery"
-                                   @input.debounce.300ms="search()"
-                                   class="w-full pl-10 pr-4 py-2.5 rounded-xl bg-transparent outline-none transition-all duration-300 text-sm placeholder-gray-400"
-                                   :class="{ 
-                                       'block ring-4 ring-blue-50 focus:border-blue-500': searchVisible,
-                                       'hidden': !searchVisible 
-                                   }"
-                                   x-ref="searchInput"
-                            >
+                            <!-- Search Icon/Input Wrapper -->
+                            <div class="relative flex items-center"
+                                 :class="{
+                                     'w-full': searchVisible,
+                                     'w-10': !searchVisible
+                                 }">
+                                <!-- The Search Icon -->
+                                <button @click="toggleSearch()"
+                                        class="absolute left-0 p-2.5 transition-all duration-300 ease-out rounded-xl z-10"
+                                        :class="{
+                                            'text-gray-400 hover:text-gray-600': searchVisible,
+                                            'text-gray-700 hover:text-gray-900 hover:bg-gray-100/80 hover:scale-105 active:scale-95': !searchVisible,
+                                            'cursor-text': searchVisible
+                                        }"
+                                        aria-label="Search">
+                                    <svg class="size-5 transition-all duration-300"
+                                         :class="{
+                                             'scale-90': searchVisible,
+                                             'scale-100': !searchVisible
+                                         }"
+                                         fill="none" 
+                                         stroke="currentColor" 
+                                         viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" 
+                                              stroke-linejoin="round" 
+                                              stroke-width="2" 
+                                              d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                    </svg>
+                                </button>
 
-                            <!-- The Search Icon -->
-                            <div class="absolute left-3 top-1/2 -translate-y-1/2 transition-all duration-300 "
-                                 :class="{ 
-                                     'text-gray-400 group-hover:text-gray-600': searchVisible,
-                                     'text-gray-700 hover:text-gray-900 cursor-pointer': !searchVisible 
-                                 }"
-                                 @click="toggleSearch()">
-                                <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                                </svg>
+                                <!-- The Input -->
+                                <input type="text" 
+                                       placeholder="Search for products, categories..." 
+                                       x-model="searchQuery"
+                                       @input.debounce.300ms="search()"
+                                       class="w-full pl-11 pr-4 py-2.5 bg-transparent transition-all duration-300 text-sm placeholder-gray-400 outline-none"
+                                       :class="{ 
+                                           'opacity-100': searchVisible,
+                                           'opacity-0': !searchVisible,
+                                           'focus:outline-none focus:ring-0 border-0 focus:border-0': true
+                                       }"
+                                       x-ref="searchInput"
+                                >
+
+                                <!-- Animated Background Effect -->
+                                <div x-show="searchVisible"
+                                     x-transition:enter="transition-all duration-500 ease-out"
+                                     x-transition:enter-start="opacity-0"
+                                     x-transition:enter-end="opacity-100"
+                                     class="absolute inset-0 bg-gradient-to-r from-blue-50/30 to-transparent pointer-events-none">
+                                </div>
                             </div>
                         </div>
 
                         <!-- Enhanced Search Results Dropdown -->
                         <div x-show="searchVisible && searchQuery.length >= 2" 
                              x-cloak
-                             @click.away="searchQuery = ''; searchResults = []"
-                             x-transition:enter="transition ease-out duration-200"
-                             x-transition:enter-start="opacity-0 translate-y-1"
-                             x-transition:enter-end="opacity-100 translate-y-0"
-                             class="absolute mt-2 w-full bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden z-50">
+                             class="absolute mt-2 w-full bg-white/95 backdrop-blur-sm rounded-xl shadow-xl border border-gray-200/80 overflow-hidden z-50 search-results"
+                             @click.away.stop
+                             x-transition:enter="transition-all duration-300 ease-out"
+                             x-transition:enter-start="opacity-0 translate-y-2 scale-98"
+                             x-transition:enter-end="opacity-100 translate-y-0 scale-100">
                             
                             <!-- Loading State -->
                             <div x-show="isLoading" 
