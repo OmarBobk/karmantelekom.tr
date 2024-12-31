@@ -1,4 +1,4 @@
-<div class="w-full bg-white py-8" x-data="slider" role="region" aria-label="Product Categories Slider">
+<div class="w-full bg-white pb-8 pt-4" x-data="slider" role="region" aria-label="Product Categories Slider">
     <!-- Category Navigation -->
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="relative" x-data="navigationScroll">
@@ -129,8 +129,8 @@
                                                 </div>
                                                 <div x-data="{ quantity: 0, showQuantity: false }" @click.away="showQuantity = false; quantity = 0">
                                                     <!-- Add Button with + Icon -->
-                                                    <button 
-                                                        @click="showQuantity = true; quantity++" 
+                                                    <button
+                                                        @click="showQuantity = true; quantity++"
                                                         x-show="!showQuantity"
                                                         class="ml-2 p-2 text-white bg-gradient-to-r from-blue-500 to-blue-600 rounded-full hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200"
                                                         aria-label="Add to cart"
@@ -143,8 +143,8 @@
 
                                                     <!-- Quantity Control -->
                                                     <div x-show="showQuantity" class="flex items-center mb-1 relative">
-                                                        <button 
-                                                            @click="if (quantity > 0) quantity--" 
+                                                        <button
+                                                            @click="if (quantity > 0) quantity--"
                                                             class="p-2 text-white bg-blue-600 rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200"
                                                             aria-label="Decrease quantity"
                                                         >
@@ -153,13 +153,13 @@
                                                             </svg>
 
                                                         </button>
-                                                        <input 
-                                                            type="text" 
-                                                            x-model="quantity" 
+                                                        <input
+                                                            type="text"
+                                                            x-model="quantity"
                                                             class="w-12 h-9 text-center border border-gray-300 rounded-md mx-2"
                                                         />
-                                                        <button 
-                                                            @click="quantity++" 
+                                                        <button
+                                                            @click="quantity++"
                                                             class="p-2 text-white bg-blue-600 rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200"
                                                             aria-label="Increase quantity"
                                                         >
@@ -170,9 +170,9 @@
                                                     </div>
 
                                                     <!-- Add to Cart Button -->
-                                                    <button 
-                                                        @click="$wire.addToCart({{ $i }}, quantity)" 
-                                                        x-show="showQuantity" 
+                                                    <button
+                                                        @click="$wire.addToCart({{ $i }}, quantity)"
+                                                        x-show="showQuantity"
                                                         class="w-full text-sm ml-0 py-1 px-2 text-white bg-blue-600 rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200"
                                                         aria-label="Add to cart with quantity"
                                                     >

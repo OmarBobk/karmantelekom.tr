@@ -17,7 +17,7 @@
         <!-- Styles -->
         @livewireStyles
     </head>
-    <body class="bg-white w-screen">
+    <body class="bg-light-gray text-slate-gray w-screen">
 
         <header class="">
             <livewire:header-component />
@@ -26,7 +26,8 @@
         <main class="">
             <livewire:slider-component />
             <livewire:main-component />
-            
+            <livewire:products-section-component />
+
         </main>
 
         @livewireScripts
