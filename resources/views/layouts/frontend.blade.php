@@ -17,7 +17,7 @@
         <!-- Styles -->
         @livewireStyles
     </head>
-    <body class="bg-light-gray text-slate-gray w-screen">
+    <body class="bg-light-gray text-slate-gray w-screen max-w-full">
 
         <header class="">
             <livewire:header-component />
