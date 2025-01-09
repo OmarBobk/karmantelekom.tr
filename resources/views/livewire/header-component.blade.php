@@ -242,111 +242,26 @@
                 </div>
             </div>
 
-            <!-- Language Selector -->
-            <div class="relative flex items-center" x-data="{ 
-                languageOpen: false,
-                currentLang: @entangle('currentLanguage'),
-                languages: [
-                    { code: 'EN' },
-                    { code: 'TR' },
-                    { code: 'DE' },
-                    { code: 'ES' },
-                    { code: 'FR' },
-                    { code: 'IT' },
-                    { code: 'JP' },
-                    { code: 'AR' },
-                    { code: 'KR' }
-                ]
-            }">
-                <button @click="languageOpen = !languageOpen"
-                        class="p-2.5 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all duration-200 h-11 w-11 flex items-center justify-center">
+            <!-- Profile -->
+            <div class="relative flex items-center gap-x-2">
+                <a href="{{ route('profile.show') }}" 
+                   class="p-2.5 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all duration-200 h-11 w-11 flex items-center justify-center">
                     <svg class="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
-                </button>
-                <span @click="languageOpen = !languageOpen" 
-                      class="text-sm text-gray-700 cursor-pointer hover:text-gray-900" 
-                      x-text="currentLang"></span>
-
-                <!-- Language Dropdown -->
-                <div x-show="languageOpen"
-                     x-cloak
-                     @click.outside="languageOpen = false"
-                     class="fixed inset-x-4 top-24 mx-auto bg-white rounded-lg shadow-lg border border-gray-200/80 backdrop-blur-sm z-50 lg:absolute lg:inset-auto lg:right-0 lg:top-full lg:w-36"
-                     :class="{ 'lg:fixed': window.scrollY > 0 }"
-                     @scroll.window="if(window.scrollY > 0) languageOpen = false">
-                    
-                    <!-- Language Options -->
-                    <div class="max-h-[60vh] lg:max-h-96 overflow-y-auto py-1">
-                        <template x-for="language in languages" :key="language.code">
-                            <button @click="changeLang(language.code)"
-                                    class="w-full flex items-center justify-between px-4 py-2 text-sm hover:bg-gray-50 transition-colors duration-150"
-                                    :class="currentLang === language.code ? 'text-blue-600 font-medium bg-blue-50/50' : 'text-gray-700'">
-                                <span x-text="language.code"></span>
-                                <svg x-show="currentLang === language.code" 
-                                     class="size-4 text-blue-600" 
-                                     fill="none" 
-                                     stroke="currentColor" 
-                                     viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                </svg>
-                            </button>
-                        </template>
-                    </div>
-                </div>
+                </a>
+                <a href="{{ route('profile.show') }}" 
+                   class="text-sm text-gray-700 cursor-pointer hover:text-gray-900">Profile</a>
             </div>
 
-            <!-- Currency Selector -->
-            <div class="relative flex items-center" x-data="{ 
-                currencyOpen: false,
-                currentCurrency: @entangle('currentCurrency'),
-                currencies: [
-                    { code: 'USD' },
-                    { code: 'EUR' },
-                    { code: 'GBP' },
-                    { code: 'JPY' },
-                    { code: 'TRY' },
-                    { code: 'AUD' },
-                    { code: 'CAD' },
-                    { code: 'CHF' }
-                ]
-            }">
-                <button @click="currencyOpen = !currencyOpen"
-                        class="p-2.5 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all duration-200 h-11 w-11 flex items-center justify-center">
+            <!-- Favorites -->
+            <div class="relative flex items-center gap-x-2">
+                <button class="p-2.5 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all duration-200 h-11 w-11 flex items-center justify-center">
                     <svg class="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                     </svg>
                 </button>
-                <span @click="currencyOpen = !currencyOpen" 
-                      class="text-sm text-gray-700 cursor-pointer hover:text-gray-900" 
-                      x-text="currentCurrency"></span>
-
-                <!-- Currency Dropdown -->
-                <div x-show="currencyOpen"
-                     x-cloak
-                     @click.outside="currencyOpen = false"
-                     class="fixed inset-x-4 top-24 mx-auto bg-white rounded-lg shadow-lg border border-gray-200/80 backdrop-blur-sm z-50 lg:absolute lg:inset-auto lg:right-0 lg:top-full lg:w-36"
-                     :class="{ 'lg:fixed': window.scrollY > 0 }"
-                     @scroll.window="if(window.scrollY > 0) currencyOpen = false">
-                    
-                    <!-- Currency Options -->
-                    <div class="max-h-[60vh] lg:max-h-96 overflow-y-auto py-1">
-                        <template x-for="currency in currencies" :key="currency.code">
-                            <button @click="currentCurrency = currency.code; currencyOpen = false; $wire.changeCurrency(currency.code)"
-                                    class="w-full flex items-center justify-between px-4 py-2 text-sm hover:bg-gray-50 transition-colors duration-150"
-                                    :class="currentCurrency === currency.code ? 'text-blue-600 font-medium bg-blue-50/50' : 'text-gray-700'">
-                                <span x-text="currency.code"></span>
-                                <svg x-show="currentCurrency === currency.code" 
-                                     class="size-4 text-blue-600" 
-                                     fill="none" 
-                                     stroke="currentColor" 
-                                     viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                </svg>
-                            </button>
-                        </template>
-                    </div>
-                </div>
+                <span class="text-sm text-gray-700 cursor-pointer hover:text-gray-900">Favorites</span>
             </div>
         </div>
     </nav>
@@ -446,102 +361,23 @@
                     </div>
                 </div>
 
-                <!-- Language Button -->
-                <div class="relative" x-data="{ 
-                    languageOpen: false,
-                    currentLang: @entangle('currentLanguage'),
-                    languages: [
-                        { code: 'EN' },
-                        { code: 'TR' },
-                        { code: 'DE' },
-                        { code: 'ES' },
-                        { code: 'FR' },
-                        { code: 'IT' },
-                        { code: 'JP' },
-                        { code: 'AR' },
-                        { code: 'KR' }
-                    ]
-                }">
-                    <button @click="languageOpen = !languageOpen"
-                            class="p-2.5 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all duration-200 h-11 w-11 flex items-center justify-center">
-                            <span class="text-sm text-gray-700" x-text="currentLang"></span>
-                    </button>
-
-                    <!-- Language Dropdown -->
-                    <div x-show="languageOpen"
-                         x-cloak
-                         @click.outside="languageOpen = false"
-                         class="fixed right-4 left-auto top-20 mx-auto bg-white rounded-lg shadow-lg border border-gray-200/80 backdrop-blur-sm z-50 w-32"
-                         :class="{ 'lg:fixed': window.scrollY > 0 }"
-                         @scroll.window="if(window.scrollY > 0) languageOpen = false">
-                        
-                        <!-- Language Options -->
-                        <div class="max-h-[60vh] lg:max-h-96 overflow-y-auto py-1">
-                            <template x-for="language in languages" :key="language.code">
-                                <button @click="changeLang(language.code)"
-                                        class="w-full flex items-center justify-between px-4 py-2 text-sm hover:bg-gray-50 transition-colors duration-150"
-                                        :class="currentLang === language.code ? 'text-blue-600 font-medium bg-blue-50/50' : 'text-gray-700'">
-                                    <span x-text="language.code"></span>
-                                    <svg x-show="currentLang === language.code" 
-                                         class="size-4 text-blue-600" 
-                                         fill="none" 
-                                         stroke="currentColor" 
-                                         viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                    </svg>
-                                </button>
-                            </template>
-                        </div>
-                    </div>
+                <!-- Profile -->
+                <div class="relative flex items-center gap-x-2">
+                    <a href="{{ route('profile.show') }}" 
+                       class="p-2.5 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all duration-200 h-11 w-11 flex items-center justify-center">
+                        <svg class="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                    </a>
                 </div>
 
-                <!-- Currency Button -->
-                <div class="relative" x-data="{ 
-                    currencyOpen: false,
-                    currentCurrency: @entangle('currentCurrency'),
-                    currencies: [
-                        { code: 'USD' },
-                        { code: 'EUR' },
-                        { code: 'GBP' },
-                        { code: 'JPY' },
-                        { code: 'TRY' },
-                        { code: 'AUD' },
-                        { code: 'CAD' },
-                        { code: 'CHF' }
-                    ]
-                }">
-                    <button @click="currencyOpen = !currencyOpen"
-                            class="p-2.5 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all duration-200 h-11 w-11 flex items-center justify-center">
-                        <span class="text-sm text-gray-700" x-text="currentCurrency"></span>
+                <!-- Favorites -->
+                <div class="relative flex items-center gap-x-2">
+                    <button class="p-2.5 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all duration-200 h-11 w-11 flex items-center justify-center">
+                        <svg class="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                        </svg>
                     </button>
-                    
-
-                    <!-- Currency Dropdown -->
-                    <div x-show="currencyOpen"
-                         x-cloak
-                         @click.outside="currencyOpen = false"
-                         class="fixed right-4 left-auto top-20 mx-auto bg-white rounded-lg shadow-lg border border-gray-200/80 backdrop-blur-sm z-50 w-36"
-                         :class="{ 'lg:fixed': window.scrollY > 0 }"
-                         @scroll.window="if(window.scrollY > 0) currencyOpen = false">
-                        
-                        <!-- Currency Options -->
-                        <div class="max-h-[60vh] lg:max-h-96 overflow-y-auto py-1">
-                            <template x-for="currency in currencies" :key="currency.code">
-                                <button @click="currentCurrency = currency.code; currencyOpen = false; $wire.changeCurrency(currency.code)"
-                                        class="w-full flex items-center justify-between px-4 py-2 text-sm hover:bg-gray-50 transition-colors duration-150"
-                                        :class="currentCurrency === currency.code ? 'text-blue-600 font-medium bg-blue-50/50' : 'text-gray-700'">
-                                    <span x-text="currency.code"></span>
-                                    <svg x-show="currentCurrency === currency.code" 
-                                         class="size-4 text-blue-600" 
-                                         fill="none" 
-                                         stroke="currentColor" 
-                                         viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                    </svg>
-                                </button>
-                            </template>
-                        </div>
-                    </div>
                 </div>
             </div>
         </div>
@@ -750,105 +586,26 @@
                 <a href="#" class="block px-4 py-2.5 text-base font-medium text-gray-900 rounded-lg hover:bg-gray-100">Contact</a>
                 <a href="#" class="block px-4 py-2.5 text-base font-medium text-gray-900 rounded-lg hover:bg-gray-100">Blog</a>
 
-                <!-- Language Selector -->
-                <div class="relative" x-data="{ 
-                    languageOpen: false,
-                    currentLang: @entangle('currentLanguage'),
-                    languages: [
-                        { code: 'EN' },
-                        { code: 'TR' },
-                        { code: 'DE' },
-                        { code: 'ES' },
-                        { code: 'FR' },
-                        { code: 'IT' },
-                        { code: 'JP' },
-                        { code: 'AR' },
-                        { code: 'KR' }
-                    ]
-                }">
-                    <button @click="languageOpen = !languageOpen"
-                            class="w-full flex items-center justify-between px-4 py-2.5 text-base font-medium text-gray-900 rounded-lg hover:bg-gray-100">
-                        <div class="flex items-center gap-2">
-                            <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129"/>
-                            </svg>
-                            <span>Language</span>
-                        </div>
-                        <span x-text="currentLang" class="text-gray-600"></span>
-                    </button>
-
-                    <!-- Language Dropdown -->
-                    <div x-show="languageOpen"
-                         x-cloak
-                         @click.outside="languageOpen = false"
-                         class="absolute inset-x-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-[60vh] overflow-y-auto">
-                        <div class="py-1">
-                            <template x-for="language in languages" :key="language.code">
-                                <button @click="currentLang = language.code; languageOpen = false; $wire.changeLanguage(language.code)"
-                                        class="w-full flex items-center justify-between px-4 py-2 text-sm hover:bg-gray-50 transition-colors duration-150"
-                                        :class="currentLang === language.code ? 'text-blue-600 font-medium bg-blue-50/50' : 'text-gray-700'">
-                                    <span x-text="language.code"></span>
-                                    <svg x-show="currentLang === language.code" 
-                                         class="size-4 text-blue-600" 
-                                         fill="none" 
-                                         stroke="currentColor" 
-                                         viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                    </svg>
-                                </button>
-                            </template>
-                        </div>
-                    </div>
+                <!-- Profile -->
+                <div class="relative flex items-center gap-x-2">
+                    <a href="{{ route('profile.show') }}" 
+                       class="p-2.5 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all duration-200 h-11 w-11 flex items-center justify-center">
+                        <svg class="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                        </svg>
+                    </a>
+                    <a href="{{ route('profile.show') }}" 
+                       class="text-sm text-gray-700 cursor-pointer hover:text-gray-900">Profile</a>
                 </div>
 
-                <!-- Currency Selector -->
-                <div class="relative" x-data="{ 
-                    currencyOpen: false,
-                    currentCurrency: @entangle('currentCurrency'),
-                    currencies: [
-                        { code: 'USD' },
-                        { code: 'EUR' },
-                        { code: 'GBP' },
-                        { code: 'JPY' },
-                        { code: 'TRY' },
-                        { code: 'AUD' },
-                        { code: 'CAD' },
-                        { code: 'CHF' }
-                    ]
-                }">
-                    <button @click="currencyOpen = !currencyOpen"
-                            class="w-full flex items-center justify-between px-4 py-2.5 text-base font-medium text-gray-900 rounded-lg hover:bg-gray-100">
-                        <div class="flex items-center gap-2">
-                            <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
-                            </svg>
-                            <span>Currency</span>
-                        </div>
-                        <span x-text="currentCurrency" class="text-gray-600"></span>
+                <!-- Favorites -->
+                <div class="relative flex items-center gap-x-2">
+                    <button class="p-2.5 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all duration-200 h-11 w-11 flex items-center justify-center">
+                        <svg class="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                        </svg>
                     </button>
-
-                    <!-- Currency Dropdown -->
-                    <div x-show="currencyOpen"
-                         x-cloak
-                         @click.outside="currencyOpen = false"
-                         class="absolute inset-x-0 mt-2 bg-white rounded-lg shadow-lg border border-gray-200 z-50 max-h-[60vh] overflow-y-auto">
-                        <div class="py-1">
-                            <template x-for="currency in currencies" :key="currency.code">
-                                <button @click="currentCurrency = currency.code; currencyOpen = false; $wire.changeCurrency(currency.code)"
-                                        class="w-full flex items-center justify-between px-4 py-2 text-sm hover:bg-gray-50 transition-colors duration-150"
-                                        :class="currentCurrency === currency.code ? 'text-blue-600 font-medium bg-blue-50/50' : 'text-gray-700'">
-                                    <span x-text="currency.code"></span>
-                                    <svg x-show="currentCurrency === currency.code" 
-                                         class="size-4 text-blue-600" 
-                                         fill="none" 
-                                         stroke="currentColor" 
-                                         viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
-                                    </svg>
-                                </button>
-                            </template>
-                        </div>
-                    </div>
+                    <span class="text-sm text-gray-700 cursor-pointer hover:text-gray-900">Favorites</span>
                 </div>
             </nav>
         </div>

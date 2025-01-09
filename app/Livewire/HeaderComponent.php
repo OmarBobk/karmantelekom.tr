@@ -7,6 +7,7 @@ use Illuminate\Support\Facades\App;
 
 class HeaderComponent extends Component
 {
+    public $cartCount = 1;
     public $currentLanguage = 'EN';
     public $currentCurrency = 'USD';
 
@@ -19,6 +20,22 @@ class HeaderComponent extends Component
     public function render()
     {
         return view('livewire.header-component');
+    }
+
+    public function addToCart()
+    {
+        $this->cartCount++;
+        $this->dispatch('notify', [
+            'message' => 'Item added to cart',
+            'type' => 'success'
+        ]);
+    }
+
+    public function removeFromCart()
+    {
+        if ($this->cartCount > 0) {
+            $this->cartCount--;
+        }
     }
 
     public function changeLanguage($code)

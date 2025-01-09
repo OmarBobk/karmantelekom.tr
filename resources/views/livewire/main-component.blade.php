@@ -6,7 +6,7 @@
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div class="relative" x-data="navigationScroll">
                 <!-- Enhanced Shadow indicators for scroll -->
-                <div class="absolute left-0 top-0 bottom-0 w-12 z-10 hidden md:flex items-center justify-start"
+                <div class="absolute left-0 bottom-[3px] w-12 z-10 hidden md:flex items-center justify-start"
                     :class="{ 'pointer-events-none': atStart }"
                 >
                     <div class="absolute inset-0 bg-gradient-to-r from-white via-white to-transparent
@@ -28,7 +28,7 @@
                     </button>
                 </div>
 
-                <div class="absolute right-0 top-0 bottom-0 w-12 z-10 hidden md:flex items-center justify-end"
+                <div class="absolute right-0 bottom-[3px] w-12 z-10 hidden md:flex items-center justify-end"
                     :class="{ 'pointer-events-none': atEnd }"
                 >
                     <div class="absolute inset-0 bg-gradient-to-l from-white via-white to-transparent
@@ -95,7 +95,7 @@
 
         <!-- Product Panels -->
         <div class="relative mt-8">
-            <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div class="mx-auto max-w-7xl px-0 lg:px-8">
                 <!-- Slider Container with Navigation Buttons -->
                 <div class="group relative">
                     <!-- Left Navigation Button -->
@@ -146,12 +146,12 @@
                                 <div class="relative overflow-hidden" x-cloak>
                                     <div
                                         x-ref="slider-{{ $index }}"
-                                        class="flex gap-6 overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory"
+                                        class="flex lg:ronded md:rounded-none sm:rounded-2xl overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory"
                                         @scroll.debounce.50ms="updateScrollButtons({{ $index }})"
                                         x-cloak
                                     >
                                         @for($i = 1; $i <= 10; $i++)
-                                            <div class="flex-none w-72 snap-start mb-4 pl-2">
+                                            <div class="flex-none w-72 snap-start p-4">
                                                 <!-- Product Card -->
                                                 <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow duration-300 group/card">
                                                     <figure class="relative aspect-w-1 aspect-h-1 w-full overflow-hidden bg-gray-50">
@@ -398,9 +398,9 @@
                 @for($i = 1; $i <= 10; $i++)
                     <div class="group/card" x-data="productSlider">
                         <!-- Product Card -->
-                        <div class="bg-gray-50 rounded-lg">
+                        <div class="bg-white shadow-lg hover:shadow-2xl transition-shadow duration-300 rounded-lg">
                             <!-- Image Slider -->
-                            <div class="relative aspect-w-1 aspect-h-1 w-full overflow-hidden h-48"
+                            <div class="relative aspect-w-1 aspect-h-1 w-full overflow-hidden h-48 bg-gray-100"
                                 x-on:touchstart="touchStartX = $event.touches[0].clientX"
                                 x-on:touchend="
                                     touchEndX = $event.changedTouches[0].clientX;
@@ -444,7 +444,7 @@
                             <div class="p-4">
                                 <div class="flex items-start gap-2">
                                     <!-- <h3 class="text-lg font-bold text-gray-900">Product {{ $i }}</h3> -->
-                                    <p class="text-sm text-gray-500 line-clamp-2"><span class="text-lg font-bold text-gray-900">Product {{ $i }} </span> High quality product with amazing features and incredible design that you'll love to have in your collection</p>
+                                    <p class="text-sm text-gray-500 line-clamp-2"><span class="text-base font-bold text-gray-900">Product {{ $i }} </span> High quality product with amazing features and incredible design that you'll love to have in your collection</p>
                                 </div>
 
                                 <div class="flex items-center justify-between">
