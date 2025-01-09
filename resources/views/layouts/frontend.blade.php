@@ -24,10 +24,7 @@
         </header>
 
         <main class="">
-            <livewire:slider-component />
-            <livewire:main-component />
-            <livewire:products-section-component />
-
+            {{ $slot }}
         </main>
 
         @livewireScripts
