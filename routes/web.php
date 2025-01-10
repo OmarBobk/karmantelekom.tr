@@ -1,9 +1,13 @@
 <?php
 
 use App\Livewire\MainComponent;
+use App\Livewire\ProductComponent;
+use App\Livewire\ProfileComponent;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', MainComponent::class);
+Route::get('/', MainComponent::class)->name('main');
+Route::get('/product', ProductComponent::class);
+Route::get('/profile', ProfileComponent::class)->name('account');
 
 Route::middleware([
     'auth:sanctum',

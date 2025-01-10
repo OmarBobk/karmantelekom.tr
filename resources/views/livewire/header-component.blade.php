@@ -58,9 +58,9 @@
                     <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
                 </svg>
             </button>
-            <span class="text-2xl font-semibold" style="font-family: 'Poppins', sans-serif; background: linear-gradient(to right, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+            <a href="{{ route('main') }}" class="text-2xl font-semibold" style="font-family: 'Poppins', sans-serif; background: linear-gradient(to right, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
                 İndirmGo
-            </span>
+            </a>
         </div>
 
         <!-- Center Section - Search -->
@@ -82,8 +82,8 @@
                                 </div>
 
                                 <!-- Search Input -->
-                                <input type="text" 
-                                       placeholder="Search for products, categories..." 
+                                <input type="text"
+                                       placeholder="Search for products, categories..."
                                        x-model="searchQuery"
                                        @input.debounce.300ms="search()"
                                        class="w-full h-full pl-11 pr-4 bg-transparent text-sm placeholder-gray-400 outline-none focus:outline-none focus:ring-0 border-0 focus:border-0"
@@ -101,13 +101,13 @@
                         </div>
 
                         <!-- Search Results Dropdown -->
-                        <div x-show="searchQuery.length >= 2" 
+                        <div x-show="searchQuery.length >= 2"
                              x-cloak
                              class="absolute mt-2 w-full bg-white/95 backdrop-blur-sm rounded-xl shadow-xl border border-gray-200/80 overflow-hidden z-50 search-results"
                              @click.away.stop>
-                            
+
                             <!-- Loading State -->
-                            <div x-show="isLoading" 
+                            <div x-show="isLoading"
                                  class="p-4">
                                 <div class="flex items-center justify-center space-x-2 text-sm text-gray-500">
                                     <svg class="animate-spin size-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -119,10 +119,10 @@
                             </div>
 
                             <!-- Results -->
-                            <div x-show="!isLoading && searchResults.length > 0" 
+                            <div x-show="!isLoading && searchResults.length > 0"
                                  class="max-h-[400px] overflow-y-auto">
                                 <template x-for="result in searchResults" :key="result.title">
-                                    <a :href="result.url" 
+                                    <a :href="result.url"
                                        class="flex items-center px-4 py-3 hover:bg-gray-50 transition-colors duration-150 border-b border-gray-100 last:border-0 group">
                                         <!-- Result Icon -->
                                         <div class="flex-shrink-0 size-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors duration-150">
@@ -140,7 +140,7 @@
                             </div>
 
                             <!-- No Results -->
-                            <div x-show="!isLoading && searchResults.length === 0 && searchQuery.length >= 2" 
+                            <div x-show="!isLoading && searchResults.length === 0 && searchQuery.length >= 2"
                                  class="p-4 text-center">
                                 <div class="text-gray-500 text-sm">
                                     <svg class="size-6 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -184,7 +184,7 @@
                          x-text="cartCount">
                     </div>
                 </button>
-                <span @click="cartOpen = !cartOpen" 
+                <span @click="cartOpen = !cartOpen"
                       class="text-sm text-gray-700 cursor-pointer hover:text-gray-900">Cart</span>
 
                 <!-- Cart Dropdown -->
@@ -216,7 +216,7 @@
                                     <p class="text-sm font-medium text-gray-900 truncate">Product Name</p>
                                     <p class="text-sm text-gray-500">$99.00</p>
                                 </div>
-                                <button @click.stop="removeFromCart()" 
+                                <button @click.stop="removeFromCart()"
                                         class="p-1 text-gray-400 hover:text-gray-500 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-200">
                                     <span class="sr-only">Remove item</span>
                                     <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -233,7 +233,7 @@
                             <p>Subtotal</p>
                             <p>$99.00</p>
                         </div>
-                        <a href="#" 
+                        <a href="#"
                            @click.stop
                            class="w-full flex justify-center items-center px-6 py-3 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors duration-200">
                             Checkout
@@ -244,13 +244,13 @@
 
             <!-- Profile -->
             <div class="relative flex items-center gap-x-2">
-                <a href="{{ route('profile.show') }}" 
+                <a href="{{ route('account') }}"
                    class="p-2.5 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all duration-200 h-11 w-11 flex items-center justify-center">
                     <svg class="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                     </svg>
                 </a>
-                <a href="{{ route('profile.show') }}" 
+                <a href="{{ route('account') }}"
                    class="text-sm text-gray-700 cursor-pointer hover:text-gray-900">Profile</a>
             </div>
 
@@ -279,9 +279,9 @@
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
                     </svg>
                 </button>
-                <span class="text-2xl font-semibold" style="font-family: 'Poppins', sans-serif; background: linear-gradient(to right, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                <a href="{{ route('main') }}" class="text-2xl font-semibold" style="font-family: 'Poppins', sans-serif; background: linear-gradient(to right, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
                     İndirmGo
-                </span>
+                </a>
             </div>
 
             <!-- Right Side -->
@@ -303,7 +303,7 @@
                              x-text="cartCount">
                         </div>
                     </button>
-                    <span @click="cartOpen = !cartOpen" 
+                    <span @click="cartOpen = !cartOpen"
                           class="hidden sm:block text-sm text-gray-700 cursor-pointer hover:text-gray-900">Cart</span>
 
                     <!-- Cart Dropdown - Repositioned for Mobile -->
@@ -335,7 +335,7 @@
                                         <p class="text-sm font-medium text-gray-900 truncate">Product Name</p>
                                         <p class="text-sm text-gray-500">$99.00</p>
                                     </div>
-                                    <button @click.stop="removeFromCart()" 
+                                    <button @click.stop="removeFromCart()"
                                             class="p-1 text-gray-400 hover:text-gray-500 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-200">
                                         <span class="sr-only">Remove item</span>
                                         <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -352,7 +352,7 @@
                                 <p>Subtotal</p>
                                 <p>$99.00</p>
                             </div>
-                            <a href="#" 
+                            <a href="#"
                                @click.stop
                                class="w-full flex justify-center items-center px-6 py-3 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors duration-200">
                                 Checkout
@@ -363,7 +363,7 @@
 
                 <!-- Profile -->
                 <div class="relative flex items-center gap-x-2">
-                    <a href="{{ route('profile.show') }}" 
+                    <a href="{{ route('profile.show') }}"
                        class="p-2.5 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all duration-200 h-11 w-11 flex items-center justify-center">
                         <svg class="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
@@ -397,8 +397,8 @@
                         </div>
 
                         <!-- Search Input -->
-                        <input type="text" 
-                               placeholder="Search for products, categories..." 
+                        <input type="text"
+                               placeholder="Search for products, categories..."
                                x-model="searchQuery"
                                @input.debounce.300ms="search()"
                                class="w-full h-full pl-11 pr-4 bg-transparent text-sm placeholder-gray-400 outline-none focus:outline-none focus:ring-0 border-0 focus:border-0"
@@ -416,13 +416,13 @@
                 </div>
 
                 <!-- Search Results Dropdown -->
-                <div x-show="searchQuery.length >= 2" 
+                <div x-show="searchQuery.length >= 2"
                      x-cloak
                      class="absolute mt-2 w-full bg-white/95 backdrop-blur-sm rounded-xl shadow-xl border border-gray-200/80 overflow-hidden z-50"
                      @click.away.stop>
-                    
+
                     <!-- Loading State -->
-                    <div x-show="isLoading" 
+                    <div x-show="isLoading"
                          class="p-4">
                         <div class="flex items-center justify-center space-x-2 text-sm text-gray-500">
                             <svg class="animate-spin size-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -434,10 +434,10 @@
                     </div>
 
                     <!-- Results -->
-                    <div x-show="!isLoading && searchResults.length > 0" 
+                    <div x-show="!isLoading && searchResults.length > 0"
                          class="max-h-[300px] overflow-y-auto">
                         <template x-for="result in searchResults" :key="result.title">
-                            <a :href="result.url" 
+                            <a :href="result.url"
                                class="flex items-center px-4 py-3 hover:bg-gray-50 transition-colors duration-150 border-b border-gray-100 last:border-0 group">
                                 <!-- Result Icon -->
                                 <div class="flex-shrink-0 size-10 rounded-lg bg-gray-100 flex items-center justify-center text-gray-500 group-hover:bg-blue-50 group-hover:text-blue-600 transition-colors duration-150">
@@ -455,7 +455,7 @@
                     </div>
 
                     <!-- No Results -->
-                    <div x-show="!isLoading && searchResults.length === 0 && searchQuery.length >= 2" 
+                    <div x-show="!isLoading && searchResults.length === 0 && searchQuery.length >= 2"
                          class="p-4 text-center">
                         <div class="text-gray-500 text-sm">
                             <svg class="size-6 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -565,9 +565,9 @@
 
             <!-- Sidebar Header -->
             <div class="flex items-center justify-between p-4 border-b">
-                <span class="text-xl font-semibold" style="font-family: 'Poppins', sans-serif; background: linear-gradient(to right, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                <a href="{{ route('main') }}" class="text-xl font-semibold" style="font-family: 'Poppins', sans-serif; background: linear-gradient(to right, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
                     İndirmGo
-                </span>
+                </a>
                 <button @click="sidebarOpen = false" class="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg">
                     <svg class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -588,13 +588,13 @@
 
                 <!-- Profile -->
                 <div class="relative flex items-center gap-x-2">
-                    <a href="{{ route('profile.show') }}" 
+                    <a href="{{ route('profile.show') }}"
                        class="p-2.5 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all duration-200 h-11 w-11 flex items-center justify-center">
                         <svg class="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                         </svg>
                     </a>
-                    <a href="{{ route('profile.show') }}" 
+                    <a href="{{ route('profile.show') }}"
                        class="text-sm text-gray-700 cursor-pointer hover:text-gray-900">Profile</a>
                 </div>
 

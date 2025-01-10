@@ -90,25 +90,21 @@
                     <p>Copyright © {{ date('Y') }} İndirmGo. All rights reserved.</p>
                 </div>
                 <div class="flex items-center gap-4">
-                    <select class="select select-sm bg-transparent border-gray-300 py-0 h-full">
-                        <option>🌍 English</option>
-                        <option>🇹🇷 Türkçe</option>
-                        <option>🇩🇪 Deutsch</option>
-                        <option>🇫🇷 Français</option>
-                        <option>🇪🇸 Español</option>
+                    <select class="select select-bordered select-sm w-full max-w-[100px] py-0">
+                        <option disabled selected>Language</option>
+                        <option>English</option>
+                        <option>Türkçe</option>
+                        <option>Deutsch</option>
+                        <option>Français</option>
+                        <option>Español</option>
                     </select>
-                    <select class="select select-sm bg-transparent border-gray-300 py-0 h-full">
-                        <option>USD $</option>
-                        <option>EUR €</option>
-                        <option>GBP £</option>
-                        <option>TRY ₺</option>
+                    <select class="select select-bordered select-sm w-full max-w-[100px] py-0">
+                        <option disabled selected>Currency</option>
+                        <option>USD ($)</option>
+                        <option>EUR (€)</option>
+                        <option>GBP (£)</option>
+                        <option>TRY (₺)</option>
                     </select>
-                </div>
-                <div class="flex items-center gap-4">
-                    <img src="https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/visa.svg" alt="Visa" class="h-8 opacity-50 hover:opacity-100 transition-opacity">
-                    <img src="https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/mastercard.svg" alt="Mastercard" class="h-8 opacity-50 hover:opacity-100 transition-opacity">
-                    <img src="https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/paypal.svg" alt="PayPal" class="h-8 opacity-50 hover:opacity-100 transition-opacity">
-                    <img src="https://raw.githubusercontent.com/simple-icons/simple-icons/develop/icons/applepay.svg" alt="Apple Pay" class="h-8 opacity-50 hover:opacity-100 transition-opacity">
                 </div>
             </div>
         </div>
