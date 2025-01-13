@@ -8,13 +8,13 @@
     </head>
     <body class="min-h-screen bg-base-100/50">
         <header>
-            <livewire:header-component />
+            <livewire:frontend.partials.header-component />
         </header>
         <main>
             {{ $slot }}
         </main>
         <footer>
-            <livewire:footer-component />
+            <livewire:frontend.partials.footer-component />
         </footer>
     </body>
 </html>

@@ -1,25 +1,15 @@
 <?php
 
+use App\Livewire\Backend\DashboardComponent;
+use App\Livewire\Backend\ProductsComponent;
 use Illuminate\Support\Facades\Route;
 
-Route::get('/', function () {
-    return 'subdomain';
-});
-// Route::get('dashboard', function () {
-//     return view('dashboard');
-// })->name('dashboard');
+
+Route::get('/', DashboardComponent::class)->name('main');
+Route::get('products', ProductsComponent::class)->name('products');
 
 
-Route::middleware([
-    'auth:sanctum',
-    config('jetstream.auth_session'),
-    'verified',
-])->group(function () {
-    Route::get('/dashboard', function () {
-        return view('dashboard');
-    })->name('dashboard');
-});
+Route::get('/dashboard', function () {
+    abort(404); // Return a 404 error
+})->name('dashboard');
 
-Route::get('/test', function () {
-    return 'test subdomain';
-});

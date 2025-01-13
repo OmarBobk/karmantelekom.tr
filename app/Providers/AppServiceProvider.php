@@ -21,6 +21,9 @@ class AppServiceProvider extends ServiceProvider
     public function boot(): void
     {
         Route::domain(config('app.subdomain'))
-            ->group(base_path('routes/subdomain.php'));
+            ->group(function () {
+                Route::middleware('web')
+                    ->group(base_path('routes/subdomain.php'));
+            });
     }
 }

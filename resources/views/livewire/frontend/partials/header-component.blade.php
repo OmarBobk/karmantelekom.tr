@@ -578,7 +578,7 @@
             <!-- Mobile Navigation Links -->
             <nav class="px-4 py-6 space-y-2">
                 <a href="#" class="block px-4 py-2.5 text-base font-medium text-gray-900 rounded-lg hover:bg-gray-100">Home</a>
-                <a href="#" class="block px-4 py-2.5 text-base font-medium text-gray-900 rounded-lg hover:bg-gray-100">Categories</a>
+                <a href="{{route('products')}}" class="block px-4 py-2.5 text-base font-medium text-gray-900 rounded-lg hover:bg-gray-100">Categories</a>
                 <a href="#" class="block px-4 py-2.5 text-base font-medium text-gray-900 rounded-lg hover:bg-gray-100">New Arrivals</a>
                 <a href="#" class="block px-4 py-2.5 text-base font-medium text-gray-900 rounded-lg hover:bg-gray-100">Deals</a>
                 <div class="border-t border-gray-200 my-4"></div>

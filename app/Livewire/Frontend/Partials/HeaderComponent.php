@@ -1,9 +1,9 @@
 <?php
 
-namespace App\Livewire;
+namespace App\Livewire\Frontend\Partials;
 
-use Livewire\Component;
 use Illuminate\Support\Facades\App;
+use Livewire\Component;
 
 class HeaderComponent extends Component
 {
@@ -19,7 +19,7 @@ class HeaderComponent extends Component
 
     public function render()
     {
-        return view('livewire.header-component');
+        return view('livewire.frontend.partials.header-component');
     }
 
     public function addToCart()
