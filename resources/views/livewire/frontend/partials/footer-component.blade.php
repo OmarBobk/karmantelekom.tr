@@ -1,4 +1,4 @@
-<div class="bg-base-200">
+<div class="bg-gray-100">
     <!-- Newsletter Section -->
     <div class="bg-gradient-to-r from-blue-600 to-blue-700">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -8,8 +8,8 @@
                     <p class="text-blue-100">Stay up to date with the latest news, announcements, and articles.</p>
                 </div>
                 <form class="flex flex-col md:flex-col sm:flex-row gap-3">
-                    <input type="email" placeholder="Enter your email" class="input input-lg flex-grow bg-white/10 text-white placeholder-blue-200 border-white/20 focus:border-white focus:ring-2 focus:ring-white">
-                    <button class="btn btn-lg bg-white text-blue-600 hover:bg-blue-50 border-white">
+                    <input type="email" placeholder="Enter your email" class="w-full px-4 py-3 text-lg rounded-lg bg-white/10 text-white placeholder-blue-200 border border-white/20 focus:border-white focus:ring-2 focus:ring-white outline-none">
+                    <button class="inline-flex items-center justify-center px-6 py-3 text-lg font-medium bg-white text-blue-600 hover:bg-blue-50 rounded-lg border border-white transition-colors duration-200">
                         Subscribe
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
@@ -21,7 +21,7 @@
     </div>
 
     <!-- Main Footer -->
-    <footer class="footer p-10 text-base-content max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
         <!-- Company Info -->
         <div>
             <span class="text-2xl font-semibold mb-2" style="font-family: 'Poppins', sans-serif; background: linear-gradient(to right, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
@@ -53,44 +53,44 @@
 
         <!-- Company Links -->
         <div>
-            <span class="footer-title opacity-100 text-gray-900 font-semibold">Company</span>
+            <span class="text-lg font-semibold text-gray-900 block mb-4">Company</span>
             <div class="flex flex-col space-y-3 mt-4">
                 @foreach($companyLinks as $link)
-                    <a href="{{ $link['url'] }}" class="link link-hover text-gray-600 hover:text-gray-900">{{ $link['name'] }}</a>
+                    <a href="{{ $link['url'] }}" class="text-gray-600 hover:text-gray-900 transition-colors duration-200">{{ $link['name'] }}</a>
                 @endforeach
             </div>
         </div>
 
         <!-- Legal Links -->
         <div>
-            <span class="footer-title opacity-100 text-gray-900 font-semibold">Legal</span>
+            <span class="text-lg font-semibold text-gray-900 block mb-4">Legal</span>
             <div class="flex flex-col space-y-3 mt-4">
                 @foreach($legalLinks as $link)
-                    <a href="{{ $link['url'] }}" class="link link-hover text-gray-600 hover:text-gray-900">{{ $link['name'] }}</a>
+                    <a href="{{ $link['url'] }}" class="text-gray-600 hover:text-gray-900 transition-colors duration-200">{{ $link['name'] }}</a>
                 @endforeach
             </div>
         </div>
 
         <!-- Support Links -->
         <div>
-            <span class="footer-title opacity-100 text-gray-900 font-semibold">Support</span>
+            <span class="text-lg font-semibold text-gray-900 block mb-4">Support</span>
             <div class="flex flex-col space-y-3 mt-4">
                 @foreach($supportLinks as $link)
-                    <a href="{{ $link['url'] }}" class="link link-hover text-gray-600 hover:text-gray-900">{{ $link['name'] }}</a>
+                    <a href="{{ $link['url'] }}" class="text-gray-600 hover:text-gray-900 transition-colors duration-200">{{ $link['name'] }}</a>
                 @endforeach
             </div>
         </div>
-    </footer>
+    </div>
 
     <!-- Bottom Footer -->
-    <footer class="footer footer-center p-10 bg-base-300 text-base-content">
+    <div class="bg-gray-200 py-10">
         <div class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex flex-col md:flex-row justify-between items-center gap-4">
                 <div class="text-sm text-gray-600">
                     <p>Copyright © {{ date('Y') }} İndirmGo. All rights reserved.</p>
                 </div>
                 <div class="flex items-center gap-4">
-                    <select class="select select-bordered select-sm w-full max-w-[100px] py-0">
+                    <select class="w-full max-w-[100px] py-1 px-2 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         <option disabled selected>Language</option>
                         <option>English</option>
                         <option>Türkçe</option>
@@ -98,7 +98,7 @@
                         <option>Français</option>
                         <option>Español</option>
                     </select>
-                    <select class="select select-bordered select-sm w-full max-w-[100px] py-0">
+                    <select class="w-full max-w-[100px] py-1 px-2 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                         <option disabled selected>Currency</option>
                         <option>USD ($)</option>
                         <option>EUR (€)</option>
@@ -108,5 +108,5 @@
                 </div>
             </div>
         </div>
-    </footer>
+    </div>
 </div>

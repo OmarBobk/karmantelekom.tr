@@ -59,13 +59,13 @@
                     x-cloak
                 >
                     <div class="flex flex-nowrap border-b border-gray-200" x-cloak>
-                        <div class="tabs flex-nowrap whitespace-nowrap">
+                        <div class="flex flex-nowrap whitespace-nowrap">
                             @foreach(['New Arrivals', 'Best Sellers', 'Sale Items', 'Featured', 'Featured1', 'Featured2', 'Featured3', 'Featured4', 'Featured5', 'Featured6', 'Featured7', 'Featured8', 'Featured9', 'Featured10'] as $index => $category)
                                 <button
                                     x-on:click="$wire.activeCategory = {{ $index }}"
                                     wire:click="setActiveCategory({{ $index }})"
-                                    class="tab tab-lg text-gray-500 hover:text-gray-900 transition-all duration-200 whitespace-nowrap"
-                                    :class="$wire.activeCategory === {{ $index }} ? '!text-blue-600 !border-b-2 !border-blue-600' : ''"
+                                    class="px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-900 transition-all duration-200 whitespace-nowrap border-b-2 border-transparent"
+                                    :class="$wire.activeCategory === {{ $index }} ? '!text-blue-600 !border-blue-600' : ''"
                                     role="tab"
                                     :aria-selected="$wire.activeCategory === {{ $index }}"
                                     aria-controls="panel-{{ $index }}"
@@ -101,8 +101,7 @@
                     <!-- Left Navigation Button -->
                     <button
                         @click="scrollLeft"
-                        class="btn btn-circle btn-ghost hidden lg:flex absolute -left-2 md:-left-6 top-1/2 -translate-y-1/2 
-                            opacity-0 group-hover:opacity-100 z-10 bg-white shadow-lg hover:bg-gray-50"
+                        class="hidden lg:flex items-center justify-center size-10 rounded-full bg-white hover:bg-gray-50 text-gray-600 hover:text-gray-900 shadow-lg border border-gray-200 absolute -left-2 md:-left-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 z-10 transition-all duration-200"
                         :disabled="atStart"
                         aria-label="Scroll left"
                         x-cloak
@@ -115,8 +114,7 @@
                     <!-- Right Navigation Button -->
                     <button
                         @click="scrollRight"
-                        class="btn btn-circle btn-ghost hidden lg:flex absolute -right-2 md:-right-6 top-1/2 -translate-y-1/2 
-                            opacity-0 group-hover:opacity-100 z-10"
+                        class="hidden lg:flex items-center justify-center size-10 rounded-full bg-white hover:bg-gray-50 text-gray-600 hover:text-gray-900 shadow-lg border border-gray-200 absolute -right-2 md:-right-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 z-10 transition-all duration-200"
                         :disabled="atEnd"
                         aria-label="Scroll right"
                         x-cloak
@@ -153,13 +151,13 @@
                                         @for($i = 1; $i <= 10; $i++)
                                             <div class="flex-none w-72 snap-start p-4">
                                                 <!-- Product Card -->
-                                                <div class="card bg-base-100 shadow-xl hover:shadow-2xl transition-shadow duration-300 group/card">
+                                                <div class="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
                                                     <figure class="relative aspect-w-1 aspect-h-1 w-full overflow-hidden bg-gray-50">
                                                         <img src="{{ asset('assets/images/product-'.$i.'.png') }}"
                                                             alt="Product {{ $i }}"
                                                             class="h-full w-full object-cover object-center group-hover/card:scale-105 transition-transform duration-300">
                                                     </figure>
-                                                    <div class="card-body p-4">
+                                                    <div class="p-4">
                                                         <div class="flex justify-between items-center">
                                                             <div>
                                                                 <p class="text-sm text-gray-500">{{ $category }}</p>
@@ -174,7 +172,7 @@
                                                                 <button
                                                                     @click="showQuantity = true; quantity++"
                                                                     x-show="!showQuantity"
-                                                                    class="btn btn-circle btn-primary btn-sm"
+                                                                    class="inline-flex items-center justify-center size-8 rounded-full bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
                                                                     aria-label="Add to cart"
                                                                 >
                                                                     <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -183,10 +181,10 @@
                                                                 </button>
 
                                                                 <!-- Quantity Control - Original size -->
-                                                                <div x-show="showQuantity" class="join">
+                                                                <div x-show="showQuantity" class="flex rounded-lg overflow-hidden">
                                                                     <button
                                                                         @click="if (quantity > 0) quantity--"
-                                                                        class="btn btn-sm join-item bg-gray-50 hover:bg-gray-100 border-gray-200"
+                                                                        class="inline-flex items-center justify-center px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-600 hover:text-gray-900"
                                                                         aria-label="Decrease quantity"
                                                                     >
                                                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -196,11 +194,11 @@
                                                                     <input
                                                                         type="text"
                                                                         x-model="quantity"
-                                                                        class="input input-bordered input-sm w-14 join-item text-center bg-white"
+                                                                        class="w-14 px-2 py-1 text-center border-t border-b border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
                                                                     />
                                                                     <button
                                                                         @click="quantity++"
-                                                                        class="btn btn-sm join-item bg-gray-50 hover:bg-gray-100 border-gray-200"
+                                                                        class="inline-flex items-center justify-center px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-600 hover:text-gray-900"
                                                                         aria-label="Increase quantity"
                                                                     >
                                                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -213,7 +211,7 @@
                                                                 <button
                                                                     @click="$wire.addToCart({{ $i }}, quantity)"
                                                                     x-show="showQuantity"
-                                                                    class="btn btn-sm w-full mt-0 bg-gray-900 hover:bg-gray-800 text-white"
+                                                                    class="w-full px-3 py-1 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 transition-colors duration-200"
                                                                     aria-label="Add to cart with quantity"
                                                                 >
                                                                     Add
@@ -398,7 +396,7 @@
                 @for($i = 1; $i <= 10; $i++)
                     <div class="group/card" x-data="productSlider">
                         <!-- Product Card -->
-                        <div class="bg-white shadow-lg hover:shadow-2xl transition-shadow duration-300 rounded-lg">
+                        <div class="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
                             <!-- Image Slider -->
                             <div class="relative aspect-w-1 aspect-h-1 w-full overflow-hidden h-48 bg-gray-100"
                                 x-on:touchstart="touchStartX = $event.touches[0].clientX"
