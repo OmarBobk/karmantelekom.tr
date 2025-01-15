@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Str;
 
 class Product extends Model
 {
@@ -14,20 +15,23 @@ class Product extends Model
 
     protected $fillable = [
         'name',
-        'sku',
+        'slug',
+        'serial',
+        'code',
         'description',
         'category_id',
         'supplier_id',
-        'price',
-        'stock',
         'status',
-        'image_url'
     ];
 
-    protected $casts = [
-        'price' => 'decimal:2',
-        'stock' => 'integer',
-    ];
+    protected static function boot()
+    {
+        parent::boot();
+        
+        static::creating(function ($product) {
+            $product->slug = Str::slug($product->name);
+        });
+    }
 
     public function category(): BelongsTo
     {

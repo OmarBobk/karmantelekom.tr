@@ -29,7 +29,7 @@
                         <!-- Product Image -->
                         <div class="relative aspect-w-1 aspect-h-1 w-full overflow-hidden">
                             @if($product->images->isNotEmpty())
-                                <img src="{{ asset('storage/' . $product->images->first()->path) }}"
+                                <img src="{{ asset('storage/' . $product->images->firstWhere('is_primary', true)?->image_url) }}"
                                      alt="{{ $product->name }}"
                                      class="h-full w-full object-cover object-center group-hover/card:scale-105 transition-transform duration-300">
                             @else
@@ -44,16 +44,17 @@
                         <!-- Product Info -->
                         <div class="p-4">
                             <div class="mb-2">
-                                @if($product->category)
-                                    <span class="text-sm text-gray-500">{{ $product->category->name }}</span>
-                                @endif
-                                <h2 class="text-lg font-semibold text-gray-900">{{ $product->name }}</h2>
+                                <p class="text-sm text-gray-500">{{ $product->category->name }}</p>
+                                <h3 class="text-lg font-medium text-gray-900">{{ $product->name }}</h3>
+                                <p class="text-sm text-gray-500">Code: {{ $product->code }}</p>
                             </div>
 
                             <div class="flex items-center justify-between">
                                 <div>
                                     @if($product->prices->isNotEmpty())
-                                        <p class="text-xl font-bold text-gray-900">${{ number_format($product->prices->first()->price, 2) }}</p>
+                                        <p class="text-xl font-bold text-gray-900">
+                                            {{ $product->prices->first()->currency }} {{ number_format($product->prices->first()->price, 2) }}
+                                        </p>
                                     @endif
                                 </div>
                                 <button wire:click="addToCart({{ $product->id }})" 

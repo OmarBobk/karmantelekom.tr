@@ -5,13 +5,15 @@ namespace Database\Seeders;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Supplier;
+use App\Models\ProductPrice;
+use App\Models\ProductImage;
 use Illuminate\Database\Seeder;
 
 class ProductSeeder extends Seeder
 {
     public function run(): void
     {
-        // Create some categories
+        // Create categories
         $categories = [
             'Electronics' => ['Phones', 'Laptops', 'Accessories'],
             'Fashion' => ['Men', 'Women', 'Kids'],
@@ -29,32 +31,34 @@ class ProductSeeder extends Seeder
             }
         }
 
-        // Create some suppliers
-        $suppliers = [
-            'Tech Solutions Inc.',
-            'Fashion Hub',
-            'Home Essentials',
-            'Book World'
-        ];
+        // Create suppliers
+        $suppliers = Supplier::factory(5)->create();
 
-        foreach ($suppliers as $supplierName) {
-            Supplier::create([
-                'name' => $supplierName,
-                'contact_details' => fake()->phoneNumber() . "\n" . fake()->email() . "\n" . fake()->address()
+        // Create products with related data
+        Product::factory(50)->create()->each(function ($product) {
+            // Create prices for each product
+            ProductPrice::create([
+                'product_id' => $product->id,
+                'price_type' => 'retail',
+                'price' => fake()->randomFloat(2, 10, 1000),
+                'currency' => 'TL'
             ]);
-        }
 
-        // Get all categories and suppliers for random assignment
-        $categoryIds = Category::pluck('id')->toArray();
-        $supplierIds = Supplier::pluck('id')->toArray();
+            ProductPrice::create([
+                'product_id' => $product->id,
+                'price_type' => 'retail',
+                'price' => fake()->randomFloat(2, 10, 1000),
+                'currency' => '$'
+            ]);
 
-        // Create products
-        Product::factory()
-            ->count(50)
-            ->sequence(fn ($sequence) => [
-                'category_id' => fake()->randomElement($categoryIds),
-                'supplier_id' => fake()->randomElement($supplierIds),
-            ])
-            ->create();
+            // Create sample images for each product
+            for ($i = 1; $i <= 3; $i++) {
+                ProductImage::create([
+                    'product_id' => $product->id,
+                    'image_url' => "products/sample-{$i}.jpg",
+                    'is_primary' => $i === 1
+                ]);
+            }
+        });
     }
 }

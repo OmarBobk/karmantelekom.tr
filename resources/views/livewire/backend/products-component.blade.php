@@ -51,7 +51,7 @@
                 <select wire:model.live="category" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     <option value="">All Categories</option>
                     @foreach($categories as $cat)
-                        <option value="{{ $cat }}">{{ $cat }}</option>
+                        <option value="{{ $cat->id }}">{{ $cat->name }}</option>
                     @endforeach
                 </select>
 
@@ -95,10 +95,23 @@
                                         @endif
                                     </div>
                                 </th>
-                                <th wire:click="sortBy('sku')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer">
+                                <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                    Description
+                                </th>
+                                <th wire:click="sortBy('code')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer">
                                     <div class="flex items-center space-x-1">
-                                        <span>SKU</span>
-                                        @if($sortField === 'sku')
+                                        <span>Code</span>
+                                        @if($sortField === 'code')
+                                            <svg class="w-4 h-4 {{ $sortDirection === 'asc' ? '' : 'rotate-180' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
+                                            </svg>
+                                        @endif
+                                    </div>
+                                </th>
+                                <th wire:click="sortBy('serial')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer">
+                                    <div class="flex items-center space-x-1">
+                                        <span>Serial</span>
+                                        @if($sortField === 'serial')
                                             <svg class="w-4 h-4 {{ $sortDirection === 'asc' ? '' : 'rotate-180' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
                                             </svg>
@@ -106,6 +119,7 @@
                                     </div>
                                 </th>
                                 <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                 <th wire:click="sortBy('price')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer">
                                     <div class="flex items-center space-x-1">
                                         <span>Price</span>
@@ -116,17 +130,6 @@
                                         @endif
                                     </div>
                                 </th>
-                                <th wire:click="sortBy('stock')" class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer">
-                                    <div class="flex items-center justify-center space-x-1">
-                                        <span>Stock</span>
-                                        @if($sortField === 'stock')
-                                            <svg class="w-4 h-4 {{ $sortDirection === 'asc' ? '' : 'rotate-180' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 15l7-7 7 7" />
-                                            </svg>
-                                        @endif
-                                    </div>
-                                </th>
-                                <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                                 <th class="px-6 py-3 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
@@ -148,28 +151,27 @@
                                             </div>
                                         </div>
                                     </td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $product->sku }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $product->category->name }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">${{ number_format($product->price, 2) }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-center">
-                                        @if($product->stock > 10)
-                                            <span class="badge bg-gradient-success">
-                                                {{ $product->stock }} in stock
-                                            </span>
-                                        @elseif($product->stock > 0)
-                                            <span class="badge bg-gradient-warning">
-                                                {{ $product->stock }} left
-                                            </span>
-                                        @else
-                                            <span class="badge bg-gradient-danger">
-                                                Out of stock
-                                            </span>
-                                        @endif
+                                    <td class="px-6 py-4">
+                                        <div class="text-sm text-gray-900 text-left max-w-[10rem]">
+                                            <p class="line-clamp-2 cursor-pointer" x-data="{ expanded: false }" @click="expanded = !expanded" :class="{ 'line-clamp-none': expanded }" title="{{ $product->description }}">
+                                                {{ $product->description }}
+                                            </p>
+                                        </div>
                                     </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $product->code }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $product->serial ?? 'N/A' }}</td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $product->category->name }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-center">
                                         <span class="badge {{ $product->status === 'active' ? 'bg-gradient-success' : 'bg-gradient-danger' }}">
                                             {{ ucfirst($product->status) }}
                                         </span>
+                                    </td>
+                                    <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                        <div class="flex flex-col space-y-1">
+                                            @foreach($product->prices as $price)
+                                                <span>{{ money($price->price, $price->currency) }}</span>
+                                            @endforeach
+                                        </div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm font-medium">
                                         <div class="flex items-center justify-center space-x-2">
@@ -238,4 +240,282 @@
         </div>
     </div>
     @endif
+
+    <!-- Edit Modal -->
+    <div x-data="{ 
+        imagePreview: null,
+        addPrice() {
+            $wire.editForm.prices.push({ 
+                price: '', 
+                currency: 'TL',
+                price_type: 'retail'
+            });
+        },
+        removePrice(index) {
+            $wire.editForm.prices.splice(index, 1);
+        }
+    }"
+    x-show="$wire.editModalOpen"
+    class="fixed inset-0 z-50 overflow-y-auto"
+    x-cloak>
+        <!-- Backdrop -->
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+
+        <!-- Modal Content -->
+        <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+            <div class="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-4xl sm:p-6"
+                @click.away="$wire.editModalOpen = false">
+                
+                <!-- Modal Header -->
+                <div class="flex items-center justify-between mb-4 border-b pb-4">
+                    <h3 class="text-lg font-semibold text-gray-900">Edit Product</h3>
+                    <button @click="$wire.editModalOpen = false" class="text-gray-400 hover:text-gray-500">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Form Content -->
+                <form wire:submit.prevent="updateProduct" class="space-y-6">
+                    @csrf
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Left Column -->
+                        <div class="space-y-6">
+                            <!-- Name -->
+                            <div>
+                                <label for="name" class="block text-sm font-medium text-gray-700">Product Name</label>
+                                <input type="text" 
+                                    wire:model.blur="editForm.name" 
+                                    @blur="$wire.generateSlug()"
+                                    id="name" 
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                                @error('editForm.name') 
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <!-- Slug -->
+                            <div>
+                                <label for="slug" class="block text-sm font-medium text-gray-700">Slug</label>
+                                <input type="text" 
+                                    wire:model="editForm.slug" 
+                                    id="slug" 
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                    readonly>
+                                @error('editForm.slug') 
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <!-- Code & Serial -->
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label for="code" class="block text-sm font-medium text-gray-700">Product Code</label>
+                                    <input type="text" 
+                                        wire:model="editForm.code" 
+                                        id="code" 
+                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                                    @error('editForm.code') 
+                                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                                <div>
+                                    <label for="serial" class="block text-sm font-medium text-gray-700">Serial Number</label>
+                                    <input type="text" 
+                                        wire:model="editForm.serial" 
+                                        id="serial" 
+                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                                    @error('editForm.serial') 
+                                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <!-- Status -->
+                            <div>
+                                <label for="status" class="block text-sm font-medium text-gray-700">Status</label>
+                                <select wire:model="editForm.status" 
+                                    id="status" 
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                                    <option value="active">Active</option>
+                                    <option value="inactive">Inactive</option>
+                                </select>
+                                @error('editForm.status') 
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <!-- Description -->
+                            <div>
+                                <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
+                                <textarea wire:model="editForm.description" 
+                                    id="description" 
+                                    rows="4"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></textarea>
+                                @error('editForm.description') 
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <!-- Right Column -->
+                        <div class="space-y-6">
+                            <!-- Category & Supplier -->
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label for="category" class="block text-sm font-medium text-gray-700">Category</label>
+                                    <select wire:model="editForm.category_id" 
+                                        id="category" 
+                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                                        <option value="">Select Category</option>
+                                        @foreach($categories as $category)
+                                            <option value="{{ $category->id }}">{{ $category->name }}</option>
+                                        @endforeach
+                                    </select>
+                                    @error('editForm.category_id') 
+                                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                                <div>
+                                    <label for="supplier" class="block text-sm font-medium text-gray-700">Supplier</label>
+                                    <select wire:model="editForm.supplier_id" 
+                                        id="supplier" 
+                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                                        <option value="">Select Supplier</option>
+                                        @foreach($suppliers as $supplier)
+                                            <option value="{{ $supplier->id }}">{{ $supplier->name }}</option>
+                                        @endforeach
+                                    </select>
+                                    @error('editForm.supplier_id') 
+                                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <!-- Prices -->
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="block text-sm font-medium text-gray-700">Prices</label>
+                                    <button type="button" 
+                                        @click="addPrice"
+                                        class="inline-flex items-center px-3 py-1 border border-transparent text-sm font-medium rounded-md text-blue-700 bg-blue-100 hover:bg-blue-200">
+                                        Add Price
+                                    </button>
+                                </div>
+                                <div class="space-y-2">
+                                    <template x-for="(price, index) in $wire.editForm.prices" :key="index">
+                                        <div class="flex items-center gap-2">
+                                            <input type="number" 
+                                                x-model.number="price.price"
+                                                step="0.01"
+                                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                                placeholder="Price">
+                                            <select x-model="price.currency"
+                                                class="mt-1 block w-24 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                                                <option value="TL">TL</option>
+                                                <option value="$">$</option>
+                                            </select>
+                                            <select x-model="price.price_type"
+                                                class="mt-1 block w-32 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                                                <option value="retail">Retail</option>
+                                                <option value="wholesale">Wholesale</option>
+                                            </select>
+                                            <button type="button" 
+                                                @click="removePrice(index)"
+                                                class="inline-flex items-center p-1 border border-transparent rounded-full text-red-600 hover:bg-red-100">
+                                                <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
+                                            </button>
+                                        </div>
+                                    </template>
+                                </div>
+                                @error('editForm.prices.*.price') 
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                                @error('editForm.prices.*.currency') 
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                                @error('editForm.prices.*.price_type') 
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <!-- Images -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Product Images</label>
+                                <div class="grid grid-cols-3 gap-4 mb-4">
+                                    @foreach($currentImages as $image)
+                                        <div class="relative group">
+                                            <img src="{{ $image['url'] ? Storage::url($image['url']) : 'https://placehold.co/100' }}" 
+                                                alt="Product image" 
+                                                class="h-24 w-24 rounded-lg object-cover">
+                                            <div class="absolute inset-0 bg-black bg-opacity-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                                <button type="button"
+                                                    wire:click="setPrimaryImage({{ $image['id'] }})"
+                                                    class="p-1 text-white hover:text-yellow-400 {{ $image['is_primary'] ? 'text-yellow-400' : '' }}">
+                                                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                                                    </svg>
+                                                </button>
+                                                <button type="button"
+                                                    wire:click="removeImage({{ $image['id'] }})"
+                                                    class="p-1 text-white hover:text-red-400">
+                                                    <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                            @if($image['is_primary'])
+                                                <div class="absolute -top-2 -right-2 bg-yellow-400 rounded-full p-1">
+                                                    <svg class="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11.049 2.927c.3-.921 1.603-.921 1.902 0l1.519 4.674a1 1 0 00.95.69h4.915c.969 0 1.371 1.24.588 1.81l-3.976 2.888a1 1 0 00-.363 1.118l1.518 4.674c.3.922-.755 1.688-1.538 1.118l-3.976-2.888a1 1 0 00-1.176 0l-3.976 2.888c-.783.57-1.838-.197-1.538-1.118l1.518-4.674a1 1 0 00-.363-1.118l-3.976-2.888c-.784-.57-.38-1.81.588-1.81h4.914a1 1 0 00.951-.69l1.519-4.674z" />
+                                                    </svg>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    @endforeach
+                                </div>
+
+                                <div class="mt-2">
+                                    <label for="images" 
+                                        class="block w-full rounded-lg border-2 border-dashed border-gray-300 p-4 text-center hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer">
+                                        <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                        </svg>
+                                        <span class="mt-2 block text-sm font-medium text-gray-900">
+                                            Drop images here or click to upload
+                                        </span>
+                                    </label>
+                                    <input id="images" 
+                                        wire:model="newImages" 
+                                        type="file" 
+                                        multiple 
+                                        accept="image/*"
+                                        class="hidden">
+                                </div>
+                                @error('newImages.*') 
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="mt-6 flex justify-end gap-3">
+                        <button type="button"
+                            @click="$wire.editModalOpen = false"
+                            class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            Cancel
+                        </button>
+                        <button type="submit"
+                            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            Save Changes
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 </div>

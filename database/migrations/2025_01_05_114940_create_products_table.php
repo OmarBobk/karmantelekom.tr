@@ -11,19 +11,15 @@ return new class extends Migration
         Schema::create('products', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('sku')->unique();
-
+            $table->string('slug')->unique();
+            $table->string('serial')->unique()->nullable();
+            $table->string('code')->unique();
             $table->string('status')->default('inactive');
-            $table->string('image_url')->nullable();
-
-            $table->decimal('price', 10, 2);
-            $table->integer('stock')->default(0);
-
             $table->text('description')->nullable();
-
+            
             $table->foreignId('category_id')->constrained('categories')->cascadeOnDelete();
             $table->foreignId('supplier_id')->constrained('suppliers')->cascadeOnDelete();
-
+            
             $table->timestamps();
         });
     }
