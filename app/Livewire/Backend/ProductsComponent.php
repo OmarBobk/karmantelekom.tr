@@ -77,6 +77,8 @@ class ProductsComponent extends Component
     public string $bulkActionMessage = '';
     public bool $showImageModal = false;
     public ?array $viewingImage = null;
+    public bool $showProductImageModal = false;
+    public ?array $viewingProductImage = null;
 
     protected $rules = [
         'editForm.name' => 'required|min:3',
@@ -613,6 +615,21 @@ class ProductsComponent extends Component
     {
         $this->showImageModal = false;
         $this->viewingImage = null;
+    }
+
+    public function viewProductImage(string $imageUrl, string $productName): void
+    {
+        $this->viewingProductImage = [
+            'url' => $imageUrl,
+            'alt' => "Product image for {$productName}"
+        ];
+        $this->showProductImageModal = true;
+    }
+
+    public function closeProductImageView(): void
+    {
+        $this->showProductImageModal = false;
+        $this->viewingProductImage = null;
     }
 
     #[Layout('layouts.backend')]

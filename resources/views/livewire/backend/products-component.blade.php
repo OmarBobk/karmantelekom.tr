@@ -156,6 +156,11 @@
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="flex items-center">
                                             <div class="h-10 w-10 flex-shrink-0">
+                                                <button 
+                                                    type="button"
+                                                    wire:click="viewProductImage('{{ $product->images->where('is_primary', true)->first() ? $product->images->where('is_primary', true)->first()->image_url : 'https://placehold.co/100' }}', '{{ $product->name }}')"
+                                                    class="block relative rounded-lg overflow-hidden hover:opacity-75 transition-opacity"
+                                                >
                                                 <img class="h-10 w-10 rounded-lg object-cover" 
                                                     src="{{ $product->images->where('is_primary', true)->first() 
                                                         ? Storage::url($product->images->where('is_primary', true)->first()->image_url)
@@ -163,6 +168,12 @@
                                                             ? Storage::url($product->images->first()->image_url)
                                                             : 'https://placehold.co/100') }}" 
                                                     alt="{{ $product->name }}" />
+                                                    <!-- <img
+                                                        src="{{ $product->primaryImage ? Storage::url($product->primaryImage->image_url) : 'https://placehold.co/100' }}"
+                                                        alt="Product image for {{ $product->name }}"
+                                                        class="w-full h-full object-cover"
+                                                    > -->
+                                                </button>
                                             </div>
                                             <div class="ml-4">
                                                 <div class="text-sm font-medium text-gray-900">{{ $product->name }}</div>
@@ -707,12 +718,12 @@
 @endif
 
 <!-- Add the Full Size Image Modal -->
-@if($showImageModal && $viewingImage)
-<div class="fixed inset-0 bg-black bg-opacity-75 z-[60]" wire:click.self="closeImageView">
+@if($showProductImageModal && $viewingProductImage)
+<div class="fixed inset-0 bg-black bg-opacity-75 z-[60]" wire:click.self="closeProductImageView">
     <div class="relative max-w-7xl mx-auto p-4 w-full h-full flex items-center justify-center" @click.stop>
         <!-- Close button -->
         <button 
-            wire:click.stop="closeImageView"
+            wire:click.stop="closeProductImageView"
             class="absolute top-4 right-4 text-white hover:text-gray-300 z-10"
         >
             <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -723,10 +734,17 @@
         <!-- Image -->
         <div class="relative w-full h-full flex items-center justify-center">
             <img 
-                src="{{ Storage::url($viewingImage['url']) }}"
+                src="{{ Storage::url($viewingProductImage['url']) }}"
                 alt="Full size product image"
-                class="max-h-full max-w-full object-contain"
+                 class="max-h-full max-w-full object-contain"
             >
+            <!-- <img class="max-h-full max-w-full object-contain"
+                src="{{ $product->images->where('is_primary', true)->first() 
+                    ? Storage::url($product->images->where('is_primary', true)->first()->image_url)
+                    : ($product->images->first() 
+                        ? Storage::url($product->images->first()->image_url)
+                        : 'https://placehold.co/100') }}" 
+                alt="Full size product image" /> -->
         </div>
     </div>
 </div>
