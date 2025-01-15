@@ -9,6 +9,7 @@ use App\Models\Product;
 use App\Models\Supplier;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
+use Livewire\WithFileUploads;
 use Livewire\WithPagination;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +19,7 @@ use Illuminate\Support\Str;
 class ProductsComponent extends Component
 {
     use WithPagination;
+    use WithFileUploads;
 
     // Search and Filter Properties
     public string $search = '';
@@ -65,6 +67,17 @@ class ProductsComponent extends Component
     public $currentImages = [];
     public $newImages = [];
 
+    // Upload Progress
+    public $uploadProgress = [];
+    public $iteration = 0;
+
+    // Add these properties at the top of your class with other properties
+    public bool $showBulkActionModal = false;
+    public string $pendingBulkAction = '';
+    public string $bulkActionMessage = '';
+    public bool $showImageModal = false;
+    public ?array $viewingImage = null;
+
     protected $rules = [
         'editForm.name' => 'required|min:3',
         'editForm.slug' => 'required',
@@ -93,6 +106,14 @@ class ProductsComponent extends Component
         'editForm.prices.*.currency' => 'currency',
         'editForm.prices.*.price_type' => 'price type',
         'newImages.*' => 'image'
+    ];
+
+    protected $listeners = [
+        'upload:started' => 'handleUploadStarted',
+        'upload:finished' => 'handleUploadFinished',
+        'upload:errored' => 'handleUploadErrored',
+        'upload:progress' => 'handleUploadProgress',
+        'closeModal' => 'handleModalClose'
     ];
 
     public function mount(): void
@@ -152,6 +173,11 @@ class ProductsComponent extends Component
             return;
         }
 
+        // Ensure we have both TL and $ prices
+        $prices = collect($this->editingProduct->prices);
+        $tlPrice = $prices->firstWhere('currency', 'TL') ?? ['price' => 0, 'currency' => 'TL', 'price_type' => 'retail'];
+        $usdPrice = $prices->firstWhere('currency', '$') ?? ['price' => 0, 'currency' => '$', 'price_type' => 'retail'];
+
         $this->editForm = [
             'name' => $this->editingProduct->name,
             'slug' => $this->editingProduct->slug,
@@ -161,21 +187,27 @@ class ProductsComponent extends Component
             'description' => $this->editingProduct->description,
             'category_id' => $this->editingProduct->category_id,
             'supplier_id' => $this->editingProduct->supplier_id,
-            'prices' => $this->editingProduct->prices->map(function($price) {
-                return [
-                    'id' => $price->id,
-                    'price' => $price->price,
-                    'currency' => $price->currency,
-                    'price_type' => $price->price_type
-                ];
-            })->toArray(),
+            'prices' => [
+                [
+                    'id' => $tlPrice['id'] ?? null,
+                    'price' => $tlPrice['price'],
+                    'currency' => 'TL',
+                    'price_type' => $tlPrice['price_type']
+                ],
+                [
+                    'id' => $usdPrice['id'] ?? null,
+                    'price' => $usdPrice['price'],
+                    'currency' => '$',
+                    'price_type' => $usdPrice['price_type']
+                ]
+            ],
             'tags' => $this->editingProduct->tags->pluck('id')->toArray()
         ];
 
         $this->currentImages = $this->editingProduct->images->map(function($image) {
             return [
                 'id' => $image->id,
-                'url' => $image->url,
+                'url' => $image->image_url,
                 'is_primary' => $image->is_primary
             ];
         })->toArray();
@@ -197,7 +229,6 @@ class ProductsComponent extends Component
                 'form_data' => $this->editForm
             ]);
 
-
             $this->editingProduct->update([
                 'name' => $this->editForm['name'],
                 'slug' => $this->editForm['slug'],
@@ -208,29 +239,33 @@ class ProductsComponent extends Component
                 'category_id' => $this->editForm['category_id'],
                 'supplier_id' => $this->editForm['supplier_id']
             ]);
+
             // Log after basic update
             logger()->info('Basic product details updated', ['product_id' => $this->editingProduct->id]);
 
-            // Update prices
-            $this->editingProduct->prices()->delete();
-            foreach ($this->editForm['prices'] as $price) {
-                $this->editingProduct->prices()->create([
-                    'price' => $price['price'],
-                    'currency' => $price['currency'],
-                    'price_type' => $price['price_type']
-                ]);
+            // Update prices - maintain both TL and $ prices
+            foreach ($this->editForm['prices'] as $priceData) {
+                $this->editingProduct->prices()->updateOrCreate(
+                    ['currency' => $priceData['currency']],
+                    [
+                        'price' => $priceData['price'],
+                        'price_type' => $priceData['price_type']
+                    ]
+                );
             }
+
             // Log after prices update
             logger()->info('Product prices updated', [
                 'product_id' => $this->editingProduct->id,
                 'prices' => $this->editForm['prices']
             ]);
+
             // Handle new images
             if (!empty($this->newImages)) {
                 foreach ($this->newImages as $image) {
                     $path = $image->store('products', 'public');
                     $this->editingProduct->images()->create([
-                        'url' => $path,
+                        'image_url' => $path,
                         'is_primary' => false
                     ]);
                 }
@@ -250,7 +285,9 @@ class ProductsComponent extends Component
             DB::commit();
             logger()->info('Transaction committed successfully', ['product_id' => $this->editingProduct->id]);
 
-            $this->editModalOpen = false;
+            $this->cleanupTemporaryFiles();
+            $this->reset(['editModalOpen', 'editingProduct', 'editForm']);
+            $this->dispatch('closeModal');
 
             $this->dispatch('notify', [
                 'type' => 'success',
@@ -281,7 +318,7 @@ class ProductsComponent extends Component
     {
         $image = $this->editingProduct->images()->find($imageId);
         if ($image) {
-            Storage::disk('public')->delete($image->url);
+            Storage::disk('public')->delete($image->image_url);
             $image->delete();
             $this->currentImages = array_filter($this->currentImages, fn($img) => $img['id'] !== $imageId);
         }
@@ -317,25 +354,265 @@ class ProductsComponent extends Component
     public function getProductsProperty(): LengthAwarePaginator
     {
         return Product::query()
-            ->with(['category', 'prices', 'images'])
-            ->when($this->search, fn($query) => 
+            ->with(['category', 'prices', 'images' => function($query) {
+                $query->orderBy('is_primary', 'desc');
+            }])
+            ->when($this->search, fn($query) =>
                 $query->where('name', 'like', '%' . $this->search . '%')
                     ->orWhere('code', 'like', '%' . $this->search . '%')
                     ->orWhere('serial', 'like', '%' . $this->search . '%')
-                    ->orWhereHas('prices', fn($q) => 
+                    ->orWhereHas('prices', fn($q) =>
                         $q->where('price', 'like', '%' . $this->search . '%')
                     )
             )
-            ->when($this->status, fn($query) => 
+            ->when($this->status, fn($query) =>
                 $query->where('status', $this->status)
             )
-            ->when($this->category, fn($query) => 
-                $query->whereHas('category', fn($q) => 
-                    $q->where('name', $this->category)
+            ->when($this->category, fn($query) =>
+                $query->whereHas('category', fn($q) =>
+                    $q->where('id', $this->category)
                 )
             )
             ->orderBy($this->sortField, $this->sortDirection)
             ->paginate(10);
+    }
+
+    public function handleUploadStarted($name)
+    {
+        $index = substr($name, strpos($name, '.') + 1);
+        
+        $this->uploadProgress['newImages.' . $index] = [
+            'progress' => 0,
+            'error' => null
+        ];
+    }
+
+    public function handleUploadProgress($name, $progress)
+    {
+        $index = substr($name, strpos($name, '.') + 1);
+        
+        if (isset($this->uploadProgress['newImages.' . $index])) {
+            $this->uploadProgress['newImages.' . $index]['progress'] = $progress;
+        }
+    }
+
+    public function handleUploadFinished($name)
+    {
+        $index = substr($name, strpos($name, '.') + 1);
+        
+        if (isset($this->uploadProgress['newImages.' . $index])) {
+            unset($this->uploadProgress['newImages.' . $index]);
+        }
+    }
+
+    public function handleUploadErrored($name, $error)
+    {
+        $index = substr($name, strpos($name, '.') + 1);
+        
+        if (isset($this->uploadProgress['newImages.' . $index])) {
+            $this->uploadProgress['newImages.' . $index]['error'] = $error;
+        }
+    }
+
+    public function removeProgress($name)
+    {
+        if (isset($this->uploadProgress[$name])) {
+            unset($this->uploadProgress[$name]);
+        }
+    }
+
+    public function updatedNewImages()
+    {
+        $this->validate([
+            'newImages.*' => 'image|max:5120' // 5MB Max
+        ]);
+        
+        $this->iteration++;
+    }
+
+    public function removeTemporaryImage($index)
+    {
+        if (isset($this->newImages[$index])) {
+            $image = $this->newImages[$index];
+            
+            // Delete the temporary file
+            if ($image && method_exists($image, 'getFilename')) {
+                $tmpPath = storage_path('app/livewire-tmp/' . $image->getFilename());
+                if (file_exists($tmpPath)) {
+                    unlink($tmpPath);
+                }
+            }
+            
+            // Remove from newImages array
+            $newImages = [];
+            foreach ($this->newImages as $i => $img) {
+                if ($i !== $index) {
+                    $newImages[] = $img;
+                }
+            }
+            $this->newImages = $newImages;
+            
+            // Reset upload progress for this image
+            unset($this->uploadProgress['newImages.' . $index]);
+        }
+    }
+
+    private function cleanupTemporaryFiles(): void
+    {
+        // Clean up temporary files
+        if (!empty($this->newImages)) {
+            foreach ($this->newImages as $image) {
+                if ($image && method_exists($image, 'getFilename')) {
+                    // Delete the temporary file
+                    $tmpPath = storage_path('app/livewire-tmp/' . $image->getFilename());
+                    if (file_exists($tmpPath)) {
+                        unlink($tmpPath);
+                    }
+                }
+            }
+        }
+        
+        // Reset the component state
+        $this->reset(['newImages', 'uploadProgress']);
+        $this->iteration++;
+        
+    }
+
+    public function handleModalClose()
+    {
+        $this->editModalOpen = false;
+    }
+
+    // Add this method to handle bulk actions
+    public function processBulkAction(): void
+    {
+        if (empty($this->selectedProducts)) {
+            $this->dispatch('notify', [
+                'type' => 'warning',
+                'message' => 'Please select products to perform bulk action.'
+            ]);
+            return;
+        }
+
+        try {
+            DB::beginTransaction();
+
+            switch ($this->bulkAction) {
+                case 'delete':
+                    // Get products with their images
+                    $products = Product::whereIn('id', $this->selectedProducts)
+                        ->with('images')
+                        ->get();
+
+                    foreach ($products as $product) {
+                        // Delete associated images from storage
+                        foreach ($product->images as $image) {
+                            Storage::disk('public')->delete($image->image_url);
+                        }
+                        $product->delete();
+                    }
+
+                    $message = count($this->selectedProducts) . ' products deleted successfully.';
+                    break;
+
+                case 'activate':
+                    Product::whereIn('id', $this->selectedProducts)
+                        ->update(['status' => 'active']);
+                    $message = count($this->selectedProducts) . ' products activated successfully.';
+                    break;
+
+                case 'deactivate':
+                    Product::whereIn('id', $this->selectedProducts)
+                        ->update(['status' => 'inactive']);
+                    $message = count($this->selectedProducts) . ' products deactivated successfully.';
+                    break;
+
+                default:
+                    throw new \Exception('Invalid bulk action selected.');
+            }
+
+            DB::commit();
+
+            // Reset selections and bulk action
+            $this->selectedProducts = [];
+            $this->selectAll = false;
+            $this->bulkAction = '';
+
+            $this->dispatch('notify', [
+                'type' => 'success',
+                'message' => $message
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            logger()->error('Bulk action failed', [
+                'action' => $this->bulkAction,
+                'products' => $this->selectedProducts,
+                'error' => $e->getMessage()
+            ]);
+
+            $this->dispatch('notify', [
+                'type' => 'error',
+                'message' => 'Failed to process bulk action. Please try again.'
+            ]);
+        }
+    }
+
+    // Add this method to watch for bulk action changes
+    public function updatedBulkAction(): void
+    {
+        if ($this->bulkAction) {
+            if (empty($this->selectedProducts)) {
+                $this->dispatch('notify', [
+                    'type' => 'warning',
+                    'message' => 'Please select products to perform bulk action.'
+                ]);
+                $this->bulkAction = '';
+                return;
+            }
+
+            $this->pendingBulkAction = $this->bulkAction;
+            $this->bulkActionMessage = match($this->bulkAction) {
+                'delete' => 'Are you sure you want to delete ' . count($this->selectedProducts) . ' selected products?',
+                'activate' => 'Are you sure you want to activate ' . count($this->selectedProducts) . ' selected products?',
+                'deactivate' => 'Are you sure you want to deactivate ' . count($this->selectedProducts) . ' selected products?',
+                default => 'Are you sure you want to proceed with this action?'
+            };
+            $this->showBulkActionModal = true;
+            $this->bulkAction = ''; // Reset the select
+        }
+    }
+
+    // Add this new method to confirm the bulk action
+    public function confirmBulkAction(): void
+    {
+        $this->showBulkActionModal = false;
+        $this->bulkAction = $this->pendingBulkAction;
+        $this->processBulkAction();
+        $this->pendingBulkAction = '';
+    }
+
+    // Add this new method to cancel the bulk action
+    public function cancelBulkAction(): void
+    {
+        $this->showBulkActionModal = false;
+        $this->pendingBulkAction = '';
+        $this->bulkAction = '';
+    }
+
+    public function viewImage(int $imageId): void
+    {
+        $image = collect($this->currentImages)->firstWhere('id', $imageId);
+        if ($image) {
+            $this->viewingImage = $image;
+            $this->showImageModal = true;
+        }
+    }
+
+    public function closeImageView(): void
+    {
+        $this->showImageModal = false;
+        $this->viewingImage = null;
     }
 
     #[Layout('layouts.backend')]

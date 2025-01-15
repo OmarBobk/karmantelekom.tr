@@ -14,8 +14,8 @@
     </head>
     <body class="min-h-screen bg-gray-100">
         <!-- Notification Component -->
-        <div 
-            x-data="{ 
+        <div
+            x-data="{
                 notifications: [],
                 add(message) {
                     if (!message[0] || !message[0].type || !message[0].message) {
@@ -24,15 +24,15 @@
                         console.error('Invalid notification format:', message[0].message);
                         return;
                     }
-                    
+
                     const notification = {
                         id: Date.now(),
                         type: message[0].type,
                         message: message[0].message
                     };
-                    
+
                     this.notifications.push(notification);
-                    
+
                     // Auto-remove notification after 3 seconds
                     setTimeout(() => {
                         this.remove(notification.id);
@@ -46,29 +46,29 @@
             class="fixed top-4 right-4 z-50 space-y-2 w-full max-w-sm"
         >
             <template x-for="notification in notifications" :key="notification.id">
-                <div 
+                <div
                     x-show="true"
-                    x-transition:enter="transform ease-out duration-300 transition"
-                    x-transition:enter-start="translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
-                    x-transition:enter-end="translate-y-0 opacity-100 sm:translate-x-0"
+                    x-transition:enter="transition ease-out duration-300"
+                    x-transition:enter-start="transform translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
+                    x-transition:enter-end="transform translate-y-0 opacity-100 sm:translate-x-0"
                     x-transition:leave="transition ease-in duration-100"
                     x-transition:leave-start="opacity-100"
                     x-transition:leave-end="opacity-0"
                     :class="{
-                        'bg-green-500': notification.type === 'success',
-                        'bg-red-500': notification.type === 'error',
-                        'bg-blue-500': notification.type === 'info',
-                        'bg-yellow-500': notification.type === 'warning'
+                        'alert-success': notification.type === 'success',
+                        'alert-danger': notification.type === 'error',
+                        'alert-info': notification.type === 'info',
+                        'alert-warning': notification.type === 'warning'
                     }"
-                    class="w-full shadow-lg rounded-lg pointer-events-auto ring-1 ring-black ring-opacity-5 overflow-hidden"
+                    class="w-full shadow-lg rounded-lg pointer-events-auto alert"
                 >
                     <div class="p-4">
                         <div class="flex items-center justify-between">
                             <div class="flex-1 mr-3">
                                 <p class="text-sm font-medium text-white" x-text="notification.message"></p>
                             </div>
-                            <div class="flex-shrink-0">
-                                <button 
+                            <div class="flex flex-shrink-0">
+                                <button
                                     @click="remove(notification.id)"
                                     class="inline-flex text-white hover:text-gray-200 focus:outline-none focus:ring-2 focus:ring-white rounded-md"
                                 >
