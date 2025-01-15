@@ -482,7 +482,7 @@
                                             <img src="{{ $image['url'] ? Storage::url($image['url']) : 'https://placehold.co/100' }}"
                                                 alt="Product image"
                                                 class="h-full w-full rounded-lg object-cover">
-                                            <div class="absolute inset-0 bg-black bg-opacity-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                            <div class="absolute inset-0 bg-black bg-opacity-50 rounded-lg opacity-100 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                                                 <button type="button"
                                                     wire:click="setPrimaryImage({{ $image['id'] }})"
                                                     class="p-1 text-white hover:text-yellow-400 {{ $image['is_primary'] ? 'text-yellow-400' : '' }}">
