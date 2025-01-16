@@ -79,6 +79,8 @@ class ProductsComponent extends Component
     public ?array $viewingImage = null;
     public bool $showProductImageModal = false;
     public ?array $viewingProductImage = null;
+    public bool $showImageDeleteModal = false;
+    public ?array $imageToDelete = null;
 
     protected $rules = [
         'editForm.name' => 'required|min:3',
@@ -264,11 +266,13 @@ class ProductsComponent extends Component
 
             // Handle new images
             if (!empty($this->newImages)) {
-                foreach ($this->newImages as $image) {
+                $hasExistingImages = $this->editingProduct->images()->exists();
+                
+                foreach ($this->newImages as $index => $image) {
                     $path = $image->store('products', 'public');
                     $this->editingProduct->images()->create([
                         'image_url' => $path,
-                        'is_primary' => false
+                        'is_primary' => !$hasExistingImages && $index === 0 // Make first image primary if no existing images
                     ]);
                 }
                 logger()->info('New images added', [
@@ -323,6 +327,11 @@ class ProductsComponent extends Component
             Storage::disk('public')->delete($image->image_url);
             $image->delete();
             $this->currentImages = array_filter($this->currentImages, fn($img) => $img['id'] !== $imageId);
+
+            $this->dispatch('notify', [
+                'type' => 'success',
+                'message' => 'Image deleted successfully!'
+            ]);
         }
     }
 
@@ -602,13 +611,13 @@ class ProductsComponent extends Component
         $this->bulkAction = '';
     }
 
-    public function viewImage(int $imageId): void
+    public function viewImage(string $imageUrl, string $productName): void
     {
-        $image = collect($this->currentImages)->firstWhere('id', $imageId);
-        if ($image) {
-            $this->viewingImage = $image;
-            $this->showImageModal = true;
-        }
+        $this->viewingImage = [
+            'url' => $imageUrl,
+            'name' => $productName
+        ];
+        $this->showImageModal = true;
     }
 
     public function closeImageView(): void
@@ -630,6 +639,30 @@ class ProductsComponent extends Component
     {
         $this->showProductImageModal = false;
         $this->viewingProductImage = null;
+    }
+
+    public function confirmImageDelete($imageId, $imageName)
+    {
+        $this->imageToDelete = [
+            'id' => $imageId,
+            'name' => $imageName
+        ];
+        $this->showImageDeleteModal = true;
+    }
+
+    public function cancelImageDelete()
+    {
+        $this->showImageDeleteModal = false;
+        $this->imageToDelete = null;
+    }
+
+    public function deleteImage()
+    {
+        if ($this->imageToDelete) {
+            $this->removeImage($this->imageToDelete['id']);
+            $this->showImageDeleteModal = false;
+            $this->imageToDelete = null;
+        }
     }
 
     #[Layout('layouts.backend')]

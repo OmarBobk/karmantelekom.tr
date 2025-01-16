@@ -52,13 +52,13 @@ class ProductSeeder extends Seeder
             ]);
 
             // Create sample images for each product
-            for ($i = 1; $i <= 3; $i++) {
-                ProductImage::create([
-                    'product_id' => $product->id,
-                    'image_url' => "products/sample-{$i}.jpg",
-                    'is_primary' => $i === 1
-                ]);
-            }
+//            for ($i = 1; $i <= 3; $i++) {
+//                ProductImage::create([
+//                    'product_id' => $product->id,
+//                    'image_url' => "products/sample-{$i}.jpg",
+//                    'is_primary' => $i === 1
+//                ]);
+//            }
         });
     }
 }

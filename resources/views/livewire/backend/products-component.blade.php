@@ -243,42 +243,42 @@
 
     <!-- Delete Confirmation Modal -->
     @if($showDeleteModal)
-    <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity z-50">
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity z-50">
         <div class="fixed inset-0 z-10 overflow-y-auto">
             <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
                 <div class="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
                     <div class="sm:flex sm:items-start">
-                        <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
-                            <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                            <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                                <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
                             </svg>
-                        </div>
-                        <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
-                            <h3 class="text-base font-semibold leading-6 text-gray-900">
-                                Delete Product
-                            </h3>
-                            <div class="mt-2">
-                                <p class="text-sm text-gray-500">
-                                    Are you sure you want to delete this product? This action cannot be undone.
-                                </p>
+                            </div>
+                            <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
+                                <h3 class="text-base font-semibold leading-6 text-gray-900">
+                                    Delete Product
+                                </h3>
+                                <div class="mt-2">
+                                    <p class="text-sm text-gray-500">
+                                        Are you sure you want to delete this product? This action cannot be undone.
+                                    </p>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                    <div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
-                        <button
-                            type="button"
-                            wire:click="deleteProduct"
-                            class="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-3 sm:w-auto"
-                        >
-                            Delete
-                        </button>
-                        <button
-                            type="button"
-                            wire:click="$set('showDeleteModal', false)"
-                            class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
-                        >
-                            Cancel
-                        </button>
+                        <div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+                            <button
+                                type="button"
+                                wire:click="deleteProduct"
+                                class="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-3 sm:w-auto"
+                            >
+                                Delete
+                            </button>
+                            <button
+                                type="button"
+                                wire:click="$set('showDeleteModal', false)"
+                                class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
+                            >
+                                Cancel
+                            </button>
                     </div>
                 </div>
             </div>
@@ -490,10 +490,11 @@
                                 <div class="grid grid-cols-3 gap-4 mb-4">
                                     @foreach($currentImages as $image)
                                         <div class="relative group aspect-square">
-                                            <img src="{{ $image['url'] ? Storage::url($image['url']) : 'https://placehold.co/100' }}"
+                                            <img
+                                                src="{{ $image['url'] ? Storage::url($image['url']) : 'https://placehold.co/100' }}"
                                                 alt="Product image"
                                                 class="h-full w-full rounded-lg object-cover">
-                                            <div class="absolute inset-0 bg-black bg-opacity-50 rounded-lg opacity-100 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
+                                            <div class="absolute inset-0 bg-black bg-opacity-50 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                                                 <button type="button"
                                                     wire:click="setPrimaryImage({{ $image['id'] }})"
                                                     class="p-1 text-white hover:text-yellow-400 {{ $image['is_primary'] ? 'text-yellow-400' : '' }}">
@@ -502,7 +503,7 @@
                                                     </svg>
                                                 </button>
                                                 <button type="button"
-                                                    wire:click="viewImage({{ $image['id'] }})"
+                                                    wire:click="viewImage('{{ $image['url'] }}', '{{ $editForm['name'] }}')"
                                                     class="p-1 text-white hover:text-blue-400">
                                                     <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -510,7 +511,7 @@
                                                     </svg>
                                                 </button>
                                                 <button type="button"
-                                                    wire:click="removeImage({{ $image['id'] }})"
+                                                    wire:click="confirmImageDelete({{ $image['id'] }}, '{{ $editForm['name'] }}')"
                                                     class="p-1 text-white hover:text-red-400">
                                                     <svg class="h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
@@ -552,23 +553,23 @@
                                             :class="{ 'bg-blue-50 border-blue-300': isDropping }"
                                             class="relative block w-full rounded-lg border-2 border-dashed border-gray-300 p-4 text-center hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer transition-colors duration-200"
                                         >
-                                            <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
-                                                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
-                                            </svg>
-                                            <span class="mt-2 block text-sm font-medium text-gray-900">
-                                                Drop images here or click to upload
-                                            </span>
+                                        <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                            <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                        </svg>
+                                        <span class="mt-2 block text-sm font-medium text-gray-900">
+                                            Drop images here or click to upload
+                                        </span>
                                             <span class="mt-1 block text-xs text-gray-500">
                                                 PNG, JPG, GIF up to 5MB
                                             </span>
-                                        </label>
+                                    </label>
                                         <input
                                             x-ref="fileInput"
                                             id="images-{{ $iteration }}"
                                             wire:model.live="newImages"
-                                            type="file"
-                                            multiple
-                                            accept="image/*"
+                                        type="file"
+                                        multiple
+                                        accept="image/*"
                                             class="hidden"
                                         >
                                     </div>
@@ -637,12 +638,12 @@
                                                 </div>
                                                 @endif
                                             @endforeach
-                                        </div>
+                                </div>
                                     @endif
 
-                                    @error('newImages.*')
-                                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                    @enderror
+                                @error('newImages.*')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
                                 </div>
                             </div>
                         </div>
@@ -665,88 +666,160 @@
         </div>
     </div>
     <style>
-    .progress-ring {
-        transition: stroke-dashoffset 0.35s;
-        transform: rotate(-90deg);
-        transform-origin: 50% 50%;
-    }
-</style>
+        .progress-ring {
+            transition: stroke-dashoffset 0.35s;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+    </style>
 
-<!-- Bulk Action Confirmation Modal -->
-@if($showBulkActionModal)
-<div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity z-50">
-    <div class="fixed inset-0 z-10 overflow-y-auto">
-        <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-            <div class="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
-                <div class="sm:flex sm:items-start">
-                    <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-yellow-100 sm:mx-0 sm:h-10 sm:w-10">
-                        <svg class="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
-                        </svg>
-                    </div>
-                    <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
-                        <h3 class="text-base font-semibold leading-6 text-gray-900">
-                            Confirm Action
-                        </h3>
-                        <div class="mt-2">
-                            <p class="text-sm text-gray-500">
-                                {{ $bulkActionMessage }}
-                            </p>
+    <!-- Bulk Action Confirmation Modal -->
+    @if($showBulkActionModal)
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity z-50">
+            <div class="fixed inset-0 z-10 overflow-y-auto">
+                <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+                    <div class="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+                        <div class="sm:flex sm:items-start">
+                            <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-yellow-100 sm:mx-0 sm:h-10 sm:w-10">
+                                <svg class="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                    <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                                </svg>
+                            </div>
+                            <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
+                                <h3 class="text-base font-semibold leading-6 text-gray-900">
+                                    Confirm Action
+                                </h3>
+                                <div class="mt-2">
+                                    <p class="text-sm text-gray-500">
+                                        {{ $bulkActionMessage }}
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+                            <button
+                                type="button"
+                                wire:click="confirmBulkAction"
+                                class="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-3 sm:w-auto"
+                            >
+                                Confirm
+                            </button>
+                            <button
+                                type="button"
+                                wire:click="cancelBulkAction"
+                                class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
+                            >
+                                Cancel
+                            </button>
                         </div>
                     </div>
                 </div>
-                <div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
-                    <button
-                        type="button"
-                        wire:click="confirmBulkAction"
-                        class="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-3 sm:w-auto"
+            </div>
+        </div>
+    @endif
+
+    <!-- Add the Full Size Image Modal -->
+    @if($showProductImageModal && $viewingProductImage)
+        <div class="fixed inset-0 bg-black bg-opacity-75 z-[60]" wire:click.self="closeProductImageView">
+            <div class="relative max-w-7xl mx-auto p-4 w-full h-full flex items-center justify-center" @click.stop>
+                <!-- Close button -->
+                <button 
+                    wire:click.stop="closeProductImageView"
+                    class="absolute top-4 right-4 text-white hover:text-gray-300 z-10"
+                >
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
+
+                <!-- Image -->
+                <div class="relative w-full h-full flex items-center justify-center">
+                    <img 
+                        src="{{ Storage::url($viewingProductImage['url']) }}"
+                        alt="Full size product image"
+                        class="max-h-full max-w-full object-contain"
                     >
-                        Confirm
-                    </button>
-                    <button
-                        type="button"
-                        wire:click="cancelBulkAction"
-                        class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
-                    >
-                        Cancel
-                    </button>
+                    <!-- <img class="max-h-full max-w-full object-contain"
+                        src="{{ $product->images->where('is_primary', true)->first() 
+                            ? Storage::url($product->images->where('is_primary', true)->first()->image_url)
+                            : ($product->images->first() 
+                                ? Storage::url($product->images->first()->image_url)
+                                : 'https://placehold.co/100') }}" 
+                        alt="Full size product image" /> -->
                 </div>
             </div>
         </div>
-    </div>
-</div>
-@endif
+    @endif
 
-<!-- Add the Full Size Image Modal -->
-@if($showProductImageModal && $viewingProductImage)
-<div class="fixed inset-0 bg-black bg-opacity-75 z-[60]" wire:click.self="closeProductImageView">
-    <div class="relative max-w-7xl mx-auto p-4 w-full h-full flex items-center justify-center" @click.stop>
-        <!-- Close button -->
-        <button 
-            wire:click.stop="closeProductImageView"
-            class="absolute top-4 right-4 text-white hover:text-gray-300 z-10"
-        >
-            <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-            </svg>
-        </button>
+    <!-- Add the Image Modal -->
+    @if($showImageModal && $viewingImage)
+        <!-- Stop propagation of clicks on the overlay to prevent closing the edit modal -->
+        <div class="fixed inset-0 bg-black bg-opacity-75 z-[60]" 
+            wire:click.stop.self="closeImageView"
+            @click.stop>
+            <div class="relative max-w-7xl mx-auto p-4 w-full h-full flex items-center justify-center">
+                <!-- Close button -->
+                <button 
+                    wire:click.stop="closeImageView"
+                    class="absolute top-4 right-4 text-white hover:text-gray-300 z-10"
+                >
+                    <svg class="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
 
-        <!-- Image -->
-        <div class="relative w-full h-full flex items-center justify-center">
-            <img 
-                src="{{ Storage::url($viewingProductImage['url']) }}"
-                alt="Full size product image"
-                 class="max-h-full max-w-full object-contain"
-            >
-            <!-- <img class="max-h-full max-w-full object-contain"
-                src="{{ $product->images->where('is_primary', true)->first() 
-                    ? Storage::url($product->images->where('is_primary', true)->first()->image_url)
-                    : ($product->images->first() 
-                        ? Storage::url($product->images->first()->image_url)
-                        : 'https://placehold.co/100') }}" 
-                alt="Full size product image" /> -->
+                <!-- Image -->
+                <div class="relative w-full h-full flex items-center justify-center">
+                    <img 
+                        src="{{ Storage::url($viewingImage['url']) }}"
+                        alt="Full size product image"
+                        class="max-h-full max-w-full object-contain"
+                    >
+                </div>
+            </div>
         </div>
-    </div>
-</div>
-@endif
+    @endif
+
+    <!-- Add the Image Delete Confirmation Modal -->
+    @if($showImageDeleteModal && $imageToDelete)
+        <div class="fixed inset-0 bg-black bg-opacity-75 z-[70]" wire:click.stop>
+            <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+                <div class="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
+                    <div class="sm:flex sm:items-start">
+                        <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                            <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
+                            </svg>
+                        </div>
+                        <div class="mt-3 text-center sm:ml-4 sm:mt-0 sm:text-left">
+                            <h3 class="text-base font-semibold leading-6 text-gray-900">
+                                Delete Image
+                            </h3>
+                            <div class="mt-2">
+                                <p class="text-sm text-gray-500">
+                                    Are you sure you want to delete this image? This action cannot be undone.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
+                        <button
+                            type="button"
+                            wire:click="deleteImage"
+                            class="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-3 sm:w-auto"
+                        >
+                            Delete
+                        </button>
+                        <button
+                            type="button"
+                            wire:click="cancelImageDelete"
+                            class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
+                        >
+                            Cancel
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
 </div>
