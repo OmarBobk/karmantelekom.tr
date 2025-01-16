@@ -23,10 +23,12 @@ class ProductsComponent extends Component
 
     // Search and Filter Properties
     public string $search = '';
-    public string $sortField = 'name';
-    public string $sortDirection = 'asc';
+    public string $sortField = 'created_at';
+    public string $sortDirection = 'DESC';
     public string $status = '';
     public string $category = '';
+    public string $dateFilter = '';
+    public string $dateField = 'created_at';
     public array $selectedProducts = [];
     public bool $selectAll = false;
 
@@ -42,12 +44,15 @@ class ProductsComponent extends Component
     public $categories;
     public $suppliers;
     public array $statuses = ['active', 'inactive'];
+    public array $dateFields = ['created_at' => 'Created Date', 'updated_at' => 'Updated Date'];
     protected $queryString = [
         'search' => ['except' => ''],
         'sortField' => ['except' => 'name'],
         'sortDirection' => ['except' => 'asc'],
         'status' => ['except' => ''],
-        'category' => ['except' => '']
+        'category' => ['except' => ''],
+        'dateFilter' => ['except' => ''],
+        'dateField' => ['except' => 'created_at']
     ];
 
     // Edit Modal Properties
@@ -66,6 +71,24 @@ class ProductsComponent extends Component
     ];
     public $currentImages = [];
     public $newImages = [];
+
+
+    public $addModalOpen = false;
+    public $addForm = [
+        'name' => '',
+        'slug' => '',
+        'serial' => '',
+        'code' => '',
+        'status' => 'inactive',
+        'description' => '',
+        'category_id' => '',
+        'supplier_id' => '',
+        'prices' => [
+            ['price' => '', 'currency' => 'TL', 'price_type' => 'retail'],
+            ['price' => '', 'currency' => '$', 'price_type' => 'retail']
+        ]
+    ];
+    public $newProductImages = [];
 
     // Upload Progress
     public $uploadProgress = [];
@@ -346,20 +369,22 @@ class ProductsComponent extends Component
         }, $this->currentImages);
     }
 
-    public function generateSlug(): void
+    public function generateSlug($form = 'edit'): void
     {
-        $slug = Str::slug($this->editForm['name']);
+        $name = $form === 'edit' ? $this->editForm['name'] : $this->addForm['name'];
+        $slug = Str::slug($name);
         $originalSlug = $slug;
-        $count = 1;
+        $counter = 1;
 
-        // Use a more efficient approach to check for unique slug
-        while (Product::where('slug', $slug)
-                ->where('id', '!=', $this->editingProduct?->id)
-                ->exists()) {
-            $slug = $originalSlug . '-' . $count++;
+        while (Product::where('slug', $slug)->exists()) {
+            $slug = $originalSlug . '-' . $counter++;
         }
 
-        $this->editForm['slug'] = $slug;
+        if ($form === 'edit') {
+            $this->editForm['slug'] = $slug;
+        } else {
+            $this->addForm['slug'] = $slug;
+        }
     }
 
     public function getProductsProperty(): LengthAwarePaginator
@@ -384,6 +409,37 @@ class ProductsComponent extends Component
                     $q->where('id', $this->category)
                 )
             )
+            ->when($this->dateFilter, function($query) {
+                $date = now();
+                switch($this->dateFilter) {
+                    case 'today':
+                        $query->whereDate($this->dateField, $date);
+                        break;
+                    case 'yesterday':
+                        $query->whereDate($this->dateField, $date->subDay());
+                        break;
+                    case 'this_week':
+                        $query->whereBetween($this->dateField, [
+                            $date->startOfWeek(),
+                            $date->endOfWeek()
+                        ]);
+                        break;
+                    case 'last_week':
+                        $query->whereBetween($this->dateField, [
+                            $date->subWeek()->startOfWeek(),
+                            $date->subWeek()->endOfWeek()
+                        ]);
+                        break;
+                    case 'this_month':
+                        $query->whereMonth($this->dateField, $date->month)
+                            ->whereYear($this->dateField, $date->year);
+                        break;
+                    case 'last_month':
+                        $query->whereMonth($this->dateField, $date->subMonth()->month)
+                            ->whereYear($this->dateField, $date->year);
+                        break;
+                }
+            })
             ->orderBy($this->sortField, $this->sortDirection)
             ->paginate(10);
     }
@@ -665,6 +721,101 @@ class ProductsComponent extends Component
         }
     }
 
+    public function createProduct()
+    {
+        DB::enableQueryLog();
+        $this->validate([
+            'addForm.name' => 'required|min:3',
+            'addForm.slug' => 'required|unique:products,slug',
+            'addForm.code' => 'required|unique:products,code',
+            'addForm.serial' => 'nullable|unique:products,serial',
+            'addForm.status' => 'required|in:active,inactive',
+            'addForm.description' => 'required|min:10',
+            'addForm.category_id' => 'required|exists:categories,id',
+            'addForm.supplier_id' => 'required|exists:suppliers,id',
+            'addForm.prices.*.price' => 'required|numeric|min:0',
+            'addForm.prices.*.currency' => 'required|string|max:10',
+            'addForm.prices.*.price_type' => 'required|in:retail,wholesale',
+            'newProductImages.*' => 'image|max:2048'
+        ]);
+
+        try {
+            DB::beginTransaction();
+
+            // Log the start of transaction
+            logger()->info('Starting product creation transaction', [
+                'form_data' => $this->addForm
+            ]);
+
+            // Create the product
+            $product = Product::create([
+                'name' => $this->addForm['name'],
+                'slug' => $this->addForm['slug'],
+                'code' => $this->addForm['code'],
+                'serial' => $this->addForm['serial'],
+                'status' => $this->addForm['status'],
+                'description' => $this->addForm['description'],
+                'category_id' => $this->addForm['category_id'],
+                'supplier_id' => $this->addForm['supplier_id'],
+            ]);
+
+            // Log after product creation
+            logger()->info('Product created', ['product_id' => $product->id]);
+
+            // Create prices
+            foreach ($this->addForm['prices'] as $price) {
+                $product->prices()->create([
+                    'price' => $price['price'],
+                    'currency' => $price['currency'],
+                    'price_type' => $price['price_type']
+                ]);
+            }
+
+            // Log after prices creation
+            logger()->info('Product prices created', [
+                'product_id' => $product->id,
+                'prices' => $this->addForm['prices']
+            ]);
+
+            // Handle images
+            if ($this->newProductImages) {
+                foreach ($this->newProductImages as $index => $image) {
+                    $path = $image->store('products', 'public');
+                    $product->images()->create([
+                        'image_url' => $path,
+                        'is_primary' => $index === 0 // First image is primary
+                    ]);
+                }
+                logger()->info('Images added', [
+                    'product_id' => $product->id,
+                    'image_count' => count($this->newProductImages)
+                ]);
+            }
+
+            DB::commit();
+            logger()->info('Transaction committed successfully', ['product_id' => $product->id]);
+
+            $this->addModalOpen = false;
+            $this->reset(['addForm', 'newProductImages']);
+            $this->dispatch('notify', [
+                'type' => 'success',
+                'message' => 'Product created successfully!'
+            ]);
+
+            logger()->info('SQL Queries:', ['queries' => DB::getQueryLog()]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+            logger()->error('Error creating product', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            $this->dispatch('notify', [
+                'type' => 'error',
+                'message' => 'Error creating product. Please try again.'
+            ]);
+        }
+    }
+    
     #[Layout('layouts.backend')]
     public function render()
     {

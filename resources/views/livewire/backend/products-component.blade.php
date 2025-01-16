@@ -9,7 +9,7 @@
                     </h2>
                 </div>
                 <div class="mt-4 flex md:mt-0 md:ml-4">
-                    <button class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    <button wire:click="$set('addModalOpen', true)" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                         </svg>
@@ -21,67 +21,75 @@
 
         <!-- Filters -->
         <div class="bg-white rounded-lg shadow-lg mb-6 p-4">
-            <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
-                <!-- Search -->
-                <div class="relative">
-                    <input
-                        wire:model.live.debounce.300ms="search"
-                        type="text"
-                        placeholder="Search products..."
-                        class="w-full px-10 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
+            <div class="flex flex-col md:flex-row gap-4 mb-4">
+                <!-- Search Input -->
+                <div class="flex-1">
+                    <div class="form-control">
+                        <input type="text" wire:model.live.debounce.300ms="search" placeholder="Search products..." class="input input-bordered w-full" />
                     </div>
-                    @if($search)
-                        <button
-                            wire:click="$set('search', '')"
-                            class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-                        >
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                            </svg>
-                        </button>
-                    @endif
+                </div>
+
+                <!-- Status Filter -->
+                <div class="w-full md:w-48">
+                    <select wire:model.live="status" class="select select-bordered w-full">
+                        <option value="">All Status</option>
+                        @foreach($statuses as $status)
+                            <option value="{{ $status }}">{{ ucfirst($status) }}</option>
+                        @endforeach
+                    </select>
                 </div>
 
                 <!-- Category Filter -->
-                <select wire:model.live="category" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    <option value="">All Categories</option>
-                    @foreach($categories as $cat)
-                        <option value="{{ $cat->id }}">{{ $cat->name }}</option>
-                    @endforeach
-                </select>
-
-                <!-- Status Filter -->
-                <select wire:model.live="status" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    <option value="">All Statuses</option>
-                    @foreach($statuses as $status)
-                        <option value="{{ $status }}">{{ ucfirst($status) }}</option>
-                    @endforeach
-                </select>
-
-                <!-- Bulk Actions -->
-                <select 
-                    wire:model.live="bulkAction" 
-                    wire:loading.attr="disabled"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50"
-                >
-                    <option value="">Bulk Actions</option>
-                    <option value="delete">Delete Selected</option>
-                    <option value="activate">Activate Selected</option>
-                    <option value="deactivate">Deactivate Selected</option>
-                </select>
-
-                <!-- Add a loading indicator -->
-                <div wire:loading wire:target="bulkAction" class="absolute inset-0 bg-white bg-opacity-50 flex items-center justify-center">
-                    <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
+                <div class="w-full md:w-48">
+                    <select wire:model.live="category" class="select select-bordered w-full">
+                        <option value="">All Categories</option>
+                        @foreach($categories as $category)
+                            <option value="{{ $category->id }}">{{ $category->name }}</option>
+                        @endforeach
+                    </select>
                 </div>
+
+                <!-- Date Field Filter -->
+                <div class="w-full md:w-48">
+                    <select wire:model.live="dateField" class="select select-bordered w-full">
+                        @foreach($dateFields as $value => $label)
+                            <option value="{{ $value }}">{{ $label }}</option>
+                        @endforeach
+                    </select>
+                </div>
+
+                <!-- Date Range Filter -->
+                <div class="w-full md:w-48">
+                    <select wire:model.live="dateFilter" class="select select-bordered w-full">
+                        <option value="">All Time</option>
+                        <option value="today">Today</option>
+                        <option value="yesterday">Yesterday</option>
+                        <option value="this_week">This Week</option>
+                        <option value="last_week">Last Week</option>
+                        <option value="this_month">This Month</option>
+                        <option value="last_month">Last Month</option>
+                    </select>
+                </div>
+            </div>
+
+            <!-- Bulk Actions -->
+            <select 
+                wire:model.live="bulkAction" 
+                wire:loading.attr="disabled"
+                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50"
+            >
+                <option value="">Bulk Actions</option>
+                <option value="delete">Delete Selected</option>
+                <option value="activate">Activate Selected</option>
+                <option value="deactivate">Deactivate Selected</option>
+            </select>
+
+            <!-- Add a loading indicator -->
+            <div wire:loading wire:target="bulkAction" class="absolute inset-0 bg-white bg-opacity-50 flex items-center justify-center">
+                <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
             </div>
         </div>
 
@@ -822,4 +830,303 @@
             </div>
         </div>
     @endif
+
+
+    <!-- Add Product Modal -->
+    <div x-data="{
+            imagePreview: null,
+            init() {
+                $watch('$wire.addModalOpen', value => {
+                    if (value) {
+                        document.body.classList.add('overflow-hidden');
+                    } else {
+                        document.body.classList.remove('overflow-hidden');
+                    }
+                });
+            },
+            addPrice() {
+                $wire.addForm.prices.push({
+                    price: '',
+                    currency: 'TL',
+                    price_type: 'retail'
+                });
+            },
+            removePrice(index) {
+                $wire.addForm.prices.splice(index, 1);
+            }
+        }"
+        x-show="$wire.addModalOpen"
+        class="fixed inset-0 z-[41] overflow-y-auto"
+        x-cloak>
+        <!-- Backdrop -->
+        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+
+        <!-- Modal Content -->
+        <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
+            <div class="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-4xl sm:p-6"
+                @click.away="$wire.addModalOpen = false">
+
+                <!-- Modal Header -->
+                <div class="flex items-center justify-between mb-4 border-b pb-4">
+                    <h3 class="text-lg font-semibold text-gray-900">Add New Product</h3>
+                    <button @click="$wire.addModalOpen = false" class="text-gray-400 hover:text-gray-500">
+                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                        </svg>
+                    </button>
+                </div>
+
+                <!-- Form Content -->
+                <form wire:submit.prevent="createProduct" class="space-y-6">
+                    @csrf
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Left Column -->
+                        <div class="space-y-6">
+                            <!-- Name -->
+                            <div>
+                                <label for="add-name" class="block text-sm font-medium text-gray-700">Product Name</label>
+                                <input type="text"
+                                    wire:model.blur="addForm.name"
+                                    @blur="$wire.generateSlug('add')"
+                                    id="add-name"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                                @error('addForm.name')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <!-- Slug -->
+                            <div>
+                                <label for="add-slug" class="block text-sm font-medium text-gray-700">Slug</label>
+                                <input type="text"
+                                    wire:model="addForm.slug"
+                                    id="add-slug"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                    readonly>
+                                @error('addForm.slug')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <!-- Code & Serial -->
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label for="add-code" class="block text-sm font-medium text-gray-700">Product Code</label>
+                                    <input type="text"
+                                        wire:model="addForm.code"
+                                        id="add-code"
+                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                                    @error('addForm.code')
+                                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                                <div>
+                                    <label for="add-serial" class="block text-sm font-medium text-gray-700">Serial Number</label>
+                                    <input type="text"
+                                        wire:model="addForm.serial"
+                                        id="add-serial"
+                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                                    @error('addForm.serial')
+                                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <!-- Status Toggle -->
+                            <div>
+                                <label for="add-status" class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                                <div class="flex items-center">
+                                    <button
+                                        type="button"
+                                        wire:click="$set('addForm.status', '{{ $addForm['status'] === 'active' ? 'inactive' : 'active' }}')"
+                                        class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 {{ $addForm['status'] === 'active' ? 'bg-blue-600' : 'bg-gray-200' }}"
+                                        role="switch"
+                                    >
+                                        <span
+                                            aria-hidden="true"
+                                            class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {{ $addForm['status'] === 'active' ? 'translate-x-5' : 'translate-x-0' }}"
+                                        ></span>
+                                    </button>
+                                    <span class="ml-3 text-sm {{ $addForm['status'] === 'active' ? 'text-blue-600' : 'text-gray-500' }}">
+                                        {{ ucfirst($addForm['status']) }}
+                                    </span>
+                                </div>
+                                @error('addForm.status')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <!-- Description -->
+                            <div>
+                                <label for="add-description" class="block text-sm font-medium text-gray-700">Description</label>
+                                <textarea 
+                                    wire:model="addForm.description"
+                                    id="add-description"
+                                    rows="4"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                ></textarea>
+                                @error('addForm.description')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <!-- Right Column -->
+                        <div class="space-y-6">
+                            <!-- Category & Supplier -->
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label for="add-category" class="block text-sm font-medium text-gray-700">Category</label>
+                                    <select 
+                                        wire:model="addForm.category_id"
+                                        id="add-category"
+                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                    >
+                                        <option value="">Select Category</option>
+                                        @foreach($categories as $category)
+                                            <option value="{{ $category->id }}">{{ $category->name }}</option>
+                                        @endforeach
+                                    </select>
+                                    @error('addForm.category_id')
+                                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                                <div>
+                                    <label for="add-supplier" class="block text-sm font-medium text-gray-700">Supplier</label>
+                                    <select 
+                                        wire:model="addForm.supplier_id"
+                                        id="add-supplier"
+                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                    >
+                                        <option value="">Select Supplier</option>
+                                        @foreach($suppliers as $supplier)
+                                            <option value="{{ $supplier->id }}">{{ $supplier->name }}</option>
+                                        @endforeach
+                                    </select>
+                                    @error('addForm.supplier_id')
+                                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                    @enderror
+                                </div>
+                            </div>
+
+                            <!-- Prices -->
+                            <div>
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="block text-sm font-medium text-gray-700">Prices</label>
+                                </div>
+                                <div class="space-y-2">
+                                    <template x-for="(price, index) in $wire.addForm.prices" :key="index">
+                                        <div class="flex items-center gap-2">
+                                            <input type="number"
+                                                x-model.number="price.price"
+                                                step="0.01"
+                                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                                placeholder="Price">
+                                            <span x-text="price.currency" 
+                                                class="mt-1 block w-24 px-3 py-2 bg-gray-100 rounded-md border border-gray-300 text-gray-700 sm:text-sm">
+                                            </span>
+                                        </div>
+                                    </template>
+                                </div>
+                                @error('addForm.prices.*.price')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <!-- Images -->
+                            <div>
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Product Images</label>
+                                <div class="mt-2 space-y-4">
+                                    <div
+                                        x-data="{ 
+                                            isDropping: false,
+                                            handleDrop(e) {
+                                                e.preventDefault();
+                                                const input = this.$refs.fileInput;
+                                                const files = e.dataTransfer.files;
+                                                input.files = files;
+                                                input.dispatchEvent(new Event('change'));
+                                                this.isDropping = false;
+                                            }
+                                        }"
+                                        class="relative"
+                                        @dragover.prevent="isDropping = true"
+                                        @dragleave.prevent="isDropping = false"
+                                        @drop="handleDrop($event)"
+                                    >
+                                        <label
+                                            for="add-images-{{ $iteration }}"
+                                            :class="{ 'bg-blue-50 border-blue-300': isDropping }"
+                                            class="relative block w-full rounded-lg border-2 border-dashed border-gray-300 p-4 text-center hover:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 cursor-pointer transition-colors duration-200"
+                                        >
+                                            <svg class="mx-auto h-12 w-12 text-gray-400" stroke="currentColor" fill="none" viewBox="0 0 48 48">
+                                                <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
+                                            </svg>
+                                            <span class="mt-2 block text-sm font-medium text-gray-900">
+                                                Drop images here or click to upload
+                                            </span>
+                                            <span class="mt-1 block text-xs text-gray-500">
+                                                PNG, JPG, GIF up to 5MB
+                                            </span>
+                                        </label>
+                                        <input
+                                            x-ref="fileInput"
+                                            id="add-images-{{ $iteration }}"
+                                            wire:model.live="newProductImages"
+                                            type="file"
+                                            multiple
+                                            accept="image/*"
+                                            class="hidden"
+                                        >
+                                    </div>
+
+                                    <!-- Preview Grid for New Images -->
+                                    @if($newProductImages)
+                                        <div class="grid grid-cols-3 gap-4">
+                                            @foreach($newProductImages as $index => $image)
+                                                <div class="relative aspect-square group">
+                                                    <img src="{{ $image->temporaryUrl() }}"
+                                                        alt="Upload preview"
+                                                        class="h-full w-full rounded-lg object-cover">
+                                                    
+                                                    <!-- Remove Button -->
+                                                    <button
+                                                        type="button"
+                                                        wire:click="removeTemporaryImage({{ $index }})"
+                                                        class="absolute top-2 right-2 p-1 rounded-full bg-red-500 text-white opacity-0 group-hover:opacity-100 transition-opacity"
+                                                    >
+                                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                                        </svg>
+                                                    </button>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    @endif
+                                </div>
+                                @error('newProductImages.*')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Form Actions -->
+                    <div class="mt-6 flex justify-end gap-3">
+                        <button type="button"
+                            wire:click="$set('addModalOpen', false)"
+                            class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            Cancel
+                        </button>
+                        <button type="submit"
+                            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            Create Product
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
+
 </div>
