@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories;
 
 use App\Models\Section;
@@ -15,8 +17,11 @@ class SectionFactory extends Factory
     public function definition(): array
     {
         return [
-            'name' => $this->faker->word,
-            'description' => $this->faker->sentence,
+            'name' => $this->faker->words(2, true),
+            'description' => $this->faker->sentence(),
+            'order' => $this->faker->numberBetween(1, 100),
+            'is_active' => true,
+            'position' => $this->faker->randomElement(['main', 'sidebar', 'footer']),
         ];
     }
 }

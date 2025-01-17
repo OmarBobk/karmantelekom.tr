@@ -18,5 +18,7 @@ class DatabaseSeeder extends Seeder
             TagSeeder::class,
             ProductSeeder::class,
         ]);
+
+        $this->call(SectionProductSeeder::class);
     }
 }
