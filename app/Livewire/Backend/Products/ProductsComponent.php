@@ -2,20 +2,20 @@
 
 declare(strict_types=1);
 
-namespace App\Livewire\Backend;
+namespace App\Livewire\Backend\Products;
 
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\Tag;
-use Livewire\Attributes\Layout;
-use Livewire\Component;
-use Livewire\WithFileUploads;
-use Livewire\WithPagination;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Livewire\Attributes\Layout;
+use Livewire\Component;
+use Livewire\WithFileUploads;
+use Livewire\WithPagination;
 
 class ProductsComponent extends Component
 {
@@ -329,7 +329,7 @@ class ProductsComponent extends Component
             // Handle new images
             if (!empty($this->newImages)) {
                 $hasExistingImages = $this->editingProduct->images()->exists();
-                
+
                 foreach ($this->newImages as $index => $image) {
                     $path = $image->store('products', 'public');
                     $this->editingProduct->images()->create([
@@ -460,7 +460,7 @@ class ProductsComponent extends Component
     public function handleUploadStarted($name)
     {
         $index = substr($name, strpos($name, '.') + 1);
-        
+
         $this->uploadProgress['newImages.' . $index] = [
             'progress' => 0,
             'error' => null
@@ -470,7 +470,7 @@ class ProductsComponent extends Component
     public function handleUploadProgress($name, $progress)
     {
         $index = substr($name, strpos($name, '.') + 1);
-        
+
         if (isset($this->uploadProgress['newImages.' . $index])) {
             $this->uploadProgress['newImages.' . $index]['progress'] = $progress;
         }
@@ -479,7 +479,7 @@ class ProductsComponent extends Component
     public function handleUploadFinished($name)
     {
         $index = substr($name, strpos($name, '.') + 1);
-        
+
         if (isset($this->uploadProgress['newImages.' . $index])) {
             unset($this->uploadProgress['newImages.' . $index]);
         }
@@ -488,7 +488,7 @@ class ProductsComponent extends Component
     public function handleUploadErrored($name, $error)
     {
         $index = substr($name, strpos($name, '.') + 1);
-        
+
         if (isset($this->uploadProgress['newImages.' . $index])) {
             $this->uploadProgress['newImages.' . $index]['error'] = $error;
         }
@@ -506,7 +506,7 @@ class ProductsComponent extends Component
         $this->validate([
             'newImages.*' => 'image|max:2048' // 5MB Max
         ]);
-        
+
         $this->iteration++;
     }
 
@@ -514,7 +514,7 @@ class ProductsComponent extends Component
     {
         if (isset($this->newImages[$index])) {
             $image = $this->newImages[$index];
-            
+
             // Delete the temporary file
             if ($image && method_exists($image, 'getFilename')) {
                 $tmpPath = storage_path('app/livewire-tmp/' . $image->getFilename());
@@ -522,7 +522,7 @@ class ProductsComponent extends Component
                     unlink($tmpPath);
                 }
             }
-            
+
             // Remove from newImages array
             $newImages = [];
             foreach ($this->newImages as $i => $img) {
@@ -531,7 +531,7 @@ class ProductsComponent extends Component
                 }
             }
             $this->newImages = $newImages;
-            
+
             // Reset upload progress for this image
             unset($this->uploadProgress['newImages.' . $index]);
         }
@@ -551,11 +551,11 @@ class ProductsComponent extends Component
                 }
             }
         }
-        
+
         // Reset the component state
         $this->reset(['newImages', 'uploadProgress']);
         $this->iteration++;
-        
+
     }
 
     public function handleModalClose()
@@ -802,7 +802,7 @@ class ProductsComponent extends Component
 
             $this->addModalOpen = false;
             $this->reset(['addForm', 'newProductImages']);
-            
+
             $this->dispatch('closeAddModal');
             $this->dispatch('notify', [
                 'type' => 'success',
@@ -847,7 +847,7 @@ class ProductsComponent extends Component
     #[Layout('layouts.backend')]
     public function render()
     {
-        return view('livewire.backend.products-component', [
+        return view('livewire.backend.products.products-component', [
             'products' => $this->products
         ]);
     }
@@ -885,9 +885,9 @@ class ProductsComponent extends Component
 
             $product = Product::findOrFail($productId);
             $newStatus = $product->status === 'active' ? 'inactive' : 'active';
-            
+
             $product->update(['status' => $newStatus]);
-            
+
             // Update local state
             $this->productStatuses[$productId] = $newStatus === 'active';
 
