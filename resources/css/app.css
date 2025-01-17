@@ -42,32 +42,62 @@
     border-radius: var(--bs-badge-border-radius);
 }
 
-/* Custom scrollbar styles */
-.scrollbar-thin::-webkit-scrollbar {
-    height: 8px;
+/* Custom Scrollbar Variables */
+:root {
+    --sb-track-color: #e6e6e6;
+    --sb-thumb-color: #adadad;
+    --sb-size: 6px;
+    --sb-radius: 100px;  /* Using a larger value to ensure full rounding */
 }
 
-.scrollbar-thin::-webkit-scrollbar-track {
-    background: #f1f1f1;
-    border-radius: 4px;
+/* Webkit Scrollbar Styles */
+::-webkit-scrollbar {
+    width: var(--sb-size);
+    height: var(--sb-size);
 }
 
-.scrollbar-thin::-webkit-scrollbar-thumb {
-    background: #cbd5e1;
-    border-radius: 4px;
+::-webkit-scrollbar-track {
+    background: var(--sb-track-color);
+    border-radius: var(--sb-radius);
+    margin: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+    background: var(--sb-thumb-color);
+    border-radius: var(--sb-radius);
+    border: 2px solid var(--sb-track-color);
     transition: all 0.2s ease-in-out;
+    /* Ensure the thumb takes up enough space for rounding */
+    min-height: 40px;
 }
 
-.scrollbar-thin::-webkit-scrollbar-thumb:hover {
-    background: #94a3b8;
+::-webkit-scrollbar-thumb:hover {
+    background: #cbd5e1;
 }
 
-/* For Firefox */
-.scrollbar-thin {
+/* Firefox Scrollbar Styles */
+* {
     scrollbar-width: thin;
-    scrollbar-color: #cbd5e1 #f1f1f1;
+    scrollbar-color: var(--sb-thumb-color) var(--sb-track-color);
 }
 
+/* Dark Mode Support */
+@media (prefers-color-scheme: dark) {
+    :root {
+        --sb-track-color: #1e293b;
+        --sb-thumb-color: #475569;
+    }
+}
+
+/* Optional: Hide scrollbar while maintaining functionality */
+.scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+}
+
+.scrollbar-hide::-webkit-scrollbar {
+    display: none;
+}
 
 .alert {
     z-index: 999;

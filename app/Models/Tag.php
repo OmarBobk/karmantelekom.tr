@@ -12,6 +12,16 @@ class Tag extends Model
     /** @use HasFactory<TagFactory> */
     use HasFactory;
 
+    protected $fillable = [
+        'name',
+        'text_color',
+        'background_color',
+        'border_color',
+        'icon',
+        'is_featured',
+        'display_order'
+    ];
+
     public function products(): BelongsToMany
     {
         return $this->belongsToMany(Product::class, 'product_tags');

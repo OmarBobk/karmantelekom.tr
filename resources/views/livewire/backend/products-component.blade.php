@@ -21,75 +21,84 @@
 
         <!-- Filters -->
         <div class="bg-white rounded-lg shadow-lg mb-6 p-4">
-            <div class="flex flex-col md:flex-row gap-4 mb-4">
-                <!-- Search Input -->
-                <div class="flex-1">
-                    <div class="form-control">
-                        <input type="text" wire:model.live.debounce.300ms="search" placeholder="Search products..." class="input input-bordered w-full" />
+            <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-6">
+                <!-- Search -->
+                <div class="relative">
+                    <input
+                        wire:model.live.debounce.300ms="search"
+                        type="text"
+                        placeholder="Search products..."
+                        class="w-full px-10 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    />
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                        </svg>
                     </div>
-                </div>
-
-                <!-- Status Filter -->
-                <div class="w-full md:w-48">
-                    <select wire:model.live="status" class="select select-bordered w-full">
-                        <option value="">All Status</option>
-                        @foreach($statuses as $status)
-                            <option value="{{ $status }}">{{ ucfirst($status) }}</option>
-                        @endforeach
-                    </select>
+                    @if($search)
+                        <button
+                            wire:click="$set('search', '')"
+                            class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                        >
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    @endif
                 </div>
 
                 <!-- Category Filter -->
-                <div class="w-full md:w-48">
-                    <select wire:model.live="category" class="select select-bordered w-full">
-                        <option value="">All Categories</option>
-                        @foreach($categories as $category)
-                            <option value="{{ $category->id }}">{{ $category->name }}</option>
-                        @endforeach
-                    </select>
-                </div>
+                <select wire:model.live="category" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">All Categories</option>
+                    @foreach($categories as $cat)
+                        <option value="{{ $cat->id }}">{{ $cat->name }}</option>
+                    @endforeach
+                </select>
+
+                <!-- Status Filter -->
+                <select wire:model.live="status" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">All Statuses</option>
+                    @foreach($statuses as $status)
+                        <option value="{{ $status }}">{{ ucfirst($status) }}</option>
+                    @endforeach
+                </select>
 
                 <!-- Date Field Filter -->
-                <div class="w-full md:w-48">
-                    <select wire:model.live="dateField" class="select select-bordered w-full">
-                        @foreach($dateFields as $value => $label)
-                            <option value="{{ $value }}">{{ $label }}</option>
-                        @endforeach
-                    </select>
+                <select wire:model.live="dateField" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                    <option value="">Sort by Date</option>
+                    @foreach($dateFields as $field)
+                        <option value="{{ $field }}">{{ ucfirst(str_replace('_', ' ', $field)) }}</option>
+                    @endforeach
+                </select>
+
+                <!-- Date Direction Filter -->
+                <select wire:model.live="dateDirection" @class([
+                    'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500',
+                    'opacity-50 cursor-not-allowed' => !$dateField
+                ]) @disabled(!$dateField)>
+                    <option value="DESC">Newest First</option>
+                    <option value="ASC">Oldest First</option>
+                </select>
+
+                <!-- Bulk Actions -->
+                <select 
+                    wire:model.live="bulkAction" 
+                    wire:loading.attr="disabled"
+                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50"
+                >
+                    <option value="">Bulk Actions</option>
+                    <option value="delete">Delete Selected</option>
+                    <option value="activate">Activate Selected</option>
+                    <option value="deactivate">Deactivate Selected</option>
+                </select>
+
+                <!-- Add a loading indicator -->
+                <div wire:loading wire:target="bulkAction" class="absolute inset-0 bg-white bg-opacity-50 flex items-center justify-center">
+                    <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
                 </div>
-
-                <!-- Date Range Filter -->
-                <div class="w-full md:w-48">
-                    <select wire:model.live="dateFilter" class="select select-bordered w-full">
-                        <option value="">All Time</option>
-                        <option value="today">Today</option>
-                        <option value="yesterday">Yesterday</option>
-                        <option value="this_week">This Week</option>
-                        <option value="last_week">Last Week</option>
-                        <option value="this_month">This Month</option>
-                        <option value="last_month">Last Month</option>
-                    </select>
-                </div>
-            </div>
-
-            <!-- Bulk Actions -->
-            <select 
-                wire:model.live="bulkAction" 
-                wire:loading.attr="disabled"
-                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50"
-            >
-                <option value="">Bulk Actions</option>
-                <option value="delete">Delete Selected</option>
-                <option value="activate">Activate Selected</option>
-                <option value="deactivate">Deactivate Selected</option>
-            </select>
-
-            <!-- Add a loading indicator -->
-            <div wire:loading wire:target="bulkAction" class="absolute inset-0 bg-white bg-opacity-50 flex items-center justify-center">
-                <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
             </div>
         </div>
 
@@ -157,7 +166,8 @@
                         <!-- Table Body -->
                         <tbody class="bg-white divide-y divide-gray-200">
                             @forelse($products as $product)
-                                <tr class="hover:bg-gray-50">
+                                <!-- Product Row -->
+                                <tr class="hover:bg-gray-50 group">
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <input type="checkbox" wire:model.live="selectedProducts" value="{{ $product->id }}" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
                                     </td>
@@ -169,18 +179,13 @@
                                                     wire:click="viewProductImage('{{ $product->images->where('is_primary', true)->first() ? $product->images->where('is_primary', true)->first()->image_url : 'https://placehold.co/100' }}', '{{ $product->name }}')"
                                                     class="block relative rounded-lg overflow-hidden hover:opacity-75 transition-opacity"
                                                 >
-                                                <img class="h-10 w-10 rounded-lg object-cover" 
-                                                    src="{{ $product->images->where('is_primary', true)->first() 
-                                                        ? Storage::url($product->images->where('is_primary', true)->first()->image_url)
-                                                        : ($product->images->first() 
-                                                            ? Storage::url($product->images->first()->image_url)
-                                                            : 'https://placehold.co/100') }}" 
-                                                    alt="{{ $product->name }}" />
-                                                    <!-- <img
-                                                        src="{{ $product->primaryImage ? Storage::url($product->primaryImage->image_url) : 'https://placehold.co/100' }}"
-                                                        alt="Product image for {{ $product->name }}"
-                                                        class="w-full h-full object-cover"
-                                                    > -->
+                                                    <img class="h-10 w-10 rounded-lg object-cover" 
+                                                        src="{{ $product->images->where('is_primary', true)->first() 
+                                                            ? Storage::url($product->images->where('is_primary', true)->first()->image_url)
+                                                            : ($product->images->first() 
+                                                                ? Storage::url($product->images->first()->image_url)
+                                                                : 'https://placehold.co/100') }}" 
+                                                        alt="{{ $product->name }}" />
                                                 </button>
                                             </div>
                                             <div class="ml-4">
@@ -199,9 +204,17 @@
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $product->serial ?? 'N/A' }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $product->category->name }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-center">
-                                        <span class="badge {{ $product->status === 'active' ? 'bg-gradient-success' : 'bg-gradient-danger' }}">
-                                            {{ ucfirst($product->status) }}
-                                        </span>
+                                        <label class="relative inline-flex items-center cursor-pointer">
+                                            <input 
+                                                type="checkbox" 
+                                                class="sr-only peer"
+                                                wire:model.blur="productStatuses.{{ $product->id }}"
+                                                wire:click="toggleStatus({{ $product->id }})"
+                                                @checked($product->status === 'active')
+                                            >
+                                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
+                                            <span class="sr-only">Toggle status</span>
+                                        </label>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                         <div class="flex flex-col space-y-1">
@@ -222,6 +235,28 @@
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
                                                 </svg>
                                             </button>
+                                        </div>
+                                    </td>
+                                </tr>
+
+                                <!-- Tags Row -->
+                                <tr class="bg-gray-50/50 group-hover:bg-gray-50">
+                                    <td class="px-6 py-2"></td>
+                                    <td colspan="9" class="px-6 py-2">
+                                        <div class="flex flex-wrap gap-1">
+                                            @forelse($product->tags as $tag)
+                                                <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                                                      style="color: {{ $tag->text_color }}; 
+                                                             background-color: {{ $tag->background_color }}; 
+                                                             border: 1px solid {{ $tag->border_color }};">
+                                                    @if($tag->icon)
+                                                        <span class="mr-1">{{ $tag->icon }}</span>
+                                                    @endif
+                                                    {{ $tag->name }}
+                                                </span>
+                                            @empty
+                                                <span class="text-xs text-gray-500">No tags</span>
+                                            @endforelse
                                         </div>
                                     </td>
                                 </tr>
@@ -339,11 +374,11 @@
                 </div>
 
                 <!-- Form Content -->
-                <form wire:submit.prevent="updateProduct" class="space-y-6">
+                <form wire:submit.prevent="updateProduct" class="space-y-6 overflow-auto">
                     @csrf
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <!-- Left Column -->
-                        <div class="space-y-6">
+                        <div class="space-y-6 ml-2">
                             <!-- Name -->
                             <div>
                                 <label for="name" class="block text-sm font-medium text-gray-700">Product Name</label>
@@ -433,7 +468,7 @@
                         </div>
 
                         <!-- Right Column -->
-                        <div class="space-y-6">
+                        <div class="space-y-6 mr-2">
                             <!-- Category & Supplier -->
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
@@ -653,6 +688,79 @@
                                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
                                 </div>
+                            </div>
+
+                            <!-- Tags -->
+                            <div x-data="{ open: false }" class="relative">
+                                <label for="tags" class="block text-sm font-medium text-gray-700">Tags</label>
+                                <div class="relative mt-1">
+                                    <button 
+                                        type="button"
+                                        @click="open = !open"
+                                        class="relative w-full cursor-default rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 text-left shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm"
+                                    >
+                                        <span class="flex flex-wrap gap-1">
+                                            @if(!empty($editForm['tags']))
+                                                @foreach($allTags->whereIn('id', $editForm['tags']) as $tag)
+                                                    <span 
+                                                        class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                                                        style="color: {{ $tag->text_color }}; background-color: {{ $tag->background_color }}; border: 1px solid {{ $tag->border_color }};"
+                                                    >
+                                                        @if($tag->icon)
+                                                            <span class="mr-1">{{ $tag->icon }}</span>
+                                                        @endif
+                                                        {{ $tag->name }}
+                                                    </span>
+                                                @endforeach
+                                            @else
+                                                <span class="text-gray-500">Select tags...</span>
+                                            @endif
+                                        </span>
+                                        <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                                            <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fill-rule="evenodd" d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 011.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                            </svg>
+                                        </span>
+                                    </button>
+
+                                    <div 
+                                        x-show="open" 
+                                        @click.away="open = false"
+                                        class="absolute z-10 mt-1 w-full rounded-md bg-white shadow-lg"
+                                    >
+                                        <ul class="max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
+                                            @foreach($allTags as $tag)
+                                                <li 
+                                                    class="relative cursor-pointer select-none py-2 pl-3 pr-9 hover:bg-gray-100"
+                                                    wire:click="toggleTag({{ $tag->id }})"
+                                                >
+                                                    <div class="flex items-center">
+                                                        <span 
+                                                            class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                                                            style="color: {{ $tag->text_color }}; background-color: {{ $tag->background_color }}; border: 1px solid {{ $tag->border_color }};"
+                                                        >
+                                                            @if($tag->icon)
+                                                                <span class="mr-1">{{ $tag->icon }}</span>
+                                                            @endif
+                                                            {{ $tag->name }}
+                                                        </span>
+                                                    </div>
+
+                                                    @if(in_array($tag->id, $editForm['tags']))
+                                                        <span class="absolute inset-y-0 right-0 flex items-center pr-4 text-blue-600">
+                                                            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                                            </svg>
+                                                        </span>
+                                                    @endif
+                                                </li>
+                                            @endforeach
+                                        </ul>
+                                    </div>
+                                </div>
+                                @error('editForm.tags')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
                             </div>
                         </div>
                     </div>
@@ -877,11 +985,11 @@
                 </div>
 
                 <!-- Form Content -->
-                <form wire:submit.prevent="createProduct" class="space-y-6">
+                <form wire:submit.prevent="createProduct" class="space-y-6 overflow-auto">
                     @csrf
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                         <!-- Left Column -->
-                        <div class="space-y-6">
+                        <div class="space-y-6 ml-2">
                             <!-- Name -->
                             <div>
                                 <label for="add-name" class="block text-sm font-medium text-gray-700">Product Name</label>
@@ -972,7 +1080,7 @@
                         </div>
 
                         <!-- Right Column -->
-                        <div class="space-y-6">
+                        <div class="space-y-6 mr-2">
                             <!-- Category & Supplier -->
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
@@ -1068,7 +1176,7 @@
                                             <span class="mt-1 block text-xs text-gray-500">
                                                 PNG, JPG, GIF up to 5MB
                                             </span>
-                                        </label>
+                                    </label>
                                         <input
                                             x-ref="fileInput"
                                             id="add-images-{{ $iteration }}"
@@ -1105,6 +1213,79 @@
                                     @endif
                                 </div>
                                 @error('newProductImages.*')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <!-- Tags -->
+                            <div x-data="{ open: false }" class="relative">
+                                <label for="add-tags" class="block text-sm font-medium text-gray-700">Tags</label>
+                                <div class="relative mt-1">
+                                    <button 
+                                        type="button"
+                                        @click="open = !open"
+                                        class="relative w-full cursor-default rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 text-left shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm"
+                                    >
+                                        <span class="flex flex-wrap gap-1">
+                                            @if(!empty($addForm['tags']))
+                                                @foreach($allTags->whereIn('id', $addForm['tags']) as $tag)
+                                                    <span 
+                                                        class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                                                        style="color: {{ $tag->text_color }}; background-color: {{ $tag->background_color }}; border: 1px solid {{ $tag->border_color }};"
+                                                    >
+                                                        @if($tag->icon)
+                                                            <span class="mr-1">{{ $tag->icon }}</span>
+                                                        @endif
+                                                        {{ $tag->name }}
+                                                    </span>
+                                                @endforeach
+                                            @else
+                                                <span class="text-gray-500">Select tags...</span>
+                                            @endif
+                                        </span>
+                                        <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
+                                            <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
+                                                <path fill-rule="evenodd" d="M10 3a1 1 0 01.707.293l3 3a1 1 0 01-1.414 1.414L10 5.414 7.707 7.707a1 1 0 01-1.414-1.414l3-3A1 1 0 0110 3zm-3.707 9.293a1 1 0 011.414 0L10 14.586l2.293-2.293a1 1 0 011.414 1.414l-3 3a1 1 0 01-1.414 0l-3-3a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                            </svg>
+                                        </span>
+                                    </button>
+
+                                    <div 
+                                        x-show="open" 
+                                        @click.away="open = false"
+                                        class="absolute z-10 mt-1 w-full rounded-md bg-white shadow-lg"
+                                    >
+                                        <ul class="max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
+                                            @foreach($allTags as $tag)
+                                                <li 
+                                                    class="relative cursor-pointer select-none py-2 pl-3 pr-9 hover:bg-gray-100"
+                                                    wire:click="toggleAddTag({{ $tag->id }})"
+                                                >
+                                                    <div class="flex items-center">
+                                                        <span 
+                                                            class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
+                                                            style="color: {{ $tag->text_color }}; background-color: {{ $tag->background_color }}; border: 1px solid {{ $tag->border_color }};"
+                                                        >
+                                                            @if($tag->icon)
+                                                                <span class="mr-1">{{ $tag->icon }}</span>
+                                                            @endif
+                                                            {{ $tag->name }}
+                                                        </span>
+                                                    </div>
+
+                                                    @if(in_array($tag->id, $addForm['tags']))
+                                                        <span class="absolute inset-y-0 right-0 flex items-center pr-4 text-blue-600">
+                                                            <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd" />
+                                                            </svg>
+                                                        </span>
+                                                    @endif
+                                                </li>
+                                            @endforeach
+                                        </ul>
+                                    </div>
+                                </div>
+                                @error('addForm.tags')
                                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
                             </div>

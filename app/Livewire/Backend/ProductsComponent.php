@@ -7,6 +7,7 @@ namespace App\Livewire\Backend;
 use App\Models\Category;
 use App\Models\Product;
 use App\Models\Supplier;
+use App\Models\Tag;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithFileUploads;
@@ -27,8 +28,8 @@ class ProductsComponent extends Component
     public string $sortDirection = 'DESC';
     public string $status = '';
     public string $category = '';
-    public string $dateFilter = '';
-    public string $dateField = 'created_at';
+    public ?string $dateField = '';
+    public ?string $dateDirection = 'DESC';
     public array $selectedProducts = [];
     public bool $selectAll = false;
 
@@ -44,15 +45,15 @@ class ProductsComponent extends Component
     public $categories;
     public $suppliers;
     public array $statuses = ['active', 'inactive'];
-    public array $dateFields = ['created_at' => 'Created Date', 'updated_at' => 'Updated Date'];
+    public array $dateFields = ['created_at', 'updated_at'];
     protected $queryString = [
         'search' => ['except' => ''],
         'sortField' => ['except' => 'name'],
         'sortDirection' => ['except' => 'asc'],
         'status' => ['except' => ''],
         'category' => ['except' => ''],
-        'dateFilter' => ['except' => ''],
-        'dateField' => ['except' => 'created_at']
+        'dateField' => ['except' => ''],
+        'dateDirection' => ['except' => 'DESC']
     ];
 
     // Edit Modal Properties
@@ -86,7 +87,8 @@ class ProductsComponent extends Component
         'prices' => [
             ['price' => '', 'currency' => 'TL', 'price_type' => 'retail'],
             ['price' => '', 'currency' => '$', 'price_type' => 'retail']
-        ]
+        ],
+        'tags' => []
     ];
     public $newProductImages = [];
 
@@ -105,20 +107,7 @@ class ProductsComponent extends Component
     public bool $showImageDeleteModal = false;
     public ?array $imageToDelete = null;
 
-    protected $rules = [
-        'editForm.name' => 'required|min:3',
-        'editForm.slug' => 'required',
-        'editForm.serial' => 'nullable',
-        'editForm.code' => 'required',
-        'editForm.status' => 'required|in:active,inactive',
-        'editForm.description' => 'required|min:10',
-        'editForm.category_id' => 'required|exists:categories,id',
-        'editForm.supplier_id' => 'nullable|exists:suppliers,id',
-        'editForm.prices.*.price' => 'required|numeric|min:0',
-        'editForm.prices.*.currency' => 'required|string|max:10',
-        'editForm.prices.*.price_type' => 'required|in:retail,wholesale',
-        'newImages.*' => 'image|max:2048'
-    ];
+    protected $rules = [];
 
     protected $validationAttributes = [
         'editForm.name' => 'name',
@@ -132,7 +121,17 @@ class ProductsComponent extends Component
         'editForm.prices.*.price' => 'price',
         'editForm.prices.*.currency' => 'currency',
         'editForm.prices.*.price_type' => 'price type',
-        'newImages.*' => 'image'
+        'newImages.*' => 'image',
+        'addForm.name' => 'name',
+        'addForm.slug' => 'slug',
+        'addForm.serial' => 'serial number',
+        'addForm.code' => 'product code',
+        'addForm.status' => 'status',
+        'addForm.description' => 'description',
+        'addForm.category_id' => 'category',
+        'addForm.supplier_id' => 'supplier',
+        'addForm.prices.*.price' => 'price',
+        'newProductImages.*' => 'image',
     ];
 
     protected $listeners = [
@@ -140,13 +139,49 @@ class ProductsComponent extends Component
         'upload:finished' => 'handleUploadFinished',
         'upload:errored' => 'handleUploadErrored',
         'upload:progress' => 'handleUploadProgress',
-        'closeModal' => 'handleModalClose'
+        'closeModal' => 'handleModalClose',
+        'closeAddModal' => 'handleAddModalClose'
     ];
+
+    public array $productStatuses = [];
+
+    // Add this property to store all available tags
+    public $allTags;
 
     public function mount(): void
     {
         $this->categories = Category::all();
         $this->suppliers = Supplier::all();
+        $this->allTags = Tag::orderBy('display_order')->get();
+        $this->initializeAddForm();
+        $this->loadProductStatuses();
+    }
+
+    private function initializeAddForm(): void
+    {
+        $this->addForm = [
+            'name' => '',
+            'slug' => '',
+            'serial' => '',
+            'code' => '',
+            'status' => 'inactive',
+            'description' => '',
+            'category_id' => '',
+            'supplier_id' => '',
+            'prices' => [
+                ['price' => '', 'currency' => 'TL', 'price_type' => 'retail'],
+                ['price' => '', 'currency' => '$', 'price_type' => 'retail']
+            ],
+            'tags' => []
+        ];
+        $this->newProductImages = [];
+        $this->resetValidation('addForm.*');
+        $this->reset(['addForm', 'newProductImages']);
+    }
+
+    public function updatingAddModalOpen(): void
+    {
+        $this->initializeAddForm();
     }
 
     public function sortBy(string $field): void
@@ -244,8 +279,9 @@ class ProductsComponent extends Component
 
     public function updateProduct()
     {
+        $this->validate($this->getEditRules());
+
         DB::enableQueryLog();
-        $this->validate();
 
         try {
             DB::beginTransaction();
@@ -266,6 +302,9 @@ class ProductsComponent extends Component
                 'category_id' => $this->editForm['category_id'],
                 'supplier_id' => $this->editForm['supplier_id']
             ]);
+
+            // Update the productStatuses array to reflect the new status
+            $this->productStatuses[$this->editingProduct->id] = $this->editForm['status'] === 'active';
 
             // Log after basic update
             logger()->info('Basic product details updated', ['product_id' => $this->editingProduct->id]);
@@ -409,38 +448,12 @@ class ProductsComponent extends Component
                     $q->where('id', $this->category)
                 )
             )
-            ->when($this->dateFilter, function($query) {
-                $date = now();
-                switch($this->dateFilter) {
-                    case 'today':
-                        $query->whereDate($this->dateField, $date);
-                        break;
-                    case 'yesterday':
-                        $query->whereDate($this->dateField, $date->subDay());
-                        break;
-                    case 'this_week':
-                        $query->whereBetween($this->dateField, [
-                            $date->startOfWeek(),
-                            $date->endOfWeek()
-                        ]);
-                        break;
-                    case 'last_week':
-                        $query->whereBetween($this->dateField, [
-                            $date->subWeek()->startOfWeek(),
-                            $date->subWeek()->endOfWeek()
-                        ]);
-                        break;
-                    case 'this_month':
-                        $query->whereMonth($this->dateField, $date->month)
-                            ->whereYear($this->dateField, $date->year);
-                        break;
-                    case 'last_month':
-                        $query->whereMonth($this->dateField, $date->subMonth()->month)
-                            ->whereYear($this->dateField, $date->year);
-                        break;
-                }
-            })
-            ->orderBy($this->sortField, $this->sortDirection)
+            ->when($this->dateField, fn($query) =>
+                $query->orderBy($this->dateField, $this->dateDirection)
+            )
+            ->when(!$this->dateField, fn($query) =>
+                $query->orderBy($this->sortField, $this->sortDirection)
+            )
             ->paginate(10);
     }
 
@@ -491,7 +504,7 @@ class ProductsComponent extends Component
     public function updatedNewImages()
     {
         $this->validate([
-            'newImages.*' => 'image|max:5120' // 5MB Max
+            'newImages.*' => 'image|max:2048' // 5MB Max
         ]);
         
         $this->iteration++;
@@ -724,20 +737,7 @@ class ProductsComponent extends Component
     public function createProduct()
     {
         DB::enableQueryLog();
-        $this->validate([
-            'addForm.name' => 'required|min:3',
-            'addForm.slug' => 'required|unique:products,slug',
-            'addForm.code' => 'required|unique:products,code',
-            'addForm.serial' => 'nullable|unique:products,serial',
-            'addForm.status' => 'required|in:active,inactive',
-            'addForm.description' => 'required|min:10',
-            'addForm.category_id' => 'required|exists:categories,id',
-            'addForm.supplier_id' => 'required|exists:suppliers,id',
-            'addForm.prices.*.price' => 'required|numeric|min:0',
-            'addForm.prices.*.currency' => 'required|string|max:10',
-            'addForm.prices.*.price_type' => 'required|in:retail,wholesale',
-            'newProductImages.*' => 'image|max:2048'
-        ]);
+        $this->validate($this->getAddRules());
 
         try {
             DB::beginTransaction();
@@ -758,6 +758,11 @@ class ProductsComponent extends Component
                 'category_id' => $this->addForm['category_id'],
                 'supplier_id' => $this->addForm['supplier_id'],
             ]);
+
+            // Sync tags
+            if (!empty($this->addForm['tags'])) {
+                $product->tags()->sync($this->addForm['tags']);
+            }
 
             // Log after product creation
             logger()->info('Product created', ['product_id' => $product->id]);
@@ -797,6 +802,8 @@ class ProductsComponent extends Component
 
             $this->addModalOpen = false;
             $this->reset(['addForm', 'newProductImages']);
+            
+            $this->dispatch('closeAddModal');
             $this->dispatch('notify', [
                 'type' => 'success',
                 'message' => 'Product created successfully!'
@@ -815,12 +822,122 @@ class ProductsComponent extends Component
             ]);
         }
     }
-    
+
+    // Add this new method for add product validation rules
+    protected function getAddRules(): array
+    {
+        return [
+            'addForm.name' => 'required|min:3|max:255',
+            'addForm.slug' => 'required|unique:products,slug',
+            'addForm.serial' => 'nullable|unique:products,serial',
+            'addForm.code' => 'required|unique:products,code',
+            'addForm.status' => 'required|in:active,inactive',
+            'addForm.description' => 'required|min:10|max:1000',
+            'addForm.category_id' => 'required|exists:categories,id',
+            'addForm.supplier_id' => 'required|exists:suppliers,id',
+            'addForm.prices.*.price' => 'required|numeric|min:0',
+            'addForm.prices.*.currency' => 'required|in:TL,$',
+            'addForm.prices.*.price_type' => 'required|in:retail,wholesale',
+            'newProductImages.*' => 'image|max:2048',
+            'addForm.tags' => 'array',
+            'addForm.tags.*' => 'exists:tags,id'
+        ];
+    }
+
     #[Layout('layouts.backend')]
     public function render()
     {
         return view('livewire.backend.products-component', [
             'products' => $this->products
         ]);
+    }
+
+    // Add this method to get dynamic rules for editing
+    protected function getEditRules(): array
+    {
+        return [
+            'editForm.name' => 'required|min:3',
+            'editForm.slug' => 'required|unique:products,slug,' . ($this->editingProduct?->id ?? ''),
+            'editForm.serial' => 'nullable|unique:products,serial,' . ($this->editingProduct?->id ?? ''),
+            'editForm.code' => 'required|unique:products,code,' . ($this->editingProduct?->id ?? ''),
+            'editForm.status' => 'required|in:active,inactive',
+            'editForm.description' => 'required|min:10',
+            'editForm.category_id' => 'required|exists:categories,id',
+            'editForm.supplier_id' => 'nullable|exists:suppliers,id',
+            'editForm.prices.*.price' => 'required|numeric|min:0',
+            'editForm.prices.*.currency' => 'required|in:TL,$',
+            'editForm.prices.*.price_type' => 'required|in:retail,wholesale',
+            'newImages.*' => 'image|max:2048',
+        ];
+    }
+
+    public function loadProductStatuses(): void
+    {
+        $this->productStatuses = Product::pluck('status', 'id')
+            ->map(fn ($status) => $status === 'active')
+            ->toArray();
+    }
+
+    public function toggleStatus(int $productId): void
+    {
+        try {
+            DB::beginTransaction();
+
+            $product = Product::findOrFail($productId);
+            $newStatus = $product->status === 'active' ? 'inactive' : 'active';
+            
+            $product->update(['status' => $newStatus]);
+            
+            // Update local state
+            $this->productStatuses[$productId] = $newStatus === 'active';
+
+            DB::commit();
+
+            $this->dispatch('notify', [
+                'type' => 'success',
+                'message' => "Product status updated to " . ucfirst($newStatus)
+            ]);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            logger()->error('Error toggling product status', [
+                'product_id' => $productId,
+                'error' => $e->getMessage()
+            ]);
+
+            $this->dispatch('notify', [
+                'type' => 'error',
+                'message' => 'Failed to update product status'
+            ]);
+
+            // Revert the local state
+            $this->loadProductStatuses();
+        }
+    }
+
+    public function toggleTag($tagId): void
+    {
+        if (!isset($this->editForm['tags'])) {
+            $this->editForm['tags'] = [];
+        }
+
+        if (in_array($tagId, $this->editForm['tags'])) {
+            $this->editForm['tags'] = array_values(array_diff($this->editForm['tags'], [$tagId]));
+        } else {
+            $this->editForm['tags'][] = $tagId;
+        }
+    }
+
+    public function toggleAddTag($tagId): void
+    {
+        if (!isset($this->addForm['tags'])) {
+            $this->addForm['tags'] = [];
+        }
+
+        if (in_array($tagId, $this->addForm['tags'])) {
+            $this->addForm['tags'] = array_values(array_diff($this->addForm['tags'], [$tagId]));
+        } else {
+            $this->addForm['tags'][] = $tagId;
+        }
     }
 }

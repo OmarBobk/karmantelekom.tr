@@ -6,7 +6,7 @@ use App\Models\Category;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\ProductPrice;
-use App\Models\ProductImage;
+use App\Models\Tag;
 use Illuminate\Database\Seeder;
 
 class ProductSeeder extends Seeder
@@ -34,8 +34,12 @@ class ProductSeeder extends Seeder
         // Create suppliers
         $suppliers = Supplier::factory(5)->create();
 
+        // Create tags first
+        $this->call(TagSeeder::class);
+        $tags = Tag::all();
+
         // Create products with related data
-        Product::factory(50)->create()->each(function ($product) {
+        Product::factory(50)->create()->each(function ($product) use ($tags) {
             // Create prices for each product
             ProductPrice::create([
                 'product_id' => $product->id,
@@ -51,14 +55,10 @@ class ProductSeeder extends Seeder
                 'currency' => '$'
             ]);
 
-            // Create sample images for each product
-//            for ($i = 1; $i <= 3; $i++) {
-//                ProductImage::create([
-//                    'product_id' => $product->id,
-//                    'image_url' => "products/sample-{$i}.jpg",
-//                    'is_primary' => $i === 1
-//                ]);
-//            }
+            // Attach 2-4 random tags to each product
+            $product->tags()->attach(
+                $tags->random(rand(2, 4))->pluck('id')->toArray()
+            );
         });
     }
 }

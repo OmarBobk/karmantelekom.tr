@@ -11,6 +11,12 @@ return new class extends Migration
         Schema::create('tags', function (Blueprint $table) {
             $table->id();
             $table->string('name');
+            $table->string('text_color')->default('#000000');
+            $table->string('background_color')->default('#FFFFFF');
+            $table->string('border_color')->nullable();
+            $table->string('icon')->nullable();
+            $table->boolean('is_featured')->default(false);
+            $table->integer('display_order')->default(0);
             $table->timestamps();
         });
     }
