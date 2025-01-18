@@ -68,51 +68,98 @@
                                 {{ $section->order }}
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <button wire:click="toggleActive({{ $section->id }})" class="group relative">
+                                <button wire:click="toggleActive({{ $section->id }})" 
+                                        class="group relative"
+                                        wire:loading.class="opacity-50"
+                                        wire:target="toggleActive({{ $section->id }})">
                                     <span class="sr-only">Toggle section status</span>
                                     <div class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 {{ $section->is_active ? 'bg-blue-600' : 'bg-gray-200' }}">
                                         <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {{ $section->is_active ? 'translate-x-5' : 'translate-x-0' }}"></span>
                                     </div>
+                                    
+                                    <!-- Loading indicator -->
+                                    <div wire:loading wire:target="toggleActive({{ $section->id }})"
+                                         class="absolute -right-6 top-1/2 -translate-y-1/2">
+                                        <svg class="animate-spin h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                    </div>
+                                    
                                     <span class="absolute left-1/2 -translate-x-1/2 -bottom-8 hidden group-hover:block bg-gray-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
                                         {{ $section->is_active ? 'Active' : 'Inactive' }}
                                     </span>
                                 </button>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <div class="flex -space-x-2">
-                                    @foreach($section->products->take(3) as $product)
-                                        <div class="inline-block h-8 w-8 rounded-full ring-2 ring-white overflow-hidden bg-gray-100">
-                                            @if($product->images->where('is_primary', true)->first())
-                                                <img src="{{ asset('storage/' . $product->images->where('is_primary', true)->first()->image_url) }}" 
-                                                     alt="{{ $product->name }}"
-                                                     class="h-full w-full object-cover">
-                                            @else
-                                                <div class="h-full w-full flex items-center justify-center bg-gray-300 text-gray-500">
-                                                    <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
-                                                    </svg>
+                                <div x-data="{ showAllProducts: false }" class="relative">
+                                    <div class="flex flex-wrap -space-x-2"
+                                         x-transition:enter="transition ease-out duration-300"
+                                         x-transition:enter-start="opacity-0 scale-95"
+                                         x-transition:enter-end="opacity-100 scale-100"
+                                         x-transition:leave="transition ease-in duration-200"
+                                         x-transition:leave-start="opacity-100 scale-100"
+                                         x-transition:leave-end="opacity-0 scale-95">
+                                        
+                                        <!-- First 3 products -->
+                                        <div x-show="!showAllProducts">
+                                            @foreach($section->products->take(3) as $product)
+                                                <div class="inline-block h-8 w-8 rounded-full ring-2 ring-white overflow-hidden bg-gray-100">
+                                                    @if($product->images->where('is_primary', true)->first())
+                                                        <img src="{{ asset('storage/' . $product->images->where('is_primary', true)->first()->image_url) }}" 
+                                                             alt="{{ $product->name }}"
+                                                             class="h-full w-full object-cover">
+                                                    @else
+                                                        <div class="h-full w-full flex items-center justify-center bg-gray-300 text-gray-500">
+                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                                            </svg>
+                                                        </div>
+                                                    @endif
                                                 </div>
-                                            @endif
+                                            @endforeach
                                         </div>
-                                    @endforeach
-                                    @if($section->products->count() > 3)
-                                        <div class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 ring-2 ring-white">
-                                            <span class="text-xs font-medium text-gray-500">+{{ $section->products->count() - 3 }}</span>
+
+                                        <!-- All products -->
+                                        <div x-show="showAllProducts">
+                                            @foreach($section->products as $product)
+                                                <div class="inline-block h-8 w-8 rounded-full ring-2 ring-white overflow-hidden bg-gray-100">
+                                                    @if($product->images->where('is_primary', true)->first())
+                                                        <img src="{{ asset('storage/' . $product->images->where('is_primary', true)->first()->image_url) }}" 
+                                                             alt="{{ $product->name }}"
+                                                             class="h-full w-full object-cover">
+                                                    @else
+                                                        <div class="h-full w-full flex items-center justify-center bg-gray-300 text-gray-500">
+                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                                            </svg>
+                                                        </div>
+                                                    @endif
+                                                </div>
+                                            @endforeach
                                         </div>
-                                    @endif
+
+                                        @if($section->products->count() > 3)
+                                            <button @click="showAllProducts = !showAllProducts" 
+                                                    class="inline-flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 ring-2 ring-white hover:bg-gray-200 transition-colors duration-200">
+                                                <span x-text="showAllProducts ? '-' : '+{{ $section->products->count() - 3 }}'" 
+                                                      class="text-xs font-medium text-gray-500"></span>
+                                            </button>
+                                        @endif
+                                    </div>
                                 </div>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                 <div class="flex justify-end space-x-2">
                                     <button wire:click="edit({{ $section->id }})" class="text-blue-600 hover:text-blue-900">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                                         </svg>
                                     </button>
                                     <button wire:click="delete({{ $section->id }})" 
                                             wire:confirm="Are you sure you want to delete this section?"
                                             class="text-red-600 hover:text-red-900">
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                         </svg>
                                     </button>

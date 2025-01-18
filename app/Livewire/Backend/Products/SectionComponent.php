@@ -8,6 +8,8 @@ use App\Models\Section;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Livewire\Attributes\Computed;
+use Livewire\Attributes\On;
 
 class SectionComponent extends Component
 {
@@ -105,13 +107,28 @@ class SectionComponent extends Component
 
     public function toggleActive(Section $section)
     {
-        $section->update(['is_active' => !$section->is_active]);
-        $this->dispatch('notify', [
-            [
-                'message' => $section->is_active ? 'Section activated!' : 'Section deactivated!',
-                'type' => 'success'
-            ]
-        ]);
+        $section->is_active = !$section->is_active;
+        $section->save();
+        
+        $this->dispatch('section-updated', sectionId: $section->id);
+    }
+
+    #[On('section-updated')] 
+    public function refreshSection($sectionId)
+    {
+        // Only refresh the specific section that changed
+    }
+
+    #[Computed]
+    public function sections()
+    {
+        return Section::with('products')
+            ->when($this->searchTerm, function ($query) {
+                $query->where('name', 'like', '%' . $this->searchTerm . '%')
+                    ->orWhere('description', 'like', '%' . $this->searchTerm . '%');
+            })
+            ->orderBy('order')
+            ->paginate(10);
     }
 
     #[Layout('layouts.backend')]
