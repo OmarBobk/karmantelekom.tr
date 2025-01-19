@@ -18,7 +18,7 @@ class SectionComponent extends Component
 
     // Add this property to manage different pagination states
     protected $paginationTheme = 'tailwind';
-    
+
     // Add a method to get the pagination query string
     public function getQueryString()
     {
@@ -35,7 +35,7 @@ class SectionComponent extends Component
     public $productSearchTerm = '';
     public $productOrders = [];
     public $selectAllProducts = false;
-    
+
     // Form properties
     public $sectionId;
     public $name = '';
@@ -52,7 +52,7 @@ class SectionComponent extends Component
         'name' => 'required|min:3|max:255',
         'description' => 'nullable|max:1000',
         'order' => 'required|integer|min:0',
-        'position' => 'required|in:main,sidebar,footer',
+        'position' => 'required',
         'is_active' => 'boolean',
         'scrollable' => 'boolean'
     ];
@@ -85,11 +85,11 @@ class SectionComponent extends Component
         $this->position = $section->position;
         $this->is_active = $section->is_active;
         $this->scrollable = $section->scrollable;
-        
+
         // Load selected products and their orders
         $this->selectedProducts = $section->products->pluck('id')->toArray();
         $this->productOrders = $section->products->pluck('pivot.ordering', 'id')->toArray();
-        
+
         $this->showModal = true;
     }
 
@@ -150,7 +150,7 @@ class SectionComponent extends Component
     {
         $section->is_active = !$section->is_active;
         $section->save();
-        
+
         $this->dispatch('section-updated', sectionId: $section->id);
     }
 
@@ -158,11 +158,11 @@ class SectionComponent extends Component
     {
         $section->scrollable = !$section->scrollable;
         $section->save();
-        
+
         $this->dispatch('section-updated', sectionId: $section->id);
     }
 
-    #[On('section-updated')] 
+    #[On('section-updated')]
     public function refreshSection($sectionId)
     {
         // Only refresh the specific section that changed
@@ -244,7 +244,7 @@ class SectionComponent extends Component
 
         // Remove orders for unselected products
         $this->productOrders = array_intersect_key(
-            $this->productOrders, 
+            $this->productOrders,
             array_flip($this->selectedProducts)
         );
     }
@@ -259,17 +259,17 @@ class SectionComponent extends Component
         if ($value) {
             // When selecting all products
             $highestOrder = empty($this->productOrders) ? 0 : max($this->productOrders);
-            
+
             // Get all product IDs from the current page
             $allProductIds = $this->filteredProducts->pluck('id')->toArray();
-            
+
             // Set orders only for newly selected products
             foreach ($allProductIds as $productId) {
                 if (!isset($this->productOrders[$productId])) {
                     $this->productOrders[$productId] = ++$highestOrder;
                 }
             }
-            
+
             $this->selectedProducts = $allProductIds;
         } else {
             // When deselecting all products
@@ -282,10 +282,10 @@ class SectionComponent extends Component
     {
         // Remove from selected products
         $this->selectedProducts = array_values(array_diff($this->selectedProducts, [$productId]));
-        
+
         // Remove from product orders
         unset($this->productOrders[$productId]);
-        
+
         // Maintain order sequence
         $this->maintainProductOrder();
     }

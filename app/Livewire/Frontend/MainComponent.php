@@ -2,18 +2,33 @@
 
 namespace App\Livewire\Frontend;
 
+use App\Models\Section;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 
 class MainComponent extends Component
 {
+    public $activeCategory = 0;
+    public $sections;
+
+    public function mount()
+    {
+        $this->sections = Section::with(['products' => function($query) {
+            $query->with(['images' => function($query) {
+                $query->where('is_primary', true);
+            }])->orderBy('section_products.ordering');
+        }])
+        ->where('position', 'main.slider')
+        ->where('is_active', true)
+        ->where('scrollable', true)
+        ->orderBy('order')
+        ->get();
+    }
 
     // Slider Component
-    public $activeCategory = 0;
     public $scrollPosition = 0;
     public $isScrolledLeft = true;
     public $isScrolledRight = false;
-
 
     #[Layout('layouts.frontend')]
     public function render()
@@ -21,15 +36,9 @@ class MainComponent extends Component
         return view('livewire.frontend.main-component');
     }
 
-    // Slider Component
     public function setActiveCategory($index)
     {
-        // Simulate loading delay
-        usleep(500000); // 0.5 seconds delay
-
         $this->activeCategory = $index;
-        $this->scrollPosition = 0;
-        $this->resetScroll();
     }
 
     public function scrollLeft()
@@ -50,9 +59,8 @@ class MainComponent extends Component
     public function addToCart($productId, $quantity)
     {
         // Simulate network delay
-        usleep(800000); // 0.8 seconds delay
+        usleep(800000);
 
-        // Add your cart logic here
         $this->dispatch('cart-updated', [
             'message' => 'Product added to cart successfully!',
             'type' => 'success'

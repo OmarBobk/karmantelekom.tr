@@ -60,7 +60,8 @@
                 >
                     <div class="flex flex-nowrap border-b border-gray-200" x-cloak>
                         <div class="flex flex-nowrap whitespace-nowrap">
-                            @foreach(['New Arrivals', 'Best Sellers', 'Sale Items', 'Featured', 'Featured1', 'Featured2', 'Featured3', 'Featured4', 'Featured5', 'Featured6', 'Featured7', 'Featured8', 'Featured9', 'Featured10'] as $index => $category)
+                            
+                            @foreach($sections as $index => $section)
                                 <button
                                     x-on:click="$wire.activeCategory = {{ $index }}"
                                     wire:click="setActiveCategory({{ $index }})"
@@ -72,7 +73,7 @@
                                     id="tab-{{ $index }}"
                                     x-cloak
                                 >
-                                    {{ $category }}
+                                    {{ $section->name }}
                                 </button>
 
                                 <!-- Add loading indicator after the tabs -->
@@ -126,7 +127,7 @@
 
                     <!-- Slider Content -->
                     <div class="relative overflow-hidden h-[440px]">
-                        @foreach(['New Arrivals', 'Best Sellers', 'Sale Items', 'Featured', 'Featured1', 'Featured2', 'Featured3', 'Featured4', 'Featured5', 'Featured6', 'Featured7', 'Featured8', 'Featured9', 'Featured10'] as $index => $category)
+                        @foreach($this->sections as $index => $section)
                             <div
                                 id="panel-{{ $index }}"
                                 role="tabpanel"
@@ -148,21 +149,20 @@
                                         @scroll.debounce.50ms="updateScrollButtons({{ $index }})"
                                         x-cloak
                                     >
-                                        @for($i = 1; $i <= 10; $i++)
+                                        @foreach($section->products as $product)
                                             <div class="flex-none w-72 snap-start p-4">
-                                                <!-- Product Card -->
                                                 <div class="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
                                                     <figure class="relative aspect-w-1 aspect-h-1 w-full overflow-hidden bg-gray-50">
-                                                        <img src="{{ asset('assets/images/product-'.$i.'.png') }}"
-                                                            alt="Product {{ $i }}"
+                                                        <img src="{{ Storage::url($product->images->where('is_primary', true)->first()->image_url)}}"
+                                                            alt="{{ $product->name }}"
                                                             class="h-full w-full object-cover object-center group-hover/card:scale-105 transition-transform duration-300">
                                                     </figure>
                                                     <div class="p-4">
                                                         <div class="flex justify-between items-center">
                                                             <div>
-                                                                <p class="text-sm text-gray-500">{{ $category }}</p>
-                                                                <h3 class="text-lg font-medium text-gray-900">Product {{ $i }}</h3>
-                                                                <p class="text-xl font-semibold text-gray-900">$99.99</p>
+                                                                <p class="text-sm text-gray-500">{{ $section->name }}</p>
+                                                                <h3 class="text-lg font-medium text-gray-900">{{ $product->name }}</h3>
+                                                                <p class="text-xl font-semibold text-gray-900">${{ number_format($product->price, 2) }}</p>
                                                             </div>
                                                             <div x-data="{ quantity: 0, showQuantity: false }" 
                                                                 @click.away="showQuantity = false; quantity = 0"
@@ -209,7 +209,7 @@
 
                                                                 <!-- Add to Cart Button -->
                                                                 <button
-                                                                    @click="$wire.addToCart({{ $i }}, quantity)"
+                                                                    @click="$wire.addToCart({{ $product->id }}, quantity)"
                                                                     x-show="showQuantity"
                                                                     class="w-full px-3 py-1 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 transition-colors duration-200"
                                                                     aria-label="Add to cart with quantity"
@@ -221,7 +221,7 @@
                                                     </div>
                                                 </div>
                                             </div>
-                                        @endfor
+                                        @endforeach
                                     </div>
                                 </div>
                             </div>
