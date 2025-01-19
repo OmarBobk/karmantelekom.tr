@@ -15,18 +15,21 @@ class Section extends Model
         'description',
         'order',
         'is_active',
+        'scrollable',
         'position'
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
+        'scrollable' => 'boolean',
         'order' => 'integer'
     ];
 
     public function products(): BelongsToMany
     {
         return $this->belongsToMany(Product::class, 'section_products')
-            ->orderBy('section_products.created_at', 'desc');
+            ->withPivot('ordering')
+            ->orderBy('section_products.ordering', 'asc');
     }
 
     public function scopeActive($query)

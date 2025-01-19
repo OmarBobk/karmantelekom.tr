@@ -37,9 +37,12 @@ class SectionProductSeeder extends Seeder
             )
             ->create()
             ->each(function (Section $section) {
-                // Attach 6 random products to each section
+                // Attach 6 random products to each section with incremental ordering
                 $products = Product::inRandomOrder()->limit(6)->get();
-                $section->products()->attach($products);
+                $ordering = 0;
+                foreach ($products as $product) {
+                    $section->products()->attach($product->id, ['ordering' => $ordering++]);
+                }
             });
     }
 }

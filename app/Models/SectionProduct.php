@@ -4,16 +4,29 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 class SectionProduct extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['name'];
+    protected $fillable = [
+        'section_id',
+        'product_id',
+        'ordering'
+    ];
 
-    public function products(): BelongsToMany
+    protected $casts = [
+        'ordering' => 'integer'
+    ];
+
+    public function section(): BelongsTo
     {
-        return $this->belongsToMany(Product::class, 'product_tags');
+        return $this->belongsTo(Section::class);
+    }
+
+    public function product(): BelongsTo
+    {
+        return $this->belongsTo(Product::class);
     }
 }

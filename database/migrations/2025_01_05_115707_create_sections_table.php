@@ -14,6 +14,7 @@ return new class extends Migration
             $table->text('description')->nullable();
             $table->integer('order')->default(0);
             $table->boolean('is_active')->default(true);
+            $table->boolean('scrollable')->default(false);
             $table->string('position')->default('main'); // main, sidebar, footer, etc.
             $table->timestamps();
         });

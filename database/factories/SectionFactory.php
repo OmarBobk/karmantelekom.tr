@@ -21,6 +21,7 @@ class SectionFactory extends Factory
             'description' => $this->faker->sentence(),
             'order' => $this->faker->numberBetween(1, 100),
             'is_active' => true,
+            'scrollable' => false,
             'position' => $this->faker->randomElement(['main', 'sidebar', 'footer']),
         ];
     }

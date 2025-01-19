@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\Category;
 use App\Models\Product;
+use App\Models\ProductImage;
 use App\Models\Supplier;
 use App\Models\ProductPrice;
 use App\Models\Tag;
@@ -59,6 +60,19 @@ class ProductSeeder extends Seeder
             $product->tags()->attach(
                 $tags->random(rand(2, 4))->pluck('id')->toArray()
             );
+        });
+
+        // Add primary images to products
+        Product::all()->each(function (Product $product) {
+            // Generate a random number between 1 and 6 for the image
+            $imageNumber = rand(1, 6);
+
+            // Create the primary image for the product
+            ProductImage::create([
+                'product_id' => $product->id,
+                'image_url' => "products/product-{$imageNumber}.png",
+                'is_primary' => true,
+            ]);
         });
     }
 }

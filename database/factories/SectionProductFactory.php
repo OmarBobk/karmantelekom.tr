@@ -17,6 +17,7 @@ class SectionProductFactory extends Factory
         return [
             'section_id' => Section::factory(),
             'product_id' => Product::factory(),
+            'ordering' => fake()->numberBetween(0, 100),
         ];
     }
 }
