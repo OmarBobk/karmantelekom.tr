@@ -68,3 +68,8 @@ A fully functional Sections Management Page integrated into the Laravel 11 admin
 Modular, clean, and well-documented code using Laravel best practices.
 Dynamic and intuitive UI built with Livewire and Tailwind CSS.
 Robust backend functionality for managing sections and their attached products.
+
+
+
+
+

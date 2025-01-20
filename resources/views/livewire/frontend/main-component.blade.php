@@ -126,7 +126,7 @@
                     </button>
 
                     <!-- Slider Content -->
-                    <div class="relative overflow-hidden h-[440px]">
+                    <div class="relative overflow-hidden h-[500px]">
                         @foreach($this->sections as $index => $section)
                             <div
                                 id="panel-{{ $index }}"
@@ -158,17 +158,33 @@
                                                             class="h-full w-full object-cover object-center group-hover/card:scale-105 transition-transform duration-300">
                                                     </figure>
                                                     <div class="p-4">
-                                                        <div class="flex justify-between items-center">
-                                                            <div>
-                                                                <p class="text-sm text-gray-500">{{ $section->name }}</p>
-                                                                <h3 class="text-lg font-medium text-gray-900">{{ $product->name }}</h3>
-                                                                <p class="text-xl font-semibold text-gray-900">${{ number_format($product->price, 2) }}</p>
+                                                        <!-- Product Info Header -->
+                                                        <div class="mb-3">
+                                                            <p class="text-sm text-gray-500">{{ $section->name }}</p>
+                                                            <div class="line-clamp-2">
+                                                                <span class="text-base font-medium text-gray-900">{{ $product->name }}</span>
+                                                                <span class="text-sm text-gray-500">{{ $product->description }}</span>
                                                             </div>
+                                                        </div>
+
+                                                        <!-- Price and Quantity Control on same line -->
+                                                        <div class="flex items-center justify-between">
+                                                            <div>
+                                                                @if($product->prices->isNotEmpty())
+                                                                    <p class="text-xl font-semibold text-blue-600">
+                                                                        {{ money($product->prices->first()->price) }}
+                                                                    </p>
+                                                                @else
+                                                                    <p class="text-xl font-semibold text-gray-400">Price not available</p>
+                                                                @endif
+                                                            </div>
+                                                            
+                                                            <!-- Quantity Control -->
                                                             <div x-data="{ quantity: 0, showQuantity: false }" 
                                                                 @click.away="showQuantity = false; quantity = 0"
-                                                                class="flex flex-col items-center justify-between gap-2"
+                                                                class="flex items-center gap-2"
                                                             >
-                                                                <!-- Add Button - Back to original position -->
+                                                                <!-- Add Button -->
                                                                 <button
                                                                     @click="showQuantity = true; quantity++"
                                                                     x-show="!showQuantity"
@@ -180,42 +196,42 @@
                                                                     </svg>
                                                                 </button>
 
-                                                                <!-- Quantity Control - Original size -->
-                                                                <div x-show="showQuantity" class="flex rounded-lg overflow-hidden">
+                                                                <!-- Quantity Controls -->
+                                                                <div x-show="showQuantity" class="flex flex-col items-center gap-1">
+                                                                    <div class="flex rounded-lg overflow-hidden">
+                                                                        <button
+                                                                            @click="if (quantity > 0) quantity--"
+                                                                            class="inline-flex items-center justify-center px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-600 hover:text-gray-900"
+                                                                            aria-label="Decrease quantity"
+                                                                        >
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14" />
+                                                                            </svg>
+                                                                        </button>
+                                                                        <input
+                                                                            type="text"
+                                                                            x-model="quantity"
+                                                                            class="w-12 px-2 py-1 text-center border-t border-b border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                                                        />
+                                                                        <button
+                                                                            @click="quantity++"
+                                                                            class="inline-flex items-center justify-center px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-600 hover:text-gray-900"
+                                                                            aria-label="Increase quantity"
+                                                                        >
+                                                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.5v15m7.5-7.5h-15" />
+                                                                            </svg>
+                                                                        </button>
+                                                                    </div>
+
                                                                     <button
-                                                                        @click="if (quantity > 0) quantity--"
-                                                                        class="inline-flex items-center justify-center px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-600 hover:text-gray-900"
-                                                                        aria-label="Decrease quantity"
+                                                                        @click="$wire.addToCart({{ $product->id }}, quantity)"
+                                                                        class="px-3 w-full text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
+                                                                        aria-label="Add to cart with quantity"
                                                                     >
-                                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14" />
-                                                                        </svg>
-                                                                    </button>
-                                                                    <input
-                                                                        type="text"
-                                                                        x-model="quantity"
-                                                                        class="w-14 px-2 py-1 text-center border-t border-b border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                                    />
-                                                                    <button
-                                                                        @click="quantity++"
-                                                                        class="inline-flex items-center justify-center px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-600 hover:text-gray-900"
-                                                                        aria-label="Increase quantity"
-                                                                    >
-                                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.5v15m7.5-7.5h-15" />
-                                                                        </svg>
+                                                                        Add
                                                                     </button>
                                                                 </div>
-
-                                                                <!-- Add to Cart Button -->
-                                                                <button
-                                                                    @click="$wire.addToCart({{ $product->id }}, quantity)"
-                                                                    x-show="showQuantity"
-                                                                    class="w-full px-3 py-1 text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 rounded-lg focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-900 transition-colors duration-200"
-                                                                    aria-label="Add to cart with quantity"
-                                                                >
-                                                                    Add
-                                                                </button>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -369,153 +385,157 @@
     <!-- Start Products Section Component -->
     <div class="w-full bg-white py-8">
         <!-- Section Header -->
-        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div class="flex items-center justify-between mb-6">
-                <h2 class="text-2xl font-bold text-gray-900">Featured Products</h2>
-                <a href="#" class="text-blue-600 hover:text-blue-700 font-medium">View All</a>
-            </div>
-        </div>
-
-        <!-- Products Grid -->
-        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-            <div class="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-4 md:gap-6 overflow-x-hidden">
-                <!-- Add loading overlay -->
-                <div wire:loading.delay 
-                     class="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 flex items-center justify-center">
-                    <div class="bg-white rounded-lg shadow-xl p-6 max-w-sm mx-auto">
-                        <div class="flex items-center space-x-4">
-                            <svg class="animate-spin size-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            <span class="text-gray-700">Loading products...</span>
-                        </div>
+        @foreach($this->contentSections as $section)
+            <div class="w-full bg-white py-8">
+                <!-- Section Header -->
+                <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    <div class="flex items-center justify-between mb-6">
+                        <h2 class="text-2xl font-bold text-gray-900">{{ $section->name }}</h2>
+                        <a href="#" class="text-blue-600 hover:text-blue-700 font-medium">View All</a>
                     </div>
                 </div>
 
-                @for($i = 1; $i <= 10; $i++)
-                    <div class="group/card" x-data="productSlider">
-                        <!-- Product Card -->
-                        <div class="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
-                            <!-- Image Slider -->
-                            <div class="relative aspect-w-1 aspect-h-1 w-full overflow-hidden h-48 bg-gray-100"
-                                x-on:touchstart="touchStartX = $event.touches[0].clientX"
-                                x-on:touchend="
-                                    touchEndX = $event.changedTouches[0].clientX;
-                                    if (touchStartX - touchEndX > 50) nextSlide();
-                                    if (touchEndX - touchStartX > 50) prevSlide();
-                                ">
-                                @for($imgIndex = 1; $imgIndex <= 3; $imgIndex++)
-                                    <img src="{{ asset('assets/images/product-'.$i.'-'.$imgIndex.'.png') }}"
-                                        alt="Product {{ $i }} - Image {{ $imgIndex }}"
-                                        class="absolute h-full w-full object-cover object-center transition-opacity duration-300"
-                                        :class="{ 'opacity-100': currentSlide === {{ $imgIndex }}, 'opacity-0': currentSlide !== {{ $imgIndex }} }">
-                                @endfor
-                                
-                                <!-- Navigation Arrows -->
-                                <button @click="prevSlide" 
-                                        class="absolute left-2 top-1/2 -translate-y-1/2 p-1 rounded-full bg-white/80 hover:bg-white text-gray-800 opacity-0 group-hover/card:opacity-100 transition-opacity">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                                    </svg>
-                                </button>
-                                
-                                <button @click="nextSlide"
-                                        class="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full bg-white/80 hover:bg-white text-gray-800 opacity-0 group-hover/card:opacity-100 transition-opacity">
-                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                                    </svg>
-                                </button>
-
-                                <!-- Slider Controls -->
-                                <div class="absolute bottom-[.125rem] left-0 right-0 flex justify-center gap-1">
-                                    @for($dotIndex = 1; $dotIndex <= 3; $dotIndex++)
-                                        <button @click="goToSlide({{ $dotIndex }})"
-                                                class="w-2 h-2 rounded-full transition-all duration-200"
-                                                :class="currentSlide === {{ $dotIndex }} ? 'bg-gray-900/50 scale-125' : 'bg-gray-200'">
+                <!-- Products Grid -->
+                <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+                    <div class="h-[340px] grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 overflow-x-hidden">
+                        @foreach($section->products as $product)
+                            <div class="group/card px-4" x-data="productSlider">
+                                <!-- Product Card -->
+                                <div class="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
+                                    <!-- Image Slider -->
+                                    <div class="relative aspect-w-1 aspect-h-1 w-full overflow-hidden h-48 bg-gray-100"
+                                        x-on:touchstart="touchStartX = $event.touches[0].clientX"
+                                        x-on:touchend="
+                                            touchEndX = $event.changedTouches[0].clientX;
+                                            if (touchStartX - touchEndX > 50) nextSlide();
+                                            if (touchEndX - touchStartX > 50) prevSlide();
+                                        ">
+                                        @foreach($product->images as $index => $image)
+                                            <img src="{{ Storage::url($image->image_url) }}"
+                                                alt="{{ $product->name }} - Image {{ $index + 1 }}"
+                                                class="absolute h-full w-full object-cover object-center transition-opacity duration-300"
+                                                :class="{ 'opacity-100': currentSlide === {{ $index + 1 }}, 'opacity-0': currentSlide !== {{ $index + 1 }} }">
+                                        @endforeach
+                                        
+                                        <!-- Navigation Arrows -->
+                                        <button @click="prevSlide" 
+                                                class="absolute left-2 top-1/2 -translate-y-1/2 p-1 rounded-full bg-white/80 hover:bg-white text-gray-800 opacity-0 group-hover/card:opacity-100 transition-opacity">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                                            </svg>
                                         </button>
-                                    @endfor
-                                </div>
-                            </div>
-
-                            <!-- Product Info -->
-                            <div class="p-4">
-                                <div class="flex items-start gap-2">
-                                    <!-- <h3 class="text-lg font-bold text-gray-900">Product {{ $i }}</h3> -->
-                                    <p class="text-sm text-gray-500 line-clamp-2"><span class="text-base font-bold text-gray-900">Product {{ $i }} </span> High quality product with amazing features and incredible design that you'll love to have in your collection</p>
-                                </div>
-
-                                <div class="flex items-center justify-between">
-                                    <p class="text-lg font-bold text-blue-600 mt-2">$99.99</p>
-                                    
-                                    <!-- Quantity Controls -->
-                                    <div class="mt-3" @click.away="showQuantity = false; quantity = 0" x-cloak>
-                                        <button
-                                            @click="showQuantity = true; quantity++"
-                                            x-show="!showQuantity"
-                                            class="w-full p-1 text-white bg-gradient-to-r from-blue-500 to-blue-600 rounded-full hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200"
-                                            x-cloak
-                                        >
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" x-cloak>
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                        
+                                        <button @click="nextSlide"
+                                                class="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full bg-white/80 hover:bg-white text-gray-800 opacity-0 group-hover/card:opacity-100 transition-opacity">
+                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                                             </svg>
                                         </button>
 
-                                        <div x-show="showQuantity" class="space-y-2" x-cloak>
-                                            <div class="flex items-center justify-between" x-cloak>
-                                                <button
-                                                    @click="if (quantity > 0) quantity--"
-                                                    class="p-1 text-white bg-blue-600 rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                                                >
-                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/>
-                                                    </svg>
+                                        <!-- Slider Controls -->
+                                        <div class="absolute bottom-[.125rem] left-0 right-0 flex justify-center gap-1">
+                                            @for($dotIndex = 1; $dotIndex <= 3; $dotIndex++)
+                                                <button @click="goToSlide({{ $dotIndex }})"
+                                                        class="w-2 h-2 rounded-full transition-all duration-200"
+                                                        :class="currentSlide === {{ $dotIndex }} ? 'bg-gray-900/50 scale-125' : 'bg-gray-200'">
                                                 </button>
-                                                
-                                                <input
-                                                    type="text"
-                                                    x-model="quantity"
-                                                    class="w-10 h-[1.35rem] text-center border border-gray-300 rounded-md mx-1"
-                                                />
-                                                
-                                                <button
-                                                    @click="quantity++"
-                                                    class="p-1 text-white bg-blue-600 rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                                                >
-                                                    <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                                                    </svg>
-                                                </button>
+                                            @endfor
+                                        </div>
+                                    </div>
+
+                                    <!-- Product Info -->
+                                    <div class="p-4">
+                                        <div class="flex items-start gap-2">
+                                            <div class="line-clamp-2">
+                                                <span class="text-sm font-medium text-gray-900">{{ $product->name }}</span>
+                                                <span class="text-sm text-gray-500">{{ $product->description }}</span>
+                                            </div>
+                                        </div>
+
+                                        <div class="flex items-center justify-between mt-3">
+                                            <div>
+                                                @if($product->prices->isNotEmpty())
+                                                    <p class="text-xl font-semibold text-blue-600">
+                                                        {{ money($product->prices->first()->price) }}
+                                                    </p>
+                                                @else
+                                                    <p class="text-xl font-semibold text-gray-400">Price not available</p>
+                                                @endif
                                             </div>
                                             
-                                            <button
-                                                @click="$wire.addToCart({{ $i }}, quantity)"
-                                                class="w-full !mt-1 py-1 text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 relative"
-                                                x-cloak
-                                            >
-                                                <span wire:loading.remove wire:target="addToCart({{ $i }})">
-                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-3 w-3 m-auto">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
+                                            <!-- Quantity Controls -->
+                                            <div class="" @click.away="showQuantity = false; quantity = 0" x-cloak>
+                                                <button
+                                                    @click="showQuantity = true; quantity++"
+                                                    x-show="!showQuantity"
+                                                    class="w-full p-1 text-white bg-gradient-to-r from-blue-500 to-blue-600 rounded-full hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200"
+                                                    x-cloak
+                                                >
+                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" x-cloak>
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                                                     </svg>
-                                                </span>
-                                                <span wire:loading wire:target="addToCart({{ $i }})" class="flex items-center justify-center gap-1">
-                                                    <svg class="animate-spin size-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                    </svg>
-                                                    Adding...
-                                                </span>
-                                            </button>
+                                                </button>
+
+                                                <div x-show="showQuantity" class="space-y-2" x-cloak>
+                                                    <div class="flex items-center justify-between" x-cloak>
+                                                        <button
+                                                            @click="if (quantity > 0) quantity--"
+                                                            class="p-1 text-white bg-blue-600 rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                                        >
+                                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/>
+                                                            </svg>
+                                                        </button>
+                                                        
+                                                        <input
+                                                            type="text"
+                                                            x-model="quantity"
+                                                            class="w-10 h-[1.35rem] text-center border border-gray-300 rounded-md mx-1"
+                                                        />
+                                                        
+                                                        <button
+                                                            @click="quantity++"
+                                                            class="p-1 text-white bg-blue-600 rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                                        >
+                                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                                            </svg>
+                                                        </button>
+                                                    </div>
+                                                    
+                                                    <button
+                                                        @click="$wire.addToCart({{ $product->id }}, quantity)"
+                                                        class="w-full !mt-1 py-1 text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 relative"
+                                                        x-cloak
+                                                    >
+                                                        <span wire:loading.remove wire:target="addToCart({{ $product->id }})">
+                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-3 w-3 m-auto">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
+                                                            </svg>
+                                                        </span>
+                                                        <span wire:loading wire:target="addToCart({{ $product->id }})" class="flex items-center justify-center gap-1">
+                                                            <svg class="animate-spin size-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                            </svg>
+                                                            Adding...
+                                                        </span>
+                                                    </button>
+                                                </div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
                             </div>
-                        </div>
+                        @endforeach
                     </div>
-                @endfor
+                </div>
             </div>
-        </div>
-        <style>
+        @endforeach
+    </div>
+    <!-- End Products Section Component -->
+
+    <style>
             /* Existing styles */
             .scrollbar-hide {
                 -ms-overflow-style: none;
@@ -532,6 +552,7 @@
                 -webkit-line-clamp: 2;
                 -webkit-box-orient: vertical;
                 overflow: hidden;
+                text-overflow: ellipsis;
             }
         </style>
 
@@ -558,8 +579,5 @@
                 }));
             });
         </script>
-
-    </div>
-    <!-- End Products Section Component -->
 
 </div>

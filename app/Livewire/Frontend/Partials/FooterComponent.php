@@ -37,6 +37,20 @@ class FooterComponent extends Component
         ['name' => 'Documentation', 'url' => '#'],
     ];
 
+    public $currentCurrency;
+
+    public function mount()
+    {
+        $this->currentCurrency = session('currency', config('app.currency', '$'));
+    }
+
+    public function switchCurrency($currency)
+    {
+        session(['currency' => $currency]);
+        $this->currentCurrency = $currency;
+        $this->dispatch('currencyChanged');
+    }
+
     public function render()
     {
         return view('livewire.frontend.partials.footer-component');

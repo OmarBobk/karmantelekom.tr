@@ -269,7 +269,8 @@
                             <select wire:model="position" id="position"
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
                                 <option value="main">Main</option>
-                                <option value="main.slider">Main - Slider</option>
+                                <option value="main.slider">main.slider</option>
+                                <option value="main.content">main.content</option>
                                 <option value="sidebar">Sidebar</option>
                                 <option value="footer">Footer</option>
                             </select>
