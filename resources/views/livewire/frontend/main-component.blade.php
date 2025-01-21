@@ -1,7 +1,7 @@
 <div>
 
     <!-- Start Slider Component -->
-    <div class="w-full bg-white pb-8 pt-4" x-data="slider" role="region" aria-label="Product Categories Slider">
+    <div class="w-full bg-white pt-4" x-data="slider" role="region" aria-label="Product Categories Slider">
         <!-- Category Navigation -->
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div class="relative" x-data="navigationScroll">
@@ -383,8 +383,7 @@
     <!-- End Slider Component -->
 
     <!-- Start Products Section Component -->
-    <div class="w-full bg-white py-8">
-        <!-- Section Header -->
+    <div class="w-full bg-white pb-8">
         @foreach($this->contentSections as $section)
             <div class="w-full bg-white py-8">
                 <!-- Section Header -->
@@ -395,139 +394,173 @@
                     </div>
                 </div>
 
-                <!-- Products Grid -->
+                <!-- Products Grid with Swiper -->
                 <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-                    <div class="h-[340px] grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 overflow-x-hidden">
-                        @foreach($section->products as $product)
-                            <div class="group/card px-4" x-data="productSlider">
-                                <!-- Product Card -->
-                                <div class="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
-                                    <!-- Image Slider -->
-                                    <div class="relative aspect-w-1 aspect-h-1 w-full overflow-hidden h-48 bg-gray-100"
-                                        x-on:touchstart="touchStartX = $event.touches[0].clientX"
-                                        x-on:touchend="
-                                            touchEndX = $event.changedTouches[0].clientX;
-                                            if (touchStartX - touchEndX > 50) nextSlide();
-                                            if (touchEndX - touchStartX > 50) prevSlide();
-                                        ">
-                                        @foreach($product->images as $index => $image)
-                                            <img src="{{ Storage::url($image->image_url) }}"
-                                                alt="{{ $product->name }} - Image {{ $index + 1 }}"
-                                                class="absolute h-full w-full object-cover object-center transition-opacity duration-300"
-                                                :class="{ 'opacity-100': currentSlide === {{ $index + 1 }}, 'opacity-0': currentSlide !== {{ $index + 1 }} }">
-                                        @endforeach
-                                        
-                                        <!-- Navigation Arrows -->
-                                        <button @click="prevSlide" 
-                                                class="absolute left-2 top-1/2 -translate-y-1/2 p-1 rounded-full bg-white/80 hover:bg-white text-gray-800 opacity-0 group-hover/card:opacity-100 transition-opacity">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                                            </svg>
-                                        </button>
-                                        
-                                        <button @click="nextSlide"
-                                                class="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full bg-white/80 hover:bg-white text-gray-800 opacity-0 group-hover/card:opacity-100 transition-opacity">
-                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                                            </svg>
-                                        </button>
+                    <div class="relative" x-data="productSwiper">
+                        @if($section->scrollable)
+                            <!-- Navigation Buttons -->
+                            <button 
+                                @click="swiper.slidePrev()"
+                                class="absolute left-0 top-1/2 -translate-y-1/2 z-10 size-10 flex items-center justify-center rounded-full bg-white shadow-lg border border-gray-200 text-gray-600 hover:text-gray-900 transition-all duration-200 -translate-x-1/2 opacity-0 group-hover:opacity-100"
+                                :class="{ 'opacity-0 pointer-events-none': atStart, 'opacity-100': !atStart }"
+                            >
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
+                                </svg>
+                            </button>
 
-                                        <!-- Slider Controls -->
-                                        <div class="absolute bottom-[.125rem] left-0 right-0 flex justify-center gap-1">
-                                            @for($dotIndex = 1; $dotIndex <= 3; $dotIndex++)
-                                                <button @click="goToSlide({{ $dotIndex }})"
-                                                        class="w-2 h-2 rounded-full transition-all duration-200"
-                                                        :class="currentSlide === {{ $dotIndex }} ? 'bg-gray-900/50 scale-125' : 'bg-gray-200'">
-                                                </button>
-                                            @endfor
-                                        </div>
-                                    </div>
-
-                                    <!-- Product Info -->
-                                    <div class="p-4">
-                                        <div class="flex items-start gap-2">
-                                            <div class="line-clamp-2">
-                                                <span class="text-sm font-medium text-gray-900">{{ $product->name }}</span>
-                                                <span class="text-sm text-gray-500">{{ $product->description }}</span>
-                                            </div>
-                                        </div>
-
-                                        <div class="flex items-center justify-between mt-3">
-                                            <div>
-                                                @if($product->prices->isNotEmpty())
-                                                    <p class="text-xl font-semibold text-blue-600">
-                                                        {{ money($product->prices->first()->price) }}
-                                                    </p>
-                                                @else
-                                                    <p class="text-xl font-semibold text-gray-400">Price not available</p>
-                                                @endif
-                                            </div>
-                                            
-                                            <!-- Quantity Controls -->
-                                            <div class="" @click.away="showQuantity = false; quantity = 0" x-cloak>
-                                                <button
-                                                    @click="showQuantity = true; quantity++"
-                                                    x-show="!showQuantity"
-                                                    class="w-full p-1 text-white bg-gradient-to-r from-blue-500 to-blue-600 rounded-full hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200"
-                                                    x-cloak
-                                                >
-                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" x-cloak>
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-                                                    </svg>
-                                                </button>
-
-                                                <div x-show="showQuantity" class="space-y-2" x-cloak>
-                                                    <div class="flex items-center justify-between" x-cloak>
-                                                        <button
-                                                            @click="if (quantity > 0) quantity--"
-                                                            class="p-1 text-white bg-blue-600 rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                                                        >
-                                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/>
-                                                            </svg>
-                                                        </button>
-                                                        
-                                                        <input
-                                                            type="text"
-                                                            x-model="quantity"
-                                                            class="w-10 h-[1.35rem] text-center border border-gray-300 rounded-md mx-1"
-                                                        />
-                                                        
-                                                        <button
-                                                            @click="quantity++"
-                                                            class="p-1 text-white bg-blue-600 rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                                                        >
-                                                            <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                                                            </svg>
-                                                        </button>
-                                                    </div>
+                            <button 
+                                @click="swiper.slideNext()"
+                                class="absolute right-0 top-1/2 -translate-y-1/2 z-10 size-10 flex items-center justify-center rounded-full bg-white shadow-lg border border-gray-200 text-gray-600 hover:text-gray-900 transition-all duration-200 translate-x-1/2 opacity-0 group-hover:opacity-100"
+                                :class="{ 'opacity-0 pointer-events-none': atEnd, 'opacity-100': !atEnd }"
+                            >
+                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
+                                </svg>
+                            </button>
+                        @endif
+                        <!-- Swiper Container -->
+                        <div
+                            class="{{ $section->scrollable ? 'swiper-container overflow-hidden pb-5 px-4' : 'mx-auto max-w-7xl' }}"
+                            wire:ignore
+                        >
+                            <div class="{{ $section->scrollable ? 'swiper-wrapper' : 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-y-4' }}">
+                                @foreach($section->products as $product)
+                                    <div class="{{ $section->scrollable ? 'swiper-slide' : '' }}">
+                                        <!-- Existing Product Card Code -->
+                                        <div class="{{ $section->scrollable ? 'group/card' : 'group/card ml-4 mr-3' }}" x-data="productSlider">
+                                            <!-- Your existing product card content -->
+                                            <!-- Product Card -->
+                                            <div class="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
+                                                <!-- Image Slider -->
+                                                <div class="relative aspect-w-1 aspect-h-1 w-full overflow-hidden h-48 bg-gray-100 rounded-md"
+                                                    x-on:touchstart="touchStartX = $event.touches[0].clientX"
+                                                    x-on:touchend="
+                                                        touchEndX = $event.changedTouches[0].clientX;
+                                                        if (touchStartX - touchEndX > 50) nextSlide();
+                                                        if (touchEndX - touchStartX > 50) prevSlide();
+                                                    ">
+                                                    @foreach($product->images as $index => $image)
+                                                        <img src="{{ Storage::url($image->image_url) }}"
+                                                            alt="{{ $product->name }} - Image {{ $index + 1 }}"
+                                                            class="absolute h-full w-full object-cover object-center transition-opacity duration-300"
+                                                            :class="{ 'opacity-100': currentSlide === {{ $index + 1 }}, 'opacity-0': currentSlide !== {{ $index + 1 }} }">
+                                                    @endforeach
                                                     
-                                                    <button
-                                                        @click="$wire.addToCart({{ $product->id }}, quantity)"
-                                                        class="w-full !mt-1 py-1 text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 relative"
-                                                        x-cloak
-                                                    >
-                                                        <span wire:loading.remove wire:target="addToCart({{ $product->id }})">
-                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-3 w-3 m-auto">
-                                                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
-                                                            </svg>
-                                                        </span>
-                                                        <span wire:loading wire:target="addToCart({{ $product->id }})" class="flex items-center justify-center gap-1">
-                                                            <svg class="animate-spin size-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                                                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                            </svg>
-                                                            Adding...
-                                                        </span>
+                                                    <!-- Navigation Arrows -->
+                                                    <button @click="prevSlide" 
+                                                            class="absolute left-2 top-1/2 -translate-y-1/2 p-1 rounded-full bg-white/80 hover:bg-white text-gray-800 opacity-0 group-hover/card:opacity-100 transition-opacity">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
+                                                        </svg>
                                                     </button>
+                                                    
+                                                    <button @click="nextSlide"
+                                                            class="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full bg-white/80 hover:bg-white text-gray-800 opacity-0 group-hover/card:opacity-100 transition-opacity">
+                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                                        </svg>
+                                                    </button>
+
+                                                    <!-- Slider Controls -->
+                                                    <div class="absolute bottom-[.125rem] left-0 right-0 flex justify-center gap-1">
+                                                        @for($dotIndex = 1; $dotIndex <= 3; $dotIndex++)
+                                                            <button @click="goToSlide({{ $dotIndex }})"
+                                                                    class="w-2 h-2 rounded-full transition-all duration-200"
+                                                                    :class="currentSlide === {{ $dotIndex }} ? 'bg-gray-900/50 scale-125' : 'bg-gray-200'">
+                                                            </button>
+                                                        @endfor
+                                                    </div>
+                                                </div>
+
+                                                <!-- Product Info -->
+                                                <div class="p-4">
+                                                    <div class="flex items-start gap-2">
+                                                        <div class="line-clamp-2">
+                                                            <span class="text-sm font-medium text-gray-900">{{ $product->name }}</span>
+                                                            <span class="text-sm text-gray-500">{{ $product->description }}</span>
+                                                        </div>
+                                                    </div>
+
+                                                    <div class="flex items-center justify-between mt-3">
+                                                        <div>
+                                                            @if($product->prices->isNotEmpty())
+                                                                <p class="text-xl font-semibold text-blue-600">
+                                                                    {{ money($product->prices->first()->price) }}
+                                                                </p>
+                                                            @else
+                                                                <p class="text-xl font-semibold text-gray-400">Price not available</p>
+                                                            @endif
+                                                        </div>
+                                                        
+                                                        <!-- Quantity Controls -->
+                                                        <div class="" @click.away="showQuantity = false; quantity = 0" x-cloak>
+                                                            <button
+                                                                @click="showQuantity = true; quantity++"
+                                                                x-show="!showQuantity"
+                                                                class="w-full p-1 text-white bg-gradient-to-r from-blue-500 to-blue-600 rounded-full hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200"
+                                                                x-cloak
+                                                            >
+                                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" x-cloak>
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                                                </svg>
+                                                            </button>
+
+                                                            <div x-show="showQuantity" class="space-y-2" x-cloak>
+                                                                <div class="flex items-center justify-between" x-cloak>
+                                                                    <button
+                                                                        @click="if (quantity > 0) quantity--"
+                                                                        class="p-1 text-white bg-blue-600 rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                                                    >
+                                                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/>
+                                                                        </svg>
+                                                                    </button>
+                                                                    
+                                                                    <input
+                                                                        type="text"
+                                                                        x-model="quantity"
+                                                                        class="w-10 h-[1.35rem] text-center border border-gray-300 rounded-md mx-1"
+                                                                    />
+                                                                    
+                                                                    <button
+                                                                        @click="quantity++"
+                                                                        class="p-1 text-white bg-blue-600 rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                                                                    >
+                                                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                                                        </svg>
+                                                                    </button>
+                                                                </div>
+                                                                
+                                                                <button
+                                                                    @click="$wire.addToCart({{ $product->id }}, quantity)"
+                                                                    class="w-full !mt-1 py-1 text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 relative"
+                                                                    x-cloak
+                                                                >
+                                                                    <span wire:loading.remove wire:target="addToCart({{ $product->id }})">
+                                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-3 w-3 m-auto">
+                                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
+                                                                        </svg>
+                                                                    </span>
+                                                                    <span wire:loading wire:target="addToCart({{ $product->id }})" class="flex items-center justify-center gap-1">
+                                                                        <svg class="animate-spin size-3" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                                        </svg>
+                                                                        Adding...
+                                                                    </span>
+                                                                </button>
+                                                            </div>
+                                                        </div>
+                                                    </div>
                                                 </div>
                                             </div>
                                         </div>
                                     </div>
-                                </div>
+                                @endforeach
                             </div>
-                        @endforeach
+                        </div>
                     </div>
                 </div>
             </div>
@@ -536,48 +569,120 @@
     <!-- End Products Section Component -->
 
     <style>
-            /* Existing styles */
-            .scrollbar-hide {
-                -ms-overflow-style: none;
-                scrollbar-width: none;
+        /* Existing styles */
+        .scrollbar-hide {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
+
+        .scrollbar-hide::-webkit-scrollbar {
+            display: none;
+        }
+
+        /* Added styles */
+        .line-clamp-2 {
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+    </style>
+
+
+
+    @assets
+        <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />
+        <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+    @endassets
+
+    @script
+
+    <script>
+        Alpine.data('productSlider', () => ({
+            currentSlide: 1,
+            quantity: 0,
+            showQuantity: false,
+            touchStartX: 0,
+            touchEndX: 0,
+
+            nextSlide() {
+                this.currentSlide = this.currentSlide === 3 ? 1 : this.currentSlide + 1;
+            },
+
+            prevSlide() {
+                this.currentSlide = this.currentSlide === 1 ? 3 : this.currentSlide - 1;
+            },
+
+            goToSlide(slide) {
+                this.currentSlide = slide;
             }
+        }));
+        Alpine.data('productSwiper', () => ({
+            swiper: null,
+            atStart: true,
+            atEnd: false,
 
-            .scrollbar-hide::-webkit-scrollbar {
-                display: none;
-            }
+            init() {
+                this.$nextTick(() => {
+                    this.initSwiper();
+                });
+            },
 
-            /* Added styles */
-            .line-clamp-2 {
-                display: -webkit-box;
-                -webkit-line-clamp: 2;
-                -webkit-box-orient: vertical;
-                overflow: hidden;
-                text-overflow: ellipsis;
-            }
-        </style>
-
-        <script>
-            document.addEventListener('alpine:init', () => {
-                Alpine.data('productSlider', () => ({
-                    currentSlide: 1,
-                    quantity: 0,
-                    showQuantity: false,
-                    touchStartX: 0,
-                    touchEndX: 0,
-
-                    nextSlide() {
-                        this.currentSlide = this.currentSlide === 3 ? 1 : this.currentSlide + 1;
+            initSwiper() {
+                this.swiper = new Swiper(this.$el.querySelector('.swiper-container'), {
+                    slidesPerView: 1,
+                    spaceBetween: 24,
+                    grabCursor: true,
+                    breakpoints: {
+                        320: {
+                            slidesPerView: 2
+                        },
+                        480: {
+                            slidesPerView: 3
+                        },
+                        640: {
+                            slidesPerView: 2,
+                        },
+                        768: {
+                            slidesPerView: 3,
+                        },
+                        1024: {
+                            slidesPerView: 4,
+                        },
+                        1280: {
+                            slidesPerView: 6,
+                        }
                     },
-
-                    prevSlide() {
-                        this.currentSlide = this.currentSlide === 1 ? 3 : this.currentSlide - 1;
-                    },
-
-                    goToSlide(slide) {
-                        this.currentSlide = slide;
+                    on: {
+                        slideChange: () => {
+                            this.updateNavigation();
+                        },
+                        reachBeginning: () => {
+                            this.atStart = true;
+                        },
+                        reachEnd: () => {
+                            this.atEnd = true;
+                        }
                     }
-                }));
-            });
-        </script>
+                });
+            },
+
+            updateNavigation() {
+                if (this.swiper) {
+                    this.atStart = this.swiper.isBeginning;
+                    this.atEnd = this.swiper.isEnd;
+                }
+            }
+        }));
+
+        // Reinitialize Swiper when Livewire updates the DOM
+        Livewire.hook('morph.updated', ({ el, component }) => {
+            if (el.querySelector('.swiper-container')) {
+                Alpine.initTree(el);
+            }
+        });
+    </script>
+    @endscript
 
 </div>

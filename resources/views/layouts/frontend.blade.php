@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="light">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="light" style="border:none">
     <head>
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -16,6 +16,7 @@
         <footer>
             <livewire:frontend.partials.footer-component />
         </footer>
+        @stack('scripts')
     </body>
 </html>
 

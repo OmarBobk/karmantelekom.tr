@@ -73,3 +73,48 @@ Robust backend functionality for managing sections and their attached products.
 
 
 
+
+<style>
+            /* Existing styles */
+            .scrollbar-hide {
+                -ms-overflow-style: none;
+                scrollbar-width: none;
+            }
+
+            .scrollbar-hide::-webkit-scrollbar {
+                display: none;
+            }
+
+            /* Added styles */
+            .line-clamp-2 {
+                display: -webkit-box;
+                -webkit-line-clamp: 2;
+                -webkit-box-orient: vertical;
+                overflow: hidden;
+                text-overflow: ellipsis;
+            }
+        </style>
+
+        <script>
+            document.addEventListener('alpine:init', () => {
+                Alpine.data('productSlider', () => ({
+                    currentSlide: 1,
+                    quantity: 0,
+                    showQuantity: false,
+                    touchStartX: 0,
+                    touchEndX: 0,
+
+                    nextSlide() {
+                        this.currentSlide = this.currentSlide === 3 ? 1 : this.currentSlide + 1;
+                    },
+
+                    prevSlide() {
+                        this.currentSlide = this.currentSlide === 1 ? 3 : this.currentSlide - 1;
+                    },
+
+                    goToSlide(slide) {
+                        this.currentSlide = slide;
+                    }
+                }));
+            });
+        </script>
