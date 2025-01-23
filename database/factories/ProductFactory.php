@@ -26,7 +26,7 @@ class ProductFactory extends Factory
             'description' => $this->faker->paragraph,
             'category_id' => Category::factory(),
             'supplier_id' => Supplier::factory(),
-            'status' => $this->faker->randomElement(['active', 'inactive']),
+            'status' => 'active',
         ];
     }
 }

@@ -6,45 +6,8 @@
     isLoading: false,
     cartCount: 1,
     cartOpen: false,
-
-    async search() {
-        if (this.searchQuery.length < 2) {
-            this.searchResults = [];
-            return;
-        }
-
-        this.isLoading = true;
-        // Simulate API call - Replace this with your actual search endpoint
-        await new Promise(resolve => setTimeout(resolve, 300));
-
-        // Example results - Replace with your actual search logic
-        this.searchResults = [
-            { title: 'Result 1 matching ' + this.searchQuery, url: '#' },
-            { title: 'Another result for ' + this.searchQuery, url: '#' },
-            { title: 'Third matching result', url: '#' }
-        ];
-        this.isLoading = false;
-    },
-
-    addToCart() {
-        this.cartCount++;
-        this.$dispatch('notify', {
-            message: 'Item added to cart',
-            type: 'success'
-        });
-    },
-
-    removeFromCart() {
-        if (this.cartCount > 0) {
-            this.cartCount--;
-        }
-    },
-
-    changeLang(code) {
-        this.currentLang = code;
-        this.languageOpen = false;
-        $wire.changeLanguage(code);
-    }
+    profileDropdownOpen: false,
+    mobileProfileDropdownOpen: false
 }">
 
     <!-- Desktop Navigation -->
@@ -242,17 +205,113 @@
                 </div>
             </div>
 
-            <!-- Profile -->
-            <div class="relative flex items-center gap-x-2">
-                <a href="{{ route('account') }}"
-                   class="p-2.5 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all duration-200 h-11 w-11 flex items-center justify-center">
-                    <svg class="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                    </svg>
-                </a>
-                <a href="{{ route('account') }}"
-                   class="text-sm text-gray-700 cursor-pointer hover:text-gray-900">Profile</a>
-            </div>
+            @guest
+                <!-- Profile/Login Dropdown -->
+                <div class="relative flex items-center gap-x-2" 
+                     x-data="{ open: false }" 
+                     @mouseleave="open = false">
+                    <div class="flex items-center gap-x-2 cursor-pointer"
+                         @mouseenter="open = true">
+                        <div class="p-2.5 text-gray-700 hover:text-blue-600 rounded-xl transition-all duration-200 h-11 w-11 flex items-center justify-center group-hover:bg-gray-100">
+                            <svg class="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                        </div>
+                        <span class="text-sm text-gray-700 hover:text-blue-600 transition-colors duration-200">Login</span>
+                    </div>
+
+                    <!-- Dropdown Menu -->
+                    <div x-show="open"
+                         x-transition:enter="transition ease-out duration-200"
+                         x-transition:enter-start="opacity-0 scale-95"
+                         x-transition:enter-end="opacity-100 scale-100"
+                         x-transition:leave="transition ease-in duration-150"
+                         x-transition:leave-start="opacity-100 scale-100"
+                         x-transition:leave-end="opacity-0 scale-95"
+                         class="absolute right-[-100%] top-full mt-2 w-60 rounded-xl bg-white shadow-lg ring-1 ring-gray-200 z-10 focus:outline-none"
+                         @mouseenter="open = true"
+                         x-cloak>
+                        <div class="p-4 space-y-3">
+                            <a href="{{ route('login') }}"
+                               class="block w-full px-4 py-2.5 text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg hover:from-blue-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-300 transition-all duration-200 text-center">
+                                Login
+                            </a>
+                            <a href="{{ route('register') }}"
+                               class="block w-full px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-50 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 transition-all duration-200 text-center">
+                                Register
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            @endguest
+
+            @auth
+                <!-- Profile Dropdown -->
+                <div class="relative flex items-center gap-x-2"
+                     x-data="{ open: false }"
+                     @mouseleave="open = false">
+                    <div class="flex items-center gap-x-2 cursor-pointer"
+                         @mouseenter="open = true"
+                         :class="{ 'text-blue-600': open }">
+                        <div class="p-2.5 pr-0 rounded-xl transition-all duration-200 h-11 w-11 flex items-center justify-center group-hover:bg-gray-100"
+                             :class="{ 'text-blue-600 pr-2.5': open, 'text-gray-700 hover:text-blue-600': !open }">
+
+                             <svg x-show="!open" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
+                                <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
+                            </svg>
+
+
+                            <svg x-show="open" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="size-6" x-cloak>
+                                <path fill-rule="evenodd" d="M7.5 6a4.5 4.5 0 1 1 9 0 4.5 4.5 0 0 1-9 0ZM3.751 20.105a8.25 8.25 0 0 1 16.498 0 .75.75 0 0 1-.437.695A18.683 18.683 0 0 1 12 22.5c-2.786 0-5.433-.608-7.812-1.7a.75.75 0 0 1-.437-.695Z" clip-rule="evenodd" />
+                            </svg>
+
+                        </div>
+                        <span class="text-sm transition-colors duration-200"
+                              :class="{ 'text-blue-600': open, 'text-gray-700 hover:text-blue-600': !open }">Profile</span>
+                    </div>
+
+                    <!-- Dropdown Menu -->
+                    <div x-show="open"
+                         x-transition:enter="transition ease-out duration-200"
+                         x-transition:enter-start="opacity-0 scale-95"
+                         x-transition:enter-end="opacity-100 scale-100"
+                         x-transition:leave="transition ease-in duration-150"
+                         x-transition:leave-start="opacity-100 scale-100"
+                         x-transition:leave-end="opacity-0 scale-95"
+                         class="absolute right-[-100%] top-full mt-2 w-60 rounded-xl bg-white shadow-lg ring-1 ring-gray-200 z-50 focus:outline-none"
+                         @mouseenter="open = true"
+                         x-cloak>
+                        <div class="p-4">
+                            <p class="text-md px-[.90rem] font-medium text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-purple-600">
+                                {{ Auth::user()->name }}
+                            </p>
+                            <div class="mt-3 space-y-1">
+                                <a href="{{ route('profile.show') }}" class="flex items-center gap-x-3 px-3 py-2 text-sm text-gray-700 rounded-lg hover:gap-x-5 hover:bg-gray-50 transition-colors duration-200">
+                                    <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                    </svg>
+                                    My Profile
+                                </a>
+                                <a href="#" class="flex items-center gap-x-3 px-3 py-2 text-sm text-gray-700 rounded-lg hover:gap-x-5 hover:bg-gray-50 transition-colors duration-200">
+                                    <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                                    </svg>
+                                    Downloads
+                                </a>
+                                <form method="POST" action="{{ route('logout') }}">
+                                    @csrf
+                                    <button type="submit" class="w-full flex items-center gap-x-3 px-3 py-2 text-sm text-red-600 rounded-lg hover:gap-x-5 hover:bg-red-50 transition-colors duration-200">
+                                        <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                        </svg>
+                                        Logout
+                                    </button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endauth
 
             <!-- Favorites -->
             <div class="relative flex items-center gap-x-2">
@@ -362,14 +421,94 @@
                 </div>
 
                 <!-- Profile -->
-                <div class="relative flex items-center gap-x-2">
-                    <a href="{{ route('profile.show') }}"
-                       class="p-2.5 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all duration-200 h-11 w-11 flex items-center justify-center">
-                        <svg class="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                    </a>
-                </div>
+                
+                @guest
+                    <!-- Mobile Login Dropdown -->
+                    <div class="relative" x-data="{ open: false }">
+                        <button @click="open = !open"
+                                class="p-2.5 text-gray-700 hover:text-blue-600 rounded-xl transition-all duration-200 h-11 w-11 flex items-center justify-center">
+                            <svg class="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                        </button>
+
+                        <!-- Mobile Dropdown -->
+                        <div x-show="open"
+                             x-transition:enter="transition ease-out duration-200"
+                             x-transition:enter-start="opacity-0 scale-95"
+                             x-transition:enter-end="opacity-100 scale-100"
+                             x-transition:leave="transition ease-in duration-150"
+                             x-transition:leave-start="opacity-100 scale-100"
+                             x-transition:leave-end="opacity-0 scale-95"
+                             @click.away="open = false"
+                             class="absolute left-[-6rem] mt-2 w-48 rounded-xl bg-white shadow-lg ring-1 ring-gray-200 z-50 focus:outline-none"
+                             x-cloak>
+                            <div class="p-3 space-y-2">
+                                <a href="{{ route('login') }}"
+                                   class="block w-full px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg hover:from-blue-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-300 transition-all duration-200 text-center">
+                                    Login
+                                </a>
+                                <a href="{{ route('register') }}"
+                                   class="block w-full px-4 py-2 text-sm font-medium text-gray-700 bg-gray-50 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 transition-all duration-200 text-center">
+                                    Register
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                @endguest
+
+                @auth
+                    <!-- Mobile Profile Dropdown -->
+                    <div class="relative" x-data="{ open: false }">
+                        <button @click="open = !open"
+                                class="p-2.5 text-gray-700 hover:text-blue-600 rounded-xl transition-all duration-200 h-11 w-11 flex items-center justify-center">
+                            <svg class="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                        </button>
+
+                        <!-- Mobile Dropdown -->
+                        <div x-show="open"
+                             x-transition:enter="transition ease-out duration-200"
+                             x-transition:enter-start="opacity-0 scale-95"
+                             x-transition:enter-end="opacity-100 scale-100"
+                             x-transition:leave="transition ease-in duration-150"
+                             x-transition:leave-start="opacity-100 scale-100"
+                             x-transition:leave-end="opacity-0 scale-95"
+                             @click.away="open = false"
+                             class="absolute right-0 mt-2 w-48 rounded-xl bg-white shadow-lg ring-1 ring-gray-200 focus:outline-none"
+                             x-cloak>
+                            <div class="p-3">
+                                <p class="text-sm font-medium text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-purple-600 px-3 py-2">
+                                    {{ Auth::user()->name }}
+                                </p>
+                                <div class="mt-2 space-y-1">
+                                    <a href="{{ route('profile.show') }}" class="flex items-center gap-x-3 px-3 py-2 text-sm text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200">
+                                        <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                        </svg>
+                                        My Profile
+                                    </a>
+                                    <a href="#" class="flex items-center gap-x-3 px-3 py-2 text-sm text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200">
+                                        <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                                        </svg>
+                                        Downloads
+                                    </a>
+                                    <form method="POST" action="{{ route('logout') }}">
+                                        @csrf
+                                        <button type="submit" class="w-full flex items-center gap-x-3 px-3 py-2 text-sm text-red-600 rounded-lg hover:bg-red-50 transition-colors duration-200">
+                                            <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                            </svg>
+                                            Logout
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endauth
 
                 <!-- Favorites -->
                 <div class="relative flex items-center gap-x-2">
@@ -586,17 +725,108 @@
                 <a href="#" class="block px-4 py-2.5 text-base font-medium text-gray-900 rounded-lg hover:bg-gray-100">Contact</a>
                 <a href="#" class="block px-4 py-2.5 text-base font-medium text-gray-900 rounded-lg hover:bg-gray-100">Blog</a>
 
-                <!-- Profile -->
-                <div class="relative flex items-center gap-x-2">
-                    <a href="{{ route('profile.show') }}"
-                       class="p-2.5 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all duration-200 h-11 w-11 flex items-center justify-center">
-                        <svg class="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                        </svg>
-                    </a>
-                    <a href="{{ route('profile.show') }}"
-                       class="text-sm text-gray-700 cursor-pointer hover:text-gray-900">Profile</a>
-                </div>
+
+                @auth
+                    <!-- Profile -->
+                    <div class="relative flex items-center gap-x-2">
+                        <a href="{{ route('profile.show') }}"
+                           class="p-2.5 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all duration-200 h-11 w-11 flex items-center justify-center">
+                            <svg class="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                        </a>
+                        <a href="{{ route('profile.show') }}"
+                           class="text-sm text-gray-700 cursor-pointer hover:text-gray-900">Profile</a>
+                    </div>
+                @endauth
+
+                @guest
+                    <!-- Mobile Login Dropdown -->
+                    <div class="relative" x-data="{ open: false }">
+                        <button @click="open = !open"
+                                class="p-2.5 text-gray-700 hover:text-blue-600 rounded-xl transition-all duration-200 h-11 w-11 flex items-center justify-center">
+                            <svg class="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                        </button>
+
+                        <!-- Mobile Dropdown -->
+                        <div x-show="open"
+                             x-transition:enter="transition ease-out duration-200"
+                             x-transition:enter-start="opacity-0 scale-95"
+                             x-transition:enter-end="opacity-100 scale-100"
+                             x-transition:leave="transition ease-in duration-150"
+                             x-transition:leave-start="opacity-100 scale-100"
+                             x-transition:leave-end="opacity-0 scale-95"
+                             @click.away="open = false"
+                             class="absolute right-0 mt-2 w-48 rounded-xl bg-white shadow-lg ring-1 ring-gray-200 focus:outline-none"
+                             x-cloak>
+                            <div class="p-3 space-y-2">
+                                <a href="{{ route('login') }}"
+                                   class="block w-full px-4 py-2 text-sm font-medium text-white bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg hover:from-blue-600 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-300 transition-all duration-200 text-center">
+                                    Login
+                                </a>
+                                <a href="{{ route('register') }}"
+                                   class="block w-full px-4 py-2 text-sm font-medium text-gray-700 bg-gray-50 rounded-lg hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 transition-all duration-200 text-center">
+                                    Register
+                                </a>
+                            </div>
+                        </div>
+                    </div>
+                @endguest
+
+                @auth
+                    <!-- Mobile Profile Dropdown -->
+                    <div class="relative" x-data="{ open: false }">
+                        <button @click="open = !open"
+                                class="p-2.5 text-gray-700 hover:text-blue-600 rounded-xl transition-all duration-200 h-11 w-11 flex items-center justify-center">
+                            <svg class="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                            </svg>
+                        </button>
+
+                        <!-- Mobile Dropdown -->
+                        <div x-show="open"
+                             x-transition:enter="transition ease-out duration-200"
+                             x-transition:enter-start="opacity-0 scale-95"
+                             x-transition:enter-end="opacity-100 scale-100"
+                             x-transition:leave="transition ease-in duration-150"
+                             x-transition:leave-start="opacity-100 scale-100"
+                             x-transition:leave-end="opacity-0 scale-95"
+                             @click.away="open = false"
+                             class="absolute right-0 mt-2 w-48 rounded-xl bg-white shadow-lg ring-1 ring-gray-200 focus:outline-none"
+                             x-cloak>
+                            <div class="p-3">
+                                <p class="text-sm font-medium text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-purple-600 px-3 py-2">
+                                    {{ Auth::user()->name }}
+                                </p>
+                                <div class="mt-2 space-y-1">
+                                    <a href="{{ route('profile.show') }}" class="flex items-center gap-x-3 px-3 py-2 text-sm text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200">
+                                        <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                        </svg>
+                                        My Profile
+                                    </a>
+                                    <a href="#" class="flex items-center gap-x-3 px-3 py-2 text-sm text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200">
+                                        <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
+                                        </svg>
+                                        Downloads
+                                    </a>
+                                    <form method="POST" action="{{ route('logout') }}">
+                                        @csrf
+                                        <button type="submit" class="w-full flex items-center gap-x-3 px-3 py-2 text-sm text-red-600 rounded-lg hover:bg-red-50 transition-colors duration-200">
+                                            <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+                                            </svg>
+                                            Logout
+                                        </button>
+                                    </form>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                @endauth
 
                 <!-- Favorites -->
                 <div class="relative flex items-center gap-x-2">

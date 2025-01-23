@@ -383,7 +383,7 @@
     <!-- End Slider Component -->
 
     <!-- Start Products Section Component -->
-    <div class="w-full bg-white pb-8">
+    <div class="w-full bg-white pb-8" x-cloak>
         @foreach($this->contentSections as $section)
             <div class="w-full bg-white py-8">
                 <!-- Section Header -->
@@ -421,6 +421,7 @@
                         @endif
                         <!-- Swiper Container -->
                         <div
+                            x-cloak
                             class="{{ $section->scrollable ? 'swiper-container overflow-hidden pb-5 px-4' : 'mx-auto max-w-7xl' }}"
                             wire:ignore
                         >

@@ -14,7 +14,7 @@ class SectionProductSeeder extends Seeder
     {
         // Create 3 sections
         Section::factory()
-            ->count(3)
+            ->count(9)
             ->sequence(
                 [
                     'name' => 'Featured Products',
@@ -33,7 +33,7 @@ class SectionProductSeeder extends Seeder
                     'description' => 'Limited time deals',
                     'order' => 3,
                     'position' => 'main',
-                ]
+                ],
             )
             ->create()
             ->each(function (Section $section) {
