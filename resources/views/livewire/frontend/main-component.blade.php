@@ -1,4 +1,29 @@
 <div>
+    <!-- Loading Overlay -->
+    <div
+        x-data="{ show: false }"
+        x-show="show"
+        x-on:currency-switching.window="show = true"
+        x-on:currency-switched.window="setTimeout(() => show = false, 300)"
+        class="fixed inset-0 z-50 bg-gray-900/50 backdrop-blur-sm transition-opacity"
+        x-transition:enter="ease-out duration-300"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="ease-in duration-200"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0"
+        style="display: none;"
+    >
+        <div class="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
+            <div class="bg-white/80 backdrop-blur-sm shadow-xl rounded-lg px-6 py-4 flex items-center gap-3">
+                <svg class="animate-spin size-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span class="text-sm font-medium text-gray-900">Updating prices...</span>
+            </div>
+        </div>
+    </div>
 
     <!-- Start Slider Component -->
     <div class="w-full bg-white pt-4" x-data="slider" role="region" aria-label="Product Categories Slider">
@@ -13,11 +38,11 @@
                                 opacity-0 transition-opacity duration-200"
                         :class="{ 'opacity-90': !atStart }"
                     ></div>
-                    
-                    <button 
+
+                    <button
                         @click="scrollTabsLeft"
                         class="relative ml-1 size-8 flex items-center justify-center rounded-full bg-white shadow-md border border-gray-200/50
-                            text-gray-400 hover:text-gray-600 transition-all duration-200 
+                            text-gray-400 hover:text-gray-600 transition-all duration-200
                             opacity-0 hover:bg-gray-50"
                         :class="{ 'opacity-100': !atStart }"
                         x-show="!atStart"
@@ -35,11 +60,11 @@
                                 opacity-0 transition-opacity duration-200"
                         :class="{ 'opacity-90': !atEnd }"
                     ></div>
-                    
-                    <button 
+
+                    <button
                         @click="scrollTabsRight"
                         class="relative mr-1 size-8 flex items-center justify-center rounded-full bg-white shadow-md border border-gray-200/50
-                            text-gray-400 hover:text-gray-600 transition-all duration-200 
+                            text-gray-400 hover:text-gray-600 transition-all duration-200
                             opacity-0 hover:bg-gray-50"
                         :class="{ 'opacity-100': !atEnd }"
                         x-show="!atEnd"
@@ -60,7 +85,7 @@
                 >
                     <div class="flex flex-nowrap border-b border-gray-200" x-cloak>
                         <div class="flex flex-nowrap whitespace-nowrap">
-                            
+
                             @foreach($sections as $index => $section)
                                 <button
                                     x-on:click="$wire.activeCategory = {{ $index }}"
@@ -77,7 +102,7 @@
                                 </button>
 
                                 <!-- Add loading indicator after the tabs -->
-                                <div wire:loading wire:target="setActiveCategory" 
+                                <div wire:loading wire:target="setActiveCategory"
                                     class="absolute inset-x-0 top-full mt-2 flex items-center justify-center">
                                     <div class="bg-white/90 backdrop-blur-sm shadow-lg rounded-lg px-4 py-2 text-sm text-gray-600 flex items-center gap-2">
                                         <svg class="animate-spin size-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -178,9 +203,9 @@
                                                                     <p class="text-xl font-semibold text-gray-400">Price not available</p>
                                                                 @endif
                                                             </div>
-                                                            
+
                                                             <!-- Quantity Control -->
-                                                            <div x-data="{ quantity: 0, showQuantity: false }" 
+                                                            <div x-data="{ quantity: 0, showQuantity: false }"
                                                                 @click.away="showQuantity = false; quantity = 0"
                                                                 class="flex items-center gap-2"
                                                             >
@@ -295,7 +320,7 @@
                             const gap = 24; // gap-6 = 24px
                             const scrollAmount = (productWidth + gap) * 2;
                             activeSlider.scrollBy({ left: -scrollAmount, behavior: 'smooth' });
-                            
+
                             // Update buttons after scroll animation
                             setTimeout(() => {
                                 this.updateScrollButtons(this.$wire.activeCategory);
@@ -310,7 +335,7 @@
                             const gap = 24; // gap-6 = 24px
                             const scrollAmount = (productWidth + gap) * 2;
                             activeSlider.scrollBy({ left: scrollAmount, behavior: 'smooth' });
-                            
+
                             // Update buttons after scroll animation
                             setTimeout(() => {
                                 this.updateScrollButtons(this.$wire.activeCategory);
@@ -325,7 +350,7 @@
                             const buffer = 1;
                             this.atStart = activeSlider.scrollLeft <= buffer;
                             this.atEnd = Math.ceil(activeSlider.scrollLeft + activeSlider.offsetWidth + buffer) >= activeSlider.scrollWidth;
-                            
+
                             // Force Alpine to react to the changes
                             this.$nextTick(() => {
                                 this.atStart = this.atStart;
@@ -399,7 +424,7 @@
                     <div class="relative" x-data="productSwiper">
                         @if($section->scrollable)
                             <!-- Navigation Buttons -->
-                            <button 
+                            <button
                                 @click="swiper.slidePrev()"
                                 class="absolute left-0 top-1/2 -translate-y-1/2 z-10 size-10 flex items-center justify-center rounded-full bg-white shadow-lg border border-gray-200 text-gray-600 hover:text-gray-900 transition-all duration-200 -translate-x-1/2 opacity-0 group-hover:opacity-100"
                                 :class="{ 'opacity-0 pointer-events-none': atStart, 'opacity-100': !atStart }"
@@ -409,7 +434,7 @@
                                 </svg>
                             </button>
 
-                            <button 
+                            <button
                                 @click="swiper.slideNext()"
                                 class="absolute right-0 top-1/2 -translate-y-1/2 z-10 size-10 flex items-center justify-center rounded-full bg-white shadow-lg border border-gray-200 text-gray-600 hover:text-gray-900 transition-all duration-200 translate-x-1/2 opacity-0 group-hover:opacity-100"
                                 :class="{ 'opacity-0 pointer-events-none': atEnd, 'opacity-100': !atEnd }"
@@ -423,7 +448,7 @@
                         <div
                             x-cloak
                             class="{{ $section->scrollable ? 'swiper-container overflow-hidden pb-5 px-4' : 'mx-auto max-w-7xl' }}"
-                            wire:ignore
+                            
                         >
                             <div class="{{ $section->scrollable ? 'swiper-wrapper' : 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-y-4' }}">
                                 @foreach($section->products as $product)
@@ -447,15 +472,15 @@
                                                             class="absolute h-full w-full object-cover object-center transition-opacity duration-300"
                                                             :class="{ 'opacity-100': currentSlide === {{ $index + 1 }}, 'opacity-0': currentSlide !== {{ $index + 1 }} }">
                                                     @endforeach
-                                                    
+
                                                     <!-- Navigation Arrows -->
-                                                    <button @click="prevSlide" 
+                                                    <button @click="prevSlide"
                                                             class="absolute left-2 top-1/2 -translate-y-1/2 p-1 rounded-full bg-white/80 hover:bg-white text-gray-800 opacity-0 group-hover/card:opacity-100 transition-opacity">
                                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
                                                         </svg>
                                                     </button>
-                                                    
+
                                                     <button @click="nextSlide"
                                                             class="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full bg-white/80 hover:bg-white text-gray-800 opacity-0 group-hover/card:opacity-100 transition-opacity">
                                                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -493,7 +518,7 @@
                                                                 <p class="text-xl font-semibold text-gray-400">Price not available</p>
                                                             @endif
                                                         </div>
-                                                        
+
                                                         <!-- Quantity Controls -->
                                                         <div class="" @click.away="showQuantity = false; quantity = 0" x-cloak>
                                                             <button
@@ -517,13 +542,13 @@
                                                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/>
                                                                         </svg>
                                                                     </button>
-                                                                    
+
                                                                     <input
                                                                         type="text"
                                                                         x-model="quantity"
                                                                         class="w-10 h-[1.35rem] text-center border border-gray-300 rounded-md mx-1"
                                                                     />
-                                                                    
+
                                                                     <button
                                                                         @click="quantity++"
                                                                         class="p-1 text-white bg-blue-600 rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
@@ -533,7 +558,7 @@
                                                                         </svg>
                                                                     </button>
                                                                 </div>
-                                                                
+
                                                                 <button
                                                                     @click="$wire.addToCart({{ $product->id }}, quantity)"
                                                                     class="w-full !mt-1 py-1 text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 relative"
@@ -619,6 +644,7 @@
                 this.currentSlide = slide;
             }
         }));
+
         Alpine.data('productSwiper', () => ({
             swiper: null,
             atStart: true,
@@ -628,10 +654,38 @@
                 this.$nextTick(() => {
                     this.initSwiper();
                 });
+
+                // Listen for Livewire updates
+                Livewire.on('content-sections-updated', () => {
+                    // Dispatch event to show loading state
+                    window.dispatchEvent(new CustomEvent('currency-switching'));
+
+                    // Wait for DOM to be updated
+                    this.$nextTick(() => {
+                        this.reinitializeSwiper();
+
+                        // Dispatch event to hide loading state
+                        window.dispatchEvent(new CustomEvent('currency-switched'));
+                    });
+                });
+            },
+
+            reinitializeSwiper() {
+                if (this.swiper) {
+                    this.swiper.destroy(true, true);
+                    this.swiper = null;
+                }
+
+                requestAnimationFrame(() => {
+                    this.initSwiper();
+                });
             },
 
             initSwiper() {
-                this.swiper = new Swiper(this.$el.querySelector('.swiper-container'), {
+                const container = this.$el.querySelector('.swiper-container');
+                if (!container) return;
+
+                this.swiper = new Swiper(container, {
                     slidesPerView: 1,
                     spaceBetween: 24,
                     grabCursor: true,
@@ -664,6 +718,9 @@
                         },
                         reachEnd: () => {
                             this.atEnd = true;
+                        },
+                        init: () => {
+                            this.updateNavigation();
                         }
                     }
                 });
@@ -677,11 +734,9 @@
             }
         }));
 
-        // Reinitialize Swiper when Livewire updates the DOM
-        Livewire.hook('morph.updated', ({ el, component }) => {
-            if (el.querySelector('.swiper-container')) {
-                Alpine.initTree(el);
-            }
+        // Remove the global event listener since we're handling it in the Alpine component
+        Livewire.on('content-sections-updated', () => {
+            // This is now handled within each productSwiper instance
         });
     </script>
     @endscript

@@ -4,24 +4,27 @@ namespace App\Livewire\Frontend;
 
 use App\Models\Section;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\On;
 use Livewire\Component;
+use function Laravel\Prompts\alert;
 
 class MainComponent extends Component
 {
     public $activeCategory = 0;
     public $sections;
-
-    protected $listeners = ['currencyChanged' => 'loadSections()'];
+    public $contentSections;
 
     public function mount()
     {
         $this->loadSections();
+        $this->loadContentSections();
     }
 
-    protected function loadSections()
+    #[On('currencyChanged')]
+    public function loadSections()
     {
         $currency = session('currency', config('app.currency', '$'));
-        
+
         $this->sections = Section::with(['products' => function($query) use ($currency) {
             $query->with([
                 'images' => function($query) {
@@ -41,11 +44,12 @@ class MainComponent extends Component
         ->get();
     }
 
-    protected function loadContentSections()
+    #[On('currencyChanged')]
+    public function loadContentSections()
     {
         $currency = session('currency', config('app.currency', '$'));
         
-        $sections = Section::with(['products' => function($query) use ($currency) {
+        $this->contentSections = Section::with(['products' => function($query) use ($currency) {
             $query->with([
                 'images' => function($query) {
                     $query->orderBy('is_primary', 'desc');
@@ -62,12 +66,8 @@ class MainComponent extends Component
         ->orderBy('order')
         ->get();
 
-        return $sections;
-    }
-
-    public function getContentSectionsProperty()
-    {
-        return $this->loadContentSections();
+        // Dispatch an event to reinitialize Swiper after the content is updated
+        $this->dispatch('content-sections-updated');
     }
 
     // Slider Component

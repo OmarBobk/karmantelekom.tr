@@ -46,6 +46,9 @@ class FooterComponent extends Component
 
     public function switchCurrency($currency)
     {
+        // Dispatch event before starting the update
+        $this->dispatch('currency-switching');
+        
         session(['currency' => $currency]);
         $this->currentCurrency = $currency;
         $this->dispatch('currencyChanged');

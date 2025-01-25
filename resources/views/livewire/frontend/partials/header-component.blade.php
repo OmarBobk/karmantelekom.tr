@@ -476,7 +476,7 @@
                              x-transition:leave-start="opacity-100 scale-100"
                              x-transition:leave-end="opacity-0 scale-95"
                              @click.away="open = false"
-                             class="absolute right-0 z-50 mt-2 w-48 rounded-xl bg-white shadow-lg ring-1 ring-gray-200 focus:outline-none"
+                             class="absolute right-[-125%] z-50 mt-2 w-48 rounded-xl bg-white shadow-lg ring-1 ring-gray-200 focus:outline-none"
                              x-cloak>
                             <div class="p-3">
                                 <p class="text-sm font-medium text-transparent bg-clip-text bg-gradient-to-r from-blue-500 to-purple-600 px-3 py-2">
