@@ -8,7 +8,7 @@
     cartOpen: false,
     profileDropdownOpen: false,
     mobileProfileDropdownOpen: false,
-    
+
     init() {
         this.$watch('sidebarOpen', value => {
             if (value) {
@@ -34,7 +34,7 @@
                 </svg>
             </button>
             <a href="{{ route('main') }}" class="text-2xl font-semibold" style="font-family: 'Poppins', sans-serif; background: linear-gradient(to right, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-                İndirmGo
+                İndirimGo
             </a>
         </div>
 
@@ -219,8 +219,8 @@
 
             @guest
                 <!-- Profile/Login Dropdown -->
-                <div class="relative flex items-center gap-x-2" 
-                     x-data="{ open: false }" 
+                <div class="relative flex items-center gap-x-2"
+                     x-data="{ open: false }"
                      @mouseleave="open = false">
                     <div class="flex items-center gap-x-2 cursor-pointer"
                          @mouseenter="open = true">
@@ -444,7 +444,7 @@
                 </div>
 
                 <!-- Profile -->
-                
+
                 @guest
                     <!-- Mobile Login Dropdown -->
                     <div class="relative" x-data="{ open: false }">
@@ -746,11 +746,11 @@
                 <div class="border-t border-gray-200 my-4"></div>
                 <a href="#" class="block px-4 py-2.5 text-base font-medium text-gray-900 rounded-lg hover:bg-gray-100">About Us</a>
                 <a href="#" class="block px-4 py-2.5 text-base font-medium text-gray-900 rounded-lg hover:bg-gray-100">Contact</a>
-                <a href="#" class="block px-4 py-2.5 text-base font-medium text-gray-900 rounded-lg hover:bg-gray-100">Blog</a> 
-                
+                <a href="#" class="block px-4 py-2.5 text-base font-medium text-gray-900 rounded-lg hover:bg-gray-100">Blog</a>
+
                 <div class="relative py-1 px-2 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     x-data="{ open: false }">
-                    <a 
+                    <a
                         href="#"
                         @click="open = !open"
                         @click.away="open = false"
@@ -762,7 +762,7 @@
                         </svg>
                     </a>
 
-                    <div 
+                    <div
                         x-show="open"
                         x-transition
                         class="absolute bottom-full mb-2 right-0 w-24 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50"

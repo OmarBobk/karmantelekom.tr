@@ -23,8 +23,10 @@ class RoleRedirectMiddleware
             // Check if the user has the "shop owner" role
             if (!$user->hasRole('admin|salesperson')) {
                 // Redirect to a specific page if they try to access the dashboard or subdomain
-                return redirect()->to(config('app.url') . '/404'); // Change this to the desired URL
+                return redirect()->to(config('app.url') . '/404');
             }
+        } else {
+            return redirect()->to(config('app.url') . '/404');
         }
 
         return $next($request);
