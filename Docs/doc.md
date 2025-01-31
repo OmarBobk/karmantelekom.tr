@@ -75,3 +75,32 @@ ssh root@138.68.74.101
 
 eval "$(ssh-agent -s)"
 ssh-add ~/.ssh/karmantest
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

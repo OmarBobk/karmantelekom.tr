@@ -1,13 +1,17 @@
 <?php
 
 use App\Livewire\CartComponent;
+use App\Livewire\Errors\NotFound;
 use App\Livewire\Frontend\MainComponent;
 use App\Livewire\ProductComponent;
 use App\Livewire\ProductsComponent;
 use App\Livewire\ProfileComponent;
 use Illuminate\Support\Facades\Route;
 
-Route::get('test', function () { return 'test from maindomain';});
+
+Route::get('/404', NotFound::class)->name('404');
+
+Route::get('test', function () { return 'test from main domain';});
 
 Route::get('/', MainComponent::class)->name('main');
 Route::get('/product', ProductComponent::class);

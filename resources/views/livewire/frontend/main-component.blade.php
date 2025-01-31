@@ -448,7 +448,7 @@
                         <div
                             x-cloak
                             class="{{ $section->scrollable ? 'swiper-container overflow-hidden pb-5 px-4' : 'mx-auto max-w-7xl' }}"
-                            
+
                         >
                             <div class="{{ $section->scrollable ? 'swiper-wrapper' : 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-y-4' }}">
                                 @foreach($section->products as $product)
@@ -624,121 +624,121 @@
 
     @script
 
-    <script>
-        Alpine.data('productSlider', () => ({
-            currentSlide: 1,
-            quantity: 0,
-            showQuantity: false,
-            touchStartX: 0,
-            touchEndX: 0,
+        <script>
+            Alpine.data('productSlider', () => ({
+                currentSlide: 1,
+                quantity: 0,
+                showQuantity: false,
+                touchStartX: 0,
+                touchEndX: 0,
 
-            nextSlide() {
-                this.currentSlide = this.currentSlide === 3 ? 1 : this.currentSlide + 1;
-            },
+                nextSlide() {
+                    this.currentSlide = this.currentSlide === 3 ? 1 : this.currentSlide + 1;
+                },
 
-            prevSlide() {
-                this.currentSlide = this.currentSlide === 1 ? 3 : this.currentSlide - 1;
-            },
+                prevSlide() {
+                    this.currentSlide = this.currentSlide === 1 ? 3 : this.currentSlide - 1;
+                },
 
-            goToSlide(slide) {
-                this.currentSlide = slide;
-            }
-        }));
+                goToSlide(slide) {
+                    this.currentSlide = slide;
+                }
+            }));
 
-        Alpine.data('productSwiper', () => ({
-            swiper: null,
-            atStart: true,
-            atEnd: false,
+            Alpine.data('productSwiper', () => ({
+                swiper: null,
+                atStart: true,
+                atEnd: false,
 
-            init() {
-                this.$nextTick(() => {
-                    this.initSwiper();
-                });
-
-                // Listen for Livewire updates
-                Livewire.on('content-sections-updated', () => {
-                    // Dispatch event to show loading state
-                    window.dispatchEvent(new CustomEvent('currency-switching'));
-
-                    // Wait for DOM to be updated
+                init() {
                     this.$nextTick(() => {
-                        this.reinitializeSwiper();
-
-                        // Dispatch event to hide loading state
-                        window.dispatchEvent(new CustomEvent('currency-switched'));
+                        this.initSwiper();
                     });
-                });
-            },
 
-            reinitializeSwiper() {
-                if (this.swiper) {
-                    this.swiper.destroy(true, true);
-                    this.swiper = null;
-                }
+                    // Listen for Livewire updates
+                    Livewire.on('content-sections-updated', () => {
+                        // Dispatch event to show loading state
+                        window.dispatchEvent(new CustomEvent('currency-switching'));
 
-                requestAnimationFrame(() => {
-                    this.initSwiper();
-                });
-            },
+                        // Wait for DOM to be updated
+                        this.$nextTick(() => {
+                            this.reinitializeSwiper();
 
-            initSwiper() {
-                const container = this.$el.querySelector('.swiper-container');
-                if (!container) return;
+                            // Dispatch event to hide loading state
+                            window.dispatchEvent(new CustomEvent('currency-switched'));
+                        });
+                    });
+                },
 
-                this.swiper = new Swiper(container, {
-                    slidesPerView: 1,
-                    spaceBetween: 24,
-                    grabCursor: true,
-                    breakpoints: {
-                        320: {
-                            slidesPerView: 2
-                        },
-                        480: {
-                            slidesPerView: 3
-                        },
-                        640: {
-                            slidesPerView: 2,
-                        },
-                        768: {
-                            slidesPerView: 3,
-                        },
-                        1024: {
-                            slidesPerView: 4,
-                        },
-                        1280: {
-                            slidesPerView: 6,
-                        }
-                    },
-                    on: {
-                        slideChange: () => {
-                            this.updateNavigation();
-                        },
-                        reachBeginning: () => {
-                            this.atStart = true;
-                        },
-                        reachEnd: () => {
-                            this.atEnd = true;
-                        },
-                        init: () => {
-                            this.updateNavigation();
-                        }
+                reinitializeSwiper() {
+                    if (this.swiper) {
+                        this.swiper.destroy(true, true);
+                        this.swiper = null;
                     }
-                });
-            },
 
-            updateNavigation() {
-                if (this.swiper) {
-                    this.atStart = this.swiper.isBeginning;
-                    this.atEnd = this.swiper.isEnd;
+                    requestAnimationFrame(() => {
+                        this.initSwiper();
+                    });
+                },
+
+                initSwiper() {
+                    const container = this.$el.querySelector('.swiper-container');
+                    if (!container) return;
+
+                    this.swiper = new Swiper(container, {
+                        slidesPerView: 1,
+                        spaceBetween: 24,
+                        grabCursor: true,
+                        breakpoints: {
+                            320: {
+                                slidesPerView: 2
+                            },
+                            480: {
+                                slidesPerView: 3
+                            },
+                            640: {
+                                slidesPerView: 2,
+                            },
+                            768: {
+                                slidesPerView: 3,
+                            },
+                            1024: {
+                                slidesPerView: 4,
+                            },
+                            1280: {
+                                slidesPerView: 6,
+                            }
+                        },
+                        on: {
+                            slideChange: () => {
+                                this.updateNavigation();
+                            },
+                            reachBeginning: () => {
+                                this.atStart = true;
+                            },
+                            reachEnd: () => {
+                                this.atEnd = true;
+                            },
+                            init: () => {
+                                this.updateNavigation();
+                            }
+                        }
+                    });
+                },
+
+                updateNavigation() {
+                    if (this.swiper) {
+                        this.atStart = this.swiper.isBeginning;
+                        this.atEnd = this.swiper.isEnd;
+                    }
                 }
-            }
-        }));
+            }));
 
-        // Remove the global event listener since we're handling it in the Alpine component
-        Livewire.on('content-sections-updated', () => {
-            // This is now handled within each productSwiper instance
-        });
-    </script>
+            // Remove the global event listener since we're handling it in the Alpine component
+            Livewire.on('content-sections-updated', () => {
+                // This is now handled within each productSwiper instance
+            });
+        </script>
     @endscript
 
 </div>

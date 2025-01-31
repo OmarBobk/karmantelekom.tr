@@ -7,7 +7,19 @@
     cartCount: 1,
     cartOpen: false,
     profileDropdownOpen: false,
-    mobileProfileDropdownOpen: false
+    mobileProfileDropdownOpen: false,
+    
+    init() {
+        this.$watch('sidebarOpen', value => {
+            if (value) {
+                document.body.style.overflow = 'hidden';
+                document.body.style.touchAction = 'none';
+            } else {
+                document.body.style.overflow = '';
+                document.body.style.touchAction = '';
+            }
+        });
+    }
 }">
 
     <!-- Desktop Navigation -->
@@ -267,7 +279,7 @@
 
                         </div>
                         <span class="text-sm transition-colors duration-200"
-                              :class="{ 'text-blue-600': open, 'text-gray-700 hover:text-blue-600': !open }">Profile</span>
+                              :class="{ 'text-blue-600': open, 'text-gray-700 hover:text-blue-600': !open }">Account</span>
                     </div>
 
                     <!-- Dropdown Menu -->
@@ -286,12 +298,23 @@
                                 {{ Auth::user()->name }}
                             </p>
                             <div class="mt-3 space-y-1">
-                                <a href="{{ route('profile.show') }}" class="flex items-center gap-x-3 px-3 py-2 text-sm text-gray-700 rounded-lg hover:gap-x-5 hover:bg-gray-50 transition-colors duration-200">
-                                    <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                    </svg>
-                                    My Profile
-                                </a>
+
+                                @hasanyrole('admin|salesperson')
+                                    <a href="{{ route('subdomain.main') }}" class="flex items-center gap-x-3 px-3 py-2 text-sm text-gray-700 rounded-lg hover:gap-x-5 hover:bg-gray-50 transition-colors duration-200">
+                                        <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                        </svg>
+                                        Dashboard
+                                    </a>
+                                @else
+                                    <a href="{{ route('account') }}" class="flex items-center gap-x-3 px-3 py-2 text-sm text-gray-700 rounded-lg hover:gap-x-5 hover:bg-gray-50 transition-colors duration-200">
+                                        <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                        </svg>
+                                        Profile
+                                    </a>
+                                @endrole
+
                                 <a href="#" class="flex items-center gap-x-3 px-3 py-2 text-sm text-gray-700 rounded-lg hover:gap-x-5 hover:bg-gray-50 transition-colors duration-200">
                                     <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />
@@ -700,7 +723,7 @@
              x-transition:leave="transition ease-in-out duration-300 transform"
              x-transition:leave-start="translate-x-0"
              x-transition:leave-end="-translate-x-full"
-             class="fixed inset-y-0 left-0 w-full max-w-xs bg-white shadow-lg">
+             class="fixed overflow-auto inset-y-0 left-0 w-full max-w-xs bg-white shadow-lg">
 
             <!-- Sidebar Header -->
             <div class="flex items-center justify-between p-4 border-b">
@@ -724,6 +747,44 @@
                 <a href="#" class="block px-4 py-2.5 text-base font-medium text-gray-900 rounded-lg hover:bg-gray-100">About Us</a>
                 <a href="#" class="block px-4 py-2.5 text-base font-medium text-gray-900 rounded-lg hover:bg-gray-100">Contact</a>
                 <a href="#" class="block px-4 py-2.5 text-base font-medium text-gray-900 rounded-lg hover:bg-gray-100">Blog</a> 
+                
+                <div class="relative py-1 px-2 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                    x-data="{ open: false }">
+                    <a 
+                        href="#"
+                        @click="open = !open"
+                        @click.away="open = false"
+                        class="flex justify-between items-center px-4 py-2.5 text-base font-medium text-gray-900 rounded-lg hover:bg-gray-100"
+                    >
+                        <span>{{ $currentCurrency }}</span>
+                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                        </svg>
+                    </a>
+
+                    <div 
+                        x-show="open"
+                        x-transition
+                        class="absolute bottom-full mb-2 right-0 w-24 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50"
+                    >
+                        <div class="py-1">
+                            <button
+                                wire:click="switchCurrency('$')"
+                                class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100"
+                                :class="{ 'bg-gray-50': '{{ $currentCurrency }}' === '$' }"
+                            >
+                                $
+                            </button>
+                            <button
+                                wire:click="switchCurrency('TL')"
+                                class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100"
+                                :class="{ 'bg-gray-50': '{{ $currentCurrency }}' === 'TL' }"
+                            >
+                                TL
+                            </button>
+                        </div>
+                    </div>
+                </div>
             </nav>
         </div>
     </div>

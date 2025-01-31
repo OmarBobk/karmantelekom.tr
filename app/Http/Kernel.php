@@ -41,4 +41,4 @@ class Kernel extends HttpKernel
         // ... other middleware
         \App\Http\Middleware\SetLocale::class,
     ];
-} 
+}

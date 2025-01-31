@@ -127,7 +127,7 @@
                     </div>
                     <ul class="space-y-2 font-medium">
                         <li>
-                            <a href="{{route('main')}}" class="flex items-center p-2 rounded-lg hover:bg-gray-100 text-gray-900 group">
+                            <a href="{{route('subdomain.main')}}" class="flex items-center p-2 rounded-lg hover:bg-gray-100 text-gray-900 group">
                                 <svg class="w-5 h-5 transition duration-75" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 22 21">
                                     <path d="M16.975 11H10V4.025a1 1 0 0 0-1.066-.998 8.5 8.5 0 1 0 9.039 9.039.999.999 0 0 0-1-1.066h.002Z"/>
                                     <path d="M12.5 0c-.157 0-.311.01-.565.027A1 1 0 0 0 11 1.02V10h8.975a1 1 0 0 0 1-.935c.013-.188.028-.374.028-.565A8.51 8.51 0 0 0 12.5 0Z"/>
@@ -136,7 +136,7 @@
                             </a>
                         </li>
                         <li>
-                            <a href="{{route('products')}}" class="flex items-center p-2 rounded-lg hover:bg-gray-100 text-gray-900 group">
+                            <a href="{{route('subdomain.products')}}" class="flex items-center p-2 rounded-lg hover:bg-gray-100 text-gray-900 group">
                                 <svg class="w-5 h-5" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="currentColor" viewBox="0 0 18 20">
                                     <path d="M17 5.923A1 1 0 0 0 16 5h-3V4a4 4 0 1 0-8 0v1H2a1 1 0 0 0-1 .923L.086 17.846A2 2 0 0 0 2.08 20h13.84a2 2 0 0 0 1.994-2.153L17 5.923ZM7 4a2 2 0 1 1 4 0v1H7V4Z"/>
                                 </svg>
@@ -144,7 +144,7 @@
                             </a>
                         </li>
                         <li>
-                            <a href="{{route('sections')}}" class="flex items-center p-2 rounded-lg hover:bg-gray-100 text-gray-900 group">
+                            <a href="{{route('subdomain.sections')}}" class="flex items-center p-2 rounded-lg hover:bg-gray-100 text-gray-900 group">
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-5 w-5">
                                     <path d="M5.566 4.657A4.505 4.505 0 0 1 6.75 4.5h10.5c.41 0 .806.055 1.183.157A3 3 0 0 0 15.75 3h-7.5a3 3 0 0 0-2.684 1.657ZM2.25 12a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3H5.25a3 3 0 0 1-3-3v-6ZM5.25 7.5c-.41 0-.806.055-1.184.157A3 3 0 0 1 6.75 6h10.5a3 3 0 0 1 2.683 1.657A4.505 4.505 0 0 0 18.75 7.5H5.25Z" />
                                 </svg>
@@ -154,7 +154,7 @@
                             </a>
                         </li>
                         <li>
-                            <a href="{{route('orders')}}" class="flex items-center p-2 rounded-lg hover:bg-gray-100 text-gray-900 group">
+                            <a href="{{route('subdomain.orders')}}" class="flex items-center p-2 rounded-lg hover:bg-gray-100 text-gray-900 group">
 
                                 <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M8.242 5.992h12m-12 6.003H20.24m-12 5.999h12M4.117 7.495v-3.75H2.99m1.125 3.75H2.99m1.125 0H5.24m-1.92 2.577a1.125 1.125 0 1 1 1.591 1.59l-1.83 1.83h2.16M2.99 15.745h1.125a1.125 1.125 0 0 1 0 2.25H3.74m0-.002h.375a1.125 1.125 0 0 1 0 2.25H2.99" />
@@ -164,7 +164,7 @@
                             </a>
                         </li>
                         <li>
-                            <a href="{{route('users')}}" class="flex items-center p-2 rounded-lg hover:bg-gray-100 text-gray-900 group">
+                            <a href="{{route('subdomain.users')}}" class="flex items-center p-2 rounded-lg hover:bg-gray-100 text-gray-900 group">
 
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
                                     <path d="M4.5 6.375a4.125 4.125 0 1 1 8.25 0 4.125 4.125 0 0 1-8.25 0ZM14.25 8.625a3.375 3.375 0 1 1 6.75 0 3.375 3.375 0 0 1-6.75 0ZM1.5 19.125a7.125 7.125 0 0 1 14.25 0v.003l-.001.119a.75.75 0 0 1-.363.63 13.067 13.067 0 0 1-6.761 1.873c-2.472 0-4.786-.684-6.76-1.873a.75.75 0 0 1-.364-.63l-.001-.122ZM17.25 19.128l-.001.144a2.25 2.25 0 0 1-.233.96 10.088 10.088 0 0 0 5.06-1.01.75.75 0 0 0 .42-.643 4.875 4.875 0 0 0-6.957-4.611 8.586 8.586 0 0 1 1.71 5.157v.003Z" />
@@ -184,6 +184,8 @@
                 <nav class="bg-white border-b border-gray-200">
                     <div class="px-3 py-3 lg:px-5 lg:pl-3">
                         <div class="flex items-center justify-between">
+
+                            <!-- Mobile Menu -->
                             <div class="flex items-center justify-start">
                                 <button @click="sidebarOpen = !sidebarOpen" class="lg:hidden p-2 rounded-full hover:bg-gray-100">
                                     <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -191,15 +193,40 @@
                                     </svg>
                                 </button>
                             </div>
+
+                            <!-- Profile Dropdown -->
                             <div class="flex items-center">
-                                <div class="relative">
-                                    <button class="relative flex rounded-full bg-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500">
-                                        <img class="h-10 w-10 rounded-full" src="https://ui-avatars.com/api/?name=Admin&background=random" alt="Avatar" />
+                                <div x-data="{ open: false }" class="relative">
+                                    <button
+                                        @click="open = !open"
+                                        @click.away="open = false"
+                                        class="relative flex rounded-full bg-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                    >
+                                        <!-- User Avatar -->
+                                        <img
+                                            class="h-10 w-10 rounded-full"
+                                            src="https://ui-avatars.com/api/?name={{auth()->user()->name}}&background=random"
+                                            alt="Avatar"
+                                        />
                                     </button>
-                                    <div class="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none hidden group-hover:block">
-                                        <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Profile</a>
+                                    <div
+                                        x-show="open"
+                                        x-transition:enter="transition ease-out duration-100"
+                                        x-transition:enter-start="transform opacity-0 scale-95"
+                                        x-transition:enter-end="transform opacity-100 scale-100"
+                                        x-transition:leave="transition ease-in duration-75"
+                                        x-transition:leave-start="transform opacity-100 scale-100"
+                                        x-transition:leave-end="transform opacity-0 scale-95"
+                                        class="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
+                                    >
+                                        <a href="{{config('app.url')}}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Website</a>
                                         <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Settings</a>
-                                        <a href="#" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Logout</a>
+                                        <form method="POST" action="{{ route('logout') }}">
+                                            @csrf
+                                            <button type="submit" class="w-full text-left px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                                                Logout
+                                            </button>
+                                        </form>
                                     </div>
                                 </div>
                             </div>

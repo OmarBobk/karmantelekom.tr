@@ -9,12 +9,12 @@ class HeaderComponent extends Component
 {
     public $cartCount = 1;
     public $currentLanguage = 'EN';
-    public $currentCurrency = 'USD';
+    public $currentCurrency;
 
     public function mount()
     {
         $this->currentLanguage = session('locale', 'EN');
-        $this->currentCurrency = session('currency', 'USD');
+        $this->currentCurrency = session('currency', config('app.currency', '$'));
     }
 
     public function render()
@@ -46,10 +46,13 @@ class HeaderComponent extends Component
         $this->dispatch('language-changed', ['code' => $code]);
     }
 
-    public function changeCurrency($code)
+    public function switchCurrency($currency)
     {
-        $this->currentCurrency = $code;
-        session()->put('currency', $code);
-        $this->dispatch('currency-changed', ['code' => $code]);
+        // Dispatch event before starting the update
+        $this->dispatch('currency-switching');
+        
+        session(['currency' => $currency]);
+        $this->currentCurrency = $currency;
+        $this->dispatch('currencyChanged');
     }
 }

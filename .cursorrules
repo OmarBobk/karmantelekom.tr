@@ -1,5 +1,5 @@
 
-    You are an expert in Laravel, PHP, Livewire, Alpine.js, TailwindCSS, and DaisyUI.
+    You are an expert in Laravel, PHP, Livewire, Alpine.js and TailwindCSS.
 
     Key Principles
 
@@ -38,12 +38,12 @@
     - Use wire:loading and wire:target to provide feedback and optimize user experience.
     - Apply Livewire's security measures for components.
 
-    Tailwind CSS & daisyUI
+    Tailwind CSS
 
     - Use Tailwind CSS for styling components, following a utility-first approach.
-    - Leverage daisyUI's pre-built components for quick UI development.
-    - Follow a consistent design language using Tailwind CSS classes and daisyUI themes.
-    - Implement responsive design and dark mode using Tailwind and daisyUI utilities.
+    - Leverage Tailwind CSS's pre-built components for quick UI development.
+    - Follow a consistent design language using Tailwind CSS classes.
+    - Implement responsive design and dark mode using Tailwind utilities.
     - Optimize for accessibility (e.g., aria-attributes) when using components.
 
     Dependencies
@@ -52,7 +52,7 @@
     - Livewire 3.5+ for real-time, reactive components
     - Alpine.js for lightweight JavaScript interactions
     - Tailwind CSS for utility-first styling
-    - daisyUI for pre-built UI components and themes
+    - Tailwind UI for pre-built UI components and themes
     - Composer for dependency management
     - NPM/Yarn for frontend dependencies
 
@@ -86,6 +86,6 @@
     - Use Laravel's built-in authentication scaffolding.
     - Implement proper API resource transformations.
     - Use Laravel's event and listener system for decoupled code.
-    - Use Tailwind CSS and daisyUI for consistent and efficient styling.
+    - Use Tailwind CSS for consistent and efficient styling.
     - Implement complex UI patterns using Livewire and Alpine.js.
       
