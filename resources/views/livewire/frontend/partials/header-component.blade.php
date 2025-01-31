@@ -506,12 +506,21 @@
                                     {{ Auth::user()->name }}
                                 </p>
                                 <div class="mt-2 space-y-1">
-                                    <a href="{{ route('profile.show') }}" class="flex items-center gap-x-3 px-3 py-2 text-sm text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200">
-                                        <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
-                                        </svg>
-                                        My Profile
-                                    </a>
+                                    @hasanyrole('admin|salesperson')
+                                        <a href="{{ route('subdomain.main') }}" class="flex items-center gap-x-3 px-3 py-2 text-sm text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200">
+                                            <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                            </svg>
+                                            Dashboard
+                                        </a>
+                                    @else
+                                        <a href="{{ route('account') }}" class="flex items-center gap-x-3 px-3 py-2 text-sm text-gray-700 rounded-lg hover:gap-x-5 hover:bg-gray-50 transition-colors duration-200">
+                                            <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                            </svg>
+                                            Profile
+                                        </a>
+                                    @endrole
                                     <a href="#" class="flex items-center gap-x-3 px-3 py-2 text-sm text-gray-700 rounded-lg hover:bg-gray-50 transition-colors duration-200">
                                         <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 14l-7 7m0 0l-7-7m7 7V3" />

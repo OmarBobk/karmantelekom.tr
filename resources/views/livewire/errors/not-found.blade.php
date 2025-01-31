@@ -3,7 +3,7 @@
         <div class="max-w-max mx-auto text-center">
             <div class="flex flex-col items-center">
                 <!-- 404 Number -->
-                <p class="text-8xl font-semibold" style="font-family: 'Poppins', sans-serif; background: linear-gradient(to right, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">İndirimGo</p>
+                <p class="text-6xl sm:text-8xl font-semibold" style="font-family: 'Poppins', sans-serif; background: linear-gradient(to right, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">İndirimGo</p>
                 <h1 class="mt-4 text-3xl font-bold tracking-tight text-gray-900 sm:text-5xl">Page not found</h1>
 
                 <!-- Error Message -->
