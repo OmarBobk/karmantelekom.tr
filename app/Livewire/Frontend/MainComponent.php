@@ -1,8 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Livewire\Frontend;
 
 use App\Models\Section;
+use App\Models\Currency;
+use App\Models\ProductPrice;
+use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
 use Livewire\Component;
@@ -13,61 +18,94 @@ class MainComponent extends Component
     public $activeCategory = 0;
     public $sections;
     public $contentSections;
+    public bool $canSwitchCurrency;
+    public string $priceType;
 
     public function mount()
     {
-        $this->loadSections();
-        $this->loadContentSections();
+        $this->setupUserPricing();
+        $this->loadAllSections();
+    }
+
+    private function setupUserPricing(): void
+    {
+        // Determine if user can switch currency and which price type to show
+        $this->canSwitchCurrency = auth()->check() && auth()->user()->hasAnyRole(['admin', 'salesperson', 'shop_owner']);
+        $this->priceType = $this->canSwitchCurrency ? ProductPrice::TYPE_WHOLESALE : ProductPrice::TYPE_RETAIL;
+    }
+
+    private function getCurrency(): Currency
+    {
+        if (!$this->canSwitchCurrency) {
+            return Cache::remember('default_currency', now()->addDay(), function () {
+                return Currency::where('is_default', true)->firstOrFail();
+            });
+        }
+
+        $currencyCode = session('currency', 'TRY');
+        return Cache::remember("currency_{$currencyCode}", now()->addHour(), function () use ($currencyCode) {
+            return Currency::where('code', $currencyCode)->firstOrFail();
+        });
     }
 
     #[On('currencyChanged')]
-    public function loadSections()
+    public function loadAllSections()
     {
-        $currency = session('currency', config('app.currency', '$'));
+        try {
+            $currency = $this->getCurrency();
 
-        $this->sections = Section::with(['products' => function($query) use ($currency) {
-            $query->with([
-                'images' => function($query) {
-                    $query->where('is_primary', true);
-                },
-                'prices' => function($query) use ($currency) {
-                    $query->where('currency', $currency);
-                }
-            ])
-            ->where('status', 'active')
-            ->orderBy('section_products.ordering');
-        }])
-        ->where('position', 'main.slider')
-        ->where('is_active', true)
-        ->where('scrollable', true)
-        ->orderBy('order')
-        ->get();
+            // Load both types of sections
+            $this->loadSectionsByPosition('main.slider', 'sections', true);
+
+            $this->loadSectionsByPosition('main.content', 'contentSections', false);
+            // Clear currency cache once
+            Cache::forget("currency_{$currency->code}");
+
+            // Dispatch update event once
+            $this->dispatch('content-sections-updated');
+
+        } catch (\Exception $e) {
+            logger()->error('Error loading sections: ' . $e->getMessage());
+        }
     }
 
-    #[On('currencyChanged')]
-    public function loadContentSections()
+    private function loadSectionsByPosition(string $position, string $propertyName, bool $scrollable = false): void
     {
-        $currency = session('currency', config('app.currency', '$'));
-        
-        $this->contentSections = Section::with(['products' => function($query) use ($currency) {
-            $query->with([
-                'images' => function($query) {
-                    $query->orderBy('is_primary', 'desc');
-                },
-                'prices' => function($query) use ($currency) {
-                    $query->where('currency', $currency);
+        $currency = $this->getCurrency();
+        $cacheKey = "{$propertyName}_{$currency->code}_{$this->priceType}";
+
+        Cache::forget($cacheKey);
+
+        $this->{$propertyName} = Cache::remember($cacheKey, now()->addMinutes(30), function () use ($currency, $position, $scrollable) {
+            $query = Section::with([
+                'products' => function($query) use ($currency, $position) {
+                    $query->with([
+                        'images' => function($query) use ($position) {
+                            if ($position === 'main.slider') {
+                                $query->where('is_primary', true);
+                            } else {
+                                $query->orderBy('is_primary', 'desc');
+                            }
+                        },
+                        'prices' => function($query) use ($currency) {
+                            $query->where('currency_id', $currency->id)
+                                 ->where('price_type', $this->priceType);
+                        }
+                    ])
+                    ->where('status', 'active')
+                    ->orderBy('section_products.ordering');
                 }
             ])
-            ->where('status', 'active')
-            ->orderBy('section_products.ordering');
-        }])
-        ->where('position', 'main.content')
-        ->where('is_active', true)
-        ->orderBy('order')
-        ->get();
+            ->where('position', $position)
+            ->where('is_active', true)
+            ->orderBy('order');
 
-        // Dispatch an event to reinitialize Swiper after the content is updated
-        $this->dispatch('content-sections-updated');
+            if ($scrollable) {
+                $query->where('scrollable', true);
+            }
+
+            return $query->get();
+        });
     }
 
     // Slider Component
@@ -78,7 +116,9 @@ class MainComponent extends Component
     #[Layout('layouts.frontend')]
     public function render()
     {
-        return view('livewire.frontend.main-component');
+        return view('livewire.frontend.main-component', [
+            'canSwitchCurrency' => $this->canSwitchCurrency
+        ]);
     }
 
     public function setActiveCategory($index)

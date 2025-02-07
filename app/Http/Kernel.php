@@ -29,16 +29,4 @@ class Kernel extends HttpKernel
             \App\Http\Middleware\SetLocale::class,
         ],
     ];
-
-    /**
-     * The application's route middleware.
-     *
-     * These middleware may be assigned to groups or used individually.
-     *
-     * @var array<string, class-string|string>
-     */
-    protected $routeMiddleware = [
-        // ... other middleware
-        \App\Http\Middleware\SetLocale::class,
-    ];
 }

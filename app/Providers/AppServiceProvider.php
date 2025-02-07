@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Providers;
 
 use Illuminate\Support\Facades\Auth;
@@ -7,6 +9,7 @@ use Illuminate\Support\Facades\Response;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Str;
+use App\Services\CurrencyService;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -15,7 +18,9 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+        $this->app->singleton(CurrencyService::class, function ($app) {
+            return new CurrencyService();
+        });
     }
 
     /**
@@ -27,11 +32,13 @@ class AppServiceProvider extends ServiceProvider
 //            abort(Response::redirectTo(config('app.url') . '/404'));
 //        }
 
+        if (app()->environment('local')) {
+            config(['cache.default' => 'array']);
+        }
+
         Route::domain(config('app.subdomain'))
+            ->middleware(['web', 'auth', 'role.redirect'])
             ->name('subdomain.')
-            ->group(function () {
-                Route::middleware(['role.redirect'])
-                    ->group(base_path('routes/subdomain.php'));
-            });
+            ->group(base_path('routes/subdomain.php'));
     }
 }

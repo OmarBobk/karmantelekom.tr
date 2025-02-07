@@ -1,8 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Seeders;
 
-use App\Models\User;
 use Illuminate\Database\Seeder;
 
 class DatabaseSeeder extends Seeder
@@ -10,12 +11,17 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call([
-            // Creating Users inside RolesAndPermissionsSeeder
             RolesAndPermissionsSeeder::class,
+            CurrencySeeder::class,
+            CategorySeeder::class,
+            SupplierSeeder::class,
             TagSeeder::class,
             ProductSeeder::class,
+            ProductPriceSeeder::class,
+            SectionSeeder::class,
+            SectionProductSeeder::class,
+            ProductTagSeeder::class,
+            ProductImageSeeder::class,
         ]);
-
-        $this->call(SectionProductSeeder::class);
     }
 }

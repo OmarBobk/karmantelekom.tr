@@ -219,7 +219,16 @@
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                         <div class="flex flex-col space-y-1">
                                             @foreach($product->prices as $price)
-                                                <span>{{ money($price->price, $price->currency) }}</span>
+                                                @if($price->price_type === 'retail' && $price->currency->code === 'TRY')
+                                                    <span class="text-blue-600 font-medium">
+                                                        Retail (TRY): {{ $price->getFormattedPrice() }}
+                                                    </span>
+                                                @endif
+                                                @if($price->price_type === 'wholesale')
+                                                    <span class="text-gray-600">
+                                                        Wholesale ({{ $price->currency->code }}): {{ $price->getFormattedPrice() }}
+                                                    </span>
+                                                @endif
                                             @endforeach
                                         </div>
                                     </td>
@@ -506,23 +515,76 @@
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="block text-sm font-medium text-gray-700">Prices</label>
                                 </div>
-                                <div class="space-y-2">
-                                    <template x-for="(price, index) in $wire.editForm.prices" :key="index">
+                                <div class="space-y-4">
+                                    <!-- Retail Price (TRY only) -->
+                                    <div>
+                                        <label class="block text-sm font-medium text-blue-600">Retail Price (TRY)</label>
                                         <div class="flex items-center gap-2">
                                             <input type="number"
-                                                x-model.number="price.price"
+                                                wire:model="editForm.prices.0.price"
                                                 step="0.01"
                                                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                                                placeholder="Price">
-                                            <span x-text="price.currency" 
-                                                class="mt-1 block w-24 px-3 py-2 bg-gray-100 rounded-md border border-gray-300 text-gray-700 sm:text-sm">
+                                                placeholder="Retail Price">
+                                            <span class="mt-1 block w-24 px-3 py-2 bg-gray-100 rounded-md border border-gray-300 text-gray-700 sm:text-sm">
+                                                TRY
                                             </span>
                                         </div>
-                                    </template>
+                                        @error('editForm.prices.0.price')
+                                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                        @enderror
+                                    </div>
+
+                                    <!-- Wholesale Prices -->
+                                    <div x-data="{
+                                        tryPrice: @entangle('editForm.prices.1.price').live,
+                                        usdPrice: @entangle('editForm.prices.2.price').live,
+                                        exchangeRate: @entangle('exchangeRate').live,
+                                        calculateUSD() {
+                                            if (this.tryPrice && this.exchangeRate) {
+                                                this.usdPrice = (parseFloat(this.tryPrice) * this.exchangeRate).toFixed(2);
+                                            }
+                                        },
+                                        calculateTRY() {
+                                            if (this.usdPrice && this.exchangeRate) {
+                                                this.tryPrice = (parseFloat(this.usdPrice) / this.exchangeRate).toFixed(2);
+                                            }
+                                        }
+                                    }">
+                                        <label class="block text-sm font-medium text-gray-600">Wholesale Prices</label>
+                                        
+                                        <!-- TRY Wholesale Price -->
+                                        <div class="flex items-center gap-2 mt-2">
+                                            <input type="number"
+                                                x-model="tryPrice"
+                                                @input="calculateUSD"
+                                                step="0.01"
+                                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                                placeholder="Wholesale Price (TRY)">
+                                            <span class="mt-1 block w-24 px-3 py-2 bg-gray-100 rounded-md border border-gray-300 text-gray-700 sm:text-sm">
+                                                TRY
+                                            </span>
+                                        </div>
+                                        @error('editForm.prices.1.price')
+                                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                        @enderror
+
+                                        <!-- USD Wholesale Price -->
+                                        <div class="flex items-center gap-2 mt-2">
+                                            <input type="number"
+                                                x-model="usdPrice"
+                                                @input="calculateTRY"
+                                                step="0.01"
+                                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                                placeholder="Wholesale Price (USD)">
+                                            <span class="mt-1 block w-24 px-3 py-2 bg-gray-100 rounded-md border border-gray-300 text-gray-700 sm:text-sm">
+                                                USD
+                                            </span>
+                                        </div>
+                                        @error('editForm.prices.2.price')
+                                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                        @enderror
+                                    </div>
                                 </div>
-                                @error('editForm.prices.*.price')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
                             </div>
 
                             <!-- Images -->
@@ -1118,25 +1180,70 @@
                             </div>
 
                             <!-- Prices -->
-                            <div>
-                                <div class="flex items-center justify-between mb-2">
-                                    <label class="block text-sm font-medium text-gray-700">Prices</label>
+                            <div x-data="{
+                                tryPrice: @entangle('addForm.prices.1.price').live,
+                                usdPrice: @entangle('addForm.prices.2.price').live,
+                                exchangeRate: @entangle('exchangeRate').live,
+                                calculateUSD() {
+                                    if (this.tryPrice && this.exchangeRate) {
+                                        this.usdPrice = (parseFloat(this.tryPrice) * this.exchangeRate).toFixed(2);
+                                    }
+                                },
+                                calculateTRY() {
+                                    if (this.usdPrice && this.exchangeRate) {
+                                        this.tryPrice = (parseFloat(this.usdPrice) / this.exchangeRate).toFixed(2);
+                                    }
+                                }
+                            }">
+                                <!-- Retail Price (TRY only) -->
+                                <div class="mb-4">
+                                    <label class="block text-sm font-medium text-blue-600">Retail Price (TRY)</label>
+                                    <div class="flex items-center gap-2">
+                                        <input type="number"
+                                            wire:model="addForm.prices.0.price"
+                                            step="0.01"
+                                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                            placeholder="Retail Price">
+                                        <span class="mt-1 block w-24 px-3 py-2 bg-gray-100 rounded-md border border-gray-300 text-gray-700 sm:text-sm">
+                                            TRY
+                                        </span>
+                                    </div>
+                                    @error('addForm.prices.0.price')
+                                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                    @enderror
                                 </div>
-                                <div class="space-y-2">
-                                    <template x-for="(price, index) in $wire.addForm.prices" :key="index">
-                                        <div class="flex items-center gap-2">
-                                            <input type="number"
-                                                x-model.number="price.price"
-                                                step="0.01"
-                                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                                                placeholder="Price">
-                                            <span x-text="price.currency" 
-                                                class="mt-1 block w-24 px-3 py-2 bg-gray-100 rounded-md border border-gray-300 text-gray-700 sm:text-sm">
-                                            </span>
-                                        </div>
-                                    </template>
+
+                                <label class="block text-sm font-medium text-gray-600">Wholesale Prices</label>
+                                
+                                <!-- TRY Wholesale Price -->
+                                <div class="flex items-center gap-2 mt-2">
+                                    <input type="number"
+                                        x-model="tryPrice"
+                                        @input="calculateUSD"
+                                        step="0.01"
+                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                        placeholder="Wholesale Price (TRY)">
+                                    <span class="mt-1 block w-24 px-3 py-2 bg-gray-100 rounded-md border border-gray-300 text-gray-700 sm:text-sm">
+                                        TRY
+                                    </span>
                                 </div>
-                                @error('addForm.prices.*.price')
+                                @error('addForm.prices.1.price')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+
+                                <!-- USD Wholesale Price -->
+                                <div class="flex items-center gap-2 mt-2">
+                                    <input type="number"
+                                        x-model="usdPrice"
+                                        @input="calculateTRY"
+                                        step="0.01"
+                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                        placeholder="Wholesale Price (USD)">
+                                    <span class="mt-1 block w-24 px-3 py-2 bg-gray-100 rounded-md border border-gray-300 text-gray-700 sm:text-sm">
+                                        USD
+                                    </span>
+                                </div>
+                                @error('addForm.prices.2.price')
                                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
                             </div>

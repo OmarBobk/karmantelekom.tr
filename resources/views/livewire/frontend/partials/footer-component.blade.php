@@ -98,42 +98,44 @@
                         <option>Français</option>
                         <option>Español</option>
                     </select>
-                    <div class="relative w-1/2 py-1 px-2 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        x-data="{ open: false }">
-                        <button 
-                            @click="open = !open"
-                            @click.away="open = false"
-                            class="flex w-full justify-between items-center space-x-1 text-sm text-gray-500 hover:text-gray-700"
-                        >
-                            <span>{{ $currentCurrency }}</span>
-                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                            </svg>
-                        </button>
+                    @if($canSwitchCurrency)
+                        <div class="relative w-1/2 py-1 px-2 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                            x-data="{ open: false }">
+                            <button 
+                                @click="open = !open"
+                                @click.away="open = false"
+                                class="flex w-full justify-between items-center space-x-1 text-sm text-gray-500 hover:text-gray-700"
+                            >
+                                <span>{{ $currentCurrency }}</span>
+                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
 
-                        <div 
-                            x-show="open"
-                            x-transition
-                            class="absolute bottom-full mb-2 right-0 w-24 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50"
-                        >
-                            <div class="py-1">
-                                <button
-                                    wire:click="switchCurrency('$')"
-                                    class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100"
-                                    :class="{ 'bg-gray-50': '{{ $currentCurrency }}' === '$' }"
-                                >
-                                    $
-                                </button>
-                                <button
-                                    wire:click="switchCurrency('TL')"
-                                    class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100"
-                                    :class="{ 'bg-gray-50': '{{ $currentCurrency }}' === 'TL' }"
-                                >
-                                    TL
-                                </button>
+                            <div 
+                                x-show="open"
+                                x-transition
+                                class="absolute bottom-full mb-2 right-0 w-24 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50"
+                            >
+                                <div class="py-1">
+                                    <button
+                                        wire:click="switchCurrency('USD')"
+                                        class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100"
+                                        :class="{ 'bg-gray-50': '{{ $currentCurrency }}' === 'USD' }"
+                                    >
+                                        USD
+                                    </button>
+                                    <button
+                                        wire:click="switchCurrency('TRY')"
+                                        class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100"
+                                        :class="{ 'bg-gray-50': '{{ $currentCurrency }}' === 'TRY' }"
+                                    >
+                                        TRY
+                                    </button>
+                                </div>
                             </div>
                         </div>
-                    </div>
+                    @endif
                 </div>
             </div>
         </div>

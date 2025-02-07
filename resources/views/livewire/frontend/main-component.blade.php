@@ -89,7 +89,7 @@
                             @foreach($sections as $index => $section)
                                 <button
                                     x-on:click="$wire.activeCategory = {{ $index }}"
-                                    wire:click="setActiveCategory({{ $index }})"
+
                                     class="px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-900 transition-all duration-200 whitespace-nowrap border-b-2 border-transparent"
                                     :class="$wire.activeCategory === {{ $index }} ? '!text-blue-600 !border-blue-600' : ''"
                                     role="tab"
@@ -100,18 +100,6 @@
                                 >
                                     {{ $section->name }}
                                 </button>
-
-                                <!-- Add loading indicator after the tabs -->
-                                <div wire:loading wire:target="setActiveCategory"
-                                    class="absolute inset-x-0 top-full mt-2 flex items-center justify-center">
-                                    <div class="bg-white/90 backdrop-blur-sm shadow-lg rounded-lg px-4 py-2 text-sm text-gray-600 flex items-center gap-2">
-                                        <svg class="animate-spin size-4" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                        </svg>
-                                        Loading products...
-                                    </div>
-                                </div>
                             @endforeach
                         </div>
                     </div>
@@ -180,7 +168,7 @@
                                                     <figure class="relative aspect-w-1 aspect-h-1 w-full overflow-hidden bg-gray-50">
                                                         <img src="{{ Storage::url($product->images->where('is_primary', true)->first()->image_url)}}"
                                                             alt="{{ $product->name }}"
-                                                            class="h-full w-full object-cover object-center group-hover/card:scale-105 transition-transform duration-300">
+                                                            class="h-[17.60rem] w-full object-cover object-center group-hover/card:scale-105 transition-transform duration-300">
                                                     </figure>
                                                     <div class="p-4">
                                                         <!-- Product Info Header -->
@@ -194,10 +182,12 @@
 
                                                         <!-- Price and Quantity Control on same line -->
                                                         <div class="flex items-center justify-between">
+
+                                                            <!-- Product Price -->
                                                             <div>
                                                                 @if($product->prices->isNotEmpty())
                                                                     <p class="text-xl font-semibold text-blue-600">
-                                                                        {{ money($product->prices->first()->price) }}
+                                                                        {{ $product->prices->first()->getFormattedPrice() }}
                                                                     </p>
                                                                 @else
                                                                     <p class="text-xl font-semibold text-gray-400">Price not available</p>
@@ -302,13 +292,31 @@
                     init() {
                         this.$nextTick(() => {
                             this.updateScrollButtons(this.$wire.activeCategory);
-                            // Add resize observer to handle container width changes
-                            const resizeObserver = new ResizeObserver(() => {
+                        });
+
+                        // Add listener for sections-updated event
+                        Livewire.on('sections-updated', () => {
+                            // Dispatch event to show loading state
+                            window.dispatchEvent(new CustomEvent('currency-switching'));
+
+                            // Wait for DOM to be updated
+                            this.$nextTick(() => {
+                                // Update scroll buttons after sections are updated
                                 this.updateScrollButtons(this.$wire.activeCategory);
+
+                                // Dispatch event to hide loading state
+                                window.dispatchEvent(new CustomEvent('currency-switched'));
                             });
+                        });
+                    },
+
+                    initializeSlider() {
+                        this.$nextTick(() => {
+                            this.updateScrollButtons(this.$wire.activeCategory);
                             const activeSlider = this.$refs[`slider-${this.$wire.activeCategory}`];
                             if (activeSlider) {
-                                resizeObserver.observe(activeSlider);
+                                activeSlider.scrollLeft = 0; // Reset scroll position
+                                this.updateScrollButtons(this.$wire.activeCategory);
                             }
                         });
                     },
@@ -512,7 +520,7 @@
                                                         <div>
                                                             @if($product->prices->isNotEmpty())
                                                                 <p class="text-xl font-semibold text-blue-600">
-                                                                    {{ money($product->prices->first()->price) }}
+                                                                    {{ $product->prices->first()->getFormattedPrice() }}
                                                                 </p>
                                                             @else
                                                                 <p class="text-xl font-semibold text-gray-400">Price not available</p>

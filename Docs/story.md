@@ -1,5 +1,6 @@
 NOTE: If a salesperson doesn't have the right privileges, he will not be able to see the wholesale Prices.
-NOTE: it is not important for the customer to sign in to the website if they want to buy products, but it will be better if they sign in to the website to see their orders and their details.
+NOTE: it is not important for the customer to sign in to the website if they want to buy products, 
+      but it will be better if they sign in to the website to see their orders and their details.
 
 ### Story of the Users:
 - __Normal User__:

@@ -16,6 +16,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
+use App\Services\CurrencyService;
 
 class ProductsComponent extends Component
 {
@@ -67,7 +68,11 @@ class ProductsComponent extends Component
         'description' => '',
         'category_id' => '',
         'supplier_id' => '',
-        'prices' => [],
+        'prices' => [
+            ['price' => '', 'currency' => 'TRY', 'price_type' => 'retail'],
+            ['price' => '', 'currency' => 'TRY', 'price_type' => 'wholesale'],
+            ['price' => '', 'currency' => 'USD', 'price_type' => 'wholesale']
+        ],
         'tags' => []
     ];
     public $currentImages = [];
@@ -85,8 +90,9 @@ class ProductsComponent extends Component
         'category_id' => '',
         'supplier_id' => '',
         'prices' => [
-            ['price' => '', 'currency' => 'TL', 'price_type' => 'retail'],
-            ['price' => '', 'currency' => '$', 'price_type' => 'retail']
+            ['price' => '', 'currency' => 'TRY', 'price_type' => 'retail'],
+            ['price' => '', 'currency' => 'TRY', 'price_type' => 'wholesale'],
+            ['price' => '', 'currency' => 'USD', 'price_type' => 'wholesale']
         ],
         'tags' => []
     ];
@@ -148,6 +154,14 @@ class ProductsComponent extends Component
     // Add this property to store all available tags
     public $allTags;
 
+    public float $exchangeRate;
+    protected CurrencyService $currencyService;
+
+    public function boot(CurrencyService $currencyService)
+    {
+        $this->currencyService = $currencyService;
+    }
+
     public function mount(): void
     {
         $this->categories = Category::all();
@@ -155,6 +169,7 @@ class ProductsComponent extends Component
         $this->allTags = Tag::orderBy('display_order')->get();
         $this->initializeAddForm();
         $this->loadProductStatuses();
+        $this->loadExchangeRate();
     }
 
     private function initializeAddForm(): void
@@ -169,8 +184,9 @@ class ProductsComponent extends Component
             'category_id' => '',
             'supplier_id' => '',
             'prices' => [
-                ['price' => '', 'currency' => 'TL', 'price_type' => 'retail'],
-                ['price' => '', 'currency' => '$', 'price_type' => 'retail']
+                ['price' => '', 'currency' => 'TRY', 'price_type' => 'retail'],
+                ['price' => '', 'currency' => 'TRY', 'price_type' => 'wholesale'],
+                ['price' => '', 'currency' => 'USD', 'price_type' => 'wholesale']
             ],
             'tags' => []
         ];
@@ -178,6 +194,7 @@ class ProductsComponent extends Component
         $this->resetValidation('addForm.*');
         $this->reset(['addForm', 'newProductImages']);
     }
+
 
     public function updatingAddModalOpen(): void
     {
@@ -235,10 +252,31 @@ class ProductsComponent extends Component
             return;
         }
 
-        // Ensure we have both TL and $ prices
+        // Get all prices
         $prices = collect($this->editingProduct->prices);
-        $tlPrice = $prices->firstWhere('currency', 'TL') ?? ['price' => 0, 'currency' => 'TL', 'price_type' => 'retail'];
-        $usdPrice = $prices->firstWhere('currency', '$') ?? ['price' => 0, 'currency' => '$', 'price_type' => 'retail'];
+
+        // Initialize price array with default values
+        $formattedPrices = [
+            ['price' => '', 'currency' => 'TRY', 'price_type' => 'retail'],
+            ['price' => '', 'currency' => 'TRY', 'price_type' => 'wholesale'],
+            ['price' => '', 'currency' => 'USD', 'price_type' => 'wholesale']
+        ];
+
+        // Fill in actual prices if they exist
+        if ($retailTryPrice = $prices->first(fn($p) => $p->currency->code === 'TRY' && $p->price_type === 'retail')) {
+            $formattedPrices[0]['price'] = $retailTryPrice->base_price;
+            $formattedPrices[0]['id'] = $retailTryPrice->id;
+        }
+
+        if ($wholesaleTryPrice = $prices->first(fn($p) => $p->currency->code === 'TRY' && $p->price_type === 'wholesale')) {
+            $formattedPrices[1]['price'] = $wholesaleTryPrice->base_price;
+            $formattedPrices[1]['id'] = $wholesaleTryPrice->id;
+        }
+
+        if ($wholesaleUsdPrice = $prices->first(fn($p) => $p->currency->code === 'USD' && $p->price_type === 'wholesale')) {
+            $formattedPrices[2]['price'] = $wholesaleUsdPrice->converted_price;
+            $formattedPrices[2]['id'] = $wholesaleUsdPrice->id;
+        }
 
         $this->editForm = [
             'name' => $this->editingProduct->name,
@@ -249,20 +287,7 @@ class ProductsComponent extends Component
             'description' => $this->editingProduct->description,
             'category_id' => $this->editingProduct->category_id,
             'supplier_id' => $this->editingProduct->supplier_id,
-            'prices' => [
-                [
-                    'id' => $tlPrice['id'] ?? null,
-                    'price' => $tlPrice['price'],
-                    'currency' => 'TL',
-                    'price_type' => $tlPrice['price_type']
-                ],
-                [
-                    'id' => $usdPrice['id'] ?? null,
-                    'price' => $usdPrice['price'],
-                    'currency' => '$',
-                    'price_type' => $usdPrice['price_type']
-                ]
-            ],
+            'prices' => $formattedPrices,
             'tags' => $this->editingProduct->tags->pluck('id')->toArray()
         ];
 
@@ -286,7 +311,6 @@ class ProductsComponent extends Component
         try {
             DB::beginTransaction();
 
-            // Log the start of transaction
             logger()->info('Starting product update transaction', [
                 'product_id' => $this->editingProduct->id,
                 'form_data' => $this->editForm
@@ -306,25 +330,42 @@ class ProductsComponent extends Component
             // Update the productStatuses array to reflect the new status
             $this->productStatuses[$this->editingProduct->id] = $this->editForm['status'] === 'active';
 
-            // Log after basic update
-            logger()->info('Basic product details updated', ['product_id' => $this->editingProduct->id]);
+            // Update or create prices
+            $this->editingProduct->prices()->updateOrCreate(
+                [
+                    'id' => $this->editForm['prices'][0]['id'] ?? null,
+                    'currency_id' => 1, // TRY
+                    'price_type' => 'retail'
+                ],
+                [
+                    'base_price' => $this->editForm['prices'][0]['price'],
+                    'converted_price' => $this->editForm['prices'][0]['price'], // For TRY, base and converted are same
+                ]
+            );
 
-            // Update prices - maintain both TL and $ prices
-            foreach ($this->editForm['prices'] as $priceData) {
-                $this->editingProduct->prices()->updateOrCreate(
-                    ['currency' => $priceData['currency']],
-                    [
-                        'price' => $priceData['price'],
-                        'price_type' => $priceData['price_type']
-                    ]
-                );
-            }
+            $this->editingProduct->prices()->updateOrCreate(
+                [
+                    'id' => $this->editForm['prices'][1]['id'] ?? null,
+                    'currency_id' => 1, // TRY
+                    'price_type' => 'wholesale'
+                ],
+                [
+                    'base_price' => $this->editForm['prices'][1]['price'],
+                    'converted_price' => $this->editForm['prices'][1]['price'], // For TRY, base and converted are same
+                ]
+            );
 
-            // Log after prices update
-            logger()->info('Product prices updated', [
-                'product_id' => $this->editingProduct->id,
-                'prices' => $this->editForm['prices']
-            ]);
+            $this->editingProduct->prices()->updateOrCreate(
+                [
+                    'id' => $this->editForm['prices'][2]['id'] ?? null,
+                    'currency_id' => 2, // USD
+                    'price_type' => 'wholesale'
+                ],
+                [
+                    'base_price' => $this->editForm['prices'][2]['price'],
+                    'converted_price' => $this->editForm['prices'][2]['price'], // For USD prices, this will be updated by the scheduled job
+                ]
+            );
 
             // Handle new images
             if (!empty($this->newImages)) {
@@ -334,24 +375,15 @@ class ProductsComponent extends Component
                     $path = $image->store('products', 'public');
                     $this->editingProduct->images()->create([
                         'image_url' => $path,
-                        'is_primary' => !$hasExistingImages && $index === 0 // Make first image primary if no existing images
+                        'is_primary' => !$hasExistingImages && $index === 0
                     ]);
                 }
-                logger()->info('New images added', [
-                    'product_id' => $this->editingProduct->id,
-                    'image_count' => count($this->newImages)
-                ]);
             }
 
             // Update tags
             $this->editingProduct->tags()->sync($this->editForm['tags']);
-            logger()->info('Tags synced', [
-                'product_id' => $this->editingProduct->id,
-                'tags' => $this->editForm['tags']
-            ]);
 
             DB::commit();
-            logger()->info('Transaction committed successfully', ['product_id' => $this->editingProduct->id]);
 
             $this->cleanupTemporaryFiles();
             $this->reset(['editModalOpen', 'editingProduct', 'editForm']);
@@ -362,7 +394,6 @@ class ProductsComponent extends Component
                 'message' => 'Product updated successfully!'
             ]);
 
-            logger()->info('SQL Queries:', ['queries' => DB::getQueryLog()]);
         } catch (\Exception $e) {
             DB::rollBack();
             logger()->error('Error updating product', [
@@ -371,13 +402,9 @@ class ProductsComponent extends Component
                 'trace' => $e->getTraceAsString()
             ]);
 
-            $errorMessage = app()->environment('local')
-                ? 'Error: ' . $e->getMessage()
-                : 'Error updating product. Please try again.';
-
             $this->dispatch('notify', [
                 'type' => 'error',
-                'message' => $errorMessage
+                'message' => app()->environment('local') ? 'Error: ' . $e->getMessage() : 'Error updating product. Please try again.'
             ]);
         }
     }
@@ -429,16 +456,21 @@ class ProductsComponent extends Component
     public function getProductsProperty(): LengthAwarePaginator
     {
         return Product::query()
-            ->with(['category', 'prices', 'images' => function($query) {
+            ->with(['category', 'supplier', 'tags', 'prices' => function($query) {
+                $query->with('currency')
+                    ->whereIn('price_type', ['retail', 'wholesale'])
+                    ->whereHas('currency', function($q) {
+                        $q->whereIn('code', ['TRY', 'USD']);
+                    });
+            }, 'images' => function($query) {
                 $query->orderBy('is_primary', 'desc');
             }])
             ->when($this->search, fn($query) =>
-                $query->where('name', 'like', '%' . $this->search . '%')
-                    ->orWhere('code', 'like', '%' . $this->search . '%')
-                    ->orWhere('serial', 'like', '%' . $this->search . '%')
-                    ->orWhereHas('prices', fn($q) =>
-                        $q->where('price', 'like', '%' . $this->search . '%')
-                    )
+                $query->where(function($q) {
+                    $q->where('name', 'like', '%' . $this->search . '%')
+                      ->orWhere('code', 'like', '%' . $this->search . '%')
+                      ->orWhere('serial', 'like', '%' . $this->search . '%');
+                })
             )
             ->when($this->status, fn($query) =>
                 $query->where('status', $this->status)
@@ -742,12 +774,10 @@ class ProductsComponent extends Component
         try {
             DB::beginTransaction();
 
-            // Log the start of transaction
             logger()->info('Starting product creation transaction', [
                 'form_data' => $this->addForm
             ]);
 
-            // Create the product
             $product = Product::create([
                 'name' => $this->addForm['name'],
                 'slug' => $this->addForm['slug'],
@@ -759,28 +789,32 @@ class ProductsComponent extends Component
                 'supplier_id' => $this->addForm['supplier_id'],
             ]);
 
+            // Create prices
+            $product->prices()->create([
+                'currency_id' => 1, // TRY
+                'price_type' => 'retail',
+                'base_price' => $this->addForm['prices'][0]['price'],
+                'converted_price' => $this->addForm['prices'][0]['price'], // For TRY, base and converted are same
+            ]);
+
+            $product->prices()->create([
+                'currency_id' => 1, // TRY
+                'price_type' => 'wholesale',
+                'base_price' => $this->addForm['prices'][1]['price'],
+                'converted_price' => $this->addForm['prices'][1]['price'], // For TRY, base and converted are same
+            ]);
+
+            $product->prices()->create([
+                'currency_id' => 2, // USD
+                'price_type' => 'wholesale',
+                'base_price' => $this->addForm['prices'][2]['price'],
+                'converted_price' => $this->addForm['prices'][2]['price'], // For USD prices, this will be updated by the scheduled job
+            ]);
+
             // Sync tags
             if (!empty($this->addForm['tags'])) {
                 $product->tags()->sync($this->addForm['tags']);
             }
-
-            // Log after product creation
-            logger()->info('Product created', ['product_id' => $product->id]);
-
-            // Create prices
-            foreach ($this->addForm['prices'] as $price) {
-                $product->prices()->create([
-                    'price' => $price['price'],
-                    'currency' => $price['currency'],
-                    'price_type' => $price['price_type']
-                ]);
-            }
-
-            // Log after prices creation
-            logger()->info('Product prices created', [
-                'product_id' => $product->id,
-                'prices' => $this->addForm['prices']
-            ]);
 
             // Handle images
             if ($this->newProductImages) {
@@ -788,17 +822,12 @@ class ProductsComponent extends Component
                     $path = $image->store('products', 'public');
                     $product->images()->create([
                         'image_url' => $path,
-                        'is_primary' => $index === 0 // First image is primary
+                        'is_primary' => $index === 0
                     ]);
                 }
-                logger()->info('Images added', [
-                    'product_id' => $product->id,
-                    'image_count' => count($this->newProductImages)
-                ]);
             }
 
             DB::commit();
-            logger()->info('Transaction committed successfully', ['product_id' => $product->id]);
 
             $this->addModalOpen = false;
             $this->reset(['addForm', 'newProductImages']);
@@ -809,7 +838,6 @@ class ProductsComponent extends Component
                 'message' => 'Product created successfully!'
             ]);
 
-            logger()->info('SQL Queries:', ['queries' => DB::getQueryLog()]);
         } catch (\Exception $e) {
             DB::rollBack();
             logger()->error('Error creating product', [
@@ -836,8 +864,9 @@ class ProductsComponent extends Component
             'addForm.category_id' => 'required|exists:categories,id',
             'addForm.supplier_id' => 'required|exists:suppliers,id',
             'addForm.prices.*.price' => 'required|numeric|min:0',
-            'addForm.prices.*.currency' => 'required|in:TL,$',
-            'addForm.prices.*.price_type' => 'required|in:retail,wholesale',
+            'addForm.prices.0.price' => 'required|numeric|min:0',
+            'addForm.prices.1.price' => 'required|numeric|min:0',
+            'addForm.prices.2.price' => 'required|numeric|min:0',
             'newProductImages.*' => 'image|max:2048',
             'addForm.tags' => 'array',
             'addForm.tags.*' => 'exists:tags,id'
@@ -865,8 +894,9 @@ class ProductsComponent extends Component
             'editForm.category_id' => 'required|exists:categories,id',
             'editForm.supplier_id' => 'nullable|exists:suppliers,id',
             'editForm.prices.*.price' => 'required|numeric|min:0',
-            'editForm.prices.*.currency' => 'required|in:TL,$',
-            'editForm.prices.*.price_type' => 'required|in:retail,wholesale',
+            'editForm.prices.0.price' => 'required|numeric|min:0',
+            'editForm.prices.1.price' => 'required|numeric|min:0',
+            'editForm.prices.2.price' => 'required|numeric|min:0',
             'newImages.*' => 'image|max:2048',
         ];
     }
@@ -938,6 +968,30 @@ class ProductsComponent extends Component
             $this->addForm['tags'] = array_values(array_diff($this->addForm['tags'], [$tagId]));
         } else {
             $this->addForm['tags'][] = $tagId;
+        }
+    }
+
+    private function loadExchangeRate(): void
+    {
+        try {
+            $this->exchangeRate = $this->currencyService->getExchangeRate('TRY', 'USD');
+        } catch (\Exception $e) {
+            logger()->error('Error loading exchange rate: ' . $e->getMessage());
+            $this->exchangeRate = 0.033; // Fallback exchange rate
+        }
+    }
+
+    public function updatedEditFormPrices($value, $key): void
+    {
+        if (str_contains($key, '.price')) {
+            $this->validateOnly("editForm.prices.*.price");
+        }
+    }
+
+    public function updatedAddFormPrices($value, $key): void
+    {
+        if (str_contains($key, '.price')) {
+            $this->validateOnly("addForm.prices.*.price");
         }
     }
 }

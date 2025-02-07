@@ -20,19 +20,19 @@ class SectionProductSeeder extends Seeder
                     'name' => 'Featured Products',
                     'description' => 'Our most popular items',
                     'order' => 1,
-                    'position' => 'main',
+                    'position' => 'main.slider',
                 ],
                 [
                     'name' => 'New Arrivals',
                     'description' => 'Latest additions to our catalog',
                     'order' => 2,
-                    'position' => 'main',
+                    'position' => 'main.content',
                 ],
                 [
                     'name' => 'Special Offers',
                     'description' => 'Limited time deals',
                     'order' => 3,
-                    'position' => 'main',
+                    'position' => 'main.content',
                 ],
             )
             ->create()

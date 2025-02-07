@@ -22,6 +22,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'manage_products',
             'view_sales',
             'create_orders',
+            'customer_profile',
             'edit_orders',
             'delete_orders',
         ];
@@ -45,12 +46,17 @@ class RolesAndPermissionsSeeder extends Seeder
         ]);
 
         // Shop Owner: Restricted permissions
-        Role::firstOrCreate(['name' => 'shop_owner']);
-//        $shopOwner = Role::firstOrCreate(['name' => 'shop_owner']);
-//        $shopOwner->givePermissionTo([
-//            'view_sales',
-//            'create_orders',
-//        ]);
+//        Role::firstOrCreate(['name' => 'shop_owner']);
+        $shopOwner = Role::firstOrCreate(['name' => 'shop_owner']);
+        $shopOwner->givePermissionTo([
+            'view_sales',
+            'create_orders',
+        ]);
+
+        $customer = Role::firstOrCreate(['name' => 'customer']);
+        $customer->givePermissionTo([
+            'customer_profile',
+        ]);
 
         $admin = User::factory()->create([
             'name' => 'Admin',
@@ -70,6 +76,12 @@ class RolesAndPermissionsSeeder extends Seeder
             'email' => 'karmantelekom@gmail.com',
         ]);
         $karman_telekom->assignRole('shop_owner');
+
+        $customer_A = User::factory()->create([
+            'name' => 'Customer A',
+            'email' => 'customer@gmail.com',
+        ]);
+        $customer_A->assignRole('customer');
 
     }
 }

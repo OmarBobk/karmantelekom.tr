@@ -6,3 +6,11 @@
 
 ### TODO:
 - Register process.
+- Every Product should have two prices [Wholesale, Retail].
+- add is_retail_active and is_wholesale_active to product table.
+- Suppliers.
+- Categories CURD.
+- if a user wrote the wholesale TRY Price automatically, USD Price will be calculated and the opposite is the same.
+- sections-component:
+  - in the edit modal in the search product field, it should be rested when the modal is closed.
+  - in the edit modal in the product table when use reorder the product X to order 1 now all the products should be reordered.

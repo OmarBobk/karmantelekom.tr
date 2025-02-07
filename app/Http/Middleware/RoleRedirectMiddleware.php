@@ -25,8 +25,6 @@ class RoleRedirectMiddleware
                 // Redirect to a specific page if they try to access the dashboard or subdomain
                 return redirect()->to(config('app.url') . '/404');
             }
-        } else {
-            return redirect()->to(config('app.url') . '/404');
         }
 
         return $next($request);
