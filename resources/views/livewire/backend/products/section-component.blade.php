@@ -61,10 +61,8 @@
                                         @endif
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize
-                                            {{ $section->position === 'main' ? 'bg-blue-100 text-blue-800' :
-                                            ($section->position === 'sidebar' ? 'bg-purple-100 text-purple-800' : 'bg-gray-100 text-gray-800') }}">
-                                            {{ $section->position }}
+                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium capitalize {{ $section->position->getBackgroundColor() }}">
+                                            {{ str_replace('.', ' → ', $section->position->value) }}
                                         </span>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
@@ -269,11 +267,11 @@
                                 <label for="position" class="block text-sm font-medium text-gray-700">Position</label>
                                 <select wire:model="position" id="position"
                                         class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
-                                    <option value="main">Main</option>
-                                    <option value="main.slider">main.slider</option>
-                                    <option value="main.content">main.content</option>
-                                    <option value="sidebar">Sidebar</option>
-                                    <option value="footer">Footer</option>
+                                    @foreach($this->availablePositions as $positionOption)
+                                        <option value="{{ $positionOption->value }}">
+                                            {{ str_replace('.', ' → ', ucfirst($positionOption->value)) }}
+                                        </option>
+                                    @endforeach
                                 </select>
                                 @error('position') <span class="mt-1 text-sm text-red-600">{{ $message }}</span> @enderror
                             </div>

@@ -79,21 +79,21 @@ class MainComponent extends Component
         $this->{$propertyName} = Cache::remember($cacheKey, now()->addMinutes(30), function () use ($currency, $position, $scrollable) {
             $query = Section::with([
                 'products' => function($query) use ($currency, $position) {
-                    $query->with([
-                        'images' => function($query) use ($position) {
-                            if ($position === 'main.slider') {
-                                $query->where('is_primary', true);
-                            } else {
-                                $query->orderBy('is_primary', 'desc');
+                    $query->visibleToUser()
+                        ->with([
+                            'images' => function($query) use ($position) {
+                                if ($position === 'main.slider') {
+                                    $query->where('is_primary', true);
+                                } else {
+                                    $query->orderBy('is_primary', 'desc');
+                                }
+                            },
+                            'prices' => function($query) use ($currency) {
+                                $query->where('currency_id', $currency->id)
+                                     ->where('price_type', $this->priceType);
                             }
-                        },
-                        'prices' => function($query) use ($currency) {
-                            $query->where('currency_id', $currency->id)
-                                 ->where('price_type', $this->priceType);
-                        }
-                    ])
-                    ->where('status', 'active')
-                    ->orderBy('section_products.ordering');
+                        ])
+                        ->orderBy('section_products.ordering');
                 }
             ])
             ->where('position', $position)
@@ -124,21 +124,6 @@ class MainComponent extends Component
     public function setActiveCategory($index)
     {
         $this->activeCategory = $index;
-    }
-
-    public function scrollLeft()
-    {
-        $this->dispatch('scroll-left');
-    }
-
-    public function scrollRight()
-    {
-        $this->dispatch('scroll-right');
-    }
-
-    public function resetScroll()
-    {
-        $this->dispatch('reset-scroll');
     }
 
     public function addToCart($productId, $quantity)

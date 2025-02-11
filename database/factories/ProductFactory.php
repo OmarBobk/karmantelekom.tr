@@ -26,7 +26,8 @@ class ProductFactory extends Factory
             'description' => $this->faker->paragraph,
             'category_id' => Category::factory(),
             'supplier_id' => Supplier::factory(),
-            'status' => 'active',
+            'is_retail_active' => false,
+            'is_wholesale_active' => false,
         ];
     }
 }

@@ -26,7 +26,61 @@
     </div>
 
     <!-- Start Slider Component -->
-    <div class="w-full bg-white pt-4" x-data="slider" role="region" aria-label="Product Categories Slider">
+    <div class="w-full bg-white pt-4" x-data="{ 
+        activeCategory: @entangle('activeCategory'),
+        atStart: true,
+        atEnd: false,
+        init() {
+            this.$nextTick(() => {
+                this.updateScrollButtons(this.activeCategory);
+            });
+        },
+        updateScrollButtons(index) {
+            const slider = this.$refs[`slider-${index}`];
+            if (slider) {
+                this.atStart = slider.scrollLeft <= 0;
+                this.atEnd = slider.scrollLeft + slider.clientWidth >= slider.scrollWidth;
+            }
+        },
+        scrollLeft(index) {
+            const slider = this.$refs[`slider-${index}`];
+            if (slider) {
+                // Get the width of a single product card (including gap)
+                const productCard = slider.querySelector('.flex-none');
+                const cardWidth = productCard.offsetWidth;
+                const gap = 16; // gap-4 = 16px
+                
+                slider.scrollBy({ 
+                    left: -(cardWidth + gap), 
+                    behavior: 'smooth' 
+                });
+
+                // Update buttons after scroll animation
+                setTimeout(() => {
+                    this.updateScrollButtons(index);
+                }, 300);
+            }
+        },
+        scrollRight(index) {
+            const slider = this.$refs[`slider-${index}`];
+            if (slider) {
+                // Get the width of a single product card (including gap)
+                const productCard = slider.querySelector('.flex-none');
+                const cardWidth = productCard.offsetWidth;
+                const gap = 16; // gap-4 = 16px
+                
+                slider.scrollBy({ 
+                    left: cardWidth + gap, 
+                    behavior: 'smooth' 
+                });
+
+                // Update buttons after scroll animation
+                setTimeout(() => {
+                    this.updateScrollButtons(index);
+                }, 300);
+            }
+        }
+    }" role="region" aria-label="Product Categories Slider">
         <!-- Category Navigation -->
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div class="relative" x-data="navigationScroll">
@@ -114,11 +168,10 @@
                 <div class="group relative">
                     <!-- Left Navigation Button -->
                     <button
-                        @click="scrollLeft"
+                        @click="scrollLeft($wire.activeCategory)"
                         class="hidden lg:flex items-center justify-center size-10 rounded-full bg-white hover:bg-gray-50 text-gray-600 hover:text-gray-900 shadow-lg border border-gray-200 absolute -left-2 md:-left-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 z-10 transition-all duration-200"
-                        :disabled="atStart"
+                        :class="{ 'pointer-events-none opacity-50': atStart }"
                         aria-label="Scroll left"
-                        x-cloak
                     >
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
@@ -127,11 +180,10 @@
 
                     <!-- Right Navigation Button -->
                     <button
-                        @click="scrollRight"
+                        @click="scrollRight($wire.activeCategory)"
                         class="hidden lg:flex items-center justify-center size-10 rounded-full bg-white hover:bg-gray-50 text-gray-600 hover:text-gray-900 shadow-lg border border-gray-200 absolute -right-2 md:-right-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 z-10 transition-all duration-200"
-                        :disabled="atEnd"
+                        :class="{ 'pointer-events-none opacity-50': atEnd }"
                         aria-label="Scroll right"
-                        x-cloak
                     >
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
@@ -159,8 +211,7 @@
                                     <div
                                         x-ref="slider-{{ $index }}"
                                         class="flex lg:ronded md:rounded-none sm:rounded-2xl overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory"
-                                        @scroll.debounce.50ms="updateScrollButtons({{ $index }})"
-                                        x-cloak
+                                        @scroll.debounce.50ms="updateScrollButtons($wire.activeCategory)"
                                     >
                                         @foreach($section->products as $product)
                                             <div class="flex-none w-72 snap-start p-4">

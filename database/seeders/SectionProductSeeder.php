@@ -21,6 +21,7 @@ class SectionProductSeeder extends Seeder
                     'description' => 'Our most popular items',
                     'order' => 1,
                     'position' => 'main.slider',
+                    'scrollable' => true
                 ],
                 [
                     'name' => 'New Arrivals',
@@ -37,8 +38,16 @@ class SectionProductSeeder extends Seeder
             )
             ->create()
             ->each(function (Section $section) {
-                // Attach 6 random products to each section with incremental ordering
-                $products = Product::inRandomOrder()->limit(6)->get();
+                // Get products that are either retail or wholesale active
+                $products = Product::where(function($query) {
+                    $query->where('is_retail_active', true)
+                          ->orWhere('is_wholesale_active', true);
+                })
+                ->inRandomOrder()
+                ->limit(6)
+                ->get();
+
+                // Attach products with incremental ordering
                 $ordering = 0;
                 foreach ($products as $product) {
                     $section->products()->attach($product->id, ['ordering' => $ordering++]);

@@ -58,9 +58,10 @@
                 <!-- Status Filter -->
                 <select wire:model.live="status" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     <option value="">All Statuses</option>
-                    @foreach($statuses as $status)
-                        <option value="{{ $status }}">{{ ucfirst($status) }}</option>
-                    @endforeach
+                    <option value="retail_active">Retail Active</option>
+                    <option value="retail_inactive">Retail Inactive</option>
+                    <option value="wholesale_active">Wholesale Active</option>
+                    <option value="wholesale_inactive">Wholesale Inactive</option>
                 </select>
 
                 <!-- Date Field Filter -->
@@ -81,15 +82,13 @@
                 </select>
 
                 <!-- Bulk Actions -->
-                <select 
-                    wire:model.live="bulkAction" 
-                    wire:loading.attr="disabled"
-                    class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 disabled:opacity-50"
-                >
+                <select wire:model.live="bulkAction" class="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                     <option value="">Bulk Actions</option>
                     <option value="delete">Delete Selected</option>
-                    <option value="activate">Activate Selected</option>
-                    <option value="deactivate">Deactivate Selected</option>
+                    <option value="activate_retail">Enable Retail Visibility</option>
+                    <option value="deactivate_retail">Disable Retail Visibility</option>
+                    <option value="activate_wholesale">Enable Wholesale Visibility</option>
+                    <option value="deactivate_wholesale">Disable Wholesale Visibility</option>
                 </select>
 
                 <!-- Add a loading indicator -->
@@ -203,18 +202,44 @@
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $product->code }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $product->serial ?? 'N/A' }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $product->category->name }}</td>
-                                    <td class="px-6 py-4 whitespace-nowrap text-center">
-                                        <label class="relative inline-flex items-center cursor-pointer">
-                                            <input 
-                                                type="checkbox" 
-                                                class="sr-only peer"
-                                                wire:model.blur="productStatuses.{{ $product->id }}"
-                                                wire:click="toggleStatus({{ $product->id }})"
-                                                @checked($product->status === 'active')
-                                            >
-                                            <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none peer-focus:ring-4 peer-focus:ring-blue-300 dark:peer-focus:ring-blue-800 rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full rtl:peer-checked:after:-translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:start-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-blue-600"></div>
-                                            <span class="sr-only">Toggle status</span>
-                                        </label>
+                                    <td class="px-6 py-4 whitespace-nowrap">
+                                        <div class="flex items-center gap-4">
+                                            <div class="flex flex-col items-start gap-2">
+                                                <div class="flex items-center gap-2">
+                                                    <span class="text-sm font-medium text-gray-700">Retail:</span>
+                                                    <button wire:click="toggleStatus({{ $product->id }}, 'retail')"
+                                                            class="group relative"
+                                                            wire:loading.class="opacity-50"
+                                                            wire:target="toggleStatus({{ $product->id }}, 'retail')">
+                                                        <span class="sr-only">Toggle retail visibility</span>
+                                                        <div class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 {{ $product->is_retail_active ? 'bg-blue-600' : 'bg-gray-200' }}">
+                                                            <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {{ $product->is_retail_active ? 'translate-x-5' : 'translate-x-0' }}"></span>
+                                                        </div>
+                                                    </button>
+                                                </div>
+                                                <div class="flex items-center gap-2">
+                                                    <span class="text-sm font-medium text-gray-700">Wholesale:</span>
+                                                    <button wire:click="toggleStatus({{ $product->id }}, 'wholesale')"
+                                                            class="group relative"
+                                                            wire:loading.class="opacity-50"
+                                                            wire:target="toggleStatus({{ $product->id }}, 'wholesale')">
+                                                        <span class="sr-only">Toggle wholesale visibility</span>
+                                                        <div class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 {{ $product->is_wholesale_active ? 'bg-blue-600' : 'bg-gray-200' }}">
+                                                            <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {{ $product->is_wholesale_active ? 'translate-x-5' : 'translate-x-0' }}"></span>
+                                                        </div>
+                                                    </button>
+                                                </div>
+                                            </div>
+
+                                            <!-- Loading indicator -->
+                                            <div wire:loading wire:target="toggleStatus({{ $product->id }})"
+                                                class="absolute -right-6 top-1/2 -translate-y-1/2">
+                                                <svg class="animate-spin h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                </svg>
+                                            </div>
+                                        </div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                         <div class="flex flex-col space-y-1">
@@ -438,29 +463,51 @@
                                 </div>
                             </div>
 
-                            <!-- Status Toggle -->
-                            <div>
-                                <label for="status" class="block text-sm font-medium text-gray-700 mb-2">Status</label>
-                                <div class="flex items-center">
-                                    <button
-                                        type="button"
-                                        wire:click="$set('editForm.status', '{{ $editForm['status'] === 'active' ? 'inactive' : 'active' }}')"
-                                        class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 {{ $editForm['status'] === 'active' ? 'bg-blue-600' : 'bg-gray-200' }}"
-                                        role="switch"
-                                        aria-checked="{{ $editForm['status'] === 'active' ? 'true' : 'false' }}"
-                                    >
-                                        <span
-                                            aria-hidden="true"
-                                            class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {{ $editForm['status'] === 'active' ? 'translate-x-5' : 'translate-x-0' }}"
-                                        ></span>
-                                    </button>
-                                    <span class="ml-3 text-sm {{ $editForm['status'] === 'active' ? 'text-blue-600' : 'text-gray-500' }}">
-                                        {{ ucfirst($editForm['status']) }}
-                                    </span>
+                            <!-- Status -->
+                            <div class="col-span-6 sm:col-span-3">
+                                <label class="block text-sm font-medium text-gray-700">Visibility</label>
+                                <div class="mt-2 space-y-4">
+                                    <div class="flex items-center gap-2">
+                                        <label for="editForm.is_retail_active" class="text-sm font-medium text-gray-700">Retail:</label>
+                                        <button type="button"
+                                                wire:click="toggleEditFormRetailVisibility"
+                                                class="group relative"
+                                                wire:loading.class="opacity-50"
+                                                wire:target="toggleEditFormRetailVisibility">
+                                            <span class="sr-only">Toggle retail visibility</span>
+                                            <div class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 {{ $editForm['is_retail_active'] ? 'bg-blue-600' : 'bg-gray-200' }}">
+                                                <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {{ $editForm['is_retail_active'] ? 'translate-x-5' : 'translate-x-0' }}"></span>
+                                            </div>
+                                            <div wire:loading wire:target="toggleEditFormRetailVisibility" class="absolute -right-6 top-1/2 -translate-y-1/2">
+                                                <svg class="animate-spin h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                </svg>
+                                            </div>
+                                        </button>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <label for="editForm.is_wholesale_active" class="text-sm font-medium text-gray-700">Wholesale:</label>
+                                        <button type="button"
+                                                wire:click="toggleEditFormWholesaleVisibility"
+                                                class="group relative"
+                                                wire:loading.class="opacity-50"
+                                                wire:target="toggleEditFormWholesaleVisibility">
+                                            <span class="sr-only">Toggle wholesale visibility</span>
+                                            <div class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 {{ $editForm['is_wholesale_active'] ? 'bg-blue-600' : 'bg-gray-200' }}">
+                                                <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {{ $editForm['is_wholesale_active'] ? 'translate-x-5' : 'translate-x-0' }}"></span>
+                                            </div>
+                                            <div wire:loading wire:target="toggleEditFormWholesaleVisibility" class="absolute -right-6 top-1/2 -translate-y-1/2">
+                                                <svg class="animate-spin h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                </svg>
+                                            </div>
+                                        </button>
+                                    </div>
                                 </div>
-                                @error('editForm.status')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
+                                @error('editForm.is_retail_active') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                                @error('editForm.is_wholesale_active') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                             </div>
 
                             <!-- Description -->
@@ -1102,28 +1149,33 @@
                                 </div>
                             </div>
 
-                            <!-- Status Toggle -->
-                            <div>
-                                <label for="add-status" class="block text-sm font-medium text-gray-700 mb-2">Status</label>
-                                <div class="flex items-center">
-                                    <button
-                                        type="button"
-                                        wire:click="$set('addForm.status', '{{ $addForm['status'] === 'active' ? 'inactive' : 'active' }}')"
-                                        class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 {{ $addForm['status'] === 'active' ? 'bg-blue-600' : 'bg-gray-200' }}"
-                                        role="switch"
-                                    >
-                                        <span
-                                            aria-hidden="true"
-                                            class="pointer-events-none inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {{ $addForm['status'] === 'active' ? 'translate-x-5' : 'translate-x-0' }}"
-                                        ></span>
-                                    </button>
-                                    <span class="ml-3 text-sm {{ $addForm['status'] === 'active' ? 'text-blue-600' : 'text-gray-500' }}">
-                                        {{ ucfirst($addForm['status']) }}
-                                    </span>
+                            <!-- Status -->
+                            <div class="col-span-6 sm:col-span-3">
+                                <label class="block text-sm font-medium text-gray-700">Visibility</label>
+                                <div class="mt-2 space-y-4">
+                                    <div class="flex items-center gap-2">
+                                        <label for="addForm.is_retail_active" class="text-sm font-medium text-gray-700">Retail:</label>
+                                        <button type="button"
+                                                wire:click="toggleAddFormRetailVisibility"
+                                                class="group relative">
+                                            <div class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 {{ $addForm['is_retail_active'] ? 'bg-blue-600' : 'bg-gray-200' }}">
+                                                <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {{ $addForm['is_retail_active'] ? 'translate-x-5' : 'translate-x-0' }}"></span>
+                                            </div>
+                                        </button>
+                                    </div>
+                                    <div class="flex items-center gap-2">
+                                        <label for="addForm.is_wholesale_active" class="text-sm font-medium text-gray-700">Wholesale:</label>
+                                        <button type="button"
+                                                wire:click="toggleAddFormWholesaleVisibility"
+                                                class="group relative">
+                                            <div class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 {{ $addForm['is_wholesale_active'] ? 'bg-blue-600' : 'bg-gray-200' }}">
+                                                <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {{ $addForm['is_wholesale_active'] ? 'translate-x-5' : 'translate-x-0' }}"></span>
+                                            </div>
+                                        </button>
+                                    </div>
                                 </div>
-                                @error('addForm.status')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
+                                @error('addForm.is_retail_active') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                                @error('addForm.is_wholesale_active') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                             </div>
 
                             <!-- Description -->

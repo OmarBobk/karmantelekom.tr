@@ -3,6 +3,7 @@
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Schema;
+use App\Enums\SectionPosition;
 
 return new class extends Migration
 {
@@ -15,7 +16,7 @@ return new class extends Migration
             $table->integer('order')->default(0);
             $table->boolean('is_active')->default(true);
             $table->boolean('scrollable')->default(false);
-            $table->string('position')->default('main'); // main, sidebar, footer, etc.
+            $table->enum('position', SectionPosition::values())->default(SectionPosition::MAIN_CONTENT->value);
             $table->timestamps();
         });
     }

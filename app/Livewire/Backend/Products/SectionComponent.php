@@ -11,6 +11,7 @@ use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
+use App\Enums\SectionPosition;
 
 class SectionComponent extends Component
 {
@@ -190,21 +191,16 @@ class SectionComponent extends Component
                         ->orWhere('code', 'like', '%' . $this->productSearchTerm . '%')
                         ->orWhere('serial', 'like', '%' . $this->productSearchTerm . '%');
                 });
-            })
-            ->paginate(10, ['*'], 'productsPage');
+            });
 
-        // Map through the items to initialize product orders
-        $products->through(function ($product) {
-            if ($this->editingSection) {
-                $pivot = $this->editingSection->products->find($product->id)?->pivot;
-                if (!isset($this->productOrders[$product->id])) {
-                    $this->productOrders[$product->id] = $pivot?->ordering ?? 0;
-                }
-            }
-            return $product;
-        });
+        // Apply visibility filter based on user role
+        if (auth()->user()->hasAnyRole(['admin', 'salesperson', 'shop_owner'])) {
+            $products->wholesaleActive();
+        } else {
+            $products->retailActive();
+        }
 
-        return $products;
+        return $products->paginate(10, ['*'], 'productsPage');
     }
 
     #[Layout('layouts.backend')]
@@ -314,5 +310,11 @@ class SectionComponent extends Component
         ->sortBy(function ($product) {
             return $this->productOrders[$product->id] ?? PHP_INT_MAX;
         });
+    }
+
+    #[Computed]
+    public function availablePositions()
+    {
+        return SectionPosition::cases();
     }
 }

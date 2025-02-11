@@ -14,7 +14,8 @@ return new class extends Migration
             $table->string('slug')->unique();
             $table->string('serial')->unique()->nullable();
             $table->string('code')->unique();
-            $table->string('status')->default('inactive');
+            $table->boolean('is_retail_active')->default(false);
+            $table->boolean('is_wholesale_active')->default(false);
             $table->text('description')->nullable();
             
             $table->foreignId('category_id')->constrained('categories')->cascadeOnDelete();

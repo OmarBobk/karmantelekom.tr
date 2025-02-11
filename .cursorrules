@@ -89,3 +89,6 @@
     - Use Tailwind CSS for consistent and efficient styling.
     - Implement complex UI patterns using Livewire and Alpine.js.
       
+
+
+    NOTE: In Laravel, when you are creating a column in a table, you can modify the table migration file to add the column, and then run "php artisan migrate:fresh --seed" to apply the changes to the database. you don't need to create a new migration file for each new column.
