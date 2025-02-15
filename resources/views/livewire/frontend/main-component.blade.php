@@ -26,7 +26,7 @@
     </div>
 
     <!-- Start Slider Component -->
-    <div class="w-full bg-white pt-4" x-data="{ 
+    <div class="w-full bg-white pt-4" x-data="{
         activeCategory: @entangle('activeCategory'),
         atStart: true,
         atEnd: false,
@@ -49,10 +49,10 @@
                 const productCard = slider.querySelector('.flex-none');
                 const cardWidth = productCard.offsetWidth;
                 const gap = 16; // gap-4 = 16px
-                
-                slider.scrollBy({ 
-                    left: -(cardWidth + gap), 
-                    behavior: 'smooth' 
+
+                slider.scrollBy({
+                    left: -(cardWidth + gap),
+                    behavior: 'smooth'
                 });
 
                 // Update buttons after scroll animation
@@ -68,10 +68,10 @@
                 const productCard = slider.querySelector('.flex-none');
                 const cardWidth = productCard.offsetWidth;
                 const gap = 16; // gap-4 = 16px
-                
-                slider.scrollBy({ 
-                    left: cardWidth + gap, 
-                    behavior: 'smooth' 
+
+                slider.scrollBy({
+                    left: cardWidth + gap,
+                    behavior: 'smooth'
                 });
 
                 // Update buttons after scroll animation
@@ -140,7 +140,10 @@
                     <div class="flex flex-nowrap border-b border-gray-200" x-cloak>
                         <div class="flex flex-nowrap whitespace-nowrap">
 
-                            @foreach($sections as $index => $section)
+                        @if(empty($sections))
+                            <p class="text-gray-500">No sections found</p>
+                        @else
+                            @forelse($sections as $index => $section)
                                 <button
                                     x-on:click="$wire.activeCategory = {{ $index }}"
 
@@ -154,7 +157,10 @@
                                 >
                                     {{ $section->name }}
                                 </button>
-                            @endforeach
+                            @empty
+                                <p class="text-gray-500">No sections found</p>
+                            @endforelse
+                        @endif
                         </div>
                     </div>
                 </nav>
@@ -192,7 +198,8 @@
 
                     <!-- Slider Content -->
                     <div class="relative overflow-hidden h-[500px]">
-                        @foreach($this->sections as $index => $section)
+                        @if(!empty($this->sections))
+                        @forelse($this->sections as $index => $section)
                             <div
                                 id="panel-{{ $index }}"
                                 role="tabpanel"
@@ -247,8 +254,9 @@
 
                                                             <!-- Quantity Control -->
                                                             <div x-data="{ quantity: 0, showQuantity: false }"
-                                                                @click.away="showQuantity = false; quantity = 0"
-                                                                class="flex items-center gap-2"
+                                                                 @click.away="showQuantity = false; quantity = 0"
+                                                                 @cart-updated.window="showQuantity = false; quantity = 0"
+                                                                 class="flex items-center gap-2"
                                                             >
                                                                 <!-- Add Button -->
                                                                 <button
@@ -307,7 +315,10 @@
                                     </div>
                                 </div>
                             </div>
-                        @endforeach
+                        @empty
+                            <p class="text-gray-500">No products found</p>
+                        @endforelse
+                        @endif
                     </div>
                 </div>
             </div>
@@ -468,6 +479,7 @@
 
     <!-- Start Products Section Component -->
     <div class="w-full bg-white pb-8" x-cloak>
+        @if(!empty($this->contentSections))
         @foreach($this->contentSections as $section)
             <div class="w-full bg-white py-8">
                 <!-- Section Header -->
@@ -650,6 +662,7 @@
                 </div>
             </div>
         @endforeach
+        @endif
     </div>
     <!-- End Products Section Component -->
 
@@ -673,8 +686,6 @@
             text-overflow: ellipsis;
         }
     </style>
-
-
 
     @assets
         <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css" />

@@ -12,6 +12,8 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
 use Livewire\Component;
 use function Laravel\Prompts\alert;
+use App\Models\Product;
+use App\Services\CartService;
 
 class MainComponent extends Component
 {
@@ -98,6 +100,13 @@ class MainComponent extends Component
             ])
             ->where('position', $position)
             ->where('is_active', true)
+            ->where(function ($query) {
+                if ($this->canSwitchCurrency) {
+                    $query->where('is_wholesale_active', true);
+                } else {
+                    $query->where('is_retail_active', true);
+                }
+            })
             ->orderBy('order');
 
             if ($scrollable) {
@@ -126,14 +135,23 @@ class MainComponent extends Component
         $this->activeCategory = $index;
     }
 
-    public function addToCart($productId, $quantity)
+    public function addToCart(Product $product, int $quantity = 1): void
     {
-        // Simulate network delay
-        usleep(800000);
+        try {
+            $this->dispatch('add-to-cart', [
+                'product' => $product->id,
+                'quantity' => $quantity,
+            ]);
 
-        $this->dispatch('cart-updated', [
-            'message' => 'Product added to cart successfully!',
-            'type' => 'success'
-        ]);
+            // Dispatch a custom JavaScript event after adding to cart
+            $this->dispatch('cart-updated');
+
+        } catch (\Exception $e) {
+            logger()->error('Error adding product to cart: ' . $e->getMessage());
+            $this->dispatch('notify', [
+                'message' => 'Error adding product to cart. Please try again.',
+                'type' => 'error',
+            ]);
+        }
     }
 }

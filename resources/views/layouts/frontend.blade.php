@@ -16,6 +16,10 @@
         <footer>
             <livewire:frontend.partials.footer-component />
         </footer>
+
+        <!-- Notification Component -->
+        <x-notification />
+
         @stack('scripts')
     </body>
 </html>

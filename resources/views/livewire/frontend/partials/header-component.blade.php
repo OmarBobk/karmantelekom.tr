@@ -143,78 +143,8 @@
         <!-- Right Section -->
         <div class="flex items-center gap-x-2">
             <!-- Shopping Cart -->
-            <div class="relative flex items-center gap-x-2" x-data="{ cartOpen: false }">
-                <button @click="cartOpen = !cartOpen"
-                        class="p-2.5 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all duration-200 relative group h-11 w-11 flex items-center justify-center"
-                        aria-label="Shopping cart">
-                    <svg class="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
-                    </svg>
-                    <!-- Cart Badge -->
-                    <div x-show="cartCount > 0"
-                         x-transition:enter="transition ease-out duration-300"
-                         x-transition:enter-start="opacity-0 scale-50"
-                         x-transition:enter-end="opacity-100 scale-100"
-                         class="absolute -top-2 -right-1 bg-blue-500 text-white text-xs font-bold rounded-full h-5 min-w-[1.25rem] px-1 flex items-center justify-center group-hover:bg-blue-600 transition-colors duration-200 z-50"
-                         x-text="cartCount">
-                    </div>
-                </button>
-                <span @click="cartOpen = !cartOpen"
-                      class="text-sm text-gray-700 cursor-pointer hover:text-gray-900">Cart</span>
-
-                <!-- Cart Dropdown -->
-                <div x-show="cartOpen"
-                     x-cloak
-                     @click.outside="cartOpen = false"
-                     x-transition:enter="transition ease-out duration-200"
-                     x-transition:enter-start="opacity-0 scale-95"
-                     x-transition:enter-end="opacity-100 scale-100"
-                     x-transition:leave="transition ease-in duration-100"
-                     x-transition:leave-start="opacity-100 scale-100"
-                     x-transition:leave-end="opacity-0 scale-95"
-                     class="fixed inset-x-4 top-24 mx-auto bg-white rounded-lg shadow-lg border border-gray-200 z-50 lg:absolute lg:inset-auto lg:right-0 lg:top-full lg:w-80"
-                     :class="{ 'lg:fixed': window.scrollY > 0 }"
-                     @scroll.window="if(window.scrollY > 0) cartOpen = false">
-
-                    <!-- Cart Header -->
-                    <div class="p-4 border-b border-gray-200">
-                        <h3 class="text-lg font-medium text-gray-900">Shopping Cart</h3>
-                        <p x-show="cartCount === 0" class="mt-1 text-sm text-gray-500">Your cart is empty</p>
-                    </div>
-
-                    <!-- Cart Items -->
-                    <div x-show="cartCount > 0" class="max-h-[60vh] lg:max-h-96 overflow-y-auto">
-                        <div class="p-4 border-b border-gray-200">
-                            <div class="flex items-center space-x-4">
-                                <div class="flex-shrink-0 size-16 bg-gray-100 rounded-md"></div>
-                                <div class="flex-1 min-w-0">
-                                    <p class="text-sm font-medium text-gray-900 truncate">Product Name</p>
-                                    <p class="text-sm text-gray-500">$99.00</p>
-                                </div>
-                                <button @click.stop="removeFromCart()"
-                                        class="p-1 text-gray-400 hover:text-gray-500 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-200">
-                                    <span class="sr-only">Remove item</span>
-                                    <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                                    </svg>
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Cart Footer -->
-                    <div x-show="cartCount > 0" class="p-4 border-t border-gray-200">
-                        <div class="flex justify-between text-base font-medium text-gray-900 mb-4">
-                            <p>Subtotal</p>
-                            <p>$99.00</p>
-                        </div>
-                        <a href="#"
-                           @click.stop
-                           class="w-full flex justify-center items-center px-6 py-3 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors duration-200">
-                            Checkout
-                        </a>
-                    </div>
-                </div>
+            <div class="relative flex items-center gap-x-2">
+                <livewire:cart.cart-component />
             </div>
 
             @guest
@@ -224,7 +154,7 @@
                      @mouseleave="open = false">
                     <div class="flex items-center gap-x-2 cursor-pointer"
                          @mouseenter="open = true">
-                        <div class="p-2.5 text-gray-700 hover:text-blue-600 rounded-xl transition-all duration-200 h-11 w-11 flex items-center justify-center group-hover:bg-gray-100">
+                        <div class="p-2.5 text-gray-700 hover:text-blue-600 hover:bg-gray-100 rounded-xl transition-all duration-200 h-11 w-11 flex items-center justify-center group-hover:bg-gray-100">
                             <svg class="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
                             </svg>
@@ -266,7 +196,7 @@
                          @mouseenter="open = true"
                          :class="{ 'text-blue-600': open }">
                         <div class="p-2.5 pr-0 rounded-xl transition-all duration-200 h-11 w-11 flex items-center justify-center group-hover:bg-gray-100"
-                             :class="{ 'text-blue-600 pr-2.5': open, 'text-gray-700 hover:text-blue-600': !open }">
+                             :class="{ 'text-blue-600 pr-2.5 hover:bg-gray-100': open, 'text-gray-700 hover:text-blue-600': !open }">
 
                              <svg x-show="!open" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="size-6">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 6a3.75 3.75 0 1 1-7.5 0 3.75 3.75 0 0 1 7.5 0ZM4.501 20.118a7.5 7.5 0 0 1 14.998 0A17.933 17.933 0 0 1 12 21.75c-2.676 0-5.216-.584-7.499-1.632Z" />
@@ -338,7 +268,7 @@
 
             <!-- Favorites -->
             <div class="relative flex items-center gap-x-2">
-                <button class="p-2.5 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all duration-200 h-11 w-11 flex items-center justify-center">
+                <button class="p-2.5 text-gray-700 hover:text-blue-600 hover:bg-gray-100 rounded-xl transition-all duration-200 h-11 w-11 flex items-center justify-center">
                     <svg class="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
                     </svg>
@@ -369,78 +299,8 @@
             <!-- Right Side -->
             <div class="flex items-center ">
                 <!-- Shopping Cart -->
-                <div class="relative flex items-center gap-x-2" x-data="{ cartOpen: false }">
-                    <button @click="cartOpen = !cartOpen"
-                            class="p-2.5 text-gray-700 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all duration-200 relative group h-11 w-11 flex items-center justify-center"
-                            aria-label="Shopping cart">
-                        <svg class="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
-                        </svg>
-                        <!-- Cart Badge -->
-                        <div x-show="cartCount > 0"
-                             x-transition:enter="transition ease-out duration-300"
-                             x-transition:enter-start="opacity-0 scale-50"
-                             x-transition:enter-end="opacity-100 scale-100"
-                             class="absolute -top-2 -right-1 bg-blue-500 text-white text-xs font-bold rounded-full h-5 min-w-[1.25rem] px-1 flex items-center justify-center group-hover:bg-blue-600 transition-colors duration-200 z-50"
-                             x-text="cartCount">
-                        </div>
-                    </button>
-                    <span @click="cartOpen = !cartOpen"
-                          class="hidden sm:block text-sm text-gray-700 cursor-pointer hover:text-gray-900">Cart</span>
-
-                    <!-- Cart Dropdown - Repositioned for Mobile -->
-                    <div x-show="cartOpen"
-                         x-cloak
-                         @click.outside="cartOpen = false"
-                         x-transition:enter="transition ease-out duration-200"
-                         x-transition:enter-start="opacity-0 scale-95"
-                         x-transition:enter-end="opacity-100 scale-100"
-                         x-transition:leave="transition ease-in duration-100"
-                         x-transition:leave-start="opacity-100 scale-100"
-                         x-transition:leave-end="opacity-0 scale-95"
-                         class="fixed inset-x-4 top-24 mx-auto bg-white rounded-lg shadow-lg border border-gray-200 z-50 lg:absolute lg:inset-auto lg:right-0 lg:top-full lg:w-80"
-                         :class="{ 'lg:fixed': window.scrollY > 0 }"
-                         @scroll.window="if(window.scrollY > 0) cartOpen = false">
-
-                        <!-- Cart Header -->
-                        <div class="p-4 border-b border-gray-200">
-                            <h3 class="text-lg font-medium text-gray-900">Shopping Cart</h3>
-                            <p x-show="cartCount === 0" class="mt-1 text-sm text-gray-500">Your cart is empty</p>
-                        </div>
-
-                        <!-- Cart Items -->
-                        <div x-show="cartCount > 0" class="max-h-[60vh] lg:max-h-96 overflow-y-auto">
-                            <div class="p-4 border-b border-gray-200">
-                                <div class="flex items-center space-x-4">
-                                    <div class="flex-shrink-0 size-16 bg-gray-100 rounded-md"></div>
-                                    <div class="flex-1 min-w-0">
-                                        <p class="text-sm font-medium text-gray-900 truncate">Product Name</p>
-                                        <p class="text-sm text-gray-500">$99.00</p>
-                                    </div>
-                                    <button @click.stop="removeFromCart()"
-                                            class="p-1 text-gray-400 hover:text-gray-500 rounded-full hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-200">
-                                        <span class="sr-only">Remove item</span>
-                                        <svg class="size-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
-                                        </svg>
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-
-                        <!-- Cart Footer -->
-                        <div x-show="cartCount > 0" class="p-4 border-t border-gray-200">
-                            <div class="flex justify-between text-base font-medium text-gray-900 mb-4">
-                                <p>Subtotal</p>
-                                <p>$99.00</p>
-                            </div>
-                            <a href="#"
-                               @click.stop
-                               class="w-full flex justify-center items-center px-6 py-3 border border-transparent rounded-lg shadow-sm text-base font-medium text-white bg-blue-600 hover:bg-blue-700 transition-colors duration-200">
-                                Checkout
-                            </a>
-                        </div>
-                    </div>
+                <div class="relative flex items-center gap-x-2">
+                    <livewire:cart.cart-component />
                 </div>
 
                 <!-- Profile -->

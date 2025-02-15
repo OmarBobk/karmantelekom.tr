@@ -1,6 +1,7 @@
 NOTE: If a salesperson doesn't have the right privileges, he will not be able to see the wholesale Prices.
 NOTE: it is not important for the customer to sign in to the website if they want to buy products, 
       but it will be better if they sign in to the website to see their orders and their details.
+      we are going to give the new customer a discount coupon if he signs up.
 
 ### Story of the Users:
 - __Normal User__:
@@ -9,8 +10,14 @@ NOTE: it is not important for the customer to sign in to the website if they wan
     - he will go to the cart page, and see the products he added to the cart, and the total price.
     - he will go to the checkout page and see the total price.
     - he will choose to sign in or continue as a guest.
-    - **NOTE**: ```if customer won't buy from the website they can buy same products on the website from local shop and customers can see where to find this product (he can find it in one of the Shop owners that we have in the website), Feature name: "Gel-Al".```
-    - **NOTE**: ```if user check the "Gel-Al" feature, he will see a map of the city with the location of the shop owners that we have in the website, and he can choose the shop owner that he wants to buy from, but we need to notify the user that he need to ask the shop owner if has this product or not, after user choose the shop owner, he will press a button "check if has this product", and we will ask for the number of the customer so we can reply to him eathier the shop owner has this product or not.```
+    - **NOTE**: ```if customer won't buy from the website they can buy same products on the website from local shop and 
+                   customers can see where to find this product (he can find it in one of the Shop owners that we have in the website),
+                   Feature name: "Gel-Al".```
+      - **NOTE**: ```if user check the "Gel-Al" feature, he will see a map of the city with the location of the shop 
+                     owners that we have in the website, and he can choose the shop owner that he wants to buy from,
+                     but we need to notify the user that he need to ask the shop owner if has this product or not,
+                     after user choose the shop owner, he will press a button "check if has this product", and we will ask
+                     for the number of the customer so we can reply to him eathier the shop   owner has this product or not.```
     - Sign in:
         - he will be redirected to the login page, fill the information as address, phone number, etc.
         - and then he can checkout and the order will be placed by pressing the checkout button, he will be redirected to WhatsApp with a message of the order details to us

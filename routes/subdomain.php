@@ -17,6 +17,9 @@ Route::get('sections', SectionComponent::class)->name('sections');
 Route::get('orders', OrdersComponent::class)->name('orders');
 Route::get('users', UsersComponent::class)->name('users');
 
+Route::get('sections/wholesale-sections', SectionComponent::class)->name('sections.wholesale-sections');
+Route::get('sections/retail-sections', SectionComponent::class)->name('sections.retail-sections');
+
 Route::get('/dashboard', function () {
     abort(404); // Return a 404 error
 })->name('dashboard');

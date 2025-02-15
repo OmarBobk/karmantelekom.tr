@@ -69,28 +69,46 @@
                                         {{ $section->order }}
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <button wire:click="toggleActive({{ $section->id }})"
-                                                class="group relative"
-                                                wire:loading.class="opacity-50"
-                                                wire:target="toggleActive({{ $section->id }})">
-                                            <span class="sr-only">Toggle section status</span>
-                                            <div class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 {{ $section->is_active ? 'bg-blue-600' : 'bg-gray-200' }}">
-                                                <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {{ $section->is_active ? 'translate-x-5' : 'translate-x-0' }}"></span>
+                                        <div class="flex flex-col space-y-2">
+                                            <!-- Active Status -->
+                                            <div class="flex items-center space-x-2">
+                                                <button wire:click="toggleActive({{ $section->id }})"
+                                                        class="group relative"
+                                                        wire:loading.class="opacity-50"
+                                                        wire:target="toggleActive({{ $section->id }})">
+                                                    <span class="sr-only">Toggle section status</span>
+                                                    <div class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 {{ $section->is_active ? 'bg-blue-600' : 'bg-gray-200' }}">
+                                                        <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {{ $section->is_active ? 'translate-x-5' : 'translate-x-0' }}"></span>
+                                                    </div>
+                                                    <span class="absolute left-1/2 -translate-x-1/2 -bottom-8 hidden group-hover:block bg-gray-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
+                                                        {{ $section->is_active ? 'Active' : 'Inactive' }}
+                                                    </span>
+                                                </button>
+                                                <span class="text-sm font-medium {{ $section->is_active ? 'text-green-600' : 'text-gray-500' }}">
+                                                    {{ $section->is_active ? 'Active' : 'Inactive' }}
+                                                </span>
                                             </div>
 
-                                            <!-- Loading indicator -->
-                                            <div wire:loading wire:target="toggleActive({{ $section->id }})"
-                                                class="absolute -right-6 top-1/2 -translate-y-1/2">
-                                                <svg class="animate-spin h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                </svg>
+                                            <!-- Wholesale/Retail Status -->
+                                            <div class="flex items-center space-x-2">
+                                                @if($section->is_wholesale_active)
+                                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
+                                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8 4-8-4V5l8 4 8-4v2zM4 13.8V7.2l8 4 8-4v6.6l-8 4-8-4z" />
+                                                        </svg>
+                                                        Wholesale
+                                                    </span>
+                                                @endif
+                                                @if($section->is_retail_active)
+                                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
+                                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
+                                                        </svg>
+                                                        Retail
+                                                    </span>
+                                                @endif
                                             </div>
-
-                                            <span class="absolute left-1/2 -translate-x-1/2 -bottom-8 hidden group-hover:block bg-gray-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
-                                                {{ $section->is_active ? 'Active' : 'Inactive' }}
-                                            </span>
-                                        </button>
+                                        </div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <button wire:click="toggleScrollable({{ $section->id }})"
@@ -218,7 +236,7 @@
                     x-transition:leave-start="opacity-100"
                     x-transition:leave-end="opacity-0"
                     class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75"
-                    @click="show = false">
+                    @click="$wire.closeModal()">
                 </div>
 
                 <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
@@ -233,7 +251,7 @@
                     class="inline-block w-full max-w-2xl p-6 my-8 overflow-hidden text-left align-middle transition-all transform bg-white rounded-lg shadow-xl">
 
                     <div class="absolute top-0 right-0 pt-4 pr-4">
-                        <button @click="show = false" type="button" class="text-gray-400 hover:text-gray-500">
+                        <button @click="$wire.closeModal()" type="button" class="text-gray-400 hover:text-gray-500">
                             <span class="sr-only">Close</span>
                             <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -268,8 +286,44 @@
                                 <select wire:model="position" id="position"
                                         class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
                                     @foreach($this->availablePositions as $positionOption)
-                                        <option value="{{ $positionOption->value }}">
-                                            {{ str_replace('.', ' → ', ucfirst($positionOption->value)) }}
+                                        <option value="{{ $positionOption->value }}"
+                                                class="flex items-center py-2">
+                                            <div class="flex items-center">
+                                                @switch($positionOption)
+                                                    @case(\App\Enums\SectionPosition::MAIN_SLIDER)
+                                                        <span class="inline-flex items-center">
+                                                            <svg class="w-4 h-4 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6h16M4 12h16m-7 6h7" />
+                                                            </svg>
+                                                            Main Slider
+                                                        </span>
+                                                        @break
+                                                    @case(\App\Enums\SectionPosition::MAIN_CONTENT)
+                                                        <span class="inline-flex items-center">
+                                                            <svg class="w-4 h-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 5a1 1 0 011-1h14a1 1 0 011 1v2a1 1 0 01-1 1H5a1 1 0 01-1-1V5zM4 13a1 1 0 011-1h6a1 1 0 011 1v6a1 1 0 01-1 1H5a1 1 0 01-1-1v-6zM16 13a1 1 0 011-1h2a1 1 0 011 1v6a1 1 0 01-1 1h-2a1 1 0 01-1-1v-6z" />
+                                                            </svg>
+                                                            Main Content
+                                                        </span>
+                                                        @break
+                                                    @case(\App\Enums\SectionPosition::PRODUCTS_TOP)
+                                                        <span class="inline-flex items-center">
+                                                            <svg class="w-4 h-4 mr-2 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 11l7-7 7 7M5 19l7-7 7 7" />
+                                                            </svg>
+                                                            Products Top
+                                                        </span>
+                                                        @break
+                                                    @case(\App\Enums\SectionPosition::PRODUCTS_FOOTER)
+                                                        <span class="inline-flex items-center">
+                                                            <svg class="w-4 h-4 mr-2 text-orange-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 13l-7 7-7-7m14-8l-7 7-7-7" />
+                                                            </svg>
+                                                            Products Footer
+                                                        </span>
+                                                        @break
+                                                @endswitch
+                                            </div>
                                         </option>
                                     @endforeach
                                 </select>
@@ -278,9 +332,21 @@
 
                             <div>
                                 <label for="order" class="block text-sm font-medium text-gray-700">Section Order</label>
-                                <input type="number" wire:model="order" id="order"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
-                                @error('order') <span class="mt-1 text-sm text-red-600">{{ $message }}</span> @enderror
+                                <div class="mt-1 relative">
+                                    <input type="number"
+                                           wire:model.live="order"
+                                           id="order"
+                                           min="1"
+                                           class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm {{ $errors->has('order') ? 'border-red-300 text-red-900 placeholder-red-300 focus:border-red-500 focus:ring-red-500' : '' }}">
+                                    @error('order')
+                                        <div class="absolute inset-y-0 right-0 pr-3 flex items-end pointer-events-none">
+                                            <svg class="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                                <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                            </svg>
+                                        </div>
+                                        <p class="mt-2 text-sm text-red-600">{{ $message }}</p>
+                                    @enderror
+                                </div>
                             </div>
                         </div>
 
@@ -427,14 +493,14 @@
                                                         @endif
                                                     </td>
                                                     <td class="px-4 py-3 whitespace-nowrap">
-                                                        <div class="text-sm font-medium text-gray-900">{{ $product->name }}</div>
+                                                        <div class="text-sm font-medium text-gray-900">{{ $product->name }}  {{$product->id}}</div>
                                                     </td>
                                                     <td class="px-4 py-3 whitespace-nowrap">
                                                         <div class="text-sm text-gray-500">{{ $product->code }}</div>
                                                     </td>
                                                     <td class="px-4 py-3 whitespace-nowrap">
                                                         <input type="number"
-                                                            wire:model="productOrders.{{ $product->id }}"
+                                                            wire:model.live="productOrders.{{ $product->id }}"
                                                             class="w-20 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                                                             min="0">
                                                     </td>
@@ -455,7 +521,7 @@
                                 {{ $editingSection ? 'Update Section' : 'Create Section' }}
                             </button>
                             <button type="button"
-                                    @click="show = false"
+                                    @click="$wire.closeModal()"
                                     class="mt-3 inline-flex justify-center w-full px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:w-auto">
                                 Cancel
                             </button>

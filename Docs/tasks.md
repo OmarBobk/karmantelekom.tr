@@ -4,7 +4,7 @@
 - http://dev.store/dashboard ---> nothing
 
 
-### TODO:
+### TODO Backend:
 - Register process.
 - **DONE** Every Product should have two prices [Wholesale, Retail].
 - **DONE** add is_retail_active and is_wholesale_active to product table.
@@ -12,11 +12,15 @@
 - Suppliers.
 - Categories CURD.
 - sections-component:
-  - in the edit modal in the search product field, it should be rested when the modal is closed.
-  - in the edit modal in the product table when use reorder the product X to order 1 now all the products should be reordered.
-  - make an enum for the section positions.
-- Discuss: should we create two section types ? retail and wholesale?
+  - **DONE** in the edit modal in the search product field, it should be rested when the modal is closed.
+  - **DONE** in the edit modal in the product table when use reorder the product X to order 1 now all the products should be reordered.
+  - **DONE** make an enum for the section positions.
+- **DONE** Discuss: should we create two section types ? retail and wholesale?
 - Ordering System.
 - Settings.
 - Analytics.
+- Add products to the cart
+
+
+### TODO Frontend
 - show the tags on the product card Frontend.

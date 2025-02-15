@@ -143,15 +143,64 @@
                                 <span class="ml-3">Products</span>
                             </a>
                         </li>
-                        <li>
-                            <a href="{{route('subdomain.sections')}}" class="flex items-center p-2 rounded-lg hover:bg-gray-100 text-gray-900 group">
+                        <li x-data="{ 
+                            open: {{ request()->routeIs('subdomain.sections.*') ? 'true' : 'false' }}
+                        }" class="relative">
+                            <button 
+                                @click="open = !open" 
+                                class="flex items-center w-full p-2 rounded-lg hover:bg-gray-100 text-gray-900 group"
+                                :class="{'bg-gray-100': {{ request()->routeIs('subdomain.sections.*') ? 'true' : 'false' }}}"
+                            >
                                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="h-5 w-5">
                                     <path d="M5.566 4.657A4.505 4.505 0 0 1 6.75 4.5h10.5c.41 0 .806.055 1.183.157A3 3 0 0 0 15.75 3h-7.5a3 3 0 0 0-2.684 1.657ZM2.25 12a3 3 0 0 1 3-3h13.5a3 3 0 0 1 3 3v6a3 3 0 0 1-3 3H5.25a3 3 0 0 1-3-3v-6ZM5.25 7.5c-.41 0-.806.055-1.184.157A3 3 0 0 1 6.75 6h10.5a3 3 0 0 1 2.683 1.657A4.505 4.505 0 0 0 18.75 7.5H5.25Z" />
                                 </svg>
-
-
-                                <span class="ml-3">Products Sections</span>
-                            </a>
+                                <span class="flex-1 ml-3 text-left">Sections</span>
+                                <svg 
+                                    class="w-4 h-4 transition-transform"
+                                    :class="{'rotate-180': open}"
+                                    xmlns="http://www.w3.org/2000/svg" 
+                                    viewBox="0 0 24 24" 
+                                    fill="none" 
+                                    stroke="currentColor"
+                                >
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+                            <!-- Submenu -->
+                            <ul 
+                                x-show="open"
+                                x-transition:enter="transition ease-out duration-200"
+                                x-transition:enter-start="transform opacity-0 scale-95"
+                                x-transition:enter-end="transform opacity-100 scale-100"
+                                x-transition:leave="transition ease-in duration-75"
+                                x-transition:leave-start="transform opacity-100 scale-100"
+                                x-transition:leave-end="transform opacity-0 scale-95"
+                                class="pl-6 mt-1 space-y-1"
+                            >
+                                <li>
+                                    <a href="{{route('subdomain.sections.wholesale-sections')}}"
+                                       class="flex items-center p-2 rounded-lg hover:bg-gray-100 text-gray-900 group"
+                                       :class="{'bg-gray-50': {{ request()->routeIs('subdomain.sections.wholesale-sections') ? 'true' : 'false' }}}"
+                                     >
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                                            <path d="M3.375 3C2.339 3 1.5 3.84 1.5 4.875v.75c0 1.036.84 1.875 1.875 1.875h17.25c1.035 0 1.875-.84 1.875-1.875v-.75C22.5 3.839 21.66 3 20.625 3H3.375Z" />
+                                            <path fill-rule="evenodd" d="m3.087 9 .54 9.176A3 3 0 0 0 6.62 21h10.757a3 3 0 0 0 2.995-2.824L20.913 9H3.087Zm6.163 3.75A.75.75 0 0 1 10 12h4a.75.75 0 0 1 0 1.5h-4a.75.75 0 0 1-.75-.75Z" clip-rule="evenodd" />
+                                        </svg>
+                                        <span class="ml-3">Wholesale Sections</span>
+                                    </a>
+                                </li>
+                                <li>
+                                    <a href="{{route('subdomain.sections.retail-sections')}}" 
+                                    class="flex items-center p-2 rounded-lg hover:bg-gray-100 text-gray-900 group"
+                                    :class="{'bg-gray-50': {{ request()->routeIs('subdomain.sections.retail-sections') ? 'true' : 'false' }}}"
+                                    >
+                                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5">
+                                            <path fill-rule="evenodd" d="M7.5 6v.75H5.513c-.96 0-1.764.724-1.865 1.679l-1.263 12A1.875 1.875 0 0 0 4.25 22.5h15.5a1.875 1.875 0 0 0 1.865-2.071l-1.263-12a1.875 1.875 0 0 0-1.865-1.679H16.5V6a4.5 4.5 0 1 0-9 0ZM12 3a3 3 0 0 0-3 3v.75h6V6a3 3 0 0 0-3-3Zm-3 8.25a3 3 0 1 0 6 0v-.75a.75.75 0 0 1 1.5 0v.75a4.5 4.5 0 1 1-9 0v-.75a.75.75 0 0 1 1.5 0v.75Z" clip-rule="evenodd" />
+                                        </svg>
+                                        <span class="ml-3">Retail Sections</span>
+                                    </a>
+                                </li>
+                            </ul>
                         </li>
                         <li>
                             <a href="{{route('subdomain.orders')}}" class="flex items-center p-2 rounded-lg hover:bg-gray-100 text-gray-900 group">

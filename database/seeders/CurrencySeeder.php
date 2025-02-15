@@ -11,30 +11,22 @@ class CurrencySeeder extends Seeder
 {
     public function run(): void
     {
-        $currencies = [
+        Currency::firstOrCreate(
+            ['code' => 'TRY'],
             [
-                'code' => 'TRY',
                 'name' => 'Turkish Lira',
                 'symbol' => '₺',
-                'exchange_rate' => 1.000000,
                 'is_default' => true,
-                'is_active' => true,
-            ],
+            ]
+        );
+
+        Currency::firstOrCreate(
+            ['code' => 'USD'],
             [
-                'code' => 'USD',
                 'name' => 'US Dollar',
                 'symbol' => '$',
-                'exchange_rate' => 0.033000, // Example rate, will be updated by the service
                 'is_default' => false,
-                'is_active' => true,
             ]
-        ];
-
-        foreach ($currencies as $currency) {
-            Currency::updateOrCreate(
-                ['code' => $currency['code']],
-                $currency
-            );
-        }
+        );
     }
 } 

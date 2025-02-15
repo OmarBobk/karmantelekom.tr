@@ -12,10 +12,10 @@ use Illuminate\Database\Eloquent\Builder;
 
 /**
  * Product Model
- * 
+ *
  * Represents a product in the e-commerce system with support for both retail and wholesale operations.
  * Products can have multiple prices in different currencies and types (retail/wholesale).
- * 
+ *
  * @property string $name Product name
  * @property string $slug URL-friendly version of name
  * @property string $serial Unique serial number (optional)
@@ -73,7 +73,7 @@ class Product extends Model
     protected static function boot(): void
     {
         parent::boot();
-        
+
         static::creating(function (Product $product): void {
             if (empty($product->slug)) {
                 $product->slug = Str::slug($product->name);
@@ -92,7 +92,7 @@ class Product extends Model
         if (auth()->check() && auth()->user()->hasAnyRole(['admin', 'salesperson', 'shop_owner'])) {
             return $query->where('is_wholesale_active', true);
         }
-        
+
         return $query->where('is_retail_active', true);
     }
 
@@ -199,7 +199,7 @@ class Product extends Model
         if (auth()->check() && auth()->user()->hasAnyRole(['admin', 'salesperson', 'shop_owner'])) {
             return $this->is_wholesale_active;
         }
-        
+
         return $this->is_retail_active;
     }
 

@@ -12,6 +12,7 @@ use Livewire\WithPagination;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\On;
 use App\Enums\SectionPosition;
+use Illuminate\Support\Facades\Route;
 
 class SectionComponent extends Component
 {
@@ -36,6 +37,7 @@ class SectionComponent extends Component
     public $productSearchTerm = '';
     public $productOrders = [];
     public $selectAllProducts = false;
+    public $currentRoute;
 
     // Form properties
     public $sectionId;
@@ -44,10 +46,11 @@ class SectionComponent extends Component
     public $order = 0;
 
     //TODO: Positions should be set from the settings page like this: sidebar positions: ['main', 'sidebar', 'footer']
-    public $position = 'main';
+    public $position = SectionPosition::MAIN_CONTENT->value;
     public $is_active = false;
     public $scrollable = false;
-
+    public $is_wholesale_active = false;
+    public $is_retail_active = false;
 
     protected $rules = [
         'name' => 'required|min:3|max:255',
@@ -55,24 +58,61 @@ class SectionComponent extends Component
         'order' => 'required|integer|min:0',
         'position' => 'required',
         'is_active' => 'boolean',
-        'scrollable' => 'boolean'
+        'scrollable' => 'boolean',
+        'is_wholesale_active' => 'boolean|required_without:is_retail_active',
+        'is_retail_active' => 'boolean|required_without:is_wholesale_active'
     ];
 
     public function mount()
     {
+        $this->currentRoute = Route::currentRouteName();
         $this->resetForm();
     }
 
     public function resetForm()
     {
-        $this->reset(['name', 'description', 'order', 'position', 'is_active', 'scrollable', 'sectionId', 'selectedProducts']);
+        // Get the next available order number
+        $maxOrder = Section::max('order') ?? 0;
+        $this->order = $maxOrder + 1;
+
+        $this->reset([
+            'name',
+            'description',
+            'position',
+            'is_active',
+            'scrollable',
+            'is_wholesale_active',
+            'is_retail_active',
+            'sectionId',
+            'selectedProducts',
+            'productSearchTerm'
+        ]);
         $this->editingSection = null;
+    }
+
+    public function closeModal()
+    {
+        $this->showModal = false;
+        $this->resetForm();
+        $this->reset('productOrders');
+        $this->resetErrorBag();
+        $this->resetValidation();
     }
 
     public function create()
     {
         $this->resetForm();
         $this->reset('productOrders');
+
+        // Set default values based on the current route
+        if ($this->currentRoute === 'subdomain.sections.wholesale-sections') {
+            $this->is_wholesale_active = true;
+            $this->is_retail_active = false;
+        } elseif ($this->currentRoute === 'subdomain.sections.retail-sections') {
+            $this->is_wholesale_active = false;
+            $this->is_retail_active = true;
+        }
+
         $this->showModal = true;
     }
 
@@ -86,6 +126,8 @@ class SectionComponent extends Component
         $this->position = $section->position;
         $this->is_active = $section->is_active;
         $this->scrollable = $section->scrollable;
+        $this->is_wholesale_active = $section->is_wholesale_active;
+        $this->is_retail_active = $section->is_retail_active;
 
         // Load selected products and their orders
         $this->selectedProducts = $section->products->pluck('id')->toArray();
@@ -111,6 +153,8 @@ class SectionComponent extends Component
             'position' => $this->position,
             'is_active' => $this->is_active,
             'scrollable' => $this->scrollable,
+            'is_wholesale_active' => $this->is_wholesale_active,
+            'is_retail_active' => $this->is_retail_active,
         ]);
         $section->save();
 
@@ -172,13 +216,20 @@ class SectionComponent extends Component
     #[Computed]
     public function sections()
     {
-        return Section::with('products')
+        $query = Section::with('products')
             ->when($this->searchTerm, function ($query) {
                 $query->where('name', 'like', '%' . $this->searchTerm . '%')
                     ->orWhere('description', 'like', '%' . $this->searchTerm . '%');
-            })
-            ->orderBy('order')
-            ->paginate(10, ['*'], 'page');
+            });
+
+        // Apply section type filter based on route
+        if ($this->currentRoute === 'subdomain.sections.wholesale-sections') {
+            $query->wholesaleActive();
+        } elseif ($this->currentRoute === 'subdomain.sections.retail-sections') {
+            $query->retailActive();
+        }
+
+        return $query->orderBy('order')->paginate(10, ['*'], 'page');
     }
 
     #[Computed]
@@ -193,11 +244,18 @@ class SectionComponent extends Component
                 });
             });
 
-        // Apply visibility filter based on user role
-        if (auth()->user()->hasAnyRole(['admin', 'salesperson', 'shop_owner'])) {
+        // Filter products based on route
+        if ($this->currentRoute === 'subdomain.sections.wholesale-sections') {
             $products->wholesaleActive();
-        } else {
+        } elseif ($this->currentRoute === 'subdomain.sections.retail-sections') {
             $products->retailActive();
+        } else {
+            // Default behavior for the main sections page
+            if (auth()->user()->hasAnyRole(['admin', 'salesperson', 'shop_owner'])) {
+                $products->wholesaleActive();
+            } else {
+                $products->retailActive();
+            }
         }
 
         return $products->paginate(10, ['*'], 'productsPage');
@@ -250,6 +308,67 @@ class SectionComponent extends Component
         $this->maintainProductOrder();
     }
 
+    public function updatedProductOrders($value, $key): void
+    {
+        if (empty($value)) {
+            return;
+        }
+
+        // Convert value to integer
+        $newOrder = (int) $value;
+        $productId = $key;
+
+        // Get all products with their current orders
+        $orderedProducts = collect($this->productOrders)
+            ->map(function($order, $id) {
+                return [
+                    'id' => $id,
+                    'order' => (int) $order
+                ];
+            })
+            ->sortBy('order')
+            ->values();
+
+        // Get the product we're moving
+        $movingProduct = $orderedProducts->firstWhere('id', $productId);
+        if (!$movingProduct) return;
+
+        // Remove the moving product from the collection
+        $otherProducts = $orderedProducts->filter(fn($item) => $item['id'] != $productId);
+
+        // Create new collection with the product in its new position
+        $reorderedProducts = collect();
+        $currentOrder = 1;
+
+        foreach ($otherProducts as $product) {
+            if ($currentOrder == $newOrder) {
+                $reorderedProducts->push([
+                    'id' => $productId,
+                    'order' => $currentOrder++
+                ]);
+            }
+            $reorderedProducts->push([
+                'id' => $product['id'],
+                'order' => $currentOrder++
+            ]);
+        }
+
+        // If the new order is after all other products, add it at the end
+        if ($currentOrder <= $newOrder) {
+            $reorderedProducts->push([
+                'id' => $productId,
+                'order' => $currentOrder
+            ]);
+        }
+
+        // Update the product orders
+        $this->productOrders = $reorderedProducts
+            ->mapWithKeys(function($item) {
+                return [$item['id'] => $item['order']];
+            })
+            ->toArray();
+    }
+
     public function updatedSelectAllProducts($value)
     {
         if ($value) {
@@ -289,8 +408,24 @@ class SectionComponent extends Component
     // Add this method to handle the order field updates
     public function updatedOrder($value)
     {
-        if ($value === '0' || $value === 0) {
-            $this->order = Section::max('order') + 1;
+        $this->resetErrorBag('order');
+        if (empty($value)) {
+            $maxOrder = Section::max('order') ?? 0;
+            $this->order = $maxOrder + 1;
+            return;
+        }
+
+        // Check if order already exists, excluding the current section
+        $exists = Section::where('order', $value)
+            ->when($this->editingSection, function ($query) {
+                $query->where('id', '!=', $this->editingSection->id);
+            })
+            ->exists();
+
+        if ($exists) {
+            $this->addError('order', 'This order number is already taken.');
+            $maxOrder = Section::max('order') ?? 0;
+            $this->order = $maxOrder + 1;
         }
     }
 
@@ -316,5 +451,23 @@ class SectionComponent extends Component
     public function availablePositions()
     {
         return SectionPosition::cases();
+    }
+
+    public function updatedIsWholesaleActive($value)
+    {
+        if ($value) {
+            $this->is_retail_active = false;
+        } elseif (!$this->is_retail_active) {
+            $this->is_retail_active = true;
+        }
+    }
+
+    public function updatedIsRetailActive($value)
+    {
+        if ($value) {
+            $this->is_wholesale_active = false;
+        } elseif (!$this->is_wholesale_active) {
+            $this->is_wholesale_active = true;
+        }
     }
 }

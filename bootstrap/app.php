@@ -8,6 +8,7 @@ use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
 return Application::configure(basePath: dirname(__DIR__))
+    ->withProviders()
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         api: __DIR__.'/../routes/api.php',
@@ -20,6 +21,10 @@ return Application::configure(basePath: dirname(__DIR__))
             'permission' => \Spatie\Permission\Middleware\PermissionMiddleware::class,
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
             'role.redirect' => \App\Http\Middleware\RoleRedirectMiddleware::class,
+        ]);
+        $middleware->web([
+            \App\Http\Middleware\SyncCartOnLogin::class,
+            \App\Http\Middleware\SetLocale::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
