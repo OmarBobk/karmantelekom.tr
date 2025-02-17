@@ -4,7 +4,7 @@
 >
     <!-- Cart Icon -->
     <div class="relative flex items-center gap-x-2">
-        <button 
+        <button
             @click="if (!cartButtonDisabled) { $wire.toggleCart(); cartButtonDisabled = true; setTimeout(() => { cartButtonDisabled = false; }, 250); }"
             :disabled="cartButtonDisabled"
             x-data="{ cartButtonDisabled: false }"
@@ -27,20 +27,33 @@
 
     <!-- Cart Modal -->
     <div x-show="$wire.showCart"
-         x-transition:enter="transition ease-out duration-100"
-         x-transition:enter-start="opacity-0"
-         x-transition:enter-end="opacity-100"
-         x-transition:leave="transition ease-in duration-100"
-         x-transition:leave-start="opacity-100"
-         x-transition:leave-end="opacity-0"
          class="fixed inset-0 z-50 overflow-hidden"
          style="display: none;">
 
-        <div class="absolute inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
-            @click="$wire.toggleCart()"
-        ></div>
+        <!-- Backdrop -->
+        <div
+             x-show="$wire.showCart"
+             x-transition:enter="transition-opacity ease-linear duration-300"
+             x-transition:enter-start="opacity-0"
+             x-transition:enter-end="opacity-100"
+             x-transition:leave="transition-opacity ease-linear duration-300"
+             x-transition:leave-start="opacity-100"
+             x-transition:leave-end="opacity-0"
+             class="fixed inset-0 bg-gray-900/80"
+             @click="$wire.toggleCart()"
+             aria-hidden="true">
+        </div>
 
-        <div class="fixed inset-y-0 right-0 sm:pl-10 max-w-full flex">
+        <div
+             x-show="$wire.showCart"
+             class="fixed inset-y-0 right-0 max-w-full flex bg-white shadow-lg"
+             x-transition:enter="transition ease-in-out duration-300 transform"
+             x-transition:enter-start="translate-x-full"
+             x-transition:enter-end="translate-x-0"
+             x-transition:leave="transition ease-in-out duration-300 transform"
+             x-transition:leave-start="translate-x-0"
+             x-transition:leave-end="translate-x-full"
+        >
             <div class="w-screen max-w-md">
                 <div class="h-full flex flex-col bg-white shadow-xl">
                     <div class="flex-1 py-6 overflow-y-auto px-4 sm:px-6">
@@ -64,14 +77,14 @@
                                             </div>
 
                                             <div class="ml-4 flex-1 flex flex-col">
-                                                    <div class="flex justify-between text-base font-medium text-gray-900">
-                                                        <div class="flex-1 line-clamp-3">
-                                                            <span class="text-base font-medium text-gray-900">{{$item->product->name}}</span>
-                                                            <span class="text-sm text-gray-500">{{$item->product->description}}</span>
-                                                        </div>
-                                                        <div>
-                                                            <p class="ml-4">{{ number_format($item->total, 2) }} {{ $item->currency }}</p>
-                                                        </div>
+                                                <div class="flex justify-between text-base font-medium text-gray-900">
+                                                    <div class="flex-1 line-clamp-3">
+                                                        <span class="text-base font-medium text-gray-900">{{$item->product->name}}</span>
+                                                        <span class="text-sm text-gray-500">{{$item->product->description}}</span>
+                                                    </div>
+                                                    <div>
+                                                        <p class="ml-4">{{ number_format($item->total, 2) }} {{ $item->currency }}</p>
+                                                    </div>
                                                 </div>
                                                 <div class="flex-1 flex items-end justify-between text-sm">
                                                     <div class="flex items-center">

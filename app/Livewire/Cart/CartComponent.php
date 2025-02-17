@@ -59,8 +59,9 @@ class CartComponent extends Component
     {
         try {
             $this->cartService->addItem($product, $quantity, auth()->user());
+
             $this->dispatch('cart-updated');
-//            $this->showCart = true;
+
             $this->dispatch('notify', [
                 'message' => 'Product added to cart successfully!',
                 'type' => 'success',

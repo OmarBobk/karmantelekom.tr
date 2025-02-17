@@ -144,7 +144,7 @@ class MainComponent extends Component
             ]);
 
             // Dispatch a custom JavaScript event after adding to cart
-            $this->dispatch('cart-updated');
+//            $this->dispatch('cart-updated');
 
         } catch (\Exception $e) {
             logger()->error('Error adding product to cart: ' . $e->getMessage());
