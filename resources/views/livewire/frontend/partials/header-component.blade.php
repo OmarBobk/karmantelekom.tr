@@ -41,7 +41,7 @@
             </div>
 
             <!-- Center Section: Search -->
-            <div class="flex-1 max-w-xl px-0 sm:px-4 py-4 sm:py-0 order-last sm:order-none">
+            <div class="flex-auto max-w-xl px-0 sm:px-4 py-4 sm:py-0 order-last sm:order-none">
                 @include('livewire.frontend.partials.search-bar')
             </div>
 
