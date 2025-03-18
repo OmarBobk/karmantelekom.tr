@@ -6,6 +6,7 @@ namespace App\Livewire\Cart;
 
 use App\Models\CartItem;
 use App\Models\Product;
+use App\Models\ProductPrice;
 use App\Services\CartService;
 use Illuminate\Support\Collection;
 use Livewire\Attributes\Computed;
@@ -28,6 +29,31 @@ class CartComponent extends Component
         return $this->cartService->getCartItems(auth()->user());
     }
 
+    /**
+     * Refresh cart items and ensure frontend is synced with backend
+     */
+    #[On('refresh-cart')]
+    public function refreshCart(): void
+    {
+        // First explicitly clean up any invalid items
+        $this->cartService->cleanupInvalidItems(auth()->user());
+
+        // Then get the updated items
+        $items = $this->cartItems;
+
+        // Dispatch event to update client-side cart
+        $this->dispatch('cart-updated', [
+            'items' => $items
+        ]);
+    }
+
+    #[On('getCartItems')]
+    public function sendCartItems(): void
+    {
+        $items = $this->cartItems;
+        $this->dispatch('cart-items-loaded', $items);
+    }
+
     #[Computed]
     public function cartTotal(): float
     {
@@ -38,6 +64,45 @@ class CartComponent extends Component
     public function cartCount(): int
     {
         return $this->cartItems->sum('quantity');
+    }
+
+    #[On('sync-cart')]
+    public function handleCartSync(array $items): void
+    {
+        try {
+            if (!is_array($items)) {
+                throw new \InvalidArgumentException('Invalid cart data format');
+            }
+
+            // Clear existing cart
+            $this->cartService->clearCart(auth()->user());
+            // Add each item from client-side cart
+            foreach ($items as $item) {
+                if (!isset($item['product_id']) || !isset($item['quantity'])) {
+                    continue;
+                }
+
+                $product = Product::with(['prices', 'images'])->findOrFail($item['product_id']);
+                $this->cartService->addItem($product, $item['quantity'], auth()->user());
+            }
+
+            // After syncing, fetch updated items and notify client
+            $updatedItems = $this->cartItems;
+            $this->dispatch('cart-updated', [
+                'items' => $updatedItems
+            ]);
+
+            $this->dispatch('cart-synced', [
+                'message' => 'Cart synchronized successfully',
+                'type' => 'success'
+            ]);
+        } catch (\Exception $e) {
+            logger()->error('Error syncing cart: ' . $e->getMessage());
+            $this->dispatch('notify', [
+                'message' => 'Error syncing cart: ' . $e->getMessage(),
+                'type' => 'error'
+            ]);
+        }
     }
 
     #[On('add-to-cart')]
@@ -60,7 +125,10 @@ class CartComponent extends Component
         try {
             $this->cartService->addItem($product, $quantity, auth()->user());
 
-            $this->dispatch('cart-updated');
+            // Dispatch event to update client-side cart
+            $this->dispatch('cart-updated', [
+                'items' => $this->cartItems
+            ]);
 
             $this->dispatch('notify', [
                 'message' => 'Product added to cart successfully!',
@@ -79,7 +147,12 @@ class CartComponent extends Component
     {
         try {
             $this->cartService->updateQuantity($cartItem, $quantity);
-            $this->dispatch('cart-updated');
+
+            // Dispatch event to update client-side cart
+            $this->dispatch('cart-updated', [
+                'items' => $this->cartItems
+            ]);
+
             $this->dispatch('notify', [
                 'message' => 'Cart updated successfully!',
                 'type' => 'success',
@@ -97,7 +170,12 @@ class CartComponent extends Component
     {
         try {
             $this->cartService->removeItem($cartItem);
-            $this->dispatch('cart-updated');
+
+            // Dispatch event to update client-side cart
+            $this->dispatch('cart-updated', [
+                'items' => $this->cartItems
+            ]);
+
             $this->dispatch('notify', [
                 'message' => 'Product removed from cart successfully!',
                 'type' => 'success',
@@ -115,7 +193,12 @@ class CartComponent extends Component
     {
         try {
             $this->cartService->clearCart(auth()->user());
-            $this->dispatch('cart-updated');
+
+            // Dispatch event to update client-side cart
+            $this->dispatch('cart-updated', [
+                'items' => []
+            ]);
+
             $this->dispatch('notify', [
                 'message' => 'Cart cleared successfully!',
                 'type' => 'success',

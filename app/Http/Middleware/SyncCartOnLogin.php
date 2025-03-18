@@ -17,10 +17,12 @@ class SyncCartOnLogin
 
     public function handle(Request $request, Closure $next): Response
     {
-        if (auth()->check()) {
-            $this->cartService->syncSessionCartToUser(auth()->user());
+        if ($request->fullUrl() != config('app.subdomain')) {
+            if (auth()->check()) {
+                $this->cartService->syncSessionCartToUser(auth()->user());
+            }
         }
 
         return $next($request);
     }
-} 
+}

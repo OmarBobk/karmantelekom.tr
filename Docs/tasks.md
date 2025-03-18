@@ -20,7 +20,15 @@
 - Settings.
 - Analytics.
 - Add products to the cart
+- Shopping Cart:
+  - #Bugg: when a shop owner is not logged in, he is able to add a retail products to the cart
+  - and after that, lets say that he logged in (now he doesn't have the right privileges to add retail products) he 
+  - still able to see the retail products that are in the shopping cart (he added earlier when he was not logged in).
 
 
 ### TODO Frontend
 - show the tags on the product card Frontend.
+
+
+#testing the shopping cart process
+- when cu

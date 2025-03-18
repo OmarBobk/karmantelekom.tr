@@ -31,7 +31,7 @@ return Application::configure(basePath: dirname(__DIR__))
         // Customize the response for unauthenticated users
         $exceptions->renderable(function (AuthenticationException $e, Request $request) {
             if ($request->expectsJson()) {
-                dd('fuck');
+                dd('bootstrap/app.php error');
                 return response()->json(['message' => 'Unauthenticated.'], 401);
             }
 

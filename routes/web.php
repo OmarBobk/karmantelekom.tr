@@ -17,7 +17,6 @@ Route::get('/', MainComponent::class)->name('main');
 Route::get('/product', ProductComponent::class);
 Route::get('/products', ProductsComponent::class)->name('products');
 Route::get('/profile', ProfileComponent::class)->name('account');
-Route::get('/cart', CartComponent::class);
 
 Route::middleware([
     'auth:sanctum',

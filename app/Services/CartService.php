@@ -66,6 +66,7 @@ class CartService
 
     public function addItem(Product $product, int $quantity = 1, ?User $user = null): CartItem
     {
+
         $cartItem = $this->findCartItem($product, $user);
         $currency = $user ? $this->getUserCurrency($user) : $this->getDefaultCurrency();
         $priceType = $user && $user->is_shop_owner ? ProductPrice::TYPE_WHOLESALE : ProductPrice::TYPE_RETAIL;
@@ -83,6 +84,7 @@ class CartService
                 'price' => $price->base_price,
                 'currency' => $currency->code
             ]);
+
             return $cartItem;
         }
 
@@ -122,20 +124,56 @@ class CartService
 
     public function getCartItems(?User $user = null): Collection
     {
-        $query = CartItem::with(['product.prices', 'product.images']);
+        $query = CartItem::with(['product.images', 'product.prices']);
 
         if ($user) {
-            return $query->where('user_id', $user->id)->get();
+            $items = $query->where('user_id', $user->id)->get();
+
+            // Filter out invalid items based on user type
+            return $items->filter(function ($item) use ($user) {
+                if ($user->hasRole(['admin', 'salesperson', 'shop_owner'])) {
+                    $isValid = $item->product->is_wholesale_active;
+                } else {
+                    $isValid = $item->product->is_retail_active;
+                }
+
+                if (!$isValid) {
+                    // Delete invalid items
+                    $item->delete();
+                    logger()->info('Removed invalid cart item', [
+                        'product_id' => $item->product_id,
+                        'user_id' => $user->id,
+                        'reason' => 'Product visibility changed'
+                    ]);
+                }
+
+                return $isValid;
+            });
         }
 
-        return $query->where('session_id', $this->getSessionId())->get();
+        // For guests, only return retail-active products
+        $items = $query->where('session_id', $this->getSessionId())->get();
+        return $items->filter(function ($item) {
+            $isValid = $item->product->is_retail_active;
+
+            if (!$isValid) {
+                $item->delete();
+                logger()->info('Removed invalid cart item', [
+                    'product_id' => $item->product_id,
+                    'session_id' => $this->getSessionId(),
+                    'reason' => 'Product not available for retail'
+                ]);
+            }
+
+            return $isValid;
+        });
     }
 
     public function syncSessionCartToUser(User $user): void
     {
         $sessionItems = CartItem::where('session_id', $this->getSessionId())->get();
         $currency = $this->getUserCurrency($user);
-        $priceType = $user->is_shop_owner ? ProductPrice::TYPE_WHOLESALE : ProductPrice::TYPE_RETAIL;
+        $priceType = $user->hasRole(['admin', 'shop_owner']) ? ProductPrice::TYPE_WHOLESALE : ProductPrice::TYPE_RETAIL;
 
         foreach ($sessionItems as $sessionItem) {
             $existingItem = CartItem::where('user_id', $user->id)
@@ -191,5 +229,56 @@ class CartService
         return CartItem::where('session_id', $this->getSessionId())
             ->where('product_id', $product->id)
             ->first();
+    }
+
+    /**
+     * Explicitly clean up invalid cart items based on product visibility
+     * This can be called periodically to ensure cart integrity
+     */
+    public function cleanupInvalidItems(?User $user = null): void
+    {
+        if ($user) {
+            $items = CartItem::with(['product'])
+                ->where('user_id', $user->id)
+                ->get();
+                
+            foreach ($items as $item) {
+                $isValid = false;
+                
+                if ($user->hasRole(['admin', 'salesperson', 'shop_owner'])) {
+                    $isValid = $item->product->is_wholesale_active;
+                } else {
+                    $isValid = $item->product->is_retail_active;
+                }
+                
+                if (!$isValid) {
+                    $item->delete();
+                    logger()->info('Removed invalid cart item during cleanup', [
+                        'product_id' => $item->product_id,
+                        'user_id' => $user->id,
+                        'reason' => 'Product visibility changed'
+                    ]);
+                }
+            }
+        } else {
+            // For guests, clean up invalid retail products
+            $sessionId = $this->getSessionId();
+            $items = CartItem::with(['product'])
+                ->where('session_id', $sessionId)
+                ->get();
+                
+            foreach ($items as $item) {
+                $isValid = $item->product->is_retail_active;
+                
+                if (!$isValid) {
+                    $item->delete();
+                    logger()->info('Removed invalid guest cart item during cleanup', [
+                        'product_id' => $item->product_id,
+                        'session_id' => $sessionId,
+                        'reason' => 'Product not available for retail'
+                    ]);
+                }
+            }
+        }
     }
 }
