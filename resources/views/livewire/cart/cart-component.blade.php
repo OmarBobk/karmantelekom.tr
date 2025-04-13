@@ -4,58 +4,12 @@
         toggleCart() {
             this.showCart = !this.showCart;
             this.updateBodyScroll();
-
-            // Refresh cart when opened to ensure visibility rules are applied
-            if (this.showCart) {
-                window.Livewire.dispatch('refresh-cart');
-            }
         },
         updateBodyScroll() {
             document.body.classList.toggle('overflow-hidden', this.showCart);
         },
         init() {
-            // Initialize cart from server data
-            window.Livewire.dispatch('getCartItems');
-            
-            // Listen for server response with cart data
-            $wire.on('cart-items-loaded', (items) => {
-                if (items && items.length > 0) {
-                    $store.cart.items = items.map(item => ({
-                        product_id: item.product.id,
-                        name: item.product.name,
-                        price: item.price,
-                        currency: item.currency,
-                        quantity: item.quantity,
-                        image: item.product.images[0].image_url
-                    }));
-                    $store.cart.updateTotals();
-                }
-            });
 
-            // Listen for cart updates from server
-            $wire.on('cart-updated', (items) => {
-                if (items && items[0] && items[0].items) {
-                    $store.cart.items = items[0].items.map(item => ({
-                        product_id: item.product.id,
-                        name: item.product.name,
-                        price: item.price,
-                        currency: item.currency,
-                        quantity: item.quantity,
-                        image: item.product.images[0].image_url
-                    }));
-                    $store.cart.updateTotals();
-                }
-            });
-
-            // Ensure backend and frontend stay in sync by refreshing on load
-            window.Livewire.dispatch('refresh-cart');
-
-            // Also refresh periodically if the user role might change or product visibility changes
-            setInterval(() => {
-                if (this.showCart) {
-                    window.Livewire.dispatch('refresh-cart');
-                }
-            }, 30000); // Every 30 seconds when cart is open
         }
     }"
 >

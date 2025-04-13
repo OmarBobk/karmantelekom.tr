@@ -12,7 +12,7 @@
 
     init() {
         this.$watch('sidebarOpen', value => {
-            document.body.style.overflow = value ? 'hidden' : '';
+            document.body.styl2e.overflow = value ? 'hidden' : '';
             document.body.style.touchAction = value ? 'none' : '';
         });
     }

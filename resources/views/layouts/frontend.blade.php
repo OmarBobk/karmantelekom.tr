@@ -1,8 +1,10 @@
 <!DOCTYPE html>
-<html lang="{{ str_replace('_', '-', app()->getLocale()) }}" class="light" style="border:none">
+<html lang="{{ str_replace('_', '-', app()->getLocale()) }}"
+      class="light" style="border:none">
     <head>
         <meta charset="utf-8">
-        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="csrf-token" content="{{ csrf_token() }}">
         <title>{{ $title ?? config('app.name') }}</title>
         @vite(['resources/css/app.css', 'resources/js/app.js'])
 
@@ -11,6 +13,9 @@
             document.addEventListener('alpine:init', () => {
                 Alpine.store('cart', {
                     items: Alpine.$persist([]).as('cart_items'),
+                    syncedUserId: Alpine.$persist(null).as('is_user_synced'),
+
+                    // The counter that is on the shopping cart icon you can find it on the header component.
                     count: 0,
                     total: 0,
 
@@ -22,10 +27,31 @@
                             this.syncWithServer();
                         });
 
-                        // Initial sync with server after a short delay to ensure Livewire is loaded
-                        setTimeout(() => {
-                            this.syncWithServer();
-                        }, 500);
+
+
+                        this.filterDependingOnRole();
+
+                        const userId = document.body.dataset.user;
+
+                        // If no user is logged in but a synced user is stored, clear it
+                        if (!userId && this.syncedUserId !== null) {
+                            this.syncedUserId = null;
+                        }
+
+                        // Sync Only if user logged in and not synced yet.
+                        if (this.shouldSync(userId)) {
+
+                            // Initial sync with server after a short delay to ensure Livewire is loaded
+                            setTimeout(() => {
+                                this.syncWithServer();
+                            }, 3000);
+
+                            this.syncedUserId = userId;
+
+                        }
+
+
+
                     },
 
                     updateTotals() {
@@ -51,7 +77,7 @@
                         }
 
                         this.updateTotals();
-                        this.scheduleSync();
+                        // this.scheduleSync();
                     },
 
                     updateQuantity(productId, quantity) {
@@ -76,7 +102,18 @@
                     clear() {
                         this.items = [];
                         this.updateTotals();
-                        this.syncWithServer();
+                        // this.syncWithServer();
+                    },
+
+                    filterDependingOnRole() {},
+
+                    shouldSync(userId) {
+                        // Sync only if:
+                        //   - logged in
+                        //   - Cart items
+                        //   - Sync hasn't happened yet for this user.
+
+                        return userId && this.items.length > 0 && this.syncedUserId !== userId;
                     },
 
                     syncTimeout: null,
@@ -96,6 +133,7 @@
                         }
 
                         try {
+                            console.log('syncing...')
                             const items = this.items.map(item => ({
                                 product_id: item.product_id,
                                 quantity: item.quantity
@@ -105,12 +143,27 @@
                         } catch (error) {
                             console.error('Failed to sync cart with server:', error);
                         }
+                    },
+
+                    logout() {
+                        this.syncedUserId = null;
+
+                        fetch('/logout', {
+                            method: 'POST',
+                            headers: {
+                                'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                            }
+                        }).then(() => window.location.href = '/')
                     }
                 });
             });
         </script>
     </head>
-    <body class="min-h-screen bg-gray-50">
+    <body
+        class="min-h-screen bg-gray-50"
+        data-user="{{auth()->check() ? auth()->id() : ''}}"
+        data-role="{{auth()->user()?->roles()->first()->name ?? ''}}"
+    >
         <header>
             <livewire:frontend.partials.header-component />
         </header>
