@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire\Errors;
+namespace App\Livewire\Frontend\Errors;
 
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -11,6 +11,6 @@ class NotFound extends Component
     #[Layout('layouts.frontend')]
     public function render()
     {
-        return view('livewire.errors.not-found');
+        return view('livewire.frontend.errors.not-found');
     }
 }

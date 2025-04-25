@@ -157,49 +157,25 @@ class ProductTest extends TestCase
     }
 
     #[Test]
-    public function it_can_get_retail_price(): void
+    public function it_can_get_price(): void
     {
-        $retailPrice = ProductPrice::factory()->create([
+        $price = ProductPrice::factory()->create([
             'product_id' => $this->product->id,
-            'price_type' => 'retail',
             'base_price' => 100.00,
             'currency_id' => 1 // Assuming 1 is TRY
         ]);
 
-        $this->assertNotNull($this->product->getRetailPrice('TRY'));
-        $this->assertEquals(100.00, $this->product->getRetailPrice('TRY')->base_price);
+        $this->assertNotNull($this->product->getPrice('TRY'));
+        $this->assertEquals(100.00, $this->product->getPrice('TRY')->base_price);
     }
 
     #[Test]
-    public function it_can_get_wholesale_price(): void
+    public function it_can_check_visibility(): void
     {
-        $wholesalePrice = ProductPrice::factory()->create([
-            'product_id' => $this->product->id,
-            'price_type' => 'wholesale',
-            'base_price' => 80.00,
-            'currency_id' => 1 // Assuming 1 is TRY
-        ]);
+        $this->product->is_active = true;
+        $this->assertTrue($this->product->isVisibleToCurrentUser());
 
-        $this->assertNotNull($this->product->getWholesalePrice('TRY'));
-        $this->assertEquals(80.00, $this->product->getWholesalePrice('TRY')->base_price);
-    }
-
-    #[Test]
-    public function it_can_check_visibility_for_current_user(): void
-    {
-        // Test for non-authenticated user
-        $this->assertFalse(auth()->check());
-        $this->assertTrue($this->product->isVisibleToCurrentUser()); // Should be visible because is_retail_active is true
-
-        // Test for authenticated wholesale user
-        $wholesaleUser = \App\Models\User::factory()->create();
-        $wholesaleUser->assignRole('salesperson');
-        
-        $this->actingAs($wholesaleUser);
-        $this->assertTrue($this->product->isVisibleToCurrentUser()); // Should be visible because is_wholesale_active is true
-
-        // Test for hidden wholesale product
-        $this->product->update(['is_wholesale_active' => false]);
+        $this->product->is_active = false;
         $this->assertFalse($this->product->isVisibleToCurrentUser());
     }
 

@@ -58,10 +58,8 @@
                 <!-- Status Filter -->
                 <select wire:model.live="status" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     <option value="">All Statuses</option>
-                    <option value="retail_active">Retail Active</option>
-                    <option value="retail_inactive">Retail Inactive</option>
-                    <option value="wholesale_active">Wholesale Active</option>
-                    <option value="wholesale_inactive">Wholesale Inactive</option>
+                    <option value="active">Active</option>
+                    <option value="inactive">Inactive</option>
                 </select>
 
                 <!-- Date Field Filter -->
@@ -85,10 +83,8 @@
                 <select wire:model.live="bulkAction" class="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
                     <option value="">Bulk Actions</option>
                     <option value="delete">Delete Selected</option>
-                    <option value="activate_retail">Enable Retail Visibility</option>
-                    <option value="deactivate_retail">Disable Retail Visibility</option>
-                    <option value="activate_wholesale">Enable Wholesale Visibility</option>
-                    <option value="deactivate_wholesale">Disable Wholesale Visibility</option>
+                    <option value="activate">Enable Visibility</option>
+                    <option value="deactivate">Disable Visibility</option>
                 </select>
 
                 <!-- Add a loading indicator -->
@@ -173,17 +169,17 @@
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="flex items-center">
                                             <div class="h-10 w-10 flex-shrink-0">
-                                                <button 
+                                                <button
                                                     type="button"
                                                     wire:click="viewProductImage('{{ $product->images->where('is_primary', true)->first() ? $product->images->where('is_primary', true)->first()->image_url : 'https://placehold.co/100' }}', '{{ $product->name }}')"
                                                     class="block relative rounded-lg overflow-hidden hover:opacity-75 transition-opacity"
                                                 >
-                                                    <img class="h-10 w-10 rounded-lg object-cover" 
-                                                        src="{{ $product->images->where('is_primary', true)->first() 
+                                                    <img class="h-10 w-10 rounded-lg object-cover"
+                                                        src="{{ $product->images->where('is_primary', true)->first()
                                                             ? Storage::url($product->images->where('is_primary', true)->first()->image_url)
-                                                            : ($product->images->first() 
+                                                            : ($product->images->first()
                                                                 ? Storage::url($product->images->first()->image_url)
-                                                                : 'https://placehold.co/100') }}" 
+                                                                : 'https://placehold.co/100') }}"
                                                         alt="{{ $product->name }}" />
                                                 </button>
                                             </div>
@@ -204,31 +200,17 @@
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $product->category->name }}</td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="flex items-center gap-4">
-                                            <div class="flex flex-col items-start gap-2">
-                                                <div class="flex items-center gap-2">
-                                                    <span class="text-sm font-medium text-gray-700">Retail:</span>
-                                                    <button wire:click="toggleStatus({{ $product->id }}, 'retail')"
-                                                            class="group relative"
-                                                            wire:loading.class="opacity-50"
-                                                            wire:target="toggleStatus({{ $product->id }}, 'retail')">
-                                                        <span class="sr-only">Toggle retail visibility</span>
-                                                        <div class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 {{ $product->is_retail_active ? 'bg-blue-600' : 'bg-gray-200' }}">
-                                                            <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {{ $product->is_retail_active ? 'translate-x-5' : 'translate-x-0' }}"></span>
-                                                        </div>
-                                                    </button>
-                                                </div>
-                                                <div class="flex items-center gap-2">
-                                                    <span class="text-sm font-medium text-gray-700">Wholesale:</span>
-                                                    <button wire:click="toggleStatus({{ $product->id }}, 'wholesale')"
-                                                            class="group relative"
-                                                            wire:loading.class="opacity-50"
-                                                            wire:target="toggleStatus({{ $product->id }}, 'wholesale')">
-                                                        <span class="sr-only">Toggle wholesale visibility</span>
-                                                        <div class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 {{ $product->is_wholesale_active ? 'bg-blue-600' : 'bg-gray-200' }}">
-                                                            <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {{ $product->is_wholesale_active ? 'translate-x-5' : 'translate-x-0' }}"></span>
-                                                        </div>
-                                                    </button>
-                                                </div>
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-sm font-medium text-gray-700">Status:</span>
+                                                <button wire:click="toggleStatus({{ $product->id }})"
+                                                        class="group relative"
+                                                        wire:loading.class="opacity-50"
+                                                        wire:target="toggleStatus({{ $product->id }})">
+                                                    <span class="sr-only">Toggle visibility</span>
+                                                    <div class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 {{ $product->is_active ? 'bg-blue-600' : 'bg-gray-200' }}">
+                                                        <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {{ $product->is_active ? 'translate-x-5' : 'translate-x-0' }}"></span>
+                                                    </div>
+                                                </button>
                                             </div>
 
                                             <!-- Loading indicator -->
@@ -244,16 +226,9 @@
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
                                         <div class="flex flex-col space-y-1">
                                             @foreach($product->prices as $price)
-                                                @if($price->price_type === 'retail' && $price->currency->code === 'TRY')
-                                                    <span class="text-blue-600 font-medium">
-                                                        Retail (TRY): {{ $price->getFormattedPrice() }}
-                                                    </span>
-                                                @endif
-                                                @if($price->price_type === 'wholesale')
-                                                    <span class="text-gray-600">
-                                                        Wholesale ({{ $price->currency->code }}): {{ $price->getFormattedPrice() }}
-                                                    </span>
-                                                @endif
+                                                <span class="text-gray-600">
+                                                    {{ $price->currency->code }}: {{ number_format($price->base_price, 2) }}
+                                                </span>
                                             @endforeach
                                         </div>
                                     </td>
@@ -280,8 +255,8 @@
                                         <div class="flex flex-wrap gap-1">
                                             @forelse($product->tags as $tag)
                                                 <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
-                                                      style="color: {{ $tag->text_color }}; 
-                                                             background-color: {{ $tag->background_color }}; 
+                                                      style="color: {{ $tag->text_color }};
+                                                             background-color: {{ $tag->background_color }};
                                                              border: 1px solid {{ $tag->border_color }};">
                                                     @if($tag->icon)
                                                         <span class="mr-1">{{ $tag->icon }}</span>
@@ -468,46 +443,20 @@
                                 <label class="block text-sm font-medium text-gray-700">Visibility</label>
                                 <div class="mt-2 space-y-4">
                                     <div class="flex items-center gap-2">
-                                        <label for="editForm.is_retail_active" class="text-sm font-medium text-gray-700">Retail:</label>
+                                        <label for="editForm.is_active" class="text-sm font-medium text-gray-700">Status:</label>
                                         <button type="button"
-                                                wire:click="toggleEditFormRetailVisibility"
+                                                wire:click="toggleEditFormVisibility"
                                                 class="group relative"
                                                 wire:loading.class="opacity-50"
-                                                wire:target="toggleEditFormRetailVisibility">
-                                            <span class="sr-only">Toggle retail visibility</span>
-                                            <div class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 {{ $editForm['is_retail_active'] ? 'bg-blue-600' : 'bg-gray-200' }}">
-                                                <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {{ $editForm['is_retail_active'] ? 'translate-x-5' : 'translate-x-0' }}"></span>
-                                            </div>
-                                            <div wire:loading wire:target="toggleEditFormRetailVisibility" class="absolute -right-6 top-1/2 -translate-y-1/2">
-                                                <svg class="animate-spin h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                </svg>
-                                            </div>
-                                        </button>
-                                    </div>
-                                    <div class="flex items-center gap-2">
-                                        <label for="editForm.is_wholesale_active" class="text-sm font-medium text-gray-700">Wholesale:</label>
-                                        <button type="button"
-                                                wire:click="toggleEditFormWholesaleVisibility"
-                                                class="group relative"
-                                                wire:loading.class="opacity-50"
-                                                wire:target="toggleEditFormWholesaleVisibility">
-                                            <span class="sr-only">Toggle wholesale visibility</span>
-                                            <div class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 {{ $editForm['is_wholesale_active'] ? 'bg-blue-600' : 'bg-gray-200' }}">
-                                                <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {{ $editForm['is_wholesale_active'] ? 'translate-x-5' : 'translate-x-0' }}"></span>
-                                            </div>
-                                            <div wire:loading wire:target="toggleEditFormWholesaleVisibility" class="absolute -right-6 top-1/2 -translate-y-1/2">
-                                                <svg class="animate-spin h-4 w-4 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                </svg>
+                                                wire:target="toggleEditFormVisibility">
+                                            <span class="sr-only">Toggle visibility</span>
+                                            <div class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 {{ $editForm['is_active'] ? 'bg-blue-600' : 'bg-gray-200' }}">
+                                                <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {{ $editForm['is_active'] ? 'translate-x-5' : 'translate-x-0' }}"></span>
                                             </div>
                                         </button>
                                     </div>
                                 </div>
-                                @error('editForm.is_retail_active') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
-                                @error('editForm.is_wholesale_active') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                                @error('editForm.is_active') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                             </div>
 
                             <!-- Description -->
@@ -563,15 +512,15 @@
                                     <label class="block text-sm font-medium text-gray-700">Prices</label>
                                 </div>
                                 <div class="space-y-4">
-                                    <!-- Retail Price (TRY only) -->
+                                    <!-- Price (TRY) -->
                                     <div>
-                                        <label class="block text-sm font-medium text-blue-600">Retail Price (TRY)</label>
+                                        <label class="block text-sm font-medium text-gray-700">Price (TRY)</label>
                                         <div class="flex items-center gap-2">
                                             <input type="number"
                                                 wire:model="editForm.prices.0.price"
                                                 step="0.01"
                                                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                                                placeholder="Retail Price">
+                                                placeholder="Price">
                                             <span class="mt-1 block w-24 px-3 py-2 bg-gray-100 rounded-md border border-gray-300 text-gray-700 sm:text-sm">
                                                 TRY
                                             </span>
@@ -581,53 +530,20 @@
                                         @enderror
                                     </div>
 
-                                    <!-- Wholesale Prices -->
-                                    <div x-data="{
-                                        tryPrice: @entangle('editForm.prices.1.price').live,
-                                        usdPrice: @entangle('editForm.prices.2.price').live,
-                                        exchangeRate: @entangle('exchangeRate').live,
-                                        calculateUSD() {
-                                            if (this.tryPrice && this.exchangeRate) {
-                                                this.usdPrice = (parseFloat(this.tryPrice) * this.exchangeRate).toFixed(2);
-                                            }
-                                        },
-                                        calculateTRY() {
-                                            if (this.usdPrice && this.exchangeRate) {
-                                                this.tryPrice = (parseFloat(this.usdPrice) / this.exchangeRate).toFixed(2);
-                                            }
-                                        }
-                                    }">
-                                        <label class="block text-sm font-medium text-gray-600">Wholesale Prices</label>
-                                        
-                                        <!-- TRY Wholesale Price -->
-                                        <div class="flex items-center gap-2 mt-2">
+                                    <!-- Price (USD) -->
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Price (USD)</label>
+                                        <div class="flex items-center gap-2">
                                             <input type="number"
-                                                x-model="tryPrice"
-                                                @input="calculateUSD"
+                                                wire:model="editForm.prices.1.price"
                                                 step="0.01"
                                                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                                                placeholder="Wholesale Price (TRY)">
-                                            <span class="mt-1 block w-24 px-3 py-2 bg-gray-100 rounded-md border border-gray-300 text-gray-700 sm:text-sm">
-                                                TRY
-                                            </span>
-                                        </div>
-                                        @error('editForm.prices.1.price')
-                                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                        @enderror
-
-                                        <!-- USD Wholesale Price -->
-                                        <div class="flex items-center gap-2 mt-2">
-                                            <input type="number"
-                                                x-model="usdPrice"
-                                                @input="calculateTRY"
-                                                step="0.01"
-                                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                                                placeholder="Wholesale Price (USD)">
+                                                placeholder="Price">
                                             <span class="mt-1 block w-24 px-3 py-2 bg-gray-100 rounded-md border border-gray-300 text-gray-700 sm:text-sm">
                                                 USD
                                             </span>
                                         </div>
-                                        @error('editForm.prices.2.price')
+                                        @error('editForm.prices.1.price')
                                             <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                         @enderror
                                     </div>
@@ -637,7 +553,7 @@
                             <!-- Images -->
                             <div>
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Product Images</label>
-                                
+
                                 <!-- Current Images Grid -->
                                 <div class="grid grid-cols-3 gap-4 mb-4">
                                     @foreach($currentImages as $image)
@@ -684,7 +600,7 @@
                                 <!-- New Image Upload Area -->
                                 <div class="mt-2 space-y-4">
                                     <div
-                                        x-data="{ 
+                                        x-data="{
                                             isDropping: false,
                                             handleDrop(e) {
                                                 e.preventDefault();
@@ -735,7 +651,7 @@
                                                     <img src="{{ $image->temporaryUrl() }}"
                                                         alt="Upload preview"
                                                         class="h-full w-full rounded-lg object-cover">
-                                                    
+
                                                     <!-- Upload Progress Overlay -->
                                                     @if(isset($uploadProgress['newImages.' . $index]))
                                                     <div class="absolute inset-0 bg-black bg-opacity-50 rounded-lg flex items-center justify-center">
@@ -748,7 +664,7 @@
                                                                 <div class="relative w-16 h-16 mx-auto">
                                                                     <!-- Progress Circle -->
                                                                     <svg class="transform -rotate-90 w-full h-full" viewBox="0 0 100 100">
-                                                                        <circle 
+                                                                        <circle
                                                                             class="text-gray-400 stroke-current"
                                                                             stroke-width="10"
                                                                             fill="transparent"
@@ -756,7 +672,7 @@
                                                                             cx="50"
                                                                             cy="50"
                                                                         />
-                                                                        <circle 
+                                                                        <circle
                                                                             class="text-blue-600 progress-ring stroke-current"
                                                                             stroke-width="10"
                                                                             fill="transparent"
@@ -803,7 +719,7 @@
                             <div x-data="{ open: false }" class="relative">
                                 <label for="tags" class="block text-sm font-medium text-gray-700">Tags</label>
                                 <div class="relative mt-1">
-                                    <button 
+                                    <button
                                         type="button"
                                         @click="open = !open"
                                         class="relative w-full cursor-default rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 text-left shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm"
@@ -811,7 +727,7 @@
                                         <span class="flex flex-wrap gap-1">
                                             @if(!empty($editForm['tags']))
                                                 @foreach($allTags->whereIn('id', $editForm['tags']) as $tag)
-                                                    <span 
+                                                    <span
                                                         class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
                                                         style="color: {{ $tag->text_color }}; background-color: {{ $tag->background_color }}; border: 1px solid {{ $tag->border_color }};"
                                                     >
@@ -832,19 +748,19 @@
                                         </span>
                                     </button>
 
-                                    <div 
-                                        x-show="open" 
+                                    <div
+                                        x-show="open"
                                         @click.away="open = false"
                                         class="absolute z-10 mt-1 w-full rounded-md bg-white shadow-lg"
                                     >
                                         <ul class="max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
                                             @foreach($allTags as $tag)
-                                                <li 
+                                                <li
                                                     class="relative cursor-pointer select-none py-2 pl-3 pr-9 hover:bg-gray-100"
                                                     wire:click="toggleTag({{ $tag->id }})"
                                                 >
                                                     <div class="flex items-center">
-                                                        <span 
+                                                        <span
                                                             class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
                                                             style="color: {{ $tag->text_color }}; background-color: {{ $tag->background_color }}; border: 1px solid {{ $tag->border_color }};"
                                                         >
@@ -948,7 +864,7 @@
         <div class="fixed inset-0 bg-black bg-opacity-75 z-[60]" wire:click.self="closeProductImageView">
             <div class="relative max-w-7xl mx-auto p-4 w-full h-full flex items-center justify-center" @click.stop>
                 <!-- Close button -->
-                <button 
+                <button
                     wire:click.stop="closeProductImageView"
                     class="absolute top-4 right-4 text-white hover:text-gray-300 z-10"
                 >
@@ -959,17 +875,17 @@
 
                 <!-- Image -->
                 <div class="relative w-full h-full flex items-center justify-center">
-                    <img 
+                    <img
                         src="{{ Storage::url($viewingProductImage['url']) }}"
                         alt="Full size product image"
                         class="max-h-full max-w-full object-contain"
                     >
                     <!-- <img class="max-h-full max-w-full object-contain"
-                        src="{{ $product->images->where('is_primary', true)->first() 
+                        src="{{ $product->images->where('is_primary', true)->first()
                             ? Storage::url($product->images->where('is_primary', true)->first()->image_url)
-                            : ($product->images->first() 
+                            : ($product->images->first()
                                 ? Storage::url($product->images->first()->image_url)
-                                : 'https://placehold.co/100') }}" 
+                                : 'https://placehold.co/100') }}"
                         alt="Full size product image" /> -->
                 </div>
             </div>
@@ -979,12 +895,12 @@
     <!-- Add the Image Modal -->
     @if($showImageModal && $viewingImage)
         <!-- Stop propagation of clicks on the overlay to prevent closing the edit modal -->
-        <div class="fixed inset-0 bg-black bg-opacity-75 z-[60]" 
+        <div class="fixed inset-0 bg-black bg-opacity-75 z-[60]"
             wire:click.stop.self="closeImageView"
             @click.stop>
             <div class="relative max-w-7xl mx-auto p-4 w-full h-full flex items-center justify-center">
                 <!-- Close button -->
-                <button 
+                <button
                     wire:click.stop="closeImageView"
                     class="absolute top-4 right-4 text-white hover:text-gray-300 z-10"
                 >
@@ -995,7 +911,7 @@
 
                 <!-- Image -->
                 <div class="relative w-full h-full flex items-center justify-center">
-                    <img 
+                    <img
                         src="{{ Storage::url($viewingImage['url']) }}"
                         alt="Full size product image"
                         class="max-h-full max-w-full object-contain"
@@ -1154,34 +1070,23 @@
                                 <label class="block text-sm font-medium text-gray-700">Visibility</label>
                                 <div class="mt-2 space-y-4">
                                     <div class="flex items-center gap-2">
-                                        <label for="addForm.is_retail_active" class="text-sm font-medium text-gray-700">Retail:</label>
+                                        <label for="addForm.is_active" class="text-sm font-medium text-gray-700">Status:</label>
                                         <button type="button"
-                                                wire:click="toggleAddFormRetailVisibility"
+                                                wire:click="toggleAddFormVisibility"
                                                 class="group relative">
-                                            <div class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 {{ $addForm['is_retail_active'] ? 'bg-blue-600' : 'bg-gray-200' }}">
-                                                <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {{ $addForm['is_retail_active'] ? 'translate-x-5' : 'translate-x-0' }}"></span>
-                                            </div>
-                                        </button>
-                                    </div>
-                                    <div class="flex items-center gap-2">
-                                        <label for="addForm.is_wholesale_active" class="text-sm font-medium text-gray-700">Wholesale:</label>
-                                        <button type="button"
-                                                wire:click="toggleAddFormWholesaleVisibility"
-                                                class="group relative">
-                                            <div class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 {{ $addForm['is_wholesale_active'] ? 'bg-blue-600' : 'bg-gray-200' }}">
-                                                <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {{ $addForm['is_wholesale_active'] ? 'translate-x-5' : 'translate-x-0' }}"></span>
+                                            <div class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 {{ $addForm['is_active'] ? 'bg-blue-600' : 'bg-gray-200' }}">
+                                                <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {{ $addForm['is_active'] ? 'translate-x-5' : 'translate-x-0' }}"></span>
                                             </div>
                                         </button>
                                     </div>
                                 </div>
-                                @error('addForm.is_retail_active') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
-                                @error('addForm.is_wholesale_active') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                                @error('addForm.is_active') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                             </div>
 
                             <!-- Description -->
                             <div>
                                 <label for="add-description" class="block text-sm font-medium text-gray-700">Description</label>
-                                <textarea 
+                                <textarea
                                     wire:model="addForm.description"
                                     id="add-description"
                                     rows="4"
@@ -1199,7 +1104,7 @@
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
                                     <label for="add-category" class="block text-sm font-medium text-gray-700">Category</label>
-                                    <select 
+                                    <select
                                         wire:model="addForm.category_id"
                                         id="add-category"
                                         class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
@@ -1215,7 +1120,7 @@
                                 </div>
                                 <div>
                                     <label for="add-supplier" class="block text-sm font-medium text-gray-700">Supplier</label>
-                                    <select 
+                                    <select
                                         wire:model="addForm.supplier_id"
                                         id="add-supplier"
                                         class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
@@ -1233,8 +1138,8 @@
 
                             <!-- Prices -->
                             <div x-data="{
-                                tryPrice: @entangle('addForm.prices.1.price').live,
-                                usdPrice: @entangle('addForm.prices.2.price').live,
+                                tryPrice: @entangle('addForm.prices.0.price').live,
+                                usdPrice: @entangle('addForm.prices.1.price').live,
                                 exchangeRate: @entangle('exchangeRate').live,
                                 calculateUSD() {
                                     if (this.tryPrice && this.exchangeRate) {
@@ -1247,57 +1152,46 @@
                                     }
                                 }
                             }">
-                                <!-- Retail Price (TRY only) -->
-                                <div class="mb-4">
-                                    <label class="block text-sm font-medium text-blue-600">Retail Price (TRY)</label>
-                                    <div class="flex items-center gap-2">
-                                        <input type="number"
-                                            wire:model="addForm.prices.0.price"
-                                            step="0.01"
-                                            class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                                            placeholder="Retail Price">
-                                        <span class="mt-1 block w-24 px-3 py-2 bg-gray-100 rounded-md border border-gray-300 text-gray-700 sm:text-sm">
-                                            TRY
-                                        </span>
+                                <div class="flex items-center justify-between mb-2">
+                                    <label class="block text-sm font-medium text-gray-700">Prices</label>
+                                </div>
+                                <div class="space-y-4">
+                                    <!-- Price (TRY) -->
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Price (TRY)</label>
+                                        <div class="flex items-center gap-2">
+                                            <input type="number"
+                                                wire:model="addForm.prices.0.price"
+                                                step="0.01"
+                                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                                placeholder="Price">
+                                            <span class="mt-1 block w-24 px-3 py-2 bg-gray-100 rounded-md border border-gray-300 text-gray-700 sm:text-sm">
+                                                TRY
+                                            </span>
+                                        </div>
+                                        @error('addForm.prices.0.price')
+                                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                        @enderror
                                     </div>
-                                    @error('addForm.prices.0.price')
-                                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                    @enderror
-                                </div>
 
-                                <label class="block text-sm font-medium text-gray-600">Wholesale Prices</label>
-                                
-                                <!-- TRY Wholesale Price -->
-                                <div class="flex items-center gap-2 mt-2">
-                                    <input type="number"
-                                        x-model="tryPrice"
-                                        @input="calculateUSD"
-                                        step="0.01"
-                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                                        placeholder="Wholesale Price (TRY)">
-                                    <span class="mt-1 block w-24 px-3 py-2 bg-gray-100 rounded-md border border-gray-300 text-gray-700 sm:text-sm">
-                                        TRY
-                                    </span>
+                                    <!-- Price (USD) -->
+                                    <div>
+                                        <label class="block text-sm font-medium text-gray-700">Price (USD)</label>
+                                        <div class="flex items-center gap-2">
+                                            <input type="number"
+                                                wire:model="addForm.prices.1.price"
+                                                step="0.01"
+                                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                                placeholder="Price">
+                                            <span class="mt-1 block w-24 px-3 py-2 bg-gray-100 rounded-md border border-gray-300 text-gray-700 sm:text-sm">
+                                                USD
+                                            </span>
+                                        </div>
+                                        @error('addForm.prices.1.price')
+                                            <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                        @enderror
+                                    </div>
                                 </div>
-                                @error('addForm.prices.1.price')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
-
-                                <!-- USD Wholesale Price -->
-                                <div class="flex items-center gap-2 mt-2">
-                                    <input type="number"
-                                        x-model="usdPrice"
-                                        @input="calculateTRY"
-                                        step="0.01"
-                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                                        placeholder="Wholesale Price (USD)">
-                                    <span class="mt-1 block w-24 px-3 py-2 bg-gray-100 rounded-md border border-gray-300 text-gray-700 sm:text-sm">
-                                        USD
-                                    </span>
-                                </div>
-                                @error('addForm.prices.2.price')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
                             </div>
 
                             <!-- Images -->
@@ -1305,7 +1199,7 @@
                                 <label class="block text-sm font-medium text-gray-700 mb-2">Product Images</label>
                                 <div class="mt-2 space-y-4">
                                     <div
-                                        x-data="{ 
+                                        x-data="{
                                             isDropping: false,
                                             handleDrop(e) {
                                                 e.preventDefault();
@@ -1355,11 +1249,11 @@
                                                     <img src="{{ $image->temporaryUrl() }}"
                                                         alt="Upload preview"
                                                         class="h-full w-full rounded-lg object-cover">
-                                                    
+
                                                     <!-- Remove Button -->
                                                     <button
                                                         type="button"
-                                                        wire:click="removeTemporaryImage({{ $index }})"
+                                                        wire:click="removeTemporaryImage({{ $index }}, 'add')"
                                                         class="absolute top-2 right-2 p-1 rounded-full bg-red-500 text-white opacity-0 group-hover:opacity-100 transition-opacity"
                                                     >
                                                         <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1380,7 +1274,7 @@
                             <div x-data="{ open: false }" class="relative">
                                 <label for="add-tags" class="block text-sm font-medium text-gray-700">Tags</label>
                                 <div class="relative mt-1">
-                                    <button 
+                                    <button
                                         type="button"
                                         @click="open = !open"
                                         class="relative w-full cursor-default rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 text-left shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm"
@@ -1388,7 +1282,7 @@
                                         <span class="flex flex-wrap gap-1">
                                             @if(!empty($addForm['tags']))
                                                 @foreach($allTags->whereIn('id', $addForm['tags']) as $tag)
-                                                    <span 
+                                                    <span
                                                         class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
                                                         style="color: {{ $tag->text_color }}; background-color: {{ $tag->background_color }}; border: 1px solid {{ $tag->border_color }};"
                                                     >
@@ -1409,19 +1303,19 @@
                                         </span>
                                     </button>
 
-                                    <div 
-                                        x-show="open" 
+                                    <div
+                                        x-show="open"
                                         @click.away="open = false"
                                         class="absolute z-10 mt-1 w-full rounded-md bg-white shadow-lg"
                                     >
                                         <ul class="max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
                                             @foreach($allTags as $tag)
-                                                <li 
+                                                <li
                                                     class="relative cursor-pointer select-none py-2 pl-3 pr-9 hover:bg-gray-100"
                                                     wire:click="toggleAddTag({{ $tag->id }})"
                                                 >
                                                     <div class="flex items-center">
-                                                        <span 
+                                                        <span
                                                             class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium"
                                                             style="color: {{ $tag->text_color }}; background-color: {{ $tag->background_color }}; border: 1px solid {{ $tag->border_color }};"
                                                         >

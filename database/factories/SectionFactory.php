@@ -17,9 +17,6 @@ class SectionFactory extends Factory
 
     public function definition(): array
     {
-        // Randomly choose either wholesale or retail
-        $isWholesale = $this->faker->boolean();
-
         return [
             'name' => $this->faker->words(2, true),
             'description' => $this->faker->sentence(),
@@ -27,8 +24,6 @@ class SectionFactory extends Factory
             'is_active' => true,
             'scrollable' => false,
             'position' => $this->faker->randomElement(SectionPosition::cases())->value,
-            'is_wholesale_active' => $isWholesale,
-            'is_retail_active' => !$isWholesale,
         ];
     }
 

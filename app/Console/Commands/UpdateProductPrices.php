@@ -9,6 +9,7 @@ use App\Models\ProductPrice;
 use App\Services\CurrencyService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Database\Eloquent\Collection;
 
 class UpdateProductPrices extends Command
 {
@@ -31,12 +32,7 @@ class UpdateProductPrices extends Command
             ProductPrice::where('is_main_price', true)
                 ->chunk(100, function ($mainPrices) use ($currencyService, $currencies, $defaultCurrency) {
                     foreach ($mainPrices as $mainPrice) {
-                        $this->updatePricesForProduct(
-                            $mainPrice,
-                            $currencyService,
-                            $currencies,
-                            $defaultCurrency
-                        );
+                        $this->handleMainPrice($mainPrice, $currencyService, $defaultCurrency, $currencies);
                     }
                 });
 
@@ -50,19 +46,9 @@ class UpdateProductPrices extends Command
         }
     }
 
-    private function updatePricesForProduct(
-        ProductPrice $mainPrice,
-        CurrencyService $currencyService,
-        $currencies,
-        Currency $defaultCurrency
-    ): void {
-        // Only create USD prices for wholesale price type
+    private function handleMainPrice(ProductPrice $mainPrice, CurrencyService $currencyService, Currency $defaultCurrency, Collection $currencies): void
+    {
         foreach ($currencies as $currency) {
-            // Skip if trying to create retail price in USD
-            if ($mainPrice->price_type === ProductPrice::TYPE_RETAIL && $currency->code === 'USD') {
-                continue;
-            }
-
             $convertedPrice = $currencyService->convertPrice(
                 (float)$mainPrice->base_price,
                 $defaultCurrency,
@@ -73,7 +59,6 @@ class UpdateProductPrices extends Command
                 [
                     'product_id' => $mainPrice->product_id,
                     'currency_id' => $currency->id,
-                    'price_type' => $mainPrice->price_type,
                 ],
                 [
                     'base_price' => $mainPrice->base_price,

@@ -23,7 +23,6 @@ return Application::configure(basePath: dirname(__DIR__))
             'role.redirect' => \App\Http\Middleware\RoleRedirectMiddleware::class,
         ]);
         $middleware->web([
-            \App\Http\Middleware\SyncCartOnLogin::class,
             \App\Http\Middleware\SetLocale::class,
         ]);
     })

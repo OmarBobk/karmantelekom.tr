@@ -1,7 +1,6 @@
 <?php
 
-use App\Livewire\CartComponent;
-use App\Livewire\Errors\NotFound;
+use App\Livewire\Frontend\Errors\NotFound;
 use App\Livewire\Frontend\MainComponent;
 use App\Livewire\Frontend\ProfileComponent;
 use App\Livewire\ProductComponent;
@@ -30,4 +29,8 @@ Route::middleware([
 
 Route::get('test', function() {
     return 'test main domain';
+});
+
+Route::fallback(function () {
+    dd('fallback');
 });

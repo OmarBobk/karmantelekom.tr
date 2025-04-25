@@ -12,13 +12,9 @@ class ProductPrice extends Model
 {
     use HasFactory;
 
-    public const TYPE_RETAIL = 'retail';
-    public const TYPE_WHOLESALE = 'wholesale';
-
     protected $fillable = [
         'product_id',
         'currency_id',
-        'price_type',
         'base_price',
         'converted_price',
         'is_main_price'
@@ -49,13 +45,5 @@ class ProductPrice extends Model
         // Convert the price to float before passing to getFormattedAmount
         $price = (float) $this->converted_price;
         return $this->currency->getFormattedAmount($price);
-    }
-
-    public static function getPriceTypes(): array
-    {
-        return [
-            self::TYPE_RETAIL => 'Retail Price',
-            self::TYPE_WHOLESALE => 'Wholesale Price'
-        ];
     }
 }

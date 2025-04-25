@@ -18,16 +18,16 @@ class ProductFactory extends Factory
     public function definition(): array
     {
         $name = $this->faker->words(3, true);
+        
         return [
             'name' => $name,
             'slug' => Str::slug($name),
-            'serial' => $this->faker->unique()->numerify('SN-######'),
-            'code' => $this->faker->unique()->regexify('[A-Z]{2}[0-9]{6}'),
+            'code' => strtoupper($this->faker->bothify('??-####')),
+            'serial' => $this->faker->optional()->bothify('SN-########'),
             'description' => $this->faker->paragraph,
+            'is_active' => $this->faker->boolean(90),
             'category_id' => Category::factory(),
             'supplier_id' => Supplier::factory(),
-            'is_retail_active' => false,
-            'is_wholesale_active' => false,
         ];
     }
 }

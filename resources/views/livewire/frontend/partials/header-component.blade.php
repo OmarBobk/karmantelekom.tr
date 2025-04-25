@@ -5,8 +5,6 @@
     searchQuery: '',
     searchResults: [],
     isLoading: false,
-    cartCount: 1,
-    cartOpen: false,
     profileDropdownOpen: false,
     mobileProfileDropdownOpen: false,
 
@@ -47,8 +45,6 @@
 
             <!-- Right Section: Cart, Profile, Favorites -->
             <div class="flex items-center gap-x-2">
-                <!-- Cart Component -->
-                <livewire:cart.cart-component />
 
                 <!-- Profile/Auth Section -->
                 @guest

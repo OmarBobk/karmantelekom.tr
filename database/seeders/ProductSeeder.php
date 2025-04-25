@@ -125,27 +125,6 @@ class ProductSeeder extends Seeder
 
         // Create products with related data
         Product::factory(50)->create()->each(function ($product) use ($tags) {
-            // Set visibility randomly but ensure at least one is true
-            $isRetailActive = (bool)rand(0, 1);
-            $isWholesaleActive = !$isRetailActive || (bool)rand(0, 1);
-
-            // Determine the suffix based on active flags
-            $suffix = '';
-            if ($isRetailActive && $isWholesaleActive) {
-                $suffix = ' both';
-            } elseif ($isRetailActive) {
-                $suffix = ' retail';
-            } elseif ($isWholesaleActive) {
-                $suffix = ' wholesale';
-            }
-
-            // Update the product name with the appropriate suffix
-            $product->update([
-                'is_retail_active' => $isRetailActive,
-                'is_wholesale_active' => $isWholesaleActive,
-                'name' => $product->name . $suffix,
-            ]);
-
             // Attach 2-4 random tags to each product
             $product->tags()->attach(
                 $tags->random(rand(2, 4))->pluck('id')->toArray()

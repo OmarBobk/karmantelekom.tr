@@ -17,9 +17,10 @@ class ProductPriceFactory extends Factory
     {
         return [
             'product_id' => Product::factory(),
-            'price_type' => $this->faker->randomElement(['wholesale', 'retail']),
-            'price' => $this->faker->randomFloat(2, 10, 1000),
-            'currency' => 'TRY',
+            'currency_id' => 1, // TRY
+            'base_price' => $this->faker->randomFloat(2, 10, 1000),
+            'converted_price' => $this->faker->randomFloat(2, 10, 1000),
+            'is_main_price' => true
         ];
     }
 }

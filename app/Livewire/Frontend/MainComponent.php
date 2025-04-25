@@ -25,16 +25,10 @@ class MainComponent extends Component
 
     public function mount()
     {
-        $this->setupUserPricing();
+        $this->canSwitchCurrency = true;
         $this->loadAllSections();
     }
 
-    private function setupUserPricing(): void
-    {
-        // Determine if user can switch currency and which price type to show
-        $this->canSwitchCurrency = auth()->check() && auth()->user()->hasAnyRole(['admin', 'salesperson', 'shop_owner']);
-        $this->priceType = $this->canSwitchCurrency ? ProductPrice::TYPE_WHOLESALE : ProductPrice::TYPE_RETAIL;
-    }
 
     private function getCurrency(): Currency
     {
@@ -74,7 +68,7 @@ class MainComponent extends Component
     private function loadSectionsByPosition(string $position, string $propertyName, bool $scrollable = false): void
     {
         $currency = $this->getCurrency();
-        $cacheKey = "{$propertyName}_{$currency->code}_{$this->priceType}";
+        $cacheKey = "{$propertyName}_{$currency->code}";
 
         Cache::forget($cacheKey);
 
@@ -91,8 +85,7 @@ class MainComponent extends Component
                                 }
                             },
                             'prices' => function($query) use ($currency) {
-                                $query->where('currency_id', $currency->id)
-                                     ->where('price_type', $this->priceType);
+                                $query->where('currency_id', $currency->id);
                             }
                         ])
                         ->orderBy('section_products.ordering');
@@ -100,13 +93,6 @@ class MainComponent extends Component
             ])
             ->where('position', $position)
             ->where('is_active', true)
-            ->where(function ($query) {
-                if ($this->canSwitchCurrency) {
-                    $query->where('is_wholesale_active', true);
-                } else {
-                    $query->where('is_retail_active', true);
-                }
-            })
             ->orderBy('order');
 
             if ($scrollable) {
@@ -133,25 +119,5 @@ class MainComponent extends Component
     public function setActiveCategory($index)
     {
         $this->activeCategory = $index;
-    }
-
-    public function addToCart(Product $product, int $quantity = 1): void
-    {
-        try {
-            $this->dispatch('add-to-cart', [
-                'product' => $product->id,
-                'quantity' => $quantity,
-            ]);
-
-            // Dispatch a custom JavaScript event after adding to cart
-//            $this->dispatch('cart-updated');
-
-        } catch (\Exception $e) {
-            logger()->error('Error adding product to cart: ' . $e->getMessage());
-            $this->dispatch('notify', [
-                'message' => 'Error adding product to cart. Please try again.',
-                'type' => 'error',
-            ]);
-        }
     }
 }

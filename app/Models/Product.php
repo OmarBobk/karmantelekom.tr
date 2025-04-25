@@ -9,6 +9,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 use Illuminate\Database\Eloquent\Builder;
+use Spatie\Sluggable\HasSlug;
+use Spatie\Sluggable\SlugOptions;
 
 /**
  * Product Model
@@ -23,8 +25,7 @@ use Illuminate\Database\Eloquent\Builder;
  * @property string $description Detailed product description
  * @property int $category_id Foreign key to categories table
  * @property int $supplier_id Foreign key to suppliers table
- * @property bool $is_retail_active Whether product is visible in retail
- * @property bool $is_wholesale_active Whether product is visible in wholesale
+ * @property bool $is_active Whether product is active
  * @property-read Category $category Product category relationship
  * @property-read Supplier $supplier Product supplier relationship
  * @property-read \Illuminate\Database\Eloquent\Collection<ProductPrice> $prices Product prices in different currencies
@@ -35,7 +36,7 @@ use Illuminate\Database\Eloquent\Builder;
  */
 class Product extends Model
 {
-    use HasFactory;
+    use HasFactory, HasSlug;
 
     /**
      * The attributes that are mass assignable.
@@ -47,11 +48,10 @@ class Product extends Model
         'slug',
         'serial',
         'code',
+        'is_active',
         'description',
         'category_id',
-        'supplier_id',
-        'is_retail_active',
-        'is_wholesale_active',
+        'supplier_id'
     ];
 
     /**
@@ -60,10 +60,7 @@ class Product extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'is_retail_active' => 'boolean',
-        'is_wholesale_active' => 'boolean',
-        'created_at' => 'datetime',
-        'updated_at' => 'datetime',
+        'is_active' => 'boolean'
     ];
 
     /**
@@ -82,40 +79,14 @@ class Product extends Model
     }
 
     /**
-     * Scope to filter products based on user's role and visibility settings.
+     * Scope a query to only include active products.
      *
      * @param Builder $query
      * @return Builder
      */
-    public function scopeVisibleToUser(Builder $query): Builder
+    public function scopeActive(Builder $query): Builder
     {
-        if (auth()->check() && auth()->user()->hasAnyRole(['admin', 'salesperson', 'shop_owner'])) {
-            return $query->where('is_wholesale_active', true);
-        }
-
-        return $query->where('is_retail_active', true);
-    }
-
-    /**
-     * Scope to get only retail-active products.
-     *
-     * @param Builder $query
-     * @return Builder
-     */
-    public function scopeRetailActive(Builder $query): Builder
-    {
-        return $query->where('is_retail_active', true);
-    }
-
-    /**
-     * Scope to get only wholesale-active products.
-     *
-     * @param Builder $query
-     * @return Builder
-     */
-    public function scopeWholesaleActive(Builder $query): Builder
-    {
-        return $query->where('is_wholesale_active', true);
+        return $query->where('is_active', true);
     }
 
     /**
@@ -190,17 +161,24 @@ class Product extends Model
     }
 
     /**
-     * Check if the product is visible to the current user based on their role.
+     * Check if the product is visible to the current user.
      *
      * @return bool
      */
     public function isVisibleToCurrentUser(): bool
     {
-        if (auth()->check() && auth()->user()->hasAnyRole(['admin', 'salesperson', 'shop_owner'])) {
-            return $this->is_wholesale_active;
-        }
+        return $this->is_active;
+    }
 
-        return $this->is_retail_active;
+    /**
+     * Scope to filter products based on user's role and visibility settings.
+     *
+     * @param Builder $query
+     * @return Builder
+     */
+    public function scopeVisibleToUser(Builder $query): Builder
+    {
+        return $query->where('is_active', true);
     }
 
     /**
@@ -216,30 +194,22 @@ class Product extends Model
     }
 
     /**
-     * Get the retail price for the product in the specified currency.
+     * Get the price for the product in the specified currency.
      *
      * @param string $currencyCode
      * @return ?ProductPrice
      */
-    public function getRetailPrice(string $currencyCode = 'TRY'): ?ProductPrice
+    public function getPrice(string $currencyCode = 'TRY'): ?ProductPrice
     {
         return $this->prices()
             ->whereHas('currency', fn($q) => $q->where('code', $currencyCode))
-            ->where('price_type', 'retail')
             ->first();
     }
 
-    /**
-     * Get the wholesale price for the product in the specified currency.
-     *
-     * @param string $currencyCode
-     * @return ?ProductPrice
-     */
-    public function getWholesalePrice(string $currencyCode = 'TRY'): ?ProductPrice
+    public function getSlugOptions(): SlugOptions
     {
-        return $this->prices()
-            ->whereHas('currency', fn($q) => $q->where('code', $currencyCode))
-            ->where('price_type', 'wholesale')
-            ->first();
+        return SlugOptions::create()
+            ->generateSlugsFrom('name')
+            ->saveSlugsTo('slug');
     }
 }

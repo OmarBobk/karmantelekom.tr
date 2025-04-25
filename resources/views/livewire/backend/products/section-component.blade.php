@@ -88,26 +88,6 @@
                                                     {{ $section->is_active ? 'Active' : 'Inactive' }}
                                                 </span>
                                             </div>
-
-                                            <!-- Wholesale/Retail Status -->
-                                            <div class="flex items-center space-x-2">
-                                                @if($section->is_wholesale_active)
-                                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-purple-100 text-purple-800">
-                                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8 4-8-4V5l8 4 8-4v2zM4 13.8V7.2l8 4 8-4v6.6l-8 4-8-4z" />
-                                                        </svg>
-                                                        Wholesale
-                                                    </span>
-                                                @endif
-                                                @if($section->is_retail_active)
-                                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
-                                                        </svg>
-                                                        Retail
-                                                    </span>
-                                                @endif
-                                            </div>
                                         </div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">

@@ -12,16 +12,21 @@ return new class extends Migration
             $table->id();
             $table->string('name');
             $table->string('slug')->unique();
-            $table->string('serial')->unique()->nullable();
             $table->string('code')->unique();
-            $table->boolean('is_retail_active')->default(false);
-            $table->boolean('is_wholesale_active')->default(false);
-            $table->text('description')->nullable();
-            
-            $table->foreignId('category_id')->constrained('categories')->cascadeOnDelete();
-            $table->foreignId('supplier_id')->constrained('suppliers')->cascadeOnDelete();
-            
+            $table->string('serial')->nullable()->unique();
+            $table->text('description');
+            $table->boolean('is_active')->default(true);
+            $table->foreignId('category_id')->constrained()->cascadeOnDelete();
+            $table->foreignId('supplier_id')->nullable()->constrained()->nullOnDelete();
             $table->timestamps();
+
+            // Add indexes for better performance
+            $table->index('name');
+            $table->index('code');
+            $table->index('serial');
+            $table->index('is_active');
+            $table->index('slug');
+
         });
     }
 

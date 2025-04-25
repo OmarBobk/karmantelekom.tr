@@ -252,63 +252,31 @@
                                                                 @endif
                                                             </div>
 
-                                                            <!-- Quantity Control --> 
-                                                            <div x-data="{ quantity: 0, showQuantity: false }"
-                                                                 @click.away="showQuantity = false; quantity = 0"
-                                                                 @cart-updated.window="showQuantity = false; quantity = 0"
+                                                            <!-- Quantity Control -->
+                                                            <div x-data="{showProductModal: false }"
+                                                                 @click.away="showProductModal = false;"
                                                                  class="flex items-center gap-2"
                                                             >
                                                                 <!-- Add Button -->
                                                                 <button
-                                                                    @click="showQuantity = true; quantity++"
-                                                                    x-show="!showQuantity"
+                                                                    @click="showProductModal = true;"
+                                                                    x-show="!showProductModal"
                                                                     class="inline-flex items-center justify-center size-8 rounded-full bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
                                                                     aria-label="Add to cart"
                                                                 >
-                                                                    <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.5v15m7.5-7.5h-15" />
+                                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
+                                                                         class="h-5 w-5">
+                                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                                                                     </svg>
+
                                                                 </button>
 
                                                                 <!-- Quantity Controls -->
-                                                                <div x-show="showQuantity" class="flex flex-col items-center gap-1">
+                                                                <div x-show="showProductModal" class="flex flex-col items-center gap-1">
                                                                     <div class="flex rounded-lg overflow-hidden">
-                                                                        <button
-                                                                            @click="if (quantity > 0) quantity--"
-                                                                            class="inline-flex items-center justify-center px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-600 hover:text-gray-900"
-                                                                            aria-label="Decrease quantity"
-                                                                        >
-                                                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 12h14" />
-                                                                            </svg>
-                                                                        </button>
-                                                                        <input
-                                                                            type="text"
-                                                                            x-model="quantity"
-                                                                            class="w-12 px-2 py-1 text-center border-t border-b border-gray-200 bg-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                                                                        />
-                                                                        <button
-                                                                            @click="quantity++"
-                                                                            class="inline-flex items-center justify-center px-2 py-1 bg-gray-50 hover:bg-gray-100 border border-gray-200 text-gray-600 hover:text-gray-900"
-                                                                            aria-label="Increase quantity"
-                                                                        >
-                                                                            <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.5v15m7.5-7.5h-15" />
-                                                                            </svg>
-                                                                        </button>
+                                                                        Product Modal
                                                                     </div>
-
-                                                                    <button
-                                                                        @click="$store.cart.addItem({{ json_encode($product) }}, quantity); showQuantity = !showQuantity"
-                                                                        class="w-full !mt-1 py-1 text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 relative"
-                                                                        x-cloak
-                                                                    >
-                                                                        <span>
-                                                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-3 w-3 m-auto">
-                                                                                <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
-                                                                            </svg>
-                                                                        </span>
-                                                                    </button>
                                                                 </div>
                                                             </div>
                                                         </div>
@@ -595,56 +563,25 @@
                                                         </div>
 
                                                         <!-- Quantity Controls -->
-                                                        <div class="" @click.away="showQuantity = false; quantity = 0" x-cloak>
+                                                        <div class="" @click.away="showProductModal = false;" x-cloak>
                                                             <button
-                                                                @click="showQuantity = true; quantity++"
-                                                                x-show="!showQuantity"
+                                                                @click="showProductModal = true;"
+                                                                x-show="!showProductModal"
                                                                 class="w-full p-1 text-white bg-gradient-to-r from-blue-500 to-blue-600 rounded-full hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200"
                                                                 x-cloak
                                                             >
-                                                                <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 mx-auto" fill="none" viewBox="0 0 24 24" stroke="currentColor" x-cloak>
-                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" x-cloak
+                                                                     class="h-5 w-5 mx-auto">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
                                                                 </svg>
+
                                                             </button>
 
-                                                            <div x-show="showQuantity" class="space-y-2" x-cloak>
+                                                            <div x-show="showProductModal" class="space-y-2" x-cloak>
                                                                 <div class="flex items-center justify-between" x-cloak>
-                                                                    <button
-                                                                        @click="if (quantity > 0) quantity--"
-                                                                        class="p-1 text-white bg-blue-600 rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                                                                    >
-                                                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4"/>
-                                                                        </svg>
-                                                                    </button>
-
-                                                                    <input
-                                                                        type="text"
-                                                                        x-model="quantity"
-                                                                        class="w-10 h-[1.35rem] text-center border border-gray-300 rounded-md mx-1"
-                                                                    />
-
-                                                                    <button
-                                                                        @click="quantity++"
-                                                                        class="p-1 text-white bg-blue-600 rounded hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                                                                    >
-                                                                        <svg class="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                                                                        </svg>
-                                                                    </button>
+                                                                   Product Modal
                                                                 </div>
-
-                                                                <button
-                                                                    @click="$store.cart.addItem({{ json_encode($product) }}, quantity)"
-                                                                    class="w-full !mt-1 py-1 text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 relative"
-                                                                    x-cloak
-                                                                >
-                                                                    <span>
-                                                                        <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="h-3 w-3 m-auto">
-                                                                            <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 3h1.386c.51 0 .955.343 1.087.835l.383 1.437M7.5 14.25a3 3 0 0 0-3 3h15.75m-12.75-3h11.218c1.121-2.3 2.1-4.684 2.924-7.138a60.114 60.114 0 0 0-16.536-1.84M7.5 14.25 5.106 5.272M6 20.25a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Zm12.75 0a.75.75 0 1 1-1.5 0 .75.75 0 0 1 1.5 0Z" />
-                                                                        </svg>
-                                                                    </span>
-                                                                </button>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -694,8 +631,7 @@
         <script>
             Alpine.data('productSlider', () => ({
                 currentSlide: 1,
-                quantity: 0,
-                showQuantity: false,
+                showProductModal: false,
                 touchStartX: 0,
                 touchEndX: 0,
 

@@ -19,16 +19,12 @@ class Section extends Model
         'order',
         'is_active',
         'scrollable',
-        'position',
-        'is_wholesale_active',
-        'is_retail_active'
+        'position'
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
         'scrollable' => 'boolean',
-        'is_wholesale_active' => 'boolean',
-        'is_retail_active' => 'boolean',
         'order' => 'integer',
         'position' => SectionPosition::class
     ];
@@ -39,22 +35,6 @@ class Section extends Model
     protected static function boot(): void
     {
         parent::boot();
-
-        static::saving(function (Section $section) {
-            if ($section->is_wholesale_active && $section->is_retail_active) {
-                throw ValidationException::withMessages([
-                    'is_wholesale_active' => 'A section cannot be both wholesale and retail active.',
-                    'is_retail_active' => 'A section cannot be both wholesale and retail active.',
-                ]);
-            }
-
-            if (!$section->is_wholesale_active && !$section->is_retail_active) {
-                throw ValidationException::withMessages([
-                    'is_wholesale_active' => 'A section must be either wholesale or retail active.',
-                    'is_retail_active' => 'A section must be either wholesale or retail active.',
-                ]);
-            }
-        });
     }
 
     public function products(): BelongsToMany
@@ -74,30 +54,8 @@ class Section extends Model
         return $query->orderBy('order', 'asc');
     }
 
-    public function scopeWholesaleActive($query): Builder
-    {
-        return $query->where('is_wholesale_active', true)
-                    ->whereHas('products', function ($query) {
-                        $query->wholesaleActive();
-                    });
-    }
-
-    public function scopeRetailActive($query): Builder
-    {
-        return $query->where('is_retail_active', true)
-                    ->whereHas('products', function ($query) {
-                        $query->retailActive();
-                    });
-    }
-
     public function getActiveProducts(): BelongsToMany
     {
-        $query = $this->products();
-        
-        if (auth()->check() && auth()->user()->hasAnyRole(['admin', 'salesperson', 'shop_owner'])) {
-            return $query->wholesaleActive();
-        }
-        
-        return $query->retailActive();
+        return $this->products()->where('is_active', true);
     }
 }
