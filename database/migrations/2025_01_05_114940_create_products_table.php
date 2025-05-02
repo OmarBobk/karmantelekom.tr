@@ -16,8 +16,7 @@ return new class extends Migration
             $table->string('serial')->nullable()->unique();
             $table->text('description');
             $table->boolean('is_active')->default(true);
-            $table->foreignId('category_id')->constrained()->cascadeOnDelete();
-            $table->foreignId('supplier_id')->nullable()->constrained()->nullOnDelete();
+            $table->foreignId('category_id')->constrained('categories')->onDelete('cascade');
             $table->timestamps();
 
             // Add indexes for better performance

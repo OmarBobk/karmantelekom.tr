@@ -474,36 +474,17 @@
 
                         <!-- Right Column -->
                         <div class="space-y-6 mr-2">
-                            <!-- Category & Supplier -->
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label for="category" class="block text-sm font-medium text-gray-700">Category</label>
-                                    <select wire:model="editForm.category_id"
-                                        id="category"
-                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
-                                        <option value="" disabled>Select Category</option>
-                                        @foreach($categories as $category)
-                                            <option value="{{ $category->id }}">{{ $category->name }}</option>
-                                        @endforeach
-                                    </select>
-                                    @error('editForm.category_id')
-                                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                    @enderror
-                                </div>
-                                <div>
-                                    <label for="supplier" class="block text-sm font-medium text-gray-700">Supplier</label>
-                                    <select wire:model="editForm.supplier_id"
-                                        id="supplier"
-                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
-                                        <option value="" disabled>Select Supplier</option>
-                                        @foreach($suppliers as $supplier)
-                                            <option value="{{ $supplier->id }}">{{ $supplier->name }}</option>
-                                        @endforeach
-                                    </select>
-                                    @error('editForm.supplier_id')
-                                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                    @enderror
-                                </div>
+                            <!-- Category -->
+                            <div>
+                                <label for="category" class="block text-sm font-medium text-gray-700">Category</label>
+                                <x-category-tree-dropdown 
+                                    :categories="$this->getCategoryTree()" 
+                                    :selectedCategory="$editForm['category_id']"
+                                    wireModel="editForm.category_id"
+                                />
+                                @error('editForm.category_id')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
                             </div>
 
                             <!-- Prices -->
@@ -514,13 +495,13 @@
                                 <div class="space-y-4">
                                     <!-- Price (TRY) -->
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700">Price (TRY)</label>
+                                        <label class="block text-sm font-medium text-gray-700">Price (TRY) - Optional</label>
                                         <div class="flex items-center gap-2">
                                             <input type="number"
                                                 wire:model="editForm.prices.0.price"
                                                 step="0.01"
                                                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                                                placeholder="Price">
+                                                placeholder="Optional (defaults to 0)">
                                             <span class="mt-1 block w-24 px-3 py-2 bg-gray-100 rounded-md border border-gray-300 text-gray-700 sm:text-sm">
                                                 TRY
                                             </span>
@@ -532,13 +513,13 @@
 
                                     <!-- Price (USD) -->
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700">Price (USD)</label>
+                                        <label class="block text-sm font-medium text-gray-700">Price (USD) - Optional</label>
                                         <div class="flex items-center gap-2">
                                             <input type="number"
                                                 wire:model="editForm.prices.1.price"
                                                 step="0.01"
                                                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                                                placeholder="Price">
+                                                placeholder="Optional (defaults to 0)">
                                             <span class="mt-1 block w-24 px-3 py-2 bg-gray-100 rounded-md border border-gray-300 text-gray-700 sm:text-sm">
                                                 USD
                                             </span>
@@ -607,7 +588,8 @@
                                                 const input = this.$refs.fileInput;
                                                 const files = e.dataTransfer.files;
                                                 input.files = files;
-                                                input.dispatchEvent(new Event('change'));
+                                                const event = new Event('change', { bubbles: true });
+                                                input.dispatchEvent(event);
                                                 this.isDropping = false;
                                             }
                                         }"
@@ -625,25 +607,28 @@
                                             <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                                         </svg>
                                         <span class="mt-2 block text-sm font-medium text-gray-900">
-                                            Drop images here or click to upload
+                                            Drop multiple images here or click to upload
                                         </span>
                                             <span class="mt-1 block text-xs text-gray-500">
-                                                PNG, JPG, GIF up to 5MB
+                                                You can select multiple images at once (PNG, JPG, GIF up to 2MB each)
                                             </span>
                                     </label>
                                         <input
                                             x-ref="fileInput"
                                             id="images-{{ $iteration }}"
-                                            wire:model.live="newImages"
-                                        type="file"
-                                        multiple
-                                        accept="image/*"
+                                            wire:model.defer="newImages"
+                                            type="file"
+                                            multiple
+                                            accept="image/*"
                                             class="hidden"
                                         >
                                     </div>
 
                                     <!-- Preview Grid for New Images -->
                                     @if($newImages)
+                                        <div class="mb-2 text-sm text-gray-600">
+                                            {{ count($newImages) }} {{ Str::plural('image', count($newImages)) }} selected
+                                        </div>
                                         <div class="grid grid-cols-3 gap-4">
                                             @foreach($newImages as $index => $image)
                                                 @if($image)
@@ -1100,40 +1085,17 @@
 
                         <!-- Right Column -->
                         <div class="space-y-6 mr-2">
-                            <!-- Category & Supplier -->
-                            <div class="grid grid-cols-2 gap-4">
-                                <div>
-                                    <label for="add-category" class="block text-sm font-medium text-gray-700">Category</label>
-                                    <select
-                                        wire:model="addForm.category_id"
-                                        id="add-category"
-                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                                    >
-                                        <option value="">Select Category</option>
-                                        @foreach($categories as $category)
-                                            <option value="{{ $category->id }}">{{ $category->name }}</option>
-                                        @endforeach
-                                    </select>
-                                    @error('addForm.category_id')
-                                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                    @enderror
-                                </div>
-                                <div>
-                                    <label for="add-supplier" class="block text-sm font-medium text-gray-700">Supplier</label>
-                                    <select
-                                        wire:model="addForm.supplier_id"
-                                        id="add-supplier"
-                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                                    >
-                                        <option value="">Select Supplier</option>
-                                        @foreach($suppliers as $supplier)
-                                            <option value="{{ $supplier->id }}">{{ $supplier->name }}</option>
-                                        @endforeach
-                                    </select>
-                                    @error('addForm.supplier_id')
-                                        <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                    @enderror
-                                </div>
+                            <!-- Category -->
+                            <div>
+                                <label for="add-category" class="block text-sm font-medium text-gray-700">Category</label>
+                                <x-category-tree-dropdown 
+                                    :categories="$this->getCategoryTree()" 
+                                    :selectedCategory="$addForm['category_id']"
+                                    wireModel="addForm.category_id"
+                                />
+                                @error('addForm.category_id')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
                             </div>
 
                             <!-- Prices -->
@@ -1158,13 +1120,13 @@
                                 <div class="space-y-4">
                                     <!-- Price (TRY) -->
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700">Price (TRY)</label>
+                                        <label class="block text-sm font-medium text-gray-700">Price (TRY) - Optional</label>
                                         <div class="flex items-center gap-2">
                                             <input type="number"
                                                 wire:model="addForm.prices.0.price"
                                                 step="0.01"
                                                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                                                placeholder="Price">
+                                                placeholder="Optional (defaults to 0)">
                                             <span class="mt-1 block w-24 px-3 py-2 bg-gray-100 rounded-md border border-gray-300 text-gray-700 sm:text-sm">
                                                 TRY
                                             </span>
@@ -1176,13 +1138,13 @@
 
                                     <!-- Price (USD) -->
                                     <div>
-                                        <label class="block text-sm font-medium text-gray-700">Price (USD)</label>
+                                        <label class="block text-sm font-medium text-gray-700">Price (USD) - Optional</label>
                                         <div class="flex items-center gap-2">
                                             <input type="number"
                                                 wire:model="addForm.prices.1.price"
                                                 step="0.01"
                                                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                                                placeholder="Price">
+                                                placeholder="Optional (defaults to 0)">
                                             <span class="mt-1 block w-24 px-3 py-2 bg-gray-100 rounded-md border border-gray-300 text-gray-700 sm:text-sm">
                                                 USD
                                             </span>
@@ -1206,7 +1168,8 @@
                                                 const input = this.$refs.fileInput;
                                                 const files = e.dataTransfer.files;
                                                 input.files = files;
-                                                input.dispatchEvent(new Event('change'));
+                                                const event = new Event('change', { bubbles: true });
+                                                input.dispatchEvent(event);
                                                 this.isDropping = false;
                                             }
                                         }"
@@ -1224,16 +1187,16 @@
                                                 <path d="M28 8H12a4 4 0 00-4 4v20m32-12v8m0 0v8a4 4 0 01-4 4H12a4 4 0 01-4-4v-4m32-4l-3.172-3.172a4 4 0 00-5.656 0L28 28M8 32l9.172-9.172a4 4 0 015.656 0L28 28m0 0l4 4m4-24h8m-4-4v8m-12 4h.02" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" />
                                             </svg>
                                             <span class="mt-2 block text-sm font-medium text-gray-900">
-                                                Drop images here or click to upload
+                                                Drop multiple images here or click to upload
                                             </span>
                                             <span class="mt-1 block text-xs text-gray-500">
-                                                PNG, JPG, GIF up to 5MB
+                                                You can select multiple images at once (PNG, JPG, GIF up to 2MB each)
                                             </span>
                                     </label>
                                         <input
                                             x-ref="fileInput"
                                             id="add-images-{{ $iteration }}"
-                                            wire:model.live="newProductImages"
+                                            wire:model.defer="newProductImages"
                                             type="file"
                                             multiple
                                             accept="image/*"
@@ -1243,6 +1206,9 @@
 
                                     <!-- Preview Grid for New Images -->
                                     @if($newProductImages)
+                                        <div class="mb-2 text-sm text-gray-600">
+                                            {{ count($newProductImages) }} {{ Str::plural('image', count($newProductImages)) }} selected
+                                        </div>
                                         <div class="grid grid-cols-3 gap-4">
                                             @foreach($newProductImages as $index => $image)
                                                 <div class="relative aspect-square group">

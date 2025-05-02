@@ -18,7 +18,7 @@ class ProductFactory extends Factory
     public function definition(): array
     {
         $name = $this->faker->words(3, true);
-        
+
         return [
             'name' => $name,
             'slug' => Str::slug($name),
@@ -27,7 +27,6 @@ class ProductFactory extends Factory
             'description' => $this->faker->paragraph,
             'is_active' => $this->faker->boolean(90),
             'category_id' => Category::factory(),
-            'supplier_id' => Supplier::factory(),
         ];
     }
 }

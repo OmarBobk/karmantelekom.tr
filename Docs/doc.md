@@ -75,6 +75,7 @@ ssh root@138.68.74.101
 
 eval "$(ssh-agent -s)"
 ssh-add ~/.ssh/karmantest
+ssh-add  ~/.ssh/id_ed25519.pub
 
 
 

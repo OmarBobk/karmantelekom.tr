@@ -9,7 +9,6 @@ use App\Models\Currency;
 use App\Models\Product;
 use App\Models\ProductImage;
 use App\Models\ProductPrice;
-use App\Models\Supplier;
 use App\Models\Tag;
 use App\Services\CurrencyService;
 use Illuminate\Database\Seeder;
@@ -35,9 +34,6 @@ class ProductSeeder extends Seeder
                 ]);
             }
         }
-
-        // Create suppliers
-        $suppliers = Supplier::factory(5)->create()->modelKeys();
 
         // Create tags first
         $tags = Tag::all();

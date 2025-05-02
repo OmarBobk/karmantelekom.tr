@@ -226,7 +226,7 @@
                                                     <figure class="relative aspect-w-1 aspect-h-1 w-full overflow-hidden bg-gray-50">
                                                         <img src="{{ Storage::url($product->images->where('is_primary', true)->first()->image_url)}}"
                                                             alt="{{ $product->name }}"
-                                                            class="h-[17.60rem] w-full object-cover object-center group-hover/card:scale-105 transition-transform duration-300">
+                                                            class="h-[17.60rem] w-full object-contain group-hover/card:scale-105 transition-transform duration-300">
                                                     </figure>
                                                     <div class="p-4">
                                                         <!-- Product Info Header -->

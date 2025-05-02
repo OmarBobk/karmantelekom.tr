@@ -59,7 +59,7 @@
                         this.total = this.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
                     },
 
-                    addItem(product, quantity = 1) {
+                    addItem(product, quantity = 1) {|
                         const existingItem = this.items.find(item => item.product_id === product.id);
 
                         if (existingItem) {

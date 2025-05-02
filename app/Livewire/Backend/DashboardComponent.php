@@ -15,7 +15,7 @@ class DashboardComponent extends Component
     public int $totalCustomers = 0;
     public int $totalOrders = 0;
     public float $totalRevenue = 0;
-    public array $recentOrders = [];
+    public array $recentProducts = [];
     public array $salesData = [];
     public string $period = 'week';
 
@@ -29,37 +29,44 @@ class DashboardComponent extends Component
         // Get real statistics
         $this->totalProducts = Product::count();
 
+        // Get recent products
+        $this->loadRecentProducts();
+
         // Placeholder data - replace with actual models when available
         $this->totalCustomers = 150;
         $this->totalOrders = 75;
         $this->totalRevenue = 15000;
 
-        // Sample recent orders - replace with actual order data
-        $this->recentOrders = [
-            [
-                'id' => '1234',
-                'customer' => 'John Doe',
-                'status' => 'completed',
-                'total' => 299.00,
-                'date' => now()->subHours(2),
-            ],
-            [
-                'id' => '1235',
-                'customer' => 'Jane Smith',
-                'status' => 'pending',
-                'total' => 199.00,
-                'date' => now()->subHours(3),
-            ],
-            [
-                'id' => '1236',
-                'customer' => 'Bob Johnson',
-                'status' => 'processing',
-                'total' => 499.00,
-                'date' => now()->subHours(4),
-            ],
-        ];
-
         $this->loadSalesData();
+    }
+
+    /**
+     * Load recent products from the database
+     */
+    public function loadRecentProducts(): void
+    {
+        try {
+            $products = Product::with(['category', 'prices.currency'])
+                ->orderBy('created_at', 'desc')
+                ->take(5)
+                ->get();
+
+            $this->recentProducts = $products->map(function ($product) {
+                $price = $product->prices->first();
+                
+                return [
+                    'id' => $product->id,
+                    'name' => $product->name,
+                    'category' => $product->category?->name ?? 'Uncategorized',
+                    'status' => $product->is_active ? 'active' : 'inactive',
+                    'price' => $price ? $price->getFormattedPrice() : 'N/A',
+                    'date' => $product->created_at
+                ];
+            })->toArray();
+        } catch (\Exception $e) {
+            logger()->error('Error loading recent products: ' . $e->getMessage());
+            $this->recentProducts = [];
+        }
     }
 
     public function loadSalesData(): void

@@ -30,7 +30,7 @@ class TagFactory extends Factory
             'background_color' => $randomColor['bg'],
             'border_color' => $randomColor['border'],
             'icon' => $this->faker->randomElement(['🏷️', '⭐', '🔥', '✨', '💎']),
-            'is_featured' => $this->faker->boolean(20),
+            'is_active' => $this->faker->boolean(20),
             'display_order' => $this->faker->numberBetween(0, 10),
         ];
     }

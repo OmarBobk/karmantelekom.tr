@@ -6,7 +6,6 @@ namespace App\Livewire\Backend\Products;
 
 use App\Models\Category;
 use App\Models\Product;
-use App\Models\Supplier;
 use App\Models\Tag;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\DB;
@@ -116,7 +115,6 @@ class ProductsComponent extends Component
         'is_active' => true,
         'description' => '',
         'category_id' => '',
-        'supplier_id' => '',
         'prices' => [
             ['price' => '', 'currency' => 'TRY'],
             ['price' => '', 'currency' => 'USD']
@@ -137,7 +135,6 @@ class ProductsComponent extends Component
         'is_active' => true,
         'description' => '',
         'category_id' => '',
-        'supplier_id' => '',
         'prices' => [
             ['price' => '', 'currency' => 'TRY'],
             ['price' => '', 'currency' => 'USD']
@@ -164,9 +161,6 @@ class ProductsComponent extends Component
     // Data Collections
     /** @var Collection<Category> Available categories */
     public $categories;
-
-    /** @var Collection<Supplier> Available suppliers */
-    public $suppliers;
 
     /** @var Collection<Tag> Available tags */
     public $allTags;
@@ -222,8 +216,8 @@ class ProductsComponent extends Component
         'addForm.is_active' => 'boolean',
         'addForm.description' => 'required|min:10|max:1000',
         'addForm.category_id' => 'required|exists:categories,id',
-        'addForm.supplier_id' => 'required|exists:suppliers,id',
-        'addForm.prices.*.price' => 'required|numeric|min:0',
+        'addForm.prices.*.price' => 'nullable|numeric|min:0',
+        'newProductImages' => 'nullable|array',
         'newProductImages.*' => 'image|max:2048',
         'addForm.tags' => 'array',
         'addForm.tags.*' => 'exists:tags,id',
@@ -236,8 +230,8 @@ class ProductsComponent extends Component
         'editForm.is_active' => 'boolean',
         'editForm.description' => 'required|min:10|max:1000',
         'editForm.category_id' => 'required|exists:categories,id',
-        'editForm.supplier_id' => 'required|exists:suppliers,id',
-        'editForm.prices.*.price' => 'required|numeric|min:0',
+        'editForm.prices.*.price' => 'nullable|numeric|min:0',
+        'newImages' => 'nullable|array',
         'newImages.*' => 'image|max:2048',
         'editForm.tags' => 'array',
         'editForm.tags.*' => 'exists:tags,id'
@@ -257,7 +251,6 @@ class ProductsComponent extends Component
         'editForm.is_active' => 'visibility',
         'editForm.description' => 'description',
         'editForm.category_id' => 'category',
-        'editForm.supplier_id' => 'supplier',
         'editForm.prices.*.price' => 'price',
         'editForm.prices.*.currency' => 'currency',
         'newImages.*' => 'image',
@@ -270,7 +263,6 @@ class ProductsComponent extends Component
         'addForm.is_active' => 'visibility',
         'addForm.description' => 'description',
         'addForm.category_id' => 'category',
-        'addForm.supplier_id' => 'supplier',
         'addForm.prices.*.price' => 'price',
         'newProductImages.*' => 'image',
     ];
@@ -288,8 +280,7 @@ class ProductsComponent extends Component
      */
     public function mount(): void
     {
-        $this->categories = Category::all();
-        $this->suppliers = Supplier::all();
+        $this->categories = Category::with('children')->whereNull('parent_id')->get();
         $this->allTags = Tag::orderBy('display_order')->get();
         $this->initializeAddForm();
         $this->loadProductStatuses();
@@ -309,7 +300,6 @@ class ProductsComponent extends Component
             'is_active' => true,
             'description' => '',
             'category_id' => '',
-            'supplier_id' => '',
             'prices' => [
                 ['price' => '', 'currency' => 'TRY'],
                 ['price' => '', 'currency' => 'USD']
@@ -367,7 +357,7 @@ class ProductsComponent extends Component
     public function editProduct(int $productId): void
     {
         $this->resetValidation();
-        $this->editingProduct = Product::with(['category', 'supplier', 'prices', 'images', 'tags'])->find($productId);
+        $this->editingProduct = Product::with(['category', 'prices', 'images', 'tags'])->find($productId);
 
         if (!$this->editingProduct) {
             $this->dispatch('notify', [
@@ -405,7 +395,6 @@ class ProductsComponent extends Component
             'is_active' => $this->editingProduct->is_active,
             'description' => $this->editingProduct->description,
             'category_id' => $this->editingProduct->category_id,
-            'supplier_id' => $this->editingProduct->supplier_id,
             'prices' => $formattedPrices,
             'tags' => $this->editingProduct->tags->pluck('id')->toArray()
         ];
@@ -444,8 +433,7 @@ class ProductsComponent extends Component
                 'code' => $this->editForm['code'],
                 'is_active' => $this->editForm['is_active'],
                 'description' => $this->editForm['description'],
-                'category_id' => $this->editForm['category_id'],
-                'supplier_id' => $this->editForm['supplier_id']
+                'category_id' => $this->editForm['category_id']
             ]);
 
             // Update or create price in TRY
@@ -455,8 +443,8 @@ class ProductsComponent extends Component
                     'currency_id' => 1, // TRY
                 ],
                 [
-                    'base_price' => $this->editForm['prices'][0]['price'],
-                    'converted_price' => $this->editForm['prices'][0]['price'], // For TRY, base and converted are same
+                    'base_price' => $this->editForm['prices'][0]['price'] !== '' ? $this->editForm['prices'][0]['price'] : 0,
+                    'converted_price' => $this->editForm['prices'][0]['price'] !== '' ? $this->editForm['prices'][0]['price'] : 0, // For TRY, base and converted are same
                 ]
             );
 
@@ -467,21 +455,30 @@ class ProductsComponent extends Component
                     'currency_id' => 2, // USD
                 ],
                 [
-                    'base_price' => $this->editForm['prices'][1]['price'],
-                    'converted_price' => $this->editForm['prices'][1]['price'], // For USD prices, this will be updated by the scheduled job
+                    'base_price' => $this->editForm['prices'][1]['price'] !== '' ? $this->editForm['prices'][1]['price'] : 0,
+                    'converted_price' => $this->editForm['prices'][1]['price'] !== '' ? $this->editForm['prices'][1]['price'] : 0, // For USD prices, this will be updated by the scheduled job
                 ]
             );
 
             // Handle new images
             if (!empty($this->newImages)) {
                 $hasExistingImages = $this->editingProduct->images()->exists();
-
+                
                 foreach ($this->newImages as $index => $image) {
-                    $path = $image->store('products', 'public');
-                    $this->editingProduct->images()->create([
-                        'image_url' => $path,
-                        'is_primary' => !$hasExistingImages && $index === 0
-                    ]);
+                    try {
+                        $path = $image->store('products', 'public');
+                        $this->editingProduct->images()->create([
+                            'image_url' => $path,
+                            'is_primary' => !$hasExistingImages && $index === 0
+                        ]);
+                    } catch (\Exception $e) {
+                        logger()->error('Error uploading image', [
+                            'image_index' => $index,
+                            'error' => $e->getMessage()
+                        ]);
+                        // Continue with other images if one fails
+                        continue;
+                    }
                 }
             }
 
@@ -508,7 +505,7 @@ class ProductsComponent extends Component
 
             $this->dispatch('notify', [
                 'type' => 'error',
-                'message' => 'Failed to update product'
+                'message' => 'Failed to update product: ' . $e->getMessage()
             ]);
         }
     }
@@ -576,7 +573,6 @@ class ProductsComponent extends Component
         return Product::query()
             ->with([
                 'category',
-                'supplier',
                 'tags',
                 'prices' => function($query) {
                     $query->with('currency')
@@ -660,7 +656,8 @@ class ProductsComponent extends Component
     public function updatedNewImages()
     {
         $this->validate([
-            'newImages.*' => 'image|max:2048' // 5MB Max
+            'newImages' => 'array',
+            'newImages.*' => 'image|max:2048' // 2MB Max
         ]);
 
         $this->iteration++;
@@ -680,14 +677,11 @@ class ProductsComponent extends Component
                     }
                 }
 
-                // Remove from newImages array
-                $newImages = [];
-                foreach ($this->newImages as $i => $img) {
-                    if ($i !== $index) {
-                        $newImages[] = $img;
-                    }
-                }
-                $this->newImages = $newImages;
+                // Remove from newImages array using array_values to reindex
+                $this->newImages = collect($this->newImages)
+                    ->reject(fn($_, $i) => $i == $index)
+                    ->values()
+                    ->toArray();
 
                 // Reset upload progress for this image
                 unset($this->uploadProgress['newImages.' . $index]);
@@ -704,14 +698,11 @@ class ProductsComponent extends Component
                     }
                 }
 
-                // Remove from newProductImages array
-                $newProductImages = [];
-                foreach ($this->newProductImages as $i => $img) {
-                    if ($i !== $index) {
-                        $newProductImages[] = $img;
-                    }
-                }
-                $this->newProductImages = $newProductImages;
+                // Remove from newProductImages array using array_values to reindex
+                $this->newProductImages = collect($this->newProductImages)
+                    ->reject(fn($_, $i) => $i == $index)
+                    ->values()
+                    ->toArray();
 
                 // Reset upload progress for this image
                 unset($this->uploadProgress['newProductImages.' . $index]);
@@ -722,7 +713,8 @@ class ProductsComponent extends Component
     public function updatedNewProductImages(): void
     {
         $this->validate([
-            'newProductImages.*' => 'image|max:2048' // 5MB Max
+            'newProductImages' => 'array',
+            'newProductImages.*' => 'image|max:2048' // 2MB Max
         ]);
 
         $this->iteration++;
@@ -754,6 +746,12 @@ class ProductsComponent extends Component
     public function handleModalClose()
     {
         $this->editModalOpen = false;
+    }
+
+    public function handleAddModalClose()
+    {
+        $this->addModalOpen = false;
+        $this->initializeAddForm();
     }
 
     /**
@@ -954,22 +952,21 @@ class ProductsComponent extends Component
                 'serial' => $this->addForm['serial'],
                 'is_active' => $this->addForm['is_active'],
                 'description' => $this->addForm['description'],
-                'category_id' => $this->addForm['category_id'],
-                'supplier_id' => $this->addForm['supplier_id'],
+                'category_id' => $this->addForm['category_id']
             ]);
 
             // Create price in TRY
             $product->prices()->create([
                 'currency_id' => 1, // TRY
-                'base_price' => $this->addForm['prices'][0]['price'],
-                'converted_price' => $this->addForm['prices'][0]['price'], // For TRY, base and converted are same
+                'base_price' => $this->addForm['prices'][0]['price'] !== '' ? $this->addForm['prices'][0]['price'] : 0,
+                'converted_price' => $this->addForm['prices'][0]['price'] !== '' ? $this->addForm['prices'][0]['price'] : 0, // For TRY, base and converted are same
             ]);
 
             // Create price in USD
             $product->prices()->create([
                 'currency_id' => 2, // USD
-                'base_price' => $this->addForm['prices'][1]['price'],
-                'converted_price' => $this->addForm['prices'][1]['price'], // For USD prices, this will be updated by the scheduled job
+                'base_price' => $this->addForm['prices'][1]['price'] !== '' ? $this->addForm['prices'][1]['price'] : 0,
+                'converted_price' => $this->addForm['prices'][1]['price'] !== '' ? $this->addForm['prices'][1]['price'] : 0, // For USD prices, this will be updated by the scheduled job
             ]);
 
             // Sync tags if any are selected
@@ -978,13 +975,22 @@ class ProductsComponent extends Component
             }
 
             // Handle product images
-            if ($this->newProductImages) {
+            if (!empty($this->newProductImages)) {
                 foreach ($this->newProductImages as $index => $image) {
-                    $path = $image->store('products', 'public');
-                    $product->images()->create([
-                        'image_url' => $path,
-                        'is_primary' => $index === 0 // First image is primary
-                    ]);
+                    try {
+                        $path = $image->store('products', 'public');
+                        $product->images()->create([
+                            'image_url' => $path,
+                            'is_primary' => $index === 0 // First image is primary
+                        ]);
+                    } catch (\Exception $e) {
+                        logger()->error('Error uploading image', [
+                            'image_index' => $index, 
+                            'error' => $e->getMessage()
+                        ]);
+                        // Continue with other images if one fails
+                        continue;
+                    }
                 }
             }
 
@@ -1007,7 +1013,7 @@ class ProductsComponent extends Component
 
             $this->dispatch('notify', [
                 'type' => 'error',
-                'message' => 'Failed to create product'
+                'message' => 'Failed to create product: ' . $e->getMessage()
             ]);
         }
     }
@@ -1027,8 +1033,8 @@ class ProductsComponent extends Component
             'addForm.is_active' => 'boolean',
             'addForm.description' => 'required|min:10|max:1000',
             'addForm.category_id' => 'required|exists:categories,id',
-            'addForm.supplier_id' => 'required|exists:suppliers,id',
-            'addForm.prices.*.price' => 'required|numeric|min:0',
+            'addForm.prices.*.price' => 'nullable|numeric|min:0',
+            'newProductImages' => 'nullable|array',
             'newProductImages.*' => 'image|max:2048',
             'addForm.tags' => 'array',
             'addForm.tags.*' => 'exists:tags,id'
@@ -1050,8 +1056,8 @@ class ProductsComponent extends Component
             'editForm.is_active' => 'boolean',
             'editForm.description' => 'required|min:10',
             'editForm.category_id' => 'required|exists:categories,id',
-            'editForm.supplier_id' => 'nullable|exists:suppliers,id',
-            'editForm.prices.*.price' => 'required|numeric|min:0',
+            'editForm.prices.*.price' => 'nullable|numeric|min:0',
+            'newImages' => 'nullable|array',
             'newImages.*' => 'image|max:2048',
         ];
     }
@@ -1195,5 +1201,30 @@ class ProductsComponent extends Component
     public function toggleAddFormVisibility(): void
     {
         $this->addForm['is_active'] = !$this->addForm['is_active'];
+    }
+
+    /**
+     * Get the category tree for the dropdown
+     */
+    public function getCategoryTree(): array
+    {
+        return $this->categories->map(function ($category) {
+            return [
+                'id' => $category->id,
+                'name' => $category->name,
+                'children' => $category->children->map(function ($child) {
+                    return [
+                        'id' => $child->id,
+                        'name' => $child->name,
+                        'children' => $child->children->map(function ($grandChild) {
+                            return [
+                                'id' => $grandChild->id,
+                                'name' => $grandChild->name
+                            ];
+                        })->toArray()
+                    ];
+                })->toArray()
+            ];
+        })->toArray();
     }
 }

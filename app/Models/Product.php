@@ -24,10 +24,8 @@ use Spatie\Sluggable\SlugOptions;
  * @property string $code Product code/SKU
  * @property string $description Detailed product description
  * @property int $category_id Foreign key to categories table
- * @property int $supplier_id Foreign key to suppliers table
  * @property bool $is_active Whether product is active
  * @property-read Category $category Product category relationship
- * @property-read Supplier $supplier Product supplier relationship
  * @property-read \Illuminate\Database\Eloquent\Collection<ProductPrice> $prices Product prices in different currencies
  * @property-read \Illuminate\Database\Eloquent\Collection<ProductImage> $images Product images
  * @property-read \Illuminate\Database\Eloquent\Collection<Tag> $tags Product tags
@@ -50,8 +48,7 @@ class Product extends Model
         'code',
         'is_active',
         'description',
-        'category_id',
-        'supplier_id'
+        'category_id'
     ];
 
     /**
@@ -97,16 +94,6 @@ class Product extends Model
     public function category(): BelongsTo
     {
         return $this->belongsTo(Category::class);
-    }
-
-    /**
-     * Get the supplier that owns the product.
-     *
-     * @return BelongsTo<Supplier, Product>
-     */
-    public function supplier(): BelongsTo
-    {
-        return $this->belongsTo(Supplier::class);
     }
 
     /**

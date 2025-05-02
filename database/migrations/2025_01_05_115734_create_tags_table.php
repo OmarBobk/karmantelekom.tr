@@ -15,7 +15,7 @@ return new class extends Migration
             $table->string('background_color')->default('#FFFFFF');
             $table->string('border_color')->nullable();
             $table->string('icon')->nullable();
-            $table->boolean('is_featured')->default(false);
+            $table->boolean('is_active')->default(false);
             $table->integer('display_order')->default(0);
             $table->timestamps();
         });

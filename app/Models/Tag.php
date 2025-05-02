@@ -18,8 +18,12 @@ class Tag extends Model
         'background_color',
         'border_color',
         'icon',
-        'is_featured',
+        'is_active',
         'display_order'
+    ];
+
+    protected $casts = [
+        'is_active' => 'boolean',
     ];
 
     public function products(): BelongsToMany

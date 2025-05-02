@@ -1,0 +1,3 @@
+<div>
+    AdsComponent
+</div>
