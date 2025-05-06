@@ -7,6 +7,7 @@ use Illuminate\Support\Collection;
 use Livewire\Attributes\Computed;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
+use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\WithFileUploads;
@@ -211,6 +212,8 @@ class CategoryComponent extends Component
         return $result;
     }
 
+    #[Layout('layouts.backend')]
+    #[Title('Categories Manager')]
     public function render()
     {
         return view('livewire.backend.categories.category-component', [

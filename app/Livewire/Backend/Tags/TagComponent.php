@@ -7,6 +7,7 @@ use App\Models\Tag;
 use Illuminate\Contracts\View\View;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
@@ -286,7 +287,7 @@ class TagComponent extends Component
             $tag = Tag::findOrFail($tagId);
             $tag->is_active = !$tag->is_active;
             $tag->save();
-            
+
             $status = $tag->is_active ? 'activated' : 'deactivated';
             $this->dispatch('notify', [
                 'type' => 'success',
@@ -301,6 +302,7 @@ class TagComponent extends Component
     }
 
     #[Layout('layouts.backend')]
+    #[Title('Tags Manager')]
     public function render(): View
     {
         return view('livewire.backend.tags.tag-component', [

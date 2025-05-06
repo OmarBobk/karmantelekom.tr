@@ -48,18 +48,19 @@
             </div>
         </div>
 
-        <!-- Total Customers Card -->
+        <!-- Total Website Visits Card -->
         <div class="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
             <div class="p-6">
                 <div class="flex items-center">
                     <div class="inline-flex flex-shrink-0 items-center justify-center h-16 w-16 text-purple-600 bg-purple-100 rounded-lg">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
                         </svg>
                     </div>
                     <div class="ml-4">
-                        <h2 class="mb-2 text-sm font-medium text-gray-600">Total Customers</h2>
-                        <p class="text-2xl font-semibold text-gray-900">{{ number_format($totalCustomers) }}</p>
+                        <h2 class="mb-2 text-sm font-medium text-gray-600">Total Website Visits</h2>
+                        <p class="text-2xl font-semibold text-gray-900">{{ number_format($totalVisitors) }}</p>
                         <p class="mt-1 text-sm">
                             <span class="font-medium text-green-600">↑ 18%</span>
                             <span class="text-gray-600">vs last month</span>
@@ -69,20 +70,20 @@
             </div>
         </div>
 
-        <!-- Total Orders Card -->
+        <!-- Total Active Users Card -->
         <div class="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
             <div class="p-6">
                 <div class="flex items-center">
                     <div class="inline-flex flex-shrink-0 items-center justify-center h-16 w-16 text-indigo-600 bg-indigo-100 rounded-lg">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-3 7h3m-3 4h3m-6-4h.01M9 16h.01"></path>
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
                         </svg>
                     </div>
                     <div class="ml-4">
-                        <h2 class="mb-2 text-sm font-medium text-gray-600">Total Orders</h2>
-                        <p class="text-2xl font-semibold text-gray-900">{{ number_format($totalOrders) }}</p>
+                        <h2 class="mb-2 text-sm font-medium text-gray-600">Total Active Users</h2>
+                        <p class="text-2xl font-semibold text-gray-900">{{ number_format($totalActiveUsers) }}</p>
                         <p class="mt-1 text-sm">
-                            <span class="font-medium text-red-600">↓ 4%</span>
+                            <span class="font-medium text-green-600">↑ 7%</span>
                             <span class="text-gray-600">vs last month</span>
                         </p>
                     </div>
@@ -100,8 +101,8 @@
                         </svg>
                     </div>
                     <div class="ml-4">
-                        <h2 class="mb-2 text-sm font-medium text-gray-600">Total Revenue</h2>
-                        <p class="text-2xl font-semibold text-gray-900">${{ number_format($totalRevenue) }}</p>
+                        <h2 class="mb-2 text-sm font-medium text-gray-600">New Vs Returning Users</h2>
+                        <p class="text-2xl font-semibold text-gray-900">{{ number_format($totalNewUsers) }} / {{ number_format($totalReturningUsers) }}</p>
                         <p class="mt-1 text-sm">
                             <span class="font-medium text-green-600">↑ 8%</span>
                             <span class="text-gray-600">vs last month</span>
@@ -118,7 +119,7 @@
         <div class="bg-white rounded-lg shadow-lg">
             <div class="p-0 sm:p-6">
                 <div class="flex flex-wrap items-center justify-between p-4 sm:p-0">
-                    <h2 class="text-lg font-medium text-gray-900">Sales Overview</h2>
+                    <h2 class="text-lg font-medium text-gray-900">Website Visits Overview</h2>
                     <div class="flex items-center">
                         <div class="relative">
                             <button class="p-2 hover:bg-gray-100 rounded-full">
@@ -135,56 +136,95 @@
                     </div>
                 </div>
                 <div
+                    wire:ignore.self
                     x-data="{
                         chart: null,
-                        chartData: @js($salesData),
+                        isInitialized: false,
 
                         init() {
-                            this.$nextTick(() => {
-                                if (typeof Chart === 'undefined') {
-                                    console.error('Chart.js not loaded');
-                                    return;
-                                }
-                                this.initChart();
-                            });
+                            // Initial setup
+                            this.initChart(@js($salesData));
 
-                            this.$watch('chartData', () => {
-                                if (this.chart) {
-                                    this.updateChartData();
-                                }
+                            // Listen for changes in data from Livewire
+                            this.$wire.$on('salesDataUpdated', (newData) => {
+                                console.log('Received new chart data:', newData);
+                                this.refreshChart(newData);
                             });
                         },
 
-                        initChart() {
-                            const canvas = this.$refs.canvas;
-                            if (!canvas) return;
-
-                            const ctx = canvas.getContext('2d');
-                            if (!ctx) return;
-
-                            if (this.chart) {
-                                this.chart.destroy();
+                        initChart(data) {
+                            // Make sure we have valid data
+                            if (!data || !data.labels || !data.data) {
+                                console.error('Invalid chart data provided', data);
+                                return;
                             }
 
+                            console.log('Initializing chart with data:', data);
+
+                            // Clean up existing chart
+                            if (this.chart) {
+                                this.chart.destroy();
+                                this.chart = null;
+                            }
+
+                            const canvas = this.$refs.canvas;
+                            if (!canvas) {
+                                console.error('Canvas element not found');
+                                return;
+                            }
+
+                            const ctx = canvas.getContext('2d');
+                            if (!ctx) {
+                                console.error('Canvas context not available');
+                                return;
+                            }
+
+                            // Create the chart
                             this.chart = new Chart(ctx, {
                                 type: 'line',
                                 data: {
-                                    labels: this.chartData?.labels || [],
+                                    labels: data.labels,
                                     datasets: [{
-                                        label: 'Sales',
-                                        data: this.chartData?.data || [],
+                                        label: 'Page Views',
+                                        data: data.data,
                                         borderColor: 'rgb(59, 130, 246)',
                                         backgroundColor: 'rgba(59, 130, 246, 0.1)',
                                         tension: 0.4,
-                                        fill: true
+                                        fill: true,
+                                        pointRadius: 4,
+                                        pointHoverRadius: 6,
+                                        pointBackgroundColor: 'rgb(59, 130, 246)',
+                                        pointBorderColor: '#fff',
+                                        pointBorderWidth: 2,
+                                        pointHoverBackgroundColor: 'rgb(59, 130, 246)',
+                                        pointHoverBorderColor: '#fff',
+                                        pointHoverBorderWidth: 2
                                     }]
                                 },
                                 options: {
                                     responsive: true,
                                     maintainAspectRatio: false,
+                                    animation: {
+                                        duration: 0
+                                    },
+                                    interaction: {
+                                        mode: 'index',
+                                        intersect: false
+                                    },
                                     plugins: {
                                         legend: {
                                             display: false
+                                        },
+                                        tooltip: {
+                                            mode: 'index',
+                                            intersect: false,
+                                            backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                            titleColor: '#fff',
+                                            bodyColor: '#fff',
+                                            borderColor: 'rgba(0, 0, 0, 0.8)',
+                                            borderWidth: 1,
+                                            padding: 10,
+                                            displayColors: false
                                         }
                                     },
                                     scales: {
@@ -192,29 +232,53 @@
                                             beginAtZero: true,
                                             grid: {
                                                 display: true,
-                                                drawBorder: false
+                                                drawBorder: false,
+                                                color: 'rgba(0, 0, 0, 0.05)'
+                                            },
+                                            ticks: {
+                                                color: '#6b7280',
+                                                font: {
+                                                    size: 12
+                                                }
                                             }
                                         },
                                         x: {
                                             grid: {
                                                 display: false
+                                            },
+                                            ticks: {
+                                                color: '#6b7280',
+                                                font: {
+                                                    size: 12
+                                                },
+                                                maxRotation: 45,
+                                                minRotation: 45
                                             }
                                         }
                                     }
                                 }
                             });
+
+                            this.isInitialized = true;
                         },
 
-                        updateChartData() {
-                            if (!this.chart) return;
+                        refreshChart(newData) {
+                            console.log('Refreshing chart with new data:', newData);
 
-                            this.chart.data.labels = this.chartData?.labels || [];
-                            this.chart.data.datasets[0].data = this.chartData?.data || [];
-                            this.chart.update('none');
+                            // Handle nested data structure
+                            const chartData = newData.data || newData;
+
+                            // Make sure we have valid data
+                            if (!chartData || !chartData.labels || !chartData.data) {
+                                console.error('Invalid chart data provided for refresh', chartData);
+                                return;
+                            }
+
+                            // Completely destroy and recreate the chart
+                            this.initChart(chartData);
                         }
                     }"
-                    @chart-data-updated.window="chartData = $event.detail"
-                    wire:ignore
+                    x-init="init()"
                     class="relative w-full aspect-[16/9] sm:aspect-[21/9] p-4 sm:p-0"
                 >
                     <canvas x-ref="canvas" class="w-full h-full"></canvas>
@@ -295,77 +359,51 @@
             <div class="p-6">
                 <h2 class="text-lg font-medium text-gray-900 mb-4">Quick Actions</h2>
                 <div class="space-y-4">
-                    <button class="inline-flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    <button wire:click="addNewProduct" class="inline-flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                         </svg>
                         Add New Product
                     </button>
-                    <button class="inline-flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
+                    <a href="{{route('subdomain.sections')}}" class="inline-flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 mr-2">
+                            <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
+                            <path fill-rule="evenodd" d="M1.323 11.447C2.811 6.976 7.028 3.75 12.001 3.75c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113-1.487 4.471-5.705 7.697-10.677 7.697-4.97 0-9.186-3.223-10.675-7.69a1.762 1.762 0 0 1 0-1.113ZM17.25 12a5.25 5.25 0 1 1-10.5 0 5.25 5.25 0 0 1 10.5 0Z" clip-rule="evenodd" />
                         </svg>
-                        View Orders
-                    </button>
-                    <button class="inline-flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path>
+
+                        View Sections
+                    </a>
+                    <a href="{{route('subdomain.settings')}}" class="inline-flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 mr-2">
+                            <path fill-rule="evenodd" d="M12 6.75a5.25 5.25 0 0 1 6.775-5.025.75.75 0 0 1 .313 1.248l-3.32 3.319c.063.475.276.934.641 1.299.365.365.824.578 1.3.64l3.318-3.319a.75.75 0 0 1 1.248.313 5.25 5.25 0 0 1-5.472 6.756c-1.018-.086-1.87.1-2.309.634L7.344 21.3A3.298 3.298 0 1 1 2.7 16.657l8.684-7.151c.533-.44.72-1.291.634-2.309A5.342 5.342 0 0 1 12 6.75ZM4.117 19.125a.75.75 0 0 1 .75-.75h.008a.75.75 0 0 1 .75.75v.008a.75.75 0 0 1-.75.75h-.008a.75.75 0 0 1-.75-.75v-.008Z" clip-rule="evenodd" />
                         </svg>
-                        View Reports
-                    </button>
+
+                        Go To Settings
+                    </a>
+                    <a href="{{config('app.url')}}" class="inline-flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500">
+                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
+                        </svg>
+                        Vist the Store
+                    </a>
                 </div>
             </div>
         </div>
-
-        <!-- Recent Activity -->
         <div class="bg-white rounded-lg shadow-lg md:col-span-2">
             <div class="p-6">
-                <h2 class="text-lg font-medium text-gray-900 mb-4">Recent Activity</h2>
-                <div class="space-y-4">
-                    <div class="flex items-start space-x-4">
-                        <div class="flex-shrink-0">
-                            <div class="w-8 h-8 rounded-full bg-blue-100 flex items-center justify-center">
-                                <svg class="w-4 h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
-                                </svg>
-                            </div>
-                        </div>
-                        <div class="flex-1">
-                            <p class="text-sm font-medium text-gray-900">New product added</p>
-                            <p class="text-sm text-gray-600">iPhone 15 Pro Max was added to the store</p>
-                            <p class="text-xs text-gray-500 mt-1">2 hours ago</p>
-                        </div>
-                    </div>
-                    <div class="flex items-start space-x-4">
-                        <div class="flex-shrink-0">
-                            <div class="w-8 h-8 rounded-full bg-green-100 flex items-center justify-center">
-                                <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                            </div>
-                        </div>
-                        <div class="flex-1">
-                            <p class="text-sm font-medium text-gray-900">Order completed</p>
-                            <p class="text-sm text-gray-600">Order #1234 was completed</p>
-                            <p class="text-xs text-gray-500 mt-1">3 hours ago</p>
-                        </div>
-                    </div>
-                    <div class="flex items-start space-x-4">
-                        <div class="flex-shrink-0">
-                            <div class="w-8 h-8 rounded-full bg-yellow-100 flex items-center justify-center">
-                                <svg class="w-4 h-4 text-yellow-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                </svg>
-                            </div>
-                        </div>
-                        <div class="flex-1">
-                            <p class="text-sm font-medium text-gray-900">Low stock alert</p>
-                            <p class="text-sm text-gray-600">Product "MacBook Pro" is running low on stock</p>
-                            <p class="text-xs text-gray-500 mt-1">5 hours ago</p>
-                        </div>
-                    </div>
-                </div>
+                <h2 class="text-lg font-medium text-gray-900 mb-4">Most Viewed Products</h2>
+                <ul class="divide-y divide-gray-200">
+                    @forelse($mostViewedProducts as $product)
+                        <li class="py-2 flex justify-between">
+                            <a href="{{ $product['url'] }}" class="font-medium text-blue-700 hover:underline" target="_blank">
+                                {{ $product['name'] }}
+                            </a>
+                            <span class="text-gray-500">{{ $product['views'] }} views</span>
+                        </li>
+                    @empty
+                        <li class="py-2 text-gray-500">No view data available.</li>
+                    @endforelse
+                </ul>
             </div>
         </div>
     </div>

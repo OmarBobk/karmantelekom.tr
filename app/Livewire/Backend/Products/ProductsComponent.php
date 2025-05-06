@@ -12,6 +12,7 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithFileUploads;
 use Livewire\WithPagination;
@@ -280,6 +281,9 @@ class ProductsComponent extends Component
      */
     public function mount(): void
     {
+        if (session('openAddProductModal')) {
+            $this->addModalOpen = true;
+        }
         $this->categories = Category::with('children')->whereNull('parent_id')->get();
         $this->allTags = Tag::orderBy('display_order')->get();
         $this->initializeAddForm();
@@ -309,6 +313,7 @@ class ProductsComponent extends Component
         $this->newProductImages = [];
         $this->resetValidation('addForm.*');
         $this->reset(['addForm', 'newProductImages']);
+        session()->forget('openAddProductModal');
     }
 
     public function updatingAddModalOpen(): void
@@ -463,7 +468,7 @@ class ProductsComponent extends Component
             // Handle new images
             if (!empty($this->newImages)) {
                 $hasExistingImages = $this->editingProduct->images()->exists();
-                
+
                 foreach ($this->newImages as $index => $image) {
                     try {
                         $path = $image->store('products', 'public');
@@ -985,7 +990,7 @@ class ProductsComponent extends Component
                         ]);
                     } catch (\Exception $e) {
                         logger()->error('Error uploading image', [
-                            'image_index' => $index, 
+                            'image_index' => $index,
                             'error' => $e->getMessage()
                         ]);
                         // Continue with other images if one fails
@@ -1068,6 +1073,7 @@ class ProductsComponent extends Component
      * @return \Illuminate\View\View
      */
     #[Layout('layouts.backend')]
+    #[Title('Products Manager')]
     public function render()
     {
         return view('livewire.backend.products.products-component', [

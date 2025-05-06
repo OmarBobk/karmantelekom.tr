@@ -13,13 +13,19 @@
         x-transition:leave-start="opacity-100"
         x-transition:leave-end="opacity-0"
         style="display: none;"
+        role="alert"
+        aria-live="polite"
+        aria-busy="true"
     >
         <div class="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-            <div class="bg-white/80 backdrop-blur-sm shadow-xl rounded-lg px-6 py-4 flex items-center gap-3">
-                <svg class="animate-spin size-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
+            <div class="bg-white/90 backdrop-blur-sm shadow-xl rounded-lg px-6 py-4 flex items-center gap-3 border border-gray-200/50">
+                <div class="relative">
+                    <svg class="animate-spin size-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    <span class="sr-only">Loading</span>
+                </div>
                 <span class="text-sm font-medium text-gray-900">Updating prices...</span>
             </div>
         </div>
@@ -97,11 +103,12 @@
                         @click="scrollTabsLeft"
                         class="relative ml-1 size-8 flex items-center justify-center rounded-full bg-white shadow-md border border-gray-200/50
                             text-gray-400 hover:text-gray-600 transition-all duration-200
-                            opacity-0 hover:bg-gray-50"
+                            opacity-0 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                         :class="{ 'opacity-100': !atStart }"
                         x-show="!atStart"
+                        aria-label="Scroll categories left"
                     >
-                        <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                         </svg>
                     </button>
@@ -119,11 +126,12 @@
                         @click="scrollTabsRight"
                         class="relative mr-1 size-8 flex items-center justify-center rounded-full bg-white shadow-md border border-gray-200/50
                             text-gray-400 hover:text-gray-600 transition-all duration-200
-                            opacity-0 hover:bg-gray-50"
+                            opacity-0 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                         :class="{ 'opacity-100': !atEnd }"
                         x-show="!atEnd"
+                        aria-label="Scroll categories right"
                     >
-                        <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                         </svg>
                     </button>
@@ -139,28 +147,27 @@
                 >
                     <div class="flex flex-nowrap border-b border-gray-200" x-cloak>
                         <div class="flex flex-nowrap whitespace-nowrap">
-
-                        @if(empty($sections))
-                            <p class="text-gray-500">No sections found</p>
-                        @else
-                            @forelse($sections as $index => $section)
-                                <button
-                                    x-on:click="$wire.activeCategory = {{ $index }}"
-
-                                    class="px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-900 transition-all duration-200 whitespace-nowrap border-b-2 border-transparent"
-                                    :class="$wire.activeCategory === {{ $index }} ? '!text-blue-600 !border-blue-600' : ''"
-                                    role="tab"
-                                    :aria-selected="$wire.activeCategory === {{ $index }}"
-                                    aria-controls="panel-{{ $index }}"
-                                    id="tab-{{ $index }}"
-                                    x-cloak
-                                >
-                                    {{ $section->name }}
-                                </button>
-                            @empty
-                                <p class="text-gray-500">No sections found</p>
-                            @endforelse
-                        @endif
+                            @if(empty($sections))
+                                <p class="text-gray-500 px-4 py-2">No sections found</p>
+                            @else
+                                @forelse($sections as $index => $section)
+                                    <button
+                                        x-on:click="$wire.activeCategory = {{ $index }}"
+                                        class="px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-900 transition-all duration-200 whitespace-nowrap border-b-2 border-transparent
+                                            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white rounded-t-lg"
+                                        :class="$wire.activeCategory === {{ $index }} ? '!text-blue-600 !border-blue-600' : ''"
+                                        role="tab"
+                                        :aria-selected="$wire.activeCategory === {{ $index }}"
+                                        aria-controls="panel-{{ $index }}"
+                                        id="tab-{{ $index }}"
+                                        x-cloak
+                                    >
+                                        {{ $section->name }}
+                                    </button>
+                                @empty
+                                    <p class="text-gray-500 px-4 py-2">No sections found</p>
+                                @endforelse
+                            @endif
                         </div>
                     </div>
                 </nav>
@@ -175,11 +182,12 @@
                     <!-- Left Navigation Button -->
                     <button
                         @click="scrollLeft($wire.activeCategory)"
-                        class="hidden lg:flex items-center justify-center size-10 rounded-full bg-white hover:bg-gray-50 text-gray-600 hover:text-gray-900 shadow-lg border border-gray-200 absolute -left-2 md:-left-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 z-10 transition-all duration-200"
+                        class="hidden lg:flex items-center justify-center size-10 rounded-full bg-white hover:bg-gray-50 text-gray-600 hover:text-gray-900 shadow-lg border border-gray-200 absolute -left-2 md:-left-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 z-10 transition-all duration-200
+                            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                         :class="{ 'pointer-events-none opacity-50': atStart }"
-                        aria-label="Scroll left"
+                        aria-label="Scroll products left"
                     >
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                         </svg>
                     </button>
@@ -187,11 +195,12 @@
                     <!-- Right Navigation Button -->
                     <button
                         @click="scrollRight($wire.activeCategory)"
-                        class="hidden lg:flex items-center justify-center size-10 rounded-full bg-white hover:bg-gray-50 text-gray-600 hover:text-gray-900 shadow-lg border border-gray-200 absolute -right-2 md:-right-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 z-10 transition-all duration-200"
+                        class="hidden lg:flex items-center justify-center size-10 rounded-full bg-white hover:bg-gray-50 text-gray-600 hover:text-gray-900 shadow-lg border border-gray-200 absolute -right-2 md:-right-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 z-10 transition-all duration-200
+                            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                         :class="{ 'pointer-events-none opacity-50': atEnd }"
-                        aria-label="Scroll right"
+                        aria-label="Scroll products right"
                     >
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
                         </svg>
                     </button>
@@ -217,30 +226,33 @@
                                 <div class="relative overflow-hidden" x-cloak>
                                     <div
                                         x-ref="slider-{{ $index }}"
-                                        class="flex lg:ronded md:rounded-none sm:rounded-2xl overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory"
+                                        class="flex lg:rounded md:rounded-none sm:rounded-2xl overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory"
                                         @scroll.debounce.50ms="updateScrollButtons($wire.activeCategory)"
+                                        role="list"
+                                        aria-label="Products in {{ $section->name }}"
                                     >
                                         @foreach($section->products as $product)
-                                            <div class="flex-none w-72 snap-start p-4">
-                                                <div class="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
-                                                    <figure class="relative aspect-w-1 aspect-h-1 w-full overflow-hidden bg-gray-50">
+                                            <div class="flex-none w-72 snap-start p-4" role="listitem">
+                                                <div class="bg-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100">
+                                                    <figure class="relative aspect-w-1 aspect-h-1 w-full overflow-hidden bg-gray-50 rounded-t-lg">
                                                         <img src="{{ Storage::url($product->images->where('is_primary', true)->first()->image_url)}}"
                                                             alt="{{ $product->name }}"
-                                                            class="h-[17.60rem] w-full object-contain group-hover/card:scale-105 transition-transform duration-300">
+                                                            class="h-[17.60rem] w-full object-contain group-hover/card:scale-105 transition-transform duration-300"
+                                                            loading="lazy"
+                                                        >
                                                     </figure>
                                                     <div class="p-4">
                                                         <!-- Product Info Header -->
                                                         <div class="mb-3">
                                                             <p class="text-sm text-gray-500">{{ $section->name }}</p>
                                                             <div class="line-clamp-2">
-                                                                <span class="text-base font-medium text-gray-900">{{ $product->name }}</span>
-                                                                <span class="text-sm text-gray-500">{{ $product->description }}</span>
+                                                                <h3 class="text-base font-medium text-gray-900">{{ $product->name }}</h3>
+                                                                <p class="text-sm text-gray-500">{{ $product->description }}</p>
                                                             </div>
                                                         </div>
 
                                                         <!-- Price and Quantity Control on same line -->
                                                         <div class="flex items-center justify-between">
-
                                                             <!-- Product Price -->
                                                             <div>
                                                                 @if($product->prices->isNotEmpty())
@@ -248,36 +260,8 @@
                                                                         {{ $product->prices->first()->getFormattedPrice() }}
                                                                     </p>
                                                                 @else
-                                                                    <p class="text-xl font-semibold text-gray-400">Price not available</p>
+                                                                    <p class="text-sm text-gray-500">Price not available</p>
                                                                 @endif
-                                                            </div>
-
-                                                            <!-- Quantity Control -->
-                                                            <div x-data="{showProductModal: false }"
-                                                                 @click.away="showProductModal = false;"
-                                                                 class="flex items-center gap-2"
-                                                            >
-                                                                <!-- Add Button -->
-                                                                <button
-                                                                    @click="showProductModal = true;"
-                                                                    x-show="!showProductModal"
-                                                                    class="inline-flex items-center justify-center size-8 rounded-full bg-blue-600 text-white hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
-                                                                    aria-label="Add to cart"
-                                                                >
-                                                                    <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor"
-                                                                         class="h-5 w-5">
-                                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
-                                                                        <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                                                                    </svg>
-
-                                                                </button>
-
-                                                                <!-- Quantity Controls -->
-                                                                <div x-show="showProductModal" class="flex flex-col items-center gap-1">
-                                                                    <div class="flex rounded-lg overflow-hidden">
-                                                                        Product Modal
-                                                                    </div>
-                                                                </div>
                                                             </div>
                                                         </div>
                                                     </div>
@@ -288,7 +272,9 @@
                                 </div>
                             </div>
                         @empty
-                            <p class="text-gray-500">No products found</p>
+                            <div class="text-center py-12">
+                                <p class="text-gray-500">No products found in this section</p>
+                            </div>
                         @endforelse
                         @endif
                     </div>
@@ -502,44 +488,17 @@
                                             <!-- Product Card -->
                                             <div class="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
                                                 <!-- Image Slider -->
-                                                <div class="relative aspect-w-1 aspect-h-1 w-full overflow-hidden h-48 bg-gray-100 rounded-md"
-                                                    x-on:touchstart="touchStartX = $event.touches[0].clientX"
-                                                    x-on:touchend="
-                                                        touchEndX = $event.changedTouches[0].clientX;
-                                                        if (touchStartX - touchEndX > 50) nextSlide();
-                                                        if (touchEndX - touchStartX > 50) prevSlide();
-                                                    ">
-                                                    @foreach($product->images as $index => $image)
-                                                        <img src="{{ Storage::url($image->image_url) }}"
-                                                            alt="{{ $product->name }} - Image {{ $index + 1 }}"
-                                                            class="absolute h-full w-full object-cover object-center transition-opacity duration-300"
-                                                            :class="{ 'opacity-100': currentSlide === {{ $index + 1 }}, 'opacity-0': currentSlide !== {{ $index + 1 }} }">
-                                                    @endforeach
-
-                                                    <!-- Navigation Arrows -->
-                                                    <button @click="prevSlide"
-                                                            class="absolute left-2 top-1/2 -translate-y-1/2 p-1 rounded-full bg-white/80 hover:bg-white text-gray-800 opacity-0 group-hover/card:opacity-100 transition-opacity">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7" />
-                                                        </svg>
-                                                    </button>
-
-                                                    <button @click="nextSlide"
-                                                            class="absolute right-2 top-1/2 -translate-y-1/2 p-1 rounded-full bg-white/80 hover:bg-white text-gray-800 opacity-0 group-hover/card:opacity-100 transition-opacity">
-                                                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
-                                                        </svg>
-                                                    </button>
-
-                                                    <!-- Slider Controls -->
-                                                    <div class="absolute bottom-[.125rem] left-0 right-0 flex justify-center gap-1">
-                                                        @for($dotIndex = 1; $dotIndex <= 3; $dotIndex++)
-                                                            <button @click="goToSlide({{ $dotIndex }})"
-                                                                    class="w-2 h-2 rounded-full transition-all duration-200"
-                                                                    :class="currentSlide === {{ $dotIndex }} ? 'bg-gray-900/50 scale-125' : 'bg-gray-200'">
-                                                            </button>
-                                                        @endfor
-                                                    </div>
+                                                <div class="relative aspect-w-1 aspect-h-1 w-full overflow-hidden h-48 bg-gray-100 rounded-md">
+{{--                                                    x-on:touchstart="touchStartX = $event.touches[0].clientX"--}}
+{{--                                                    x-on:touchend="--}}
+{{--                                                        touchEndX = $event.changedTouches[0].clientX;--}}
+{{--                                                        if (touchStartX - touchEndX > 50) nextSlide();--}}
+{{--                                                        if (touchEndX - touchStartX > 50) prevSlide();--}}
+{{--                                                    ">--}}
+                                                <img src="{{ Storage::url($product->images->where('is_primary', true)->first()->image_url) }}"
+                                                     alt="{{ $product->name }} - Image {{ $index + 1 }}"
+                                                     class="absolute h-full w-full object-cover object-center transition-opacity duration-300 opacity-100"
+                                                     loading="lazy">
                                                 </div>
 
                                                 <!-- Product Info -->
@@ -560,29 +519,6 @@
                                                             @else
                                                                 <p class="text-xl font-semibold text-gray-400">Price not available</p>
                                                             @endif
-                                                        </div>
-
-                                                        <!-- Quantity Controls -->
-                                                        <div class="" @click.away="showProductModal = false;" x-cloak>
-                                                            <button
-                                                                @click="showProductModal = true;"
-                                                                x-show="!showProductModal"
-                                                                class="w-full p-1 text-white bg-gradient-to-r from-blue-500 to-blue-600 rounded-full hover:from-blue-600 hover:to-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition duration-200"
-                                                                x-cloak
-                                                            >
-                                                                <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" x-cloak
-                                                                     class="h-5 w-5 mx-auto">
-                                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M2.036 12.322a1.012 1.012 0 0 1 0-.639C3.423 7.51 7.36 4.5 12 4.5c4.638 0 8.573 3.007 9.963 7.178.07.207.07.431 0 .639C20.577 16.49 16.64 19.5 12 19.5c-4.638 0-8.573-3.007-9.963-7.178Z" />
-                                                                    <path stroke-linecap="round" stroke-linejoin="round" d="M15 12a3 3 0 1 1-6 0 3 3 0 0 1 6 0Z" />
-                                                                </svg>
-
-                                                            </button>
-
-                                                            <div x-show="showProductModal" class="space-y-2" x-cloak>
-                                                                <div class="flex items-center justify-between" x-cloak>
-                                                                   Product Modal
-                                                                </div>
-                                                            </div>
                                                         </div>
                                                     </div>
                                                 </div>

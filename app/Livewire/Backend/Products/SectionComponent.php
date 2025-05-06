@@ -7,6 +7,7 @@ use App\Models\Product;
 use App\Models\Section;
 use App\Models\Tag;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithPagination;
 use Livewire\Attributes\Computed;
@@ -220,6 +221,7 @@ class SectionComponent extends Component
     }
 
     #[Layout('layouts.backend')]
+    #[Title('Section Manager')]
     public function render()
     {
         return view('livewire.backend.products.section-component', [

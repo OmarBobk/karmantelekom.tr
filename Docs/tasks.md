@@ -7,12 +7,15 @@
 - ###DONE: in the edit / add product modal, don't show the categroies that has children categories.
 - ###DONE: create the tags management page.
 - ###DONE: add is_active field to the tags table.
+- ###DONE: set the dashboard management page.
+- 
+- ###TODO: udpate the most viewed products in the dashboard when you finish the products visualization on the frontend.
 - ###TODO: create the settings management page.
 - ###TODO: create the Users management page.
-- ###TODO: set the dashboard management page.
 - ###TODO: create the ads manager.
 
 ### Frontend
+- ###TODO: remove Login button.
 - ###TODO: Create a new page to show the product with filters like by category, by price, by brand, by color, by size.
 - ###TODO: Create a single product Modal it will be shown when the user clicks on the product in everywhere in the website.
 - ###TODO: Create a Contact us page.

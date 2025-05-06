@@ -6,15 +6,19 @@ namespace App\Livewire\Backend;
 
 use App\Models\Product;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Title;
 use Livewire\Component;
 use Carbon\Carbon;
+use Spatie\Analytics\Facades\Analytics;
+use Spatie\Analytics\Period;
 
 class DashboardComponent extends Component
 {
     public int $totalProducts = 0;
-    public int $totalCustomers = 0;
-    public int $totalOrders = 0;
-    public float $totalRevenue = 0;
+    public int $totalVisitors = 0;
+    public int $totalActiveUsers = 0;
+    public int $totalNewUsers = 0;
+    public int $totalReturningUsers = 0;
     public array $recentProducts = [];
     public array $salesData = [];
     public string $period = 'week';
@@ -32,12 +36,67 @@ class DashboardComponent extends Component
         // Get recent products
         $this->loadRecentProducts();
 
+        // Get total website visitors (last 30 days)
+        $this->loadVisitorsData();
+
+        // Get total active users (last 30 days)
+        $this->loadActiveUsersData();
+
         // Placeholder data - replace with actual models when available
-        $this->totalCustomers = 150;
-        $this->totalOrders = 75;
-        $this->totalRevenue = 15000;
+        $this->loadNewUsersData();
 
         $this->loadSalesData();
+
+        $this->loadMostViewedProducts();
+    }
+
+    public function loadNewUsersData(): void
+    {
+        try {
+            // Fetch total visitors for the last 30 days
+            $analyticsData = Analytics::fetchUserTypes(Period::days(30));
+
+            // Sum all visitors across the period
+            $this->totalNewUsers = $analyticsData->firstWhere('newVsReturning', 'new')['activeUsers'];
+            $this->totalReturningUsers = $analyticsData->firstWhere('newVsReturning', 'returning')['activeUsers'];
+        } catch (\Exception $e) {
+            logger()->error('Error loading analytics data: ' . $e->getMessage());
+            $this->totalNewUsers = 0;
+            $this->totalReturningUsers = 0;
+        }
+    }
+    /**
+     * Load website visitors data from Google Analytics
+     */
+    public function loadVisitorsData(): void
+    {
+        try {
+            // Fetch total visitors for the last 30 days
+            $analyticsData = Analytics::fetchTotalVisitorsAndPageViews(Period::days(30));
+
+            // Sum all visitors across the period
+            $this->totalVisitors = $analyticsData->sum('screenPageViews');
+        } catch (\Exception $e) {
+            logger()->error('Error loading analytics data: ' . $e->getMessage());
+            $this->totalVisitors = 0;
+        }
+    }
+
+    /**
+     * Load active users data from Google Analytics
+     */
+    public function loadActiveUsersData(): void
+    {
+        try {
+            // Fetch visitors and pageviews for the last 30 days
+            $analyticsData = Analytics::fetchVisitorsAndPageViews(Period::days(30));
+
+            // Sum all active users
+            $this->totalActiveUsers = $analyticsData->sum('activeUsers');
+        } catch (\Exception $e) {
+            logger()->error('Error loading active users data: ' . $e->getMessage());
+            $this->totalActiveUsers = 0;
+        }
     }
 
     /**
@@ -53,7 +112,7 @@ class DashboardComponent extends Component
 
             $this->recentProducts = $products->map(function ($product) {
                 $price = $product->prices->first();
-                
+
                 return [
                     'id' => $product->id,
                     'name' => $product->name,
@@ -69,45 +128,58 @@ class DashboardComponent extends Component
         }
     }
 
+    public function updatedPeriod(): void
+    {
+        $this->loadSalesData();
+    }
+
     public function loadSalesData(): void
     {
         try {
             $dates = collect();
-            $sales = collect();
+            $visits = collect();
 
             switch ($this->period) {
                 case 'week':
-                    for ($i = 6; $i >= 0; $i--) {
-                        $date = Carbon::now()->subDays($i);
-                        $dates->push($date->format('D'));
-                        $sales->push(rand(100, 1000));
+                    $analyticsData = Analytics::fetchVisitorsAndPageViewsByDate(Period::days(7));
+                    foreach ($analyticsData as $data) {
+                        $dates->prepend(Carbon::parse($data['date'])->format('D'));
+                        $visits->prepend($data['screenPageViews']);
                     }
                     break;
                 case 'month':
-                    for ($i = 29; $i >= 0; $i--) {
-                        $date = Carbon::now()->subDays($i);
-                        $dates->push($date->format('d M'));
-                        $sales->push(rand(100, 1000));
+                    $analyticsData = Analytics::fetchVisitorsAndPageViewsByDate(Period::days(30));
+                    foreach ($analyticsData as $data) {
+                        $dates->prepend(Carbon::parse($data['date'])->format('d M'));
+                        $visits->prepend($data['screenPageViews']);
                     }
                     break;
                 case 'year':
-                    for ($i = 11; $i >= 0; $i--) {
-                        $date = Carbon::now()->subMonths($i);
-                        $dates->push($date->format('M'));
-                        $sales->push(rand(1000, 10000));
+                    $analyticsData = Analytics::fetchVisitorsAndPageViewsByDate(Period::months(12));
+                    foreach ($analyticsData as $data) {
+                        $dates->prepend(Carbon::parse($data['date'])->format('M Y'));
+                        $visits->prepend($data['screenPageViews']);
                     }
                     break;
             }
 
-            $this->salesData = [
-                'labels' => $dates->toArray(),
-                'data' => $sales->toArray(),
+            // Ensure we have valid data
+            if ($dates->isEmpty() || $visits->isEmpty()) {
+                throw new \Exception('No data available for the selected period');
+            }
+
+            // Create fresh data array to avoid reference issues
+            $freshData = [
+                'labels' => $dates->values()->toArray(),
+                'data' => $visits->values()->toArray(),
             ];
 
-            // Use dispatch instead of dispatchBrowserEvent
-            $this->dispatch('chart-data-updated', $this->salesData);
+            $this->salesData = $freshData;
+
+            // Dispatch the event with the freshly created data
+            $this->dispatch('salesDataUpdated', data: $freshData);
         } catch (\Exception $e) {
-            logger()->error('Error loading sales data: ' . $e->getMessage());
+            logger()->error('Error loading visits data: ' . $e->getMessage());
             $this->salesData = [
                 'labels' => [],
                 'data' => [],
@@ -120,12 +192,56 @@ class DashboardComponent extends Component
         if (!in_array($newPeriod, ['week', 'month', 'year'])) {
             return;
         }
-        
+
         $this->period = $newPeriod;
         $this->loadSalesData();
+
+        // Force the frontend to update by dispatching a browser event
+        $this->dispatch('periodChanged', period: $newPeriod);
+    }
+
+    public function addNewProduct(): void
+    {
+        session()->flash('openAddProductModal', true);
+
+        $this->redirect(route('subdomain.products'));
+    }
+
+    public array $mostViewedProducts = [];
+
+    public function loadMostViewedProducts(): void
+    {
+        try {
+            // Fetch top 5 most visited product pages in the last 30 days
+            $analyticsData = Analytics::fetchMostVisitedPages(Period::days(30), 10);
+
+            // Filter for product URLs (adjust the pattern to match your routes)
+            $productPages = collect($analyticsData)
+                ->filter(fn($page) => str_contains($page['fullPageUrl'], '/404'))
+                ->take(5);
+
+            // Map URLs to product slugs or IDs
+            $this->mostViewedProducts = $productPages->map(function ($page) {
+                // Extract slug or ID from URL, e.g., /products/{slug}
+                $slug = basename($page['fullPageUrl']);
+                $product = Product::where('slug', $slug)->first();
+
+                return [
+                    'name' => $product?->name ?? $slug,
+                    'views' => $page['screenPageViews'],
+                    'url' => $page['fullPageUrl'],
+                ];
+            })->toArray();
+
+//            dd($this->mostViewedProducts);
+        } catch (\Exception $e) {
+            logger()->error('Error loading most viewed products from analytics: ' . $e->getMessage());
+            $this->mostViewedProducts = [];
+        }
     }
 
     #[Layout('layouts.backend')]
+    #[Title('Dashboard')]
     public function render()
     {
         return view('livewire.backend.dashboard-component');

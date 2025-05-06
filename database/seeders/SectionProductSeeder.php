@@ -39,12 +39,7 @@ class SectionProductSeeder extends Seeder
             ->create()
             ->each(function (Section $section) {
                 // Get products that are either retail or wholesale active
-                $products = Product::where(function($query) {
-                    $query->where('is_retail_active', true)
-                          ->orWhere('is_wholesale_active', true);
-                })
-                ->inRandomOrder()
-                ->limit(6)
+                $products = Product::limit(6)
                 ->get();
 
                 // Attach products with incremental ordering
