@@ -7,6 +7,7 @@
     isLoading: false,
     profileDropdownOpen: false,
     mobileProfileDropdownOpen: false,
+    languageOpen: false,
 
     init() {
         this.$watch('sidebarOpen', value => {
@@ -33,7 +34,12 @@
                         <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
                     </svg>
                 </button>
-                <a href="{{ route('main') }}" class="text-2xl font-semibold" style="font-family: 'Poppins', sans-serif; background: linear-gradient(to right, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                <a href="{{ route('main') }}" class="hidden sm:block text-2xl font-semibold" style="font-family: 'Poppins', sans-serif; background: linear-gradient(to right, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+                    İndirimGo
+                </a>
+            </div>
+            <div class="block sm:hidden">
+                <a href="{{ route('main') }}" class="text-4xl font-semibold" style="font-family: 'Poppins', sans-serif; background: linear-gradient(to right, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
                     İndirimGo
                 </a>
             </div>
@@ -43,24 +49,37 @@
                 @include('livewire.frontend.partials.search-bar')
             </div>
 
-            <!-- Right Section: Cart, Profile, Favorites -->
+            <!-- Right Section: Search Icon & Language -->
             <div class="flex items-center gap-x-2">
-
-                <!-- Profile/Auth Section -->
-                @guest
-                    @include('livewire.frontend.partials.guest-menu')
-                @else
-                    @include('livewire.frontend.partials.auth-menu')
-                @endguest
-
-                <!-- Favorites -->
-                <div class="relative flex items-center gap-x-2">
-                    <button class="p-2.5 text-gray-700 hover:text-blue-600 hover:bg-gray-100 rounded-xl transition-all duration-200 h-11 w-11 flex items-center justify-center">
+                <!-- Language Selector -->
+                <div class="relative" x-data="{ open: false }">
+                    <button @click="open = !open"
+                            @click.away="open = false"
+                            class="p-2.5 text-gray-700 hover:text-blue-600 hover:bg-gray-100 rounded-xl transition-all duration-200 h-11 w-11 flex items-center justify-center">
                         <svg class="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
                         </svg>
                     </button>
-                    <span class="hidden lg:inline text-sm text-gray-700 cursor-pointer hover:text-gray-900">Favorites</span>
+
+                    <!-- Language Dropdown -->
+                    <div x-show="open"
+                         x-transition:enter="transition ease-out duration-200"
+                         x-transition:enter-start="opacity-0 scale-95"
+                         x-transition:enter-end="opacity-100 scale-100"
+                         x-transition:leave="transition ease-in duration-150"
+                         x-transition:leave-start="opacity-100 scale-100"
+                         x-transition:leave-end="opacity-0 scale-95"
+                         class="absolute right-0 mt-2 w-48 rounded-xl bg-white shadow-lg ring-1 ring-black ring-opacity-5 z-50"
+                         x-cloak>
+                        <div class="py-1">
+                            <button wire:click="switchLanguage('en')" class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100">
+                                English
+                            </button>
+                            <button wire:click="switchLanguage('tr')" class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100">
+                                Türkçe
+                            </button>
+                        </div>
+                    </div>
                 </div>
             </div>
         </div>
