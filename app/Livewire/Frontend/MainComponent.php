@@ -10,6 +10,7 @@ use App\Models\ProductPrice;
 use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
+use Livewire\Attributes\Title;
 use Livewire\Component;
 use function Laravel\Prompts\alert;
 use App\Models\Product;
@@ -109,6 +110,7 @@ class MainComponent extends Component
     public $isScrolledRight = false;
 
     #[Layout('layouts.frontend')]
+    #[Title('Home')]
     public function render()
     {
         return view('livewire.frontend.main-component', [

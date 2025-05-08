@@ -67,22 +67,26 @@
                                             <div class="group/card mx-2">
                                                 <!-- Product Card -->
                                                 <div class="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
-                                                    <div class="relative aspect-w-1 aspect-h-1 w-full overflow-hidden h-40 bg-gray-100 rounded-md">
-                                                        <img src="{{ $result['image'] }}"
-                                                             alt="{{ $result['title'] }} - Image"
-                                                             class="absolute h-full w-full object-cover object-center transition-opacity duration-300 opacity-100"
-                                                             loading="lazy">
+                                                    <div class="flex flex-col relative aspect-w-1 aspect-h-1 w-full overflow-hidden h-40 bg-gray-100 rounded-md">
+                                                        <button wire:click="$dispatch('openProductModal', { productId: {{ $result['id'] }} })" class="">
+                                                            <img src="{{ $result['image'] }}"
+                                                                 alt="{{ $result['title'] }} - Image"
+                                                                 class="absolute h-full w-full object-cover object-center transition-opacity duration-300 opacity-100"
+                                                                 loading="lazy">
+                                                        </button>
                                                     </div>
 
                                                     <!-- Product Info -->
                                                     <div class="p-2">
                                                         <div class="flex items-start gap-2">
-                                                            <div class="line-clamp-3">
-                                                                <a href="#">
-                                                                    <span class="text-xs font-medium text-gray-900">{{ $result['title'] }}</span>
-                                                                </a>
-                                                                <span class="text-xs text-gray-500">{{ $result['description'] }}</span>
-                                                            </div>
+                                                            <button wire:click="$dispatch('openProductModal', { productId: {{ $result['id'] }} })" class="">
+                                                                <div class="line-clamp-3 text-left">
+                                                                    <a href="#">
+                                                                        <span class="text-xs font-medium text-gray-900">{{ $result['title'] }}</span>
+                                                                    </a>
+                                                                    <span class="text-xs text-gray-500">{{ $result['description'] }}</span>
+                                                                </div>
+                                                            </button>
                                                         </div>
 
                                                         <div class="flex items-center justify-between mt-3">

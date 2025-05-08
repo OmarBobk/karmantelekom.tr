@@ -51,6 +51,9 @@
 
             <!-- Right Section: Search Icon & Language -->
             <div class="flex items-center gap-x-2">
+                @auth
+                    @include('livewire.frontend.partials.auth-menu')
+                @endauth
                 <!-- Language Selector -->
                 <div class="relative" x-data="{ open: false }">
                     <button @click="open = !open"

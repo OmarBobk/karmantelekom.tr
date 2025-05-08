@@ -217,7 +217,9 @@ class DashboardComponent extends Component
 
             // Filter for product URLs (adjust the pattern to match your routes)
             $productPages = collect($analyticsData)
-                ->filter(fn($page) => str_contains($page['fullPageUrl'], '/404'))
+                ->filter(function ($page) {
+                    return str_contains($page['fullPageUrl'], '/404');
+                })
                 ->take(5);
 
             // Map URLs to product slugs or IDs

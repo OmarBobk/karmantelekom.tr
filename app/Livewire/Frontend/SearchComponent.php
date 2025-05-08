@@ -66,6 +66,7 @@ class SearchComponent extends Component
             ->get()
             ->map(function ($product) {
                 return [
+                    'id' => $product->id,
                     'image' => Storage::url($product->images->where('is_primary', true)->first()->image_url),
                     'title' => $product->name,
                     'description' => $product->description,
