@@ -35,12 +35,12 @@
                     </svg>
                 </button>
                 <a href="{{ route('main') }}" class="hidden sm:block text-2xl font-semibold" style="font-family: 'Poppins', sans-serif; background: linear-gradient(to right, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-                    İndirimGo
+                    {{config('app.name')}}
                 </a>
             </div>
             <div class="block sm:hidden">
                 <a href="{{ route('main') }}" class="text-4xl font-semibold" style="font-family: 'Poppins', sans-serif; background: linear-gradient(to right, #3b82f6, #8b5cf6); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-                    İndirimGo
+                    {{config('app.name')}}
                 </a>
             </div>
 

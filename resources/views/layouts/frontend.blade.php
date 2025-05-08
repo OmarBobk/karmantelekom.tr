@@ -30,7 +30,7 @@
         data-user="{{auth()->check() ? auth()->id() : ''}}"
         data-role="{{auth()->user()?->roles()->first()->name ?? ''}}"
     >
-        <header>
+        <header class="bg-white shadow-sm">
             <livewire:frontend.partials.header-component />
         </header>
         <main>

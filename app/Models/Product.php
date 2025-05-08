@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Traits\Searchable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -34,8 +35,13 @@ use Spatie\Sluggable\SlugOptions;
  */
 class Product extends Model
 {
-    use HasFactory, HasSlug;
+    use HasFactory, HasSlug, Searchable;
 
+    public $searchable_columns = [
+        'code', 'name', 'description', 'serial'
+    ];
+
+    public $return_from_search = [];
     /**
      * The attributes that are mass assignable.
      *

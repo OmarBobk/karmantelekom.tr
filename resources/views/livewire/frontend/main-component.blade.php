@@ -154,7 +154,7 @@
                                     <button
                                         x-on:click="$wire.activeCategory = {{ $index }}"
                                         class="px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-900 transition-all duration-200 whitespace-nowrap border-b-2 border-transparent
-                                            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-white rounded-t-lg"
+                                            rounded-t-lg"
                                         :class="$wire.activeCategory === {{ $index }} ? '!text-blue-600 !border-blue-600' : ''"
                                         role="tab"
                                         :aria-selected="$wire.activeCategory === {{ $index }}"
