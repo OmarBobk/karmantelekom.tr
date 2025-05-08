@@ -29,9 +29,11 @@
                         <!-- Product Image -->
                         <div class="relative aspect-w-1 aspect-h-1 w-full overflow-hidden">
                             @if($product->images->isNotEmpty())
-                                <img src="{{ asset('storage/' . $product->images->firstWhere('is_primary', true)?->image_url) }}"
-                                     alt="{{ $product->name }}"
-                                     class="h-full w-full object-cover object-center group-hover/card:scale-105 transition-transform duration-300">
+                                <button wire:click="$dispatch('openProductModal', { productId: {{ $product->id }} })" class="w-full h-full">
+                                    <img src="{{ asset('storage/' . $product->images->firstWhere('is_primary', true)?->image_url) }}"
+                                         alt="{{ $product->name }}"
+                                         class="h-full w-full object-cover object-center group-hover/card:scale-105 transition-transform duration-300">
+                                </button>
                             @else
                                 <div class="h-48 bg-gray-200 flex items-center justify-center">
                                     <svg class="size-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -45,7 +47,9 @@
                         <div class="p-4">
                             <div class="mb-2">
                                 <p class="text-sm text-gray-500">{{ $product->category->name }}</p>
-                                <h3 class="text-lg font-medium text-gray-900">{{ $product->name }}</h3>
+                                <button wire:click="$dispatch('openProductModal', { productId: {{ $product->id }} })" class="text-left">
+                                    <h3 class="text-lg font-medium text-gray-900 hover:text-blue-600 transition-colors duration-200">{{ $product->name }}</h3>
+                                </button>
                                 <p class="text-sm text-gray-500">Code: {{ $product->code }}</p>
                             </div>
 
@@ -83,4 +87,7 @@
             {{ $products->links() }}
         </div>
     </div>
-</div> 
+</div>
+
+<!-- Product Modal -->
+<livewire:product-modal-component /> 

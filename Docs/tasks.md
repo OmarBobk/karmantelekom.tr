@@ -15,11 +15,13 @@
 - ###TODO: create the ads manager.
 
 ### Frontend
-- ###TODO: remove Login button.
+- ###DONE: remove Login button.
+- ###DONE: on the main sections "not slider" display only one image for the product.
+- 
+- ###DOING: Create a single product Modal it will be shown when the user clicks on the product in everywhere in the website.
+- 
 - ###TODO: Create a new page to show the product with filters like by category, by price, by brand, by color, by size.
-- ###TODO: Create a single product Modal it will be shown when the user clicks on the product in everywhere in the website.
 - ###TODO: Create a Contact us page.
-- ###TODO: on the main sections "not slider" display only one image for the product.
 
 ### Other
 - ###TODO: Language: Arabic, Turkish

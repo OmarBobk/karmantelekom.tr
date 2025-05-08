@@ -69,14 +69,14 @@
                          x-transition:leave="transition ease-in duration-150"
                          x-transition:leave-start="opacity-100 scale-100"
                          x-transition:leave-end="opacity-0 scale-95"
-                         class="absolute right-0 mt-2 w-48 rounded-xl bg-white shadow-lg ring-1 ring-black ring-opacity-5 z-50"
+                         class="absolute right-0 mt-2 w-20 rounded-xl bg-white shadow-lg ring-1 ring-black ring-opacity-5 z-50"
                          x-cloak>
                         <div class="py-1">
                             <button wire:click="switchLanguage('en')" class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100">
-                                English
+                                EN
                             </button>
                             <button wire:click="switchLanguage('tr')" class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100">
-                                Türkçe
+                                TR
                             </button>
                         </div>
                     </div>

@@ -235,20 +235,24 @@
                                             <div class="flex-none w-72 snap-start p-4" role="listitem">
                                                 <div class="bg-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100">
                                                     <figure class="relative aspect-w-1 aspect-h-1 w-full overflow-hidden bg-gray-50 rounded-t-lg">
-                                                        <img src="{{ Storage::url($product->images->where('is_primary', true)->first()->image_url)}}"
-                                                            alt="{{ $product->name }}"
-                                                            class="h-[17.60rem] w-full object-contain group-hover/card:scale-105 transition-transform duration-300"
-                                                            loading="lazy"
-                                                        >
+                                                        <button wire:click="$dispatch('openProductModal', { productId: {{ $product->id }} })" class="w-full h-full">
+                                                            <img src="{{ Storage::url($product->images->where('is_primary', true)->first()->image_url)}}"
+                                                                alt="{{ $product->name }}"
+                                                                class="h-[17.60rem] w-full object-contain group-hover/card:scale-105 transition-transform duration-300"
+                                                                loading="lazy"
+                                                            >
+                                                        </button>
                                                     </figure>
                                                     <div class="p-4">
                                                         <!-- Product Info Header -->
                                                         <div class="mb-3">
                                                             <p class="text-sm text-gray-500">{{ $section->name }}</p>
-                                                            <div class="line-clamp-2">
-                                                                <h3 class="text-base font-medium text-gray-900">{{ $product->name }}</h3>
-                                                                <p class="text-sm text-gray-500">{{ $product->description }}</p>
-                                                            </div>
+                                                            <button wire:click="$dispatch('openProductModal', { productId: {{ $product->id }} })" class="text-left">
+                                                                <div class="line-clamp-2">
+                                                                    <h3 class="text-base font-medium text-gray-900 hover:text-blue-600 transition-colors duration-200">{{ $product->name }}</h3>
+                                                                    <p class="text-sm text-gray-500">{{ $product->description }}</p>
+                                                                </div>
+                                                            </button>
                                                         </div>
 
                                                         <!-- Price and Quantity Control on same line -->
@@ -488,28 +492,25 @@
                                             <!-- Product Card -->
                                             <div class="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
                                                 <!-- Image Slider -->
-                                                <div class="relative aspect-w-1 aspect-h-1 w-full overflow-hidden h-48 bg-gray-100 rounded-md">
-{{--                                                    x-on:touchstart="touchStartX = $event.touches[0].clientX"--}}
-{{--                                                    x-on:touchend="--}}
-{{--                                                        touchEndX = $event.changedTouches[0].clientX;--}}
-{{--                                                        if (touchStartX - touchEndX > 50) nextSlide();--}}
-{{--                                                        if (touchEndX - touchStartX > 50) prevSlide();--}}
-{{--                                                    ">--}}
-                                                <img src="{{ Storage::url($product->images->where('is_primary', true)->first()->image_url) }}"
-                                                     alt="{{ $product->name }} - Image {{ $index + 1 }}"
-                                                     class="absolute h-full w-full object-cover object-center transition-opacity duration-300 opacity-100"
-                                                     loading="lazy">
+                                                <div class="flex flex-col relative aspect-w-1 aspect-h-1 w-full overflow-hidden h-48 bg-gray-100 rounded-md">
+                                                    <button wire:click="$dispatch('openProductModal', { productId: {{ $product->id }} })" class="">
+                                                        <img src="{{ Storage::url($product->images->where('is_primary', true)->first()->image_url) }}"
+                                                             alt="{{ $product->name }} - Image {{ $index + 1 }}"
+                                                             class="absolute h-full w-full object-cover object-center transition-opacity duration-300 opacity-100"
+                                                             loading="lazy">
+                                                    </button>
                                                 </div>
 
                                                 <!-- Product Info -->
                                                 <div class="p-4">
-                                                    <div class="flex items-start gap-2">
-                                                        <div class="line-clamp-2">
-                                                            <span class="text-sm font-medium text-gray-900">{{ $product->name }}</span>
-                                                            <span class="text-sm text-gray-500">{{ $product->description }}</span>
-                                                        </div>
+                                                    <div class="mb-3">
+                                                        <button wire:click="$dispatch('openProductModal', { productId: {{ $product->id }} })" class="text-left">
+                                                            <div class="line-clamp-3">
+                                                                <span class="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors duration-200">{{ $product->name }}</span>
+                                                                <span class="text-sm text-gray-500">{{ $product->description }}</span>
+                                                            </div>
+                                                        </button>
                                                     </div>
-
                                                     <div class="flex items-center justify-between mt-3">
                                                         <div>
                                                             @if($product->prices->isNotEmpty())
@@ -679,5 +680,8 @@
             });
         </script>
     @endscript
+
+    <!-- Product Modal -->
+    <livewire:product-modal-component />
 
 </div>
