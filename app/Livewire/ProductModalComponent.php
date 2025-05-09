@@ -23,6 +23,7 @@ class ProductModalComponent extends Component
 
     public function openProductModal($productId): void
     {
+
         $this->product = Product::with(['category', 'images', 'prices'])
             ->find($productId);
 
@@ -55,6 +56,10 @@ class ProductModalComponent extends Component
         $this->requestQuoteUrl = null;
         $this->productIdUrl = '';
         $this->productSlugUrl = '';
+
+        if (session('openProductModalFromDashboard')) {
+            session()->forget('openProductModalFromDashboard');
+        }
     }
 
     public function render()

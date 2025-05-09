@@ -4,7 +4,9 @@ declare(strict_types=1);
 
 namespace App\Livewire\Backend;
 
+use App\Livewire\Frontend\MainComponent;
 use App\Models\Product;
+use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -112,14 +114,15 @@ class DashboardComponent extends Component
 
             $this->recentProducts = $products->map(function ($product) {
                 $price = $product->prices->first();
+                $image = Storage::url($product?->images->where('is_primary', true)->first()?->image_url
+                    ?? $product?->images->first()?->image_url ?? '');
 
                 return [
                     'id' => $product->id,
                     'name' => $product->name,
+                    'image' => $image,
                     'category' => $product->category?->name ?? 'Uncategorized',
                     'status' => $product->is_active ? 'active' : 'inactive',
-                    'price' => $price ? $price->getFormattedPrice() : 'N/A',
-                    'date' => $product->created_at
                 ];
             })->toArray();
         } catch (\Exception $e) {
@@ -215,29 +218,57 @@ class DashboardComponent extends Component
             // Fetch top 5 most visited product pages in the last 30 days
             $analyticsData = Analytics::fetchMostVisitedPages(Period::days(30), 10);
 
+
             // Filter for product URLs (adjust the pattern to match your routes)
             $productPages = collect($analyticsData)
                 ->filter(function ($page) {
-                    return str_contains($page['fullPageUrl'], '/404');
+                    $url = $page['fullPageUrl'];
+//                    $url = 'http://developing.store/?productSlugUrl=ut-quidem-tempore&productIdUrl=15';
+                    $parts = parse_url($url);
+                    if (isset($parts['query'])) {
+                        parse_str($parts['query'], $query);
+                        return isset($query['productSlugUrl']) && isset($query['productIdUrl']);
+                    }
+
                 })
                 ->take(5);
 
             // Map URLs to product slugs or IDs
             $this->mostViewedProducts = $productPages->map(function ($page) {
                 // Extract slug or ID from URL, e.g., /products/{slug}
-                $slug = basename($page['fullPageUrl']);
-                $product = Product::where('slug', $slug)->first();
+                $url = $page['fullPageUrl'];
+//                $url = 'http://developing.store/?productSlugUrl=ut-quidem-tempore&productIdUrl=15';
+                $parts = parse_url($url);
 
-                return [
-                    'name' => $product?->name ?? $slug,
-                    'views' => $page['screenPageViews'],
-                    'url' => $page['fullPageUrl'],
-                ];
+                if ( isset($parts['query']) ) {
+                    parse_str($parts['query'], $query);
+                    $productId = $query['productIdUrl'];
+                    $product = Product::where('id', $productId)->first();
+
+                    $fullPageUrl = (!str_starts_with($page['fullPageUrl'], 'http://') && !str_starts_with($page['fullPageUrl'], 'https://'))
+                        ? 'https://' . $page['fullPageUrl']
+                        : $page['fullPageUrl'];
+
+                    $image = Storage::url($product?->images->where('is_primary', true)->first()?->image_url
+                        ?? $product?->images->first()?->image_url ?? '');
+                    return [
+                        'id' => $product?->id,
+                        'name' => $product?->name,
+                        'category' => $product?->category->name,
+                        'image' => $image,
+                        'views' => $page['screenPageViews'],
+                    ];
+                }
             })->toArray();
 
-//            dd($this->mostViewedProducts);
         } catch (\Exception $e) {
             logger()->error('Error loading most viewed products from analytics: ' . $e->getMessage());
+            $this->dispatch('notify', [
+                'type' => 'error',
+                'message' => 'Error loading most viewed products from analytics: ' . $e->getMessage(),
+                'sec' => 10000
+            ]);
+
             $this->mostViewedProducts = [];
         }
     }

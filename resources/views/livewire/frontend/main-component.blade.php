@@ -32,7 +32,8 @@
     </div>
 
     <!-- Start Slider Component -->
-    <div class="w-full bg-white pt-4" x-data="{
+    <div
+        class="w-full bg-white pt-4" x-data="{
         activeCategory: @entangle('activeCategory'),
         atStart: true,
         atEnd: false,

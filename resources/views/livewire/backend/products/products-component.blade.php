@@ -477,8 +477,8 @@
                             <!-- Category -->
                             <div>
                                 <label for="category" class="block text-sm font-medium text-gray-700">Category</label>
-                                <x-category-tree-dropdown 
-                                    :categories="$this->getCategoryTree()" 
+                                <x-category-tree-dropdown
+                                    :categories="$this->getCategoryTree()"
                                     :selectedCategory="$editForm['category_id']"
                                     wireModel="editForm.category_id"
                                 />
@@ -1088,8 +1088,8 @@
                             <!-- Category -->
                             <div>
                                 <label for="add-category" class="block text-sm font-medium text-gray-700">Category</label>
-                                <x-category-tree-dropdown 
-                                    :categories="$this->getCategoryTree()" 
+                                <x-category-tree-dropdown
+                                    :categories="$this->getCategoryTree()"
                                     :selectedCategory="$addForm['category_id']"
                                     wireModel="addForm.category_id"
                                 />

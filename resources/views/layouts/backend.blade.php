@@ -28,7 +28,8 @@
                     const notification = {
                         id: Date.now(),
                         type: message[0].type,
-                        message: message[0].message
+                        message: message[0].message,
+                        sec: message[0].sec || 3000
                     };
 
                     this.notifications.push(notification);
@@ -36,7 +37,7 @@
                     // Auto-remove notification after 3 seconds
                     setTimeout(() => {
                         this.remove(notification.id);
-                    }, 3000);
+                    }, notification.sec);
                 },
                 remove(id) {
                     this.notifications = this.notifications.filter(notification => notification.id !== id);

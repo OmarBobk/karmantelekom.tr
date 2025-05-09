@@ -114,9 +114,9 @@
     </div>
 
     <!-- Charts Section -->
-    <div class="grid gap-6 mb-8 md:grid-cols-2">
+    <div class="grid gap-4 sm:gap-6 mb-6 sm:mb-8 grid-cols-1 lg:grid-cols-3">
         <!-- Sales Chart -->
-        <div class="bg-white rounded-lg shadow-lg">
+        <div class="bg-white rounded-lg shadow-lg md:col-span-2">
             <div class="p-0 sm:p-6">
                 <div class="flex flex-wrap items-center justify-between p-4 sm:p-0">
                     <h2 class="text-lg font-medium text-gray-900">Website Visits Overview</h2>
@@ -286,76 +286,8 @@
             </div>
         </div>
 
-        <!-- Recent Products -->
-        <div class="bg-white rounded-lg shadow-lg overflow-x-auto">
-            <div class="p-0 sm:p-6">
-                <div class="flex flex-wrap items-center justify-between p-4 sm:p-0 border-b border-gray-200">
-                    <h2 class="text-lg font-medium text-gray-900">Recent Products</h2>
-                    <a href="{{ route('subdomain.products') }}" class="inline-flex items-center px-3 py-2 text-sm font-medium text-gray-700 hover:text-gray-900">
-                        View All
-                        <svg class="w-4 h-4 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
-                        </svg>
-                    </a>
-                </div>
-                <div class="overflow-x-auto">
-                    <div class="inline-block min-w-full align-middle">
-                        <table class="min-w-full divide-y divide-gray-200">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Date</th>
-                                </tr>
-                            </thead>
-                            <tbody class="bg-white divide-y divide-gray-200">
-                                @foreach($recentProducts as $product)
-                                    <tr>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            #{{ $product['id'] }}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="text-sm font-medium text-gray-900">{{ $product['name'] }}</div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="text-sm text-gray-500">{{ $product['category'] }}</div>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap">
-                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $product['status'] === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800' }}">
-                                                {{ ucfirst($product['status']) }}
-                                            </span>
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {{ $product['price'] }}
-                                        </td>
-                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                            {{ $product['date']->format('M d, Y') }}
-                                        </td>
-                                    </tr>
-                                @endforeach
-
-                                @if(count($recentProducts) === 0)
-                                    <tr>
-                                        <td colspan="6" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
-                                            No products found.
-                                        </td>
-                                    </tr>
-                                @endif
-                            </tbody>
-                        </table>
-                    </div>
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Quick Actions Section -->
-    <div class="grid gap-6 mb-8 md:grid-cols-3">
         <!-- Quick Actions -->
-        <div class="bg-white rounded-lg shadow-lg md:col-span-1">
+        <div class="bg-white rounded-lg shadow-lg">
             <div class="p-6">
                 <h2 class="text-lg font-medium text-gray-900 mb-4">Quick Actions</h2>
                 <div class="space-y-4">
@@ -389,21 +321,162 @@
                 </div>
             </div>
         </div>
-        <div class="bg-white rounded-lg shadow-lg md:col-span-2">
+    </div>
+
+    <!-- Quick Actions Section -->
+    <div class="grid gap-4 sm:gap-6 mb-6 sm:mb-8 grid-cols-1 lg:grid-cols-2">
+        <!-- Recent Products -->
+        <div class="bg-white rounded-lg shadow-lg">
+            <div class="p-6">
+                <div class="flex flex-wrap items-center justify-between border-b border-gray-200 pb-4">
+                    <h2 class="text-lg font-medium text-gray-900">Recent Products</h2>
+                </div>
+                <div class="overflow-x-auto">
+                    <div class="inline-block min-w-full align-middle">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Image</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                @foreach($recentProducts as $product)
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            #{{ $product['id'] }}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex-shrink-0 h-16 w-16">
+                                                <img class="h-16 w-16 rounded-lg object-cover border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200"
+                                                     src="{{ $product['image']  }}"
+                                                     alt="{{ $product['name'] }}">
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="text-sm font-medium text-gray-900">{{ $product['name'] }}</div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="text-sm text-gray-500">{{ $product['category'] }}</div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full {{ $product['status'] === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800' }}">
+                                                {{ ucfirst($product['status']) }}
+                                            </span>
+                                        </td>
+                                    </tr>
+                                @endforeach
+
+                                @if(count($recentProducts) === 0)
+                                    <tr>
+                                        <td colspan="6" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                                            No products found.
+                                        </td>
+                                    </tr>
+                                @endif
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-lg shadow-lg">
             <div class="p-6">
                 <h2 class="text-lg font-medium text-gray-900 mb-4">Most Viewed Products</h2>
-                <ul class="divide-y divide-gray-200">
-                    @forelse($mostViewedProducts as $product)
-                        <li class="py-2 flex justify-between">
-                            <a href="{{ $product['url'] }}" class="font-medium text-blue-700 hover:underline" target="_blank">
-                                {{ $product['name'] }}
-                            </a>
-                            <span class="text-gray-500">{{ $product['views'] }} views</span>
-                        </li>
-                    @empty
-                        <li class="py-2 text-gray-500">No view data available.</li>
-                    @endforelse
-                </ul>
+                <div class="overflow-x-auto">
+                    <div class="inline-block min-w-full align-middle">
+                        <table class="min-w-full divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ID</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Image</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Views</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
+                                </tr>
+                            </thead>
+                            <tbody class="bg-white divide-y divide-gray-200">
+                                @forelse($mostViewedProducts as $product)
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            #{{ $product['id'] }}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex-shrink-0 h-16 w-16">
+                                                <img class="h-16 w-16 rounded-lg object-cover border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200"
+                                                     src="{{ $product['image'] ?? asset('images/placeholder.png') }}"
+                                                     alt="{{ $product['name'] }}">
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="text-sm font-medium text-gray-900">{{ $product['name'] }}</div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            {{ number_format($product['views']) }}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="text-sm text-gray-500">{{ $product['category'] }}</div>
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            #{{ $product['id'] }}
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="flex-shrink-0 h-16 w-16">
+                                                <img class="h-16 w-16 rounded-lg object-cover border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200"
+                                                     src="{{ $product['image'] ?? asset('images/placeholder.png') }}"
+                                                     alt="{{ $product['name'] }}">
+                                            </div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="text-sm font-medium text-gray-900">{{ $product['name'] }}</div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap">
+                                            <div class="text-sm text-gray-500">{{ $product['category'] }}</div>
+                                        </td>
+                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                            {{ number_format($product['views']) }}
+                                        </td>
+                                    </tr>
+                                    <tr>
+                                        @if(!$loop->last)
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                #{{ $product['id'] }}
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <div class="flex-shrink-0 h-16 w-16">
+                                                    <img class="h-16 w-16 rounded-lg object-cover border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200"
+                                                         src="{{ $product['image'] ?? asset('images/placeholder.png') }}"
+                                                         alt="{{ $product['name'] }}">
+                                                </div>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <div class="text-sm font-medium text-gray-900">{{ $product['name'] }}</div>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap">
+                                                <div class="text-sm text-gray-500">{{ $product['category'] }}</div>
+                                            </td>
+                                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                                {{ number_format($product['views']) }}
+                                            </td>
+                                        @endif
+                                    </tr>
+                                @empty
+                                    <tr>
+                                        <td colspan="5" class="px-6 py-4 whitespace-nowrap text-sm text-gray-500 text-center">
+                                            No view data available.
+                                        </td>
+                                    </tr>
+                                @endforelse
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
             </div>
         </div>
     </div>

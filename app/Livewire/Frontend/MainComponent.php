@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Livewire\Frontend;
 
+use App\Livewire\ProductModalComponent;
 use App\Models\Section;
 use App\Models\Currency;
 use App\Models\ProductPrice;
@@ -24,7 +25,7 @@ class MainComponent extends Component
     public bool $canSwitchCurrency;
     public string $priceType;
 
-    public function mount()
+    public function mount(): void
     {
         $this->canSwitchCurrency = true;
         $this->loadAllSections();
