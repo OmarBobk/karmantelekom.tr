@@ -449,7 +449,6 @@
                 <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div class="flex items-center justify-between mb-6">
                         <h2 class="text-2xl font-bold text-gray-900">{{ $section->name }}</h2>
-                        <a href="#" class="text-blue-600 hover:text-blue-700 font-medium">View All</a>
                     </div>
                 </div>
 
@@ -497,7 +496,7 @@
                                                     <button wire:click="$dispatch('openProductModal', { productId: {{ $product->id }} })" class="">
                                                         <img src="{{ Storage::url($product->images->where('is_primary', true)->first()->image_url) }}"
                                                              alt="{{ $product->name }} - Image {{ $index + 1 }}"
-                                                             class="absolute h-full w-full object-cover object-center transition-opacity duration-300 opacity-100"
+                                                             class="absolute h-full w-full object-cover lg:object-cover md:object-contain object-center transition-opacity duration-300 opacity-100"
                                                              loading="lazy">
                                                     </button>
                                                 </div>

@@ -75,10 +75,10 @@
                          class="absolute right-0 mt-2 w-20 rounded-xl bg-white shadow-lg ring-1 ring-black ring-opacity-5 z-50"
                          x-cloak>
                         <div class="py-1">
-                            <button wire:click="switchLanguage('en')" class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100">
+                            <button wire:click="changeLanguage('en')" class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100">
                                 EN
                             </button>
-                            <button wire:click="switchLanguage('tr')" class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100">
+                            <button wire:click="changeLanguage('tr')" class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100">
                                 TR
                             </button>
                         </div>
@@ -119,12 +119,12 @@
              class="fixed inset-y-0 left-0 w-full max-w-xs bg-white shadow-lg overflow-y-auto">
 
             <!-- Sidebar Header -->
-            <div class="flex items-center justify-between p-4 border-b">
-                <a href="{{ route('main') }}" class="text-xl font-semibold font-poppins bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">
-                    İndirimGo
+            <div class="flex items-center justify-between p-6 border-b border-gray-100">
+                <a href="{{ route('main') }}" class="text-2xl font-semibold font-poppins bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">
+                    {{config('app.name')}}
                 </a>
                 <button @click="sidebarOpen = false"
-                        class="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg"
+                        class="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors duration-200"
                         aria-label="Close menu">
                     <svg class="size-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
@@ -133,50 +133,84 @@
             </div>
 
             <!-- Navigation Links -->
-            <nav class="px-4 py-6 space-y-2">
-                <a href="#" class="block px-4 py-2.5 text-base font-medium text-gray-900 rounded-lg hover:bg-gray-100">Home</a>
-                <a href="{{route('products')}}" class="block px-4 py-2.5 text-base font-medium text-gray-900 rounded-lg hover:bg-gray-100">Categories</a>
-                <a href="#" class="block px-4 py-2.5 text-base font-medium text-gray-900 rounded-lg hover:bg-gray-100">New Arrivals</a>
-                <a href="#" class="block px-4 py-2.5 text-base font-medium text-gray-900 rounded-lg hover:bg-gray-100">Deals</a>
+            <nav class="px-6 py-8 space-y-6 flex flex-col justify-between h-[calc(100vh-5rem)]">
+                <div class="space-y-4">
+                    <div class="space-y-1">
+                        <h3 class="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Main Menu</h3>
+                        <a href="#" class="flex items-center px-4 py-3 text-base font-medium text-gray-900 rounded-xl hover:bg-gray-50 transition-colors duration-200">
+                            <svg class="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
+                            </svg>
+                            Home
+                        </a>
+                        <a href="{{route('products')}}" class="flex items-center px-4 py-3 text-base font-medium text-gray-900 rounded-xl hover:bg-gray-50 transition-colors duration-200">
+                            <svg class="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
+                            </svg>
+                            Categories
+                        </a>
+                    </div>
 
-                <div class="border-t border-gray-200 my-4"></div>
+                    <div class="space-y-1">
+                        <h3 class="px-4 text-xs font-semibold text-gray-500 uppercase tracking-wider">Support</h3>
+                        <a href="#" class="flex items-center px-4 py-3 text-base font-medium text-gray-900 rounded-xl hover:bg-gray-50 transition-colors duration-200">
+                            <svg class="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                            </svg>
+                            Contact Us
+                        </a>
+                    </div>
+                </div>
 
-                <a href="#" class="block px-4 py-2.5 text-base font-medium text-gray-900 rounded-lg hover:bg-gray-100">About Us</a>
-                <a href="#" class="block px-4 py-2.5 text-base font-medium text-gray-900 rounded-lg hover:bg-gray-100">Contact</a>
-                <a href="#" class="block px-4 py-2.5 text-base font-medium text-gray-900 rounded-lg hover:bg-gray-100">Blog</a>
-
-                <!-- Currency Selector -->
-                <div class="relative py-1 px-2 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                     x-data="{ open: false }">
-                    <button
-                        @click="open = !open"
-                        @click.away="open = false"
-                        class="flex justify-between items-center w-full px-4 py-2.5 text-base font-medium text-gray-900 rounded-lg hover:bg-gray-100"
-                        aria-expanded="false">
-                        <span>{{ $currentCurrency }}</span>
-                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                        </svg>
-                    </button>
-
-                    <div
-                        x-show="open"
-                        x-transition
-                        class="absolute bottom-full mb-2 right-0 w-24 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50"
-                        x-cloak>
-                        <div class="py-1">
+                <!-- Language Selector -->
+                <div class="mt-auto border-t border-gray-100 pt-6">
+                    <div class="px-4">
+                        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">Language</h3>
+                        <div class="relative"
+                             x-data="{ open: false }">
                             <button
-                                wire:click="switchCurrency('$')"
-                                class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100"
-                                :class="{ 'bg-gray-50': '{{ $currentCurrency }}' === '$' }">
-                                $
+                                @click="open = !open"
+                                @click.away="open = false"
+                                class="flex items-center justify-between w-full px-4 py-3 text-base font-medium text-gray-900 rounded-xl hover:bg-gray-50 transition-colors duration-200"
+                                aria-expanded="false">
+                                <div class="flex items-center">
+                                    <svg class="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5h12M9 3v2m1.048 9.5A18.022 18.022 0 016.412 9m6.088 9h7M11 21l5-10 5 10M12.751 5C11.783 10.77 8.07 15.61 3 18.129" />
+                                    </svg>
+                                    <span>{{ $currentLanguage }}</span>
+                                </div>
+                                <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
                             </button>
-                            <button
-                                wire:click="switchCurrency('TL')"
-                                class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100"
-                                :class="{ 'bg-gray-50': '{{ $currentCurrency }}' === 'TL' }">
-                                TL
-                            </button>
+
+                            <div
+                                x-show="open"
+                                x-transition:enter="transition ease-out duration-100"
+                                x-transition:enter-start="transform opacity-0 scale-95"
+                                x-transition:enter-end="transform opacity-100 scale-100"
+                                x-transition:leave="transition ease-in duration-75"
+                                x-transition:leave-start="transform opacity-100 scale-100"
+                                x-transition:leave-end="transform opacity-0 scale-95"
+                                class="absolute bottom-full mb-2 left-0 w-full rounded-xl shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50"
+                                x-cloak>
+                                <div class="py-1">
+                                    <button
+                                        wire:click="changeLanguage('EN')"
+                                        class="flex items-center w-full px-4 py-3 text-sm text-left text-gray-700 hover:bg-gray-50 transition-colors duration-200"
+                                        :class="{ 'bg-gray-50': '{{ $currentLanguage }}' === 'EN' }">
+                                        <span class="mr-2">🇬🇧</span>
+                                        English
+                                    </button>
+                                    <button
+                                        wire:click="changeLanguage('TR')"
+                                        class="flex items-center w-full px-4 py-3 text-sm text-left text-gray-700 hover:bg-gray-50 transition-colors duration-200"
+                                        :class="{ 'bg-gray-50': '{{ $currentLanguage }}' === 'TR' }">
+                                        <span class="mr-2">🇹🇷</span>
+                                        Turkish
+                                    </button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

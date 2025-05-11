@@ -116,7 +116,7 @@
     <!-- Charts Section -->
     <div class="grid gap-4 sm:gap-6 mb-6 sm:mb-8 grid-cols-1 lg:grid-cols-3">
         <!-- Sales Chart -->
-        <div class="bg-white rounded-lg shadow-lg md:col-span-2">
+        <div class="bg-white rounded-lg shadow-lg lg:col-span-2">
             <div class="p-0 sm:p-6">
                 <div class="flex flex-wrap items-center justify-between p-4 sm:p-0">
                     <h2 class="text-lg font-medium text-gray-900">Website Visits Overview</h2>
