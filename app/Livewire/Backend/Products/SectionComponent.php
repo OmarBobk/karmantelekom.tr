@@ -43,6 +43,8 @@ class SectionComponent extends Component
     // Form properties
     public $sectionId;
     public $name = '';
+    public $tr_name = '';
+    public $ar_name = '';
     public $description = '';
     public $order = 0;
 
@@ -53,6 +55,8 @@ class SectionComponent extends Component
 
     protected $rules = [
         'name' => 'required|min:3|max:255',
+        'tr_name' => 'nullable|min:3|max:255',
+        'ar_name' => 'nullable|min:3|max:255',
         'description' => 'nullable|max:1000',
         'order' => 'required|integer|min:0',
         'position' => 'required',
@@ -74,6 +78,8 @@ class SectionComponent extends Component
 
         $this->reset([
             'name',
+            'tr_name',
+            'ar_name',
             'description',
             'position',
             'is_active',
@@ -106,6 +112,8 @@ class SectionComponent extends Component
         $this->editingSection = $section;
         $this->sectionId = $section->id;
         $this->name = $section->name;
+        $this->tr_name = $section->tr_name;
+        $this->ar_name = $section->ar_name;
         $this->description = $section->description;
         $this->order = $section->order;
         $this->position = $section->position;
@@ -131,6 +139,8 @@ class SectionComponent extends Component
         $section = $this->editingSection ?? new Section();
         $section->fill([
             'name' => $this->name,
+            'tr_name' => $this->tr_name,
+            'ar_name' => $this->ar_name,
             'description' => $this->description,
             'order' => $this->order,
             'position' => $this->position,

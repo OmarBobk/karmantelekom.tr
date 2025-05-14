@@ -16,11 +16,22 @@ class Category extends Model
         'name',
         'slug',
         'parent_id',
-        'status'
+        'status',
+        'tr_name',
+        'ar_name',
+        'description',
+        'order',
+        'is_active',
+        'scrollable',
+        'position'
     ];
 
     protected $casts = [
-        'status' => 'boolean'
+        'status' => 'boolean',
+        'is_active' => 'boolean',
+        'scrollable' => 'boolean',
+        'order' => 'integer',
+        'position' => SectionPosition::class
     ];
 
     public function parent(): BelongsTo
@@ -56,5 +67,19 @@ class Category extends Model
                 $category->slug = Str::slug($category->name);
             }
         });
+    }
+
+    /**
+     * Get the translated name based on the current locale.
+     *
+     * @return string
+     */
+    public function getTranslatedNameAttribute(): string
+    {
+        return match (app()->getLocale()) {
+            'tr' => $this->tr_name ?: $this->name,
+            'ar' => $this->ar_name ?: $this->name,
+            default => $this->name,
+        };
     }
 }

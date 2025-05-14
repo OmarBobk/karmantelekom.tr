@@ -45,6 +45,8 @@ class CategoryComponent extends Component
         'name' => '',
         'parent_id' => null,
         'status' => true,
+        'tr_name' => '',
+        'ar_name' => ''
     ];
 
     public $editForm = [
@@ -52,6 +54,8 @@ class CategoryComponent extends Component
         'name' => '',
         'parent_id' => null,
         'status' => true,
+        'tr_name' => '',
+        'ar_name' => ''
     ];
 
     public function mount()
@@ -100,6 +104,8 @@ class CategoryComponent extends Component
             'name' => $category->name,
             'parent_id' => $category->parent_id,
             'status' => $category->status,
+            'tr_name' => $category->tr_name,
+            'ar_name' => $category->ar_name
         ];
         $this->editModalOpen = true;
     }
@@ -110,22 +116,21 @@ class CategoryComponent extends Component
             'editForm.name' => 'required|string|max:255',
             'editForm.parent_id' => 'nullable|exists:categories,id',
             'editForm.status' => 'boolean',
+            'editForm.tr_name' => 'nullable|min:3|max:255',
+            'editForm.ar_name' => 'nullable|min:3|max:255'
         ]);
 
         $category = Category::find($this->editForm['id']);
         $category->update($this->editForm);
 
-        $this->reset(['editForm', 'editModalOpen']);
-    }
+        // Add success notification
+        session()->flash('success', 'Category updated successfully.');
+        $this->dispatch('notify', [
+            'type' => 'success',
+            'message' => 'Category updated successfully.'
+        ]);
 
-    public function resetAddForm()
-    {
-        $this->addForm = [
-            'name' => '',
-            'parent_id' => null,
-            'status' => true,
-        ];
-        $this->addModalOpen = false;
+        $this->reset(['editForm', 'editModalOpen']);
     }
 
     public function createCategory()
@@ -134,16 +139,36 @@ class CategoryComponent extends Component
             'addForm.name' => 'required|string|max:255',
             'addForm.parent_id' => 'nullable|exists:categories,id',
             'addForm.status' => 'boolean',
+            'addForm.tr_name' => 'nullable|min:3|max:255',
+            'addForm.ar_name' => 'nullable|min:3|max:255'
         ]);
 
         Category::create($this->addForm);
 
         // Refresh the parent categories list
         $this->dispatch('refreshParentCategories');
+        
+        // Add success notification
+        session()->flash('success', 'Category created successfully.');
+        $this->dispatch('notify', [
+            'type' => 'success',
+            'message' => 'Category created successfully.'
+        ]);
 
         $this->resetAddForm();
     }
 
+    public function resetAddForm()
+    {
+        $this->addForm = [
+            'name' => '',
+            'parent_id' => null,
+            'status' => true,
+            'tr_name' => '',
+            'ar_name' => ''
+        ];
+        $this->addModalOpen = false;
+    }
 
     public function getParentCategoriesProperty()
     {
@@ -259,6 +284,14 @@ class CategoryComponent extends Component
     {
         $this->categoryToDelete->delete();
         $this->showDeleteModal = false;
+        
+        // Add success notification
+        session()->flash('success', 'Category deleted successfully.');
+        $this->dispatch('notify', [
+            'type' => 'success',
+            'message' => 'Category deleted successfully.'
+        ]);
+        
         $this->dispatch('categoryDeleted');
     }
 

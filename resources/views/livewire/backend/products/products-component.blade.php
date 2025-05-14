@@ -176,9 +176,13 @@
                                                 >
                                                     <img class="h-10 w-10 rounded-lg object-cover"
                                                         src="{{ $product->images->where('is_primary', true)->first()
-                                                            ? Storage::url($product->images->where('is_primary', true)->first()->image_url)
+                                                            ? (Storage::disk('public')->exists($product->images->where('is_primary', true)->first()->image_url)
+                                                                ? Storage::url($product->images->where('is_primary', true)->first()->image_url)
+                                                                : 'https://placehold.co/100')
                                                             : ($product->images->first()
-                                                                ? Storage::url($product->images->first()->image_url)
+                                                                ? (Storage::disk('public')->exists($product->images->first()->image_url)
+                                                                    ? Storage::url($product->images->first()->image_url)
+                                                                    : 'https://placehold.co/100')
                                                                 : 'https://placehold.co/100') }}"
                                                         alt="{{ $product->name }}" />
                                                 </button>
@@ -390,10 +394,10 @@
                         <div class="space-y-6 ml-2">
                             <!-- Name -->
                             <div>
-                                <label for="name" class="block text-sm font-medium text-gray-700">Product Name</label>
+                                <label for="name" class="block text-sm font-medium text-gray-700">Product Name (English)</label>
                                 <input type="text"
                                     wire:model.blur="editForm.name"
-                                    @blur="$wire.generateSlug()"
+                                    @blur="$wire.generateSlug('edit')"
                                     id="name"
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
                                 @error('editForm.name')
@@ -403,13 +407,101 @@
 
                             <!-- Slug -->
                             <div>
-                                <label for="slug" class="block text-sm font-medium text-gray-700">Slug</label>
+                                <label for="slug" class="block text-sm font-medium text-gray-700">Slug (English)</label>
                                 <input type="text"
                                     wire:model="editForm.slug"
                                     id="slug"
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                                     readonly>
                                 @error('editForm.slug')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <!-- Turkish Name -->
+                            <div>
+                                <label for="tr-name" class="block text-sm font-medium text-gray-700">Product Name (Turkish)</label>
+                                <input type="text"
+                                    wire:model.blur="editForm.tr_name"
+                                    @blur="$wire.generateSlug('edit', 'tr')"
+                                    id="tr-name"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                                @error('editForm.tr_name')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <!-- Turkish Slug -->
+                            <div>
+                                <label for="tr-slug" class="block text-sm font-medium text-gray-700">Slug (Turkish)</label>
+                                <input type="text"
+                                    wire:model="editForm.tr_slug"
+                                    id="tr-slug"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                    readonly>
+                                @error('editForm.tr_slug')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <!-- Arabic Name -->
+                            <div>
+                                <label for="ar-name" class="block text-sm font-medium text-gray-700">Product Name (Arabic)</label>
+                                <input type="text"
+                                    wire:model.blur="editForm.ar_name"
+                                    @blur="$wire.generateSlug('edit', 'ar')"
+                                    id="ar-name"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                                @error('editForm.ar_name')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <!-- Arabic Slug -->
+                            <div>
+                                <label for="ar-slug" class="block text-sm font-medium text-gray-700">Slug (Arabic)</label>
+                                <input type="text"
+                                    wire:model="editForm.ar_slug"
+                                    id="ar-slug"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                    readonly>
+                                @error('editForm.ar_slug')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <!-- Description -->
+                            <div>
+                                <label for="description" class="block text-sm font-medium text-gray-700">Description (English)</label>
+                                <textarea wire:model="editForm.description"
+                                    id="description"
+                                    rows="3"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></textarea>
+                                @error('editForm.description')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <!-- Turkish Description -->
+                            <div>
+                                <label for="tr-description" class="block text-sm font-medium text-gray-700">Description (Turkish)</label>
+                                <textarea wire:model="editForm.tr_description"
+                                    id="tr-description"
+                                    rows="3"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></textarea>
+                                @error('editForm.tr_description')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <!-- Arabic Description -->
+                            <div>
+                                <label for="ar-description" class="block text-sm font-medium text-gray-700">Description (Arabic)</label>
+                                <textarea wire:model="editForm.ar_description"
+                                    id="ar-description"
+                                    rows="3"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></textarea>
+                                @error('editForm.ar_description')
                                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
                             </div>
@@ -457,18 +549,6 @@
                                     </div>
                                 </div>
                                 @error('editForm.is_active') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
-                            </div>
-
-                            <!-- Description -->
-                            <div>
-                                <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
-                                <textarea wire:model="editForm.description"
-                                    id="description"
-                                    rows="4"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></textarea>
-                                @error('editForm.description')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
                             </div>
                         </div>
 
@@ -1002,7 +1082,7 @@
                         <div class="space-y-6 ml-2">
                             <!-- Name -->
                             <div>
-                                <label for="add-name" class="block text-sm font-medium text-gray-700">Product Name</label>
+                                <label for="add-name" class="block text-sm font-medium text-gray-700">Product Name (English)</label>
                                 <input type="text"
                                     wire:model.blur="addForm.name"
                                     @blur="$wire.generateSlug('add')"
@@ -1015,13 +1095,104 @@
 
                             <!-- Slug -->
                             <div>
-                                <label for="add-slug" class="block text-sm font-medium text-gray-700">Slug</label>
+                                <label for="add-slug" class="block text-sm font-medium text-gray-700">Slug (English)</label>
                                 <input type="text"
                                     wire:model="addForm.slug"
                                     id="add-slug"
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                                     readonly>
                                 @error('addForm.slug')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <!-- Turkish Name -->
+                            <div>
+                                <label for="add-tr-name" class="block text-sm font-medium text-gray-700">Product Name (Turkish)</label>
+                                <input type="text"
+                                    wire:model.blur="addForm.tr_name"
+                                    @blur="$wire.generateSlug('add', 'tr')"
+                                    id="add-tr-name"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                                @error('addForm.tr_name')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <!-- Turkish Slug -->
+                            <div>
+                                <label for="add-tr-slug" class="block text-sm font-medium text-gray-700">Slug (Turkish)</label>
+                                <input type="text"
+                                    wire:model="addForm.tr_slug"
+                                    id="add-tr-slug"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                    readonly>
+                                @error('addForm.tr_slug')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <!-- Arabic Name -->
+                            <div>
+                                <label for="add-ar-name" class="block text-sm font-medium text-gray-700">Product Name (Arabic)</label>
+                                <input type="text"
+                                    wire:model.blur="addForm.ar_name"
+                                    @blur="$wire.generateSlug('add', 'ar')"
+                                    id="add-ar-name"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                                @error('addForm.ar_name')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <!-- Arabic Slug -->
+                            <div>
+                                <label for="add-ar-slug" class="block text-sm font-medium text-gray-700">Slug (Arabic)</label>
+                                <input type="text"
+                                    wire:model="addForm.ar_slug"
+                                    id="add-ar-slug"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                    readonly>
+                                @error('addForm.ar_slug')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <!-- Description -->
+                            <div>
+                                <label for="add-description" class="block text-sm font-medium text-gray-700">Description (English)</label>
+                                <textarea
+                                    wire:model="addForm.description"
+                                    id="add-description"
+                                    rows="3"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></textarea>
+                                @error('addForm.description')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <!-- Turkish Description -->
+                            <div>
+                                <label for="add-tr-description" class="block text-sm font-medium text-gray-700">Description (Turkish)</label>
+                                <textarea
+                                    wire:model="addForm.tr_description"
+                                    id="add-tr-description"
+                                    rows="3"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></textarea>
+                                @error('addForm.tr_description')
+                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @enderror
+                            </div>
+
+                            <!-- Arabic Description -->
+                            <div>
+                                <label for="add-ar-description" class="block text-sm font-medium text-gray-700">Description (Arabic)</label>
+                                <textarea
+                                    wire:model="addForm.ar_description"
+                                    id="add-ar-description"
+                                    rows="3"
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></textarea>
+                                @error('addForm.ar_description')
                                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
                             </div>
@@ -1066,20 +1237,6 @@
                                     </div>
                                 </div>
                                 @error('addForm.is_active') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
-                            </div>
-
-                            <!-- Description -->
-                            <div>
-                                <label for="add-description" class="block text-sm font-medium text-gray-700">Description</label>
-                                <textarea
-                                    wire:model="addForm.description"
-                                    id="add-description"
-                                    rows="4"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                                ></textarea>
-                                @error('addForm.description')
-                                    <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
-                                @enderror
                             </div>
                         </div>
 

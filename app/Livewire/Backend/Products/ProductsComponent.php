@@ -140,7 +140,14 @@ class ProductsComponent extends Component
             ['price' => '', 'currency' => 'TRY'],
             ['price' => '', 'currency' => 'USD']
         ],
-        'tags' => []
+        'tags' => [],
+        // Add translation fields
+        'tr_name' => '',
+        'tr_description' => '',
+        'tr_slug' => '',
+        'ar_name' => '',
+        'ar_description' => '',
+        'ar_slug' => ''
     ];
 
     // Image Upload State
@@ -266,6 +273,13 @@ class ProductsComponent extends Component
         'addForm.category_id' => 'category',
         'addForm.prices.*.price' => 'price',
         'newProductImages.*' => 'image',
+        // Add translation attributes
+        'addForm.tr_name' => 'Turkish name',
+        'addForm.tr_description' => 'Turkish description',
+        'addForm.tr_slug' => 'Turkish slug',
+        'addForm.ar_name' => 'Arabic name',
+        'addForm.ar_description' => 'Arabic description',
+        'addForm.ar_slug' => 'Arabic slug'
     ];
 
     /**
@@ -308,7 +322,14 @@ class ProductsComponent extends Component
                 ['price' => '', 'currency' => 'TRY'],
                 ['price' => '', 'currency' => 'USD']
             ],
-            'tags' => []
+            'tags' => [],
+            // Add translation fields
+            'tr_name' => '',
+            'tr_description' => '',
+            'tr_slug' => '',
+            'ar_name' => '',
+            'ar_description' => '',
+            'ar_slug' => ''
         ];
         $this->newProductImages = [];
         $this->resetValidation('addForm.*');
@@ -393,12 +414,19 @@ class ProductsComponent extends Component
         }
 
         $this->editForm = [
+            'id' => $this->editingProduct->id,
             'name' => $this->editingProduct->name,
             'slug' => $this->editingProduct->slug,
+            'tr_name' => $this->editingProduct->tr_name,
+            'tr_slug' => $this->editingProduct->tr_slug,
+            'ar_name' => $this->editingProduct->ar_name,
+            'ar_slug' => $this->editingProduct->ar_slug,
+            'description' => $this->editingProduct->description,
+            'tr_description' => $this->editingProduct->tr_description,
+            'ar_description' => $this->editingProduct->ar_description,
             'serial' => $this->editingProduct->serial,
             'code' => $this->editingProduct->code,
             'is_active' => $this->editingProduct->is_active,
-            'description' => $this->editingProduct->description,
             'category_id' => $this->editingProduct->category_id,
             'prices' => $formattedPrices,
             'tags' => $this->editingProduct->tags->pluck('id')->toArray()
@@ -434,10 +462,16 @@ class ProductsComponent extends Component
             $this->editingProduct->update([
                 'name' => $this->editForm['name'],
                 'slug' => $this->editForm['slug'],
+                'tr_name' => $this->editForm['tr_name'],
+                'tr_slug' => $this->editForm['tr_slug'],
+                'ar_name' => $this->editForm['ar_name'],
+                'ar_slug' => $this->editForm['ar_slug'],
+                'description' => $this->editForm['description'],
+                'tr_description' => $this->editForm['tr_description'],
+                'ar_description' => $this->editForm['ar_description'],
                 'serial' => $this->editForm['serial'],
                 'code' => $this->editForm['code'],
                 'is_active' => $this->editForm['is_active'],
-                'description' => $this->editForm['description'],
                 'category_id' => $this->editForm['category_id']
             ]);
 
@@ -542,29 +576,29 @@ class ProductsComponent extends Component
     }
 
     /**
-     * Generate a unique slug for the product
+     * Generate a slug from the given name
      *
-     * @param string $form The form type ('edit' or 'add')
+     * @param string $formType The form type ('add' or 'edit')
+     * @param string|null $language The language code (null for English, 'tr' for Turkish, 'ar' for Arabic)
      */
-    public function generateSlug(string $form = 'edit'): void
+    public function generateSlug(string $formType = 'add', ?string $language = null): void
     {
-        $name = $form === 'edit' ? $this->editForm['name'] : $this->addForm['name'];
-        $slug = Str::slug($name);
-        $originalSlug = $slug;
-        $counter = 1;
-
-        while (Product::where('slug', $slug)
-            ->when($form === 'edit' && $this->editingProduct,
-                fn($query) => $query->where('id', '!=', $this->editingProduct->id)
-            )->exists()
-        ) {
-            $slug = $originalSlug . '-' . $counter++;
-        }
-
-        if ($form === 'edit') {
-            $this->editForm['slug'] = $slug;
+        if ($formType === 'add') {
+            if ($language === 'en' || $language === null) {
+                $this->addForm['slug'] = Str::slug($this->addForm['name']);
+            } elseif ($language === 'tr') {
+                $this->addForm['tr_slug'] = Str::slug($this->addForm['tr_name']);
+            } elseif ($language === 'ar') {
+                $this->addForm['ar_slug'] = Str::slug($this->addForm['ar_name']);
+            }
         } else {
-            $this->addForm['slug'] = $slug;
+            if ($language === 'en' || $language === null) {
+                $this->editForm['slug'] = Str::slug($this->editForm['name']);
+            } elseif ($language === 'tr') {
+                $this->editForm['tr_slug'] = Str::slug($this->editForm['tr_name']);
+            } elseif ($language === 'ar') {
+                $this->editForm['ar_slug'] = Str::slug($this->editForm['ar_name']);
+            }
         }
     }
 
@@ -592,6 +626,8 @@ class ProductsComponent extends Component
             ->when($this->search, fn($query) =>
                 $query->where(function($q) {
                     $q->where('name', 'like', '%' . $this->search . '%')
+                      ->orWhere('tr_name', 'like', '%' . $this->search . '%')
+                      ->orWhere('ar_name', 'like', '%' . $this->search . '%')
                       ->orWhere('code', 'like', '%' . $this->search . '%')
                       ->orWhere('serial', 'like', '%' . $this->search . '%');
                 })
@@ -943,11 +979,13 @@ class ProductsComponent extends Component
         $this->validate($this->getAddRules());
 
         try {
-            DB::beginTransaction();
-
-            logger()->info('Starting product creation transaction', [
-                'form_data' => $this->addForm
+            logger()->info('Starting product creation process', [
+                'form_data' => $this->addForm,
+                'has_images' => !empty($this->newProductImages),
+                'image_count' => count($this->newProductImages ?? [])
             ]);
+
+            DB::beginTransaction();
 
             // Create the product
             $product = Product::create([
@@ -957,21 +995,33 @@ class ProductsComponent extends Component
                 'serial' => $this->addForm['serial'],
                 'is_active' => $this->addForm['is_active'],
                 'description' => $this->addForm['description'],
-                'category_id' => $this->addForm['category_id']
+                'category_id' => $this->addForm['category_id'],
+                // Add translation fields
+                'tr_name' => $this->addForm['tr_name'],
+                'tr_description' => $this->addForm['tr_description'],
+                'tr_slug' => $this->addForm['tr_slug'],
+                'ar_name' => $this->addForm['ar_name'],
+                'ar_description' => $this->addForm['ar_description'],
+                'ar_slug' => $this->addForm['ar_slug']
+            ]);
+
+            logger()->info('Product created successfully', [
+                'product_id' => $product->id,
+                'product_name' => $product->name
             ]);
 
             // Create price in TRY
             $product->prices()->create([
                 'currency_id' => 1, // TRY
                 'base_price' => $this->addForm['prices'][0]['price'] !== '' ? $this->addForm['prices'][0]['price'] : 0,
-                'converted_price' => $this->addForm['prices'][0]['price'] !== '' ? $this->addForm['prices'][0]['price'] : 0, // For TRY, base and converted are same
+                'converted_price' => $this->addForm['prices'][0]['price'] !== '' ? $this->addForm['prices'][0]['price'] : 0,
             ]);
 
             // Create price in USD
             $product->prices()->create([
                 'currency_id' => 2, // USD
                 'base_price' => $this->addForm['prices'][1]['price'] !== '' ? $this->addForm['prices'][1]['price'] : 0,
-                'converted_price' => $this->addForm['prices'][1]['price'] !== '' ? $this->addForm['prices'][1]['price'] : 0, // For USD prices, this will be updated by the scheduled job
+                'converted_price' => $this->addForm['prices'][1]['price'] !== '' ? $this->addForm['prices'][1]['price'] : 0,
             ]);
 
             // Sync tags if any are selected
@@ -981,17 +1031,54 @@ class ProductsComponent extends Component
 
             // Handle product images
             if (!empty($this->newProductImages)) {
+                logger()->info('Starting image upload process', [
+                    'product_id' => $product->id,
+                    'image_count' => count($this->newProductImages)
+                ]);
+
                 foreach ($this->newProductImages as $index => $image) {
                     try {
+                        // Log the image details before upload
+                        logger()->info('Processing image upload', [
+                            'index' => $index,
+                            'original_name' => $image->getClientOriginalName(),
+                            'mime_type' => $image->getMimeType(),
+                            'size' => $image->getSize(),
+                            'temporary_path' => $image->getRealPath()
+                        ]);
+
+                        // Store the image and get the path
                         $path = $image->store('products', 'public');
-                        $product->images()->create([
+
+                        // Log the stored path
+                        logger()->info('Image stored successfully', [
+                            'path' => $path,
+                            'full_url' => Storage::url($path),
+                            'exists' => Storage::disk('public')->exists($path)
+                        ]);
+
+                        // Create the image record
+                        $imageRecord = $product->images()->create([
                             'image_url' => $path,
                             'is_primary' => $index === 0 // First image is primary
                         ]);
+
+                        logger()->info('Image record created', [
+                            'image_id' => $imageRecord->id,
+                            'image_url' => $imageRecord->image_url,
+                            'is_primary' => $imageRecord->is_primary
+                        ]);
+
+                        // Verify the file exists after upload
+                        if (!Storage::disk('public')->exists($path)) {
+                            throw new \Exception("File was not properly stored at path: {$path}");
+                        }
+
                     } catch (\Exception $e) {
                         logger()->error('Error uploading image', [
                             'image_index' => $index,
-                            'error' => $e->getMessage()
+                            'error' => $e->getMessage(),
+                            'trace' => $e->getTraceAsString()
                         ]);
                         // Continue with other images if one fails
                         continue;
@@ -1000,6 +1087,11 @@ class ProductsComponent extends Component
             }
 
             DB::commit();
+
+            logger()->info('Product creation completed successfully', [
+                'product_id' => $product->id,
+                'image_count' => $product->images()->count()
+            ]);
 
             $this->addModalOpen = false;
             $this->reset(['addForm', 'newProductImages']);
@@ -1013,7 +1105,8 @@ class ProductsComponent extends Component
         } catch (\Exception $e) {
             DB::rollBack();
             logger()->error('Error creating product', [
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
             ]);
 
             $this->dispatch('notify', [
@@ -1042,7 +1135,14 @@ class ProductsComponent extends Component
             'newProductImages' => 'nullable|array',
             'newProductImages.*' => 'image|max:2048',
             'addForm.tags' => 'array',
-            'addForm.tags.*' => 'exists:tags,id'
+            'addForm.tags.*' => 'exists:tags,id',
+            // Add validation rules for translation fields
+            'addForm.tr_name' => 'nullable|min:3|max:255',
+            'addForm.tr_description' => 'nullable|min:10|max:1000',
+            'addForm.tr_slug' => 'nullable|unique:products,tr_slug',
+            'addForm.ar_name' => 'nullable|min:3|max:255',
+            'addForm.ar_description' => 'nullable|min:10|max:1000',
+            'addForm.ar_slug' => 'nullable|unique:products,ar_slug'
         ];
     }
 
@@ -1054,16 +1154,24 @@ class ProductsComponent extends Component
     protected function getEditRules(): array
     {
         return [
-            'editForm.name' => 'required|min:3',
+            'editForm.name' => 'required|min:3|max:255',
             'editForm.slug' => 'required|unique:products,slug,' . ($this->editingProduct?->id ?? ''),
+            'editForm.tr_name' => 'nullable|min:3|max:255',
+            'editForm.tr_slug' => 'nullable|unique:products,tr_slug,' . ($this->editingProduct?->id ?? ''),
+            'editForm.ar_name' => 'nullable|min:3|max:255',
+            'editForm.ar_slug' => 'nullable|unique:products,ar_slug,' . ($this->editingProduct?->id ?? ''),
+            'editForm.description' => 'required|min:10|max:1000',
+            'editForm.tr_description' => 'nullable|min:10|max:1000',
+            'editForm.ar_description' => 'nullable|min:10|max:1000',
             'editForm.serial' => 'nullable|unique:products,serial,' . ($this->editingProduct?->id ?? ''),
             'editForm.code' => 'required|unique:products,code,' . ($this->editingProduct?->id ?? ''),
             'editForm.is_active' => 'boolean',
-            'editForm.description' => 'required|min:10',
             'editForm.category_id' => 'required|exists:categories,id',
             'editForm.prices.*.price' => 'nullable|numeric|min:0',
             'newImages' => 'nullable|array',
             'newImages.*' => 'image|max:2048',
+            'editForm.tags' => 'array',
+            'editForm.tags.*' => 'exists:tags,id'
         ];
     }
 
@@ -1232,5 +1340,72 @@ class ProductsComponent extends Component
                 })->toArray()
             ];
         })->toArray();
+    }
+
+    public function edit($id)
+    {
+        $product = Product::findOrFail($id);
+        $this->editForm = [
+            'id' => $product->id,
+            'name' => $product->name,
+            'slug' => $product->slug,
+            'tr_name' => $product->tr_name,
+            'tr_slug' => $product->tr_slug,
+            'ar_name' => $product->ar_name,
+            'ar_slug' => $product->ar_slug,
+            'description' => $product->description,
+            'tr_description' => $product->tr_description,
+            'ar_description' => $product->ar_description,
+            'code' => $product->code,
+            'serial' => $product->serial,
+            'price' => $product->price,
+            'stock' => $product->stock,
+            'is_active' => $product->is_active,
+        ];
+        $this->showEditModal = true;
+    }
+
+    public function update()
+    {
+        $this->validate([
+            'editForm.name' => 'required|min:3',
+            'editForm.slug' => 'required|unique:products,slug,' . $this->editForm['id'],
+            'editForm.tr_name' => 'required|min:3',
+            'editForm.tr_slug' => 'required|unique:products,tr_slug,' . $this->editForm['id'],
+            'editForm.ar_name' => 'required|min:3',
+            'editForm.ar_slug' => 'required|unique:products,ar_slug,' . $this->editForm['id'],
+            'editForm.description' => 'required',
+            'editForm.tr_description' => 'required',
+            'editForm.ar_description' => 'required',
+            'editForm.code' => 'required|unique:products,code,' . $this->editForm['id'],
+            'editForm.serial' => 'required|unique:products,serial,' . $this->editForm['id'],
+            'editForm.price' => 'required|numeric|min:0',
+            'editForm.stock' => 'required|integer|min:0',
+            'editForm.is_active' => 'boolean',
+        ]);
+
+        $product = Product::find($this->editForm['id']);
+        $product->update([
+            'name' => $this->editForm['name'],
+            'slug' => $this->editForm['slug'],
+            'tr_name' => $this->editForm['tr_name'],
+            'tr_slug' => $this->editForm['tr_slug'],
+            'ar_name' => $this->editForm['ar_name'],
+            'ar_slug' => $this->editForm['ar_slug'],
+            'description' => $this->editForm['description'],
+            'tr_description' => $this->editForm['tr_description'],
+            'ar_description' => $this->editForm['ar_description'],
+            'code' => $this->editForm['code'],
+            'serial' => $this->editForm['serial'],
+            'price' => $this->editForm['price'],
+            'stock' => $this->editForm['stock'],
+            'is_active' => $this->editForm['is_active'],
+        ]);
+
+        $this->showEditModal = false;
+        $this->dispatch('notify', [
+            'type' => 'success',
+            'message' => 'Product updated successfully!'
+        ]);
     }
 }

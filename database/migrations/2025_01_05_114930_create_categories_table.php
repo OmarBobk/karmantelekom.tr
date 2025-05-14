@@ -14,6 +14,9 @@ return new class extends Migration
             $table->string('slug')->nullable();
             $table->foreignId('parent_id')->nullable()->constrained('categories')->onDelete('cascade');
             $table->boolean('status')->default(true);
+
+            $table->string('tr_name')->nullable();
+            $table->string('ar_name')->nullable();
             $table->timestamps();
         });
     }

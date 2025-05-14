@@ -163,7 +163,7 @@
                                         id="tab-{{ $index }}"
                                         x-cloak
                                     >
-                                        {{ $section->name }}
+                                        {{ $section->translated_name }}
                                     </button>
                                 @empty
                                     <p class="text-gray-500 px-4 py-2">No sections found</p>
@@ -237,7 +237,9 @@
                                                 <div class="bg-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100">
                                                     <figure class="relative aspect-w-1 aspect-h-1 w-full overflow-hidden bg-gray-50 rounded-t-lg">
                                                         <button wire:click="$dispatch('openProductModal', { productId: {{ $product->id }} })" class="w-full h-full">
-                                                            <img src="{{ Storage::url($product->images->where('is_primary', true)->first()->image_url)}}"
+                                                            <img src="{{ $product->images->where('is_primary', true)->first()?->image_url
+                                                                    ? Storage::url($product->images->where('is_primary', true)->first()->image_url)
+                                                                    : 'https://placehold.co/100' }}"
                                                                 alt="{{ $product->name }}"
                                                                 class="h-[17.60rem] w-full object-contain group-hover/card:scale-105 transition-transform duration-300"
                                                                 loading="lazy"
@@ -247,11 +249,11 @@
                                                     <div class="p-4">
                                                         <!-- Product Info Header -->
                                                         <div class="mb-3">
-                                                            <p class="text-sm text-gray-500">{{ $section->name }}</p>
+                                                            <p class="text-sm text-gray-500">{{ $section->translated_name }}</p>
                                                             <button wire:click="$dispatch('openProductModal', { productId: {{ $product->id }} })" class="text-left">
                                                                 <div class="line-clamp-2">
-                                                                    <h3 class="text-base font-medium text-gray-900 hover:text-blue-600 transition-colors duration-200">{{ $product->name }}</h3>
-                                                                    <p class="text-sm text-gray-500">{{ $product->description }}</p>
+                                                                    <h3 class="text-base font-medium text-gray-900 hover:text-blue-600 transition-colors duration-200">{{ $product->translated_name }}</h3>
+                                                                    <p class="text-sm text-gray-500">{{ $product->translated_description }}</p>
                                                                 </div>
                                                             </button>
                                                         </div>
@@ -448,7 +450,7 @@
                 <!-- Section Header -->
                 <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div class="flex items-center justify-between mb-6">
-                        <h2 class="text-2xl font-bold text-gray-900">{{ $section->name }}</h2>
+                        <h2 class="text-2xl font-bold text-gray-900">{{ $section->translated_name }}</h2>
                     </div>
                 </div>
 
@@ -494,7 +496,9 @@
                                                 <!-- Image Slider -->
                                                 <div class="flex flex-col relative aspect-w-1 aspect-h-1 w-full overflow-hidden h-48 bg-gray-100 rounded-md">
                                                     <button wire:click="$dispatch('openProductModal', { productId: {{ $product->id }} })" class="">
-                                                        <img src="{{ Storage::url($product->images->where('is_primary', true)->first()->image_url) }}"
+                                                        <img src="{{ $product->images->where('is_primary', true)->first()?->image_url
+                                                                    ? Storage::url($product->images->where('is_primary', true)->first()->image_url)
+                                                                    : 'https://placehold.co/100' }}"
                                                              alt="{{ $product->name }} - Image {{ $index + 1 }}"
                                                              class="absolute h-full w-full object-cover lg:object-cover md:object-contain object-center transition-opacity duration-300 opacity-100"
                                                              loading="lazy">
@@ -506,8 +510,8 @@
                                                     <div class="mb-3">
                                                         <button wire:click="$dispatch('openProductModal', { productId: {{ $product->id }} })" class="text-left">
                                                             <div class="line-clamp-3">
-                                                                <span class="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors duration-200">{{ $product->name }}</span>
-                                                                <span class="text-sm text-gray-500">{{ $product->description }}</span>
+                                                                <span class="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors duration-200">{{ $product->translated_name }}</span>
+                                                                <span class="text-sm text-gray-500">{{ $product->translated_description }}</span>
                                                             </div>
                                                         </button>
                                                     </div>

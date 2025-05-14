@@ -113,7 +113,9 @@
             textColor: @entangle('addForm.text_color'),
             bgColor: @entangle('addForm.background_color'),
             borderColor: @entangle('addForm.border_color'),
-            icon: @entangle('addForm.icon')
+            icon: @entangle('addForm.icon'),
+            tr_name: @entangle('addForm.tr_name'),
+            ar_name: @entangle('addForm.ar_name')
         }"
         x-show="show" x-cloak class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
@@ -145,6 +147,16 @@
                                 <label for="name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
                                 <input type="text" wire:model="addForm.name" id="name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm">
                                 @error('addForm.name') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                            </div>
+                            <div>
+                                <label for="tr_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Turkish Name</label>
+                                <input type="text" wire:model="addForm.tr_name" id="tr_name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm">
+                                @error('addForm.tr_name') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                            </div>
+                            <div>
+                                <label for="ar_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Arabic Name</label>
+                                <input type="text" wire:model="addForm.ar_name" id="ar_name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm">
+                                @error('addForm.ar_name') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                             </div>
                             <div class="grid grid-cols-3 gap-4">
                                 <div>
@@ -216,7 +228,9 @@
             textColor: @entangle('editForm.text_color'),
             bgColor: @entangle('editForm.background_color'),
             borderColor: @entangle('editForm.border_color'),
-            icon: @entangle('editForm.icon')
+            icon: @entangle('editForm.icon'),
+            tr_name: @entangle('editForm.tr_name'),
+            ar_name: @entangle('editForm.ar_name')
         }"
         x-show="show" x-cloak class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
         <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
@@ -249,6 +263,16 @@
                                 <label for="edit_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Name</label>
                                 <input type="text" wire:model="editForm.name" id="edit_name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm">
                                 @error('editForm.name') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                            </div>
+                            <div>
+                                <label for="edit_tr_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Turkish Name</label>
+                                <input type="text" wire:model="editForm.tr_name" id="edit_tr_name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm">
+                                @error('editForm.tr_name') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
+                            </div>
+                            <div>
+                                <label for="edit_ar_name" class="block text-sm font-medium text-gray-700 dark:text-gray-300">Arabic Name</label>
+                                <input type="text" wire:model="editForm.ar_name" id="edit_ar_name" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 dark:bg-gray-700 dark:border-gray-600 dark:text-white sm:text-sm">
+                                @error('editForm.ar_name') <span class="text-red-500 text-xs">{{ $message }}</span> @enderror
                             </div>
                             <div class="grid grid-cols-3 gap-4">
                                 <div>

@@ -17,6 +17,10 @@ return new class extends Migration
             $table->string('icon')->nullable();
             $table->boolean('is_active')->default(false);
             $table->integer('display_order')->default(0);
+
+
+            $table->string('tr_name')->nullable();
+            $table->string('ar_name')->nullable();
             $table->timestamps();
         });
     }

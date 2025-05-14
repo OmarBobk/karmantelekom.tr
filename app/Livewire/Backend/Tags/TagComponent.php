@@ -33,6 +33,8 @@ class TagComponent extends Component
 
     public array $addForm = [
         'name' => '',
+        'tr_name' => '',
+        'ar_name' => '',
         'text_color' => '#000000',
         'background_color' => '#FFFFFF',
         'border_color' => '#000000',
@@ -43,6 +45,8 @@ class TagComponent extends Component
     public array $editForm = [
         'id' => null,
         'name' => '',
+        'tr_name' => '',
+        'ar_name' => '',
         'text_color' => '#000000',
         'background_color' => '#FFFFFF',
         'border_color' => '#000000',
@@ -59,6 +63,8 @@ class TagComponent extends Component
     {
         $this->addForm = [
             'name' => '',
+            'tr_name' => '',
+            'ar_name' => '',
             'text_color' => '#000000',
             'background_color' => '#FFFFFF',
             'border_color' => '#000000',
@@ -122,6 +128,8 @@ class TagComponent extends Component
             $this->editForm = [
                 'id' => $tag->id,
                 'name' => $tag->name,
+                'tr_name' => $tag->tr_name,
+                'ar_name' => $tag->ar_name,
                 'text_color' => $tag->text_color,
                 'background_color' => $tag->background_color,
                 'border_color' => $tag->border_color,
@@ -137,11 +145,12 @@ class TagComponent extends Component
         try {
             $this->validate($this->getEditRules());
 
-
             $tag = Tag::find($this->editForm['id']);
             if ($tag) {
                 $tag->update([
                     'name' => $this->editForm['name'],
+                    'tr_name' => $this->editForm['tr_name'],
+                    'ar_name' => $this->editForm['ar_name'],
                     'text_color' => $this->editForm['text_color'],
                     'background_color' => $this->editForm['background_color'],
                     'border_color' => $this->editForm['border_color'],
@@ -185,6 +194,8 @@ class TagComponent extends Component
 
         Tag::create([
             'name' => $this->addForm['name'],
+            'tr_name' => $this->addForm['tr_name'],
+            'ar_name' => $this->addForm['ar_name'],
             'slug' => $slug,
             'text_color' => $this->addForm['text_color'],
             'background_color' => $this->addForm['background_color'],
@@ -204,11 +215,13 @@ class TagComponent extends Component
     protected function getAddRules(): array
     {
         return [
-            'addForm.name' => 'required|string|max:255|unique:tags,name',
-            'addForm.text_color' => 'required|string|max:7',
-            'addForm.background_color' => 'required|string|max:7',
-            'addForm.border_color' => 'required|string|max:7',
-            'addForm.icon' => 'nullable|string|max:50',
+            'addForm.name' => 'required|min:2|max:255',
+            'addForm.tr_name' => 'nullable|min:2|max:255',
+            'addForm.ar_name' => 'nullable|min:2|max:255',
+            'addForm.text_color' => 'required|regex:/^#[0-9A-F]{6}$/i',
+            'addForm.background_color' => 'required|regex:/^#[0-9A-F]{6}$/i',
+            'addForm.border_color' => 'nullable|regex:/^#[0-9A-F]{6}$/i',
+            'addForm.icon' => 'nullable|max:255',
             'addForm.is_active' => 'boolean',
         ];
     }
@@ -216,11 +229,13 @@ class TagComponent extends Component
     protected function getEditRules(): array
     {
         return [
-            'editForm.name' => 'required|string|max:255|unique:tags,name,' . $this->editForm['id'],
-            'editForm.text_color' => 'required|string|max:7',
-            'editForm.background_color' => 'required|string|max:7',
-            'editForm.border_color' => 'required|string|max:7',
-            'editForm.icon' => 'nullable|string|max:50',
+            'editForm.name' => 'required|min:2|max:255',
+            'editForm.tr_name' => 'nullable|min:2|max:255',
+            'editForm.ar_name' => 'nullable|min:2|max:255',
+            'editForm.text_color' => 'required|regex:/^#[0-9A-F]{6}$/i',
+            'editForm.background_color' => 'required|regex:/^#[0-9A-F]{6}$/i',
+            'editForm.border_color' => 'nullable|regex:/^#[0-9A-F]{6}$/i',
+            'editForm.icon' => 'nullable|max:255',
             'editForm.is_active' => 'boolean',
         ];
     }

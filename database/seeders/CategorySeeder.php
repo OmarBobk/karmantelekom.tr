@@ -15,16 +15,16 @@ class CategorySeeder extends Seeder
     {
         // Create main categories
         $categories = [
-            ['name' => 'Electronics', 'status' => true],
-            ['name' => 'Clothing', 'status' => true],
-            ['name' => 'Home & Kitchen', 'status' => true],
-            ['name' => 'Books', 'status' => true],
-            ['name' => 'Sports', 'status' => true],
+            ['name' => 'Clothes', 'tr_name' => 'Kıyafetler', 'ar_name' => 'ملابس', 'status' => true],
+            ['name' => 'Self Care', 'tr_name' => 'Kozmetik', 'ar_name' => 'العناية الشخصية', 'status' => true],
+            ['name' => 'Home', 'tr_name' => 'Ev', 'ar_name' => 'ادوات منزلية', 'status' => true],
         ];
 
         foreach ($categories as $category) {
             Category::create([
                 'name' => $category['name'],
+                'tr_name' => $category['tr_name'],
+                'ar_name' => $category['ar_name'],
                 'slug' => \Illuminate\Support\Str::slug($category['name']),
                 'parent_id' => null,
                 'status' => $category['status'],
@@ -32,17 +32,16 @@ class CategorySeeder extends Seeder
         }
 
         // Create subcategories
-        $electronics = Category::where('name', 'Electronics')->first();
-        $clothing = Category::where('name', 'Clothing')->first();
-        $home = Category::where('name', 'Home & Kitchen')->first();
+        $electronics = Category::where('name', 'Clothes')->first();
+        $clothing = Category::where('name', 'Self Care')->first();
+        $home = Category::where('name', 'Home')->first();
 
         $subcategories = [
-            ['name' => 'Smartphones', 'parent_id' => $electronics->id, 'status' => true],
-            ['name' => 'Laptops', 'parent_id' => $electronics->id, 'status' => true],
-            ['name' => 'Men\'s Clothing', 'parent_id' => $clothing->id, 'status' => true],
-            ['name' => 'Women\'s Clothing', 'parent_id' => $clothing->id, 'status' => true],
-            ['name' => 'Furniture', 'parent_id' => $home->id, 'status' => true],
-            ['name' => 'Kitchen Appliances', 'parent_id' => $home->id, 'status' => true],
+            ['name' => 'Leather', 'tr_name' => 'Deri Kıyafetleri', 'ar_name' => 'ملابس جلدية', 'parent_id' => $electronics->id, 'status' => true],
+            ['name' => 'Cotton Clothes', 'tr_name' => 'Pamuklu Kıyafetleri', 'ar_name' => 'ملابس قطنية', 'parent_id' => $electronics->id, 'status' => true],
+            ['name' => 'Skin Care', 'tr_name' => 'Cilt Bakımı', 'ar_name' => 'العناية بالبشرة', 'parent_id' => $clothing->id, 'status' => true],
+            ['name' => 'Dyson', 'tr_name' => 'Dyson', 'ar_name' => 'دايسون', 'parent_id' => $home->id, 'status' => true],
+            ['name' => 'Home', 'tr_name' => 'Ev', 'ar_name' => 'المنزل', 'parent_id' => $home->id, 'status' => true],
         ];
 
         foreach ($subcategories as $subcategory) {

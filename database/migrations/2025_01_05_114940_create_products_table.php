@@ -17,6 +17,17 @@ return new class extends Migration
             $table->text('description');
             $table->boolean('is_active')->default(true);
             $table->foreignId('category_id')->constrained('categories')->onDelete('cascade');
+
+            // Turkish translations
+            $table->string('tr_name')->nullable();
+            $table->text('tr_description')->nullable();
+            $table->string('tr_slug')->nullable();
+
+            // Arabic translations
+            $table->string('ar_name')->nullable();
+            $table->text('ar_description')->nullable();
+            $table->string('ar_slug')->nullable();
+
             $table->timestamps();
 
             // Add indexes for better performance
@@ -25,6 +36,8 @@ return new class extends Migration
             $table->index('serial');
             $table->index('is_active');
             $table->index('slug');
+            $table->index('tr_slug');
+            $table->index('ar_slug');
 
         });
     }

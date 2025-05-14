@@ -18,6 +18,10 @@ return new class extends Migration
             $table->boolean('scrollable')->default(false);
             $table->enum('position', SectionPosition::values())->default(SectionPosition::MAIN_CONTENT->value);
             $table->timestamps();
+
+            $table->string('tr_name')->nullable();
+            $table->string('ar_name')->nullable();
+
         });
     }
 

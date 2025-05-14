@@ -18,134 +18,349 @@ class ProductSeeder extends Seeder
 {
     public function run(): void
     {
-        // Create categories
-        $categories = [
-            'Accessories' => ['Earbuds', 'Speakers', 'Headphones'],
-            'Phones' => ['iPhone', 'Samsung', 'Redmi'],
-            'Chargers' => ['Cables', 'Adaptor', 'Charger Set'],
-        ];
-
-        foreach ($categories as $mainCategory => $subCategories) {
-            $parent = Category::create(['name' => $mainCategory]);
-            foreach ($subCategories as $subCategory) {
-                Category::create([
-                    'name' => $subCategory,
-                    'parent_id' => $parent->id
-                ]);
-            }
-        }
-
         // Create tags first
         $tags = Tag::all();
 
-//
-//        // Accessories - Earbuds
-//        $name = 'K55 bluetooth Gaming Earbuds Both';
-//        $code = 'K55';
-//        $product = Product::create([
-//            'name' => $name,
-//            'slug' => Str::slug($name),
-//            'serial' => 'SN-14234432',
-//            'code' => $code,
-//            'description' => "this is the description of the {$name}",
-//            'category_id' => Category::whereName('Accessories')->first()->id,
-//            'supplier_id' => array_rand($suppliers),
-//            'is_retail_active' => true,
-//            'is_wholesale_active' => true,
-//        ]);
-//
-//        $currencyService = app(CurrencyService::class);
-//        $tryCurrency = Currency::where('code', 'TRY')->firstOrFail();
-//        $usdCurrency = Currency::where('code', 'USD')->firstOrFail();
-//
-//        // Generate base retail price in TL
-//        $retailPrice = 500;
-//
-//        // Calculate wholesale price (70% of retail)
-//        $wholesalePriceTL = 375;
-//
-//        // Create retail price (TL only)
-//        ProductPrice::create([
-//            'product_id' => $product->id,
-//            'currency_id' => $tryCurrency->id,
-//            'price_type' => ProductPrice::TYPE_RETAIL,
-//            'base_price' => $retailPrice,
-//            'converted_price' => $retailPrice,
-//            'is_main_price' => true
-//        ]);
-//
-//        // Create wholesale price in TL
-//        ProductPrice::create([
-//            'product_id' => $product->id,
-//            'currency_id' => $tryCurrency->id,
-//            'price_type' => ProductPrice::TYPE_WHOLESALE,
-//            'base_price' => $wholesalePriceTL,
-//            'converted_price' => $wholesalePriceTL,
-//            'is_main_price' => true
-//        ]);
-//
-//        // Create wholesale price in USD (only for wholesale)
-//        $wholesalePriceUSD = $currencyService->convertPrice(
-//            $wholesalePriceTL,
-//            $tryCurrency,
-//            $usdCurrency
-//        );
-//
-//        ProductPrice::create([
-//            'product_id' => $product->id,
-//            'currency_id' => $usdCurrency->id,
-//            'price_type' => ProductPrice::TYPE_WHOLESALE,
-//            'base_price' => $wholesalePriceTL,
-//            'converted_price' => $wholesalePriceUSD,
-//            'is_main_price' => false
-//        ]);
-//
-//        // Attach 2-4 random tags to each product
-//        $product->tags()->attach(
-//            $tags->random(rand(2, 4))->pluck('id')->toArray()
-//        );
-//
-//        // Attach Product Images.
-//        // Create the primary image for the product
-//        $image = strtolower($code);
-//
-//        // Add 0-3 additional non-primary images
-//        for ($i = 1; $i < 4; $i++) {
-//            ProductImage::create([
-//                'product_id' => $product->id,
-//                'image_url' => "products/{$image}-{$i}.png",
-//                'is_primary' => $i == 1,
-//            ]);
-//        }
+        // Clothes - Cotton
+        $name    = 'Flash Triko 25-2583 shirt';
+        $tr_name = 'Flash Triko 25-2583 gömlek';
+        $ar_name = 'ريكو قميص نسائي رقم 25-2583فلاش ت';
+        $code = '25-2583';
+        $product = Product::create([
+            'name' => $name,
+            'tr_name' => $tr_name,
+            'ar_name' => $ar_name,
+            'slug' => Str::slug($name),
+            'tr_slug' => Str::slug($name),
+            'ar_slug' => Str::slug($name),
+            'serial' => 'SN-25-2583',
+            'code' => $code,
+            'description'    => "this is the description of the {$name}",
+            'tr_description' => "ürün açıklaması {$tr_name}",
+            'ar_description' => " وصف المنتج{$ar_name}",
+            'category_id' => Category::whereName('Cotton Clothes')->first()->id,
+        ]);
 
+        // Attach 2-4 random tags to each product
+        $product->tags()->attach(
+            $tags->random(rand(2, 4))->pluck('id')->toArray()
+        );
 
-        // Create products with related data
-        Product::factory(50)->create()->each(function ($product) use ($tags) {
-            // Attach 2-4 random tags to each product
-            $product->tags()->attach(
-                $tags->random(rand(2, 4))->pluck('id')->toArray()
-            );
+        // Attach Product Images.
+        // Create the primary image for the product
+        $image = strtolower($code);
 
-            // Generate a random number between 1 and 6 for the image
-            $imageNumber = rand(1, 6);
-
-            // Create the primary image for the product
+        // Add 0-3 additional non-primary images
+        for ($i = 1; $i < 4; $i++) {
             ProductImage::create([
                 'product_id' => $product->id,
-                'image_url' => "products/product-{$imageNumber}.png",
-                'is_primary' => true,
+                'image_url' => "products/{$image}-{$i}.jpg",
+                'is_primary' => $i == 1,
             ]);
+        }
 
-            // Add 0-3 additional non-primary images
-            $additionalImagesCount = rand(0, 3);
-            for ($i = 0; $i < $additionalImagesCount; $i++) {
-                $additionalImageNumber = rand(1, 6);
-                ProductImage::create([
-                    'product_id' => $product->id,
-                    'image_url' => "products/product-{$additionalImageNumber}.png",
-                    'is_primary' => false,
-                ]);
-            }
-        });
+
+        $name    = 'Flash Triko 25-2531 shirt';
+        $tr_name = 'Flash Triko 25-2531 gömlek';
+        $ar_name = 'ريكو قميص نسائي رقم 25-2531فلاش ت';
+        $code = '25-2531';
+        $product = Product::create([
+            'name' => $name,
+            'tr_name' => $tr_name,
+            'ar_name' => $ar_name,
+            'slug' => Str::slug($name),
+            'tr_slug' => Str::slug($name),
+            'ar_slug' => Str::slug($name),
+            'serial' => 'SN-25-2531',
+            'code' => $code,
+            'description'    => "this is the description of the {$name}",
+            'tr_description' => "ürün açıklaması {$tr_name}",
+            'ar_description' => " وصف المنتج{$ar_name}",
+            'category_id' => Category::whereName('Cotton Clothes')->first()->id,
+        ]);
+
+        // Attach 2-4 random tags to each product
+        $product->tags()->attach(
+            $tags->random(rand(2, 4))->pluck('id')->toArray()
+        );
+
+        // Attach Product Images.
+        // Create the primary image for the product
+        $image = strtolower($code);
+
+        // Add 0-3 additional non-primary images
+        for ($i = 1; $i < 4; $i++) {
+            ProductImage::create([
+                'product_id' => $product->id,
+                'image_url' => "products/{$image}-{$i}.jpg",
+                'is_primary' => $i == 1,
+            ]);
+        }
+
+
+        $name    = 'Flash Triko 25-2606 shirt';
+        $tr_name = 'Flash Triko 25-2606 gömlek';
+        $ar_name = 'ريكو قميص نسائي رقم 25-2606فلاش ت';
+        $code = '25-2606';
+        $product = Product::create([
+            'name' => $name,
+            'tr_name' => $tr_name,
+            'ar_name' => $ar_name,
+            'slug' => Str::slug($name),
+            'tr_slug' => Str::slug($name),
+            'ar_slug' => Str::slug($name),
+            'serial' => 'SN-25-2606',
+            'code' => $code,
+            'description'    => "this is the description of the {$name}",
+            'tr_description' => "ürün açıklaması {$tr_name}",
+            'ar_description' => " وصف المنتج{$ar_name}",
+            'category_id' => Category::whereName('Cotton Clothes')->first()->id,
+        ]);
+
+        // Attach 2-4 random tags to each product
+        $product->tags()->attach(
+            $tags->random(rand(2, 4))->pluck('id')->toArray()
+        );
+
+        // Attach Product Images.
+        // Create the primary image for the product
+        $image = strtolower($code);
+
+        // Add 0-3 additional non-primary images
+        for ($i = 1; $i < 4; $i++) {
+            ProductImage::create([
+                'product_id' => $product->id,
+                'image_url' => "products/{$image}-{$i}.jpg",
+                'is_primary' => $i == 1,
+            ]);
+        }
+
+
+        $name    = 'Women\'s leather jacket 078';
+        $tr_name = 'Kadın deri ceket 078';
+        $ar_name = 'جاكيت جلد نسائي';
+        $code = '078';
+        $product = Product::create([
+            'name' => $name,
+            'tr_name' => $tr_name,
+            'ar_name' => $ar_name,
+            'slug' => Str::slug($name),
+            'tr_slug' => Str::slug($name),
+            'ar_slug' => Str::slug($name),
+            'serial' => 'SN-078',
+            'code' => $code,
+            'description'    => "this is the description of the {$name}",
+            'tr_description' => "ürün açıklaması {$tr_name}",
+            'ar_description' => " وصف المنتج{$ar_name}",
+            'category_id' => Category::whereName('Leather')->first()->id,
+        ]);
+
+        // Attach 2-4 random tags to each product
+        $product->tags()->attach(
+            $tags->random(rand(2, 4))->pluck('id')->toArray()
+        );
+
+        // Attach Product Images.
+        // Create the primary image for the product
+        $image = strtolower($code);
+
+        // Add 0-3 additional non-primary images
+        for ($i = 1; $i < 4; $i++) {
+            ProductImage::create([
+                'product_id' => $product->id,
+                'image_url' => "products/{$image}-{$i}.jpg",
+                'is_primary' => $i == 1,
+            ]);
+        }
+
+
+        $name    = 'Men\'s leather jacket 079';
+        $tr_name = 'Erkek deri ceket 079';
+        $ar_name = 'جاكيت جلد رجالي';
+        $code = '079';
+        $product = Product::create([
+            'name' => $name,
+            'tr_name' => $tr_name,
+            'ar_name' => $ar_name,
+            'slug' => Str::slug($name),
+            'tr_slug' => Str::slug($name),
+            'ar_slug' => Str::slug($name),
+            'serial' => 'SN-079',
+            'code' => $code,
+            'description'    => "this is the description of the {$name}",
+            'tr_description' => "ürün açıklaması {$tr_name}",
+            'ar_description' => " وصف المنتج{$ar_name}",
+            'category_id' => Category::whereName('Leather')->first()->id,
+        ]);
+
+        // Attach 2-4 random tags to each product
+        $product->tags()->attach(
+            $tags->random(rand(2, 4))->pluck('id')->toArray()
+        );
+
+        // Attach Product Images.
+        // Create the primary image for the product
+        $image = strtolower($code);
+
+        // Add 0-3 additional non-primary images
+        for ($i = 1; $i < 4; $i++) {
+            ProductImage::create([
+                'product_id' => $product->id,
+                'image_url' => "products/{$image}-{$i}.jpg",
+                'is_primary' => $i == 1,
+            ]);
+        }
+
+
+        $name    = 'Women\'s leather jacket 080';
+        $tr_name = 'Kadın deri ceket 080';
+        $ar_name = 'جاكيت جلد نسائي';
+        $code = '080';
+        $product = Product::create([
+            'name' => $name,
+            'tr_name' => $tr_name,
+            'ar_name' => $ar_name,
+            'slug' => Str::slug($name),
+            'tr_slug' => Str::slug($name),
+            'ar_slug' => Str::slug($name),
+            'serial' => 'SN-080',
+            'code' => $code,
+            'description'    => "this is the description of the {$name}",
+            'tr_description' => "ürün açıklaması {$tr_name}",
+            'ar_description' => " وصف المنتج{$ar_name}",
+            'category_id' => Category::whereName('Leather')->first()->id,
+        ]);
+
+        // Attach 2-4 random tags to each product
+        $product->tags()->attach(
+            $tags->random(rand(2, 4))->pluck('id')->toArray()
+        );
+
+        // Attach Product Images.
+        // Create the primary image for the product
+        $image = strtolower($code);
+
+        // Add 0-3 additional non-primary images
+        for ($i = 1; $i < 4; $i++) {
+            ProductImage::create([
+                'product_id' => $product->id,
+                'image_url' => "products/{$image}-{$i}.jpg",
+                'is_primary' => $i == 1,
+            ]);
+        }
+
+
+        $name    = 'Foo Moisturizing cream';
+        $tr_name = 'Foo Nemlendirici krem';
+        $ar_name = 'كريم ترطيب';
+        $code = 'FOO-MOISTURIZER';
+        $product = Product::create([
+            'name' => $name,
+            'tr_name' => $tr_name,
+            'ar_name' => $ar_name,
+            'slug' => Str::slug($name),
+            'tr_slug' => Str::slug($name),
+            'ar_slug' => Str::slug($name),
+            'serial' => 'SN-FOO-MOISTURIZER',
+            'code' => $code,
+            'description'    => "this is the description of the {$name}",
+            'tr_description' => "ürün açıklaması {$tr_name}",
+            'ar_description' => " وصف المنتج{$ar_name}",
+            'category_id' => Category::whereName('Skin Care')->first()->id,
+        ]);
+
+        // Attach 2-4 random tags to each product
+        $product->tags()->attach(
+            $tags->random(rand(2, 4))->pluck('id')->toArray()
+        );
+
+        // Attach Product Images.
+        // Create the primary image for the product
+        $image = strtolower($code);
+
+        // Add 0-3 additional non-primary images
+        for ($i = 1; $i < 2; $i++) {
+            ProductImage::create([
+                'product_id' => $product->id,
+                'image_url' => "products/{$image}-{$i}.jpg",
+                'is_primary' => $i == 1,
+            ]);
+        }
+
+
+        $name    = 'Foo Day Care Cream';
+        $tr_name = 'Foo gündüz bakım kremi';
+        $ar_name = 'كريم العناية النهارية';
+        $code = 'FOO-DAY-CARE';
+        $product = Product::create([
+            'name' => $name,
+            'tr_name' => $tr_name,
+            'ar_name' => $ar_name,
+            'slug' => Str::slug($name),
+            'tr_slug' => Str::slug($name),
+            'ar_slug' => Str::slug($name),
+            'serial' => 'SN-FOO-DAY-CARE',
+            'code' => $code,
+            'description'    => "this is the description of the {$name}",
+            'tr_description' => "ürün açıklaması {$tr_name}",
+            'ar_description' => " وصف المنتج{$ar_name}",
+            'category_id' => Category::whereName('Skin Care')->first()->id,
+        ]);
+
+        // Attach 2-4 random tags to each product
+        $product->tags()->attach(
+            $tags->random(rand(2, 4))->pluck('id')->toArray()
+        );
+
+        // Attach Product Images.
+        // Create the primary image for the product
+        $image = strtolower($code);
+
+        // Add 0-3 additional non-primary images
+        for ($i = 1; $i < 2; $i++) {
+            ProductImage::create([
+                'product_id' => $product->id,
+                'image_url' => "products/{$image}-{$i}.jpg",
+                'is_primary' => $i == 1,
+            ]);
+        }
+
+
+        $name    = 'FOO Lip Balm & Blush Cream';
+        $tr_name = 'Foo dudak Balmı & Allık kremi';
+        $ar_name = 'مرطب الشفاه وكريم الخدود';
+        $code = 'FOO-LIP-BALM';
+        $product = Product::create([
+            'name' => $name,
+            'tr_name' => $tr_name,
+            'ar_name' => $ar_name,
+            'slug' => Str::slug($name),
+            'tr_slug' => Str::slug($name),
+            'ar_slug' => Str::slug($name),
+            'serial' => 'SN-FOO-LIP-BALM',
+            'code' => $code,
+            'description'    => "this is the description of the {$name}",
+            'tr_description' => "ürün açıklaması {$tr_name}",
+            'ar_description' => " وصف المنتج{$ar_name}",
+            'category_id' => Category::whereName('Skin Care')->first()->id,
+        ]);
+
+        // Attach 2-4 random tags to each product
+        $product->tags()->attach(
+            $tags->random(rand(2, 4))->pluck('id')->toArray()
+        );
+
+        // Attach Product Images.
+        // Create the primary image for the product
+        $image = strtolower($code);
+
+        // Add 0-3 additional non-primary images
+        for ($i = 1; $i < 2; $i++) {
+            ProductImage::create([
+                'product_id' => $product->id,
+                'image_url' => "products/{$image}-{$i}.jpg",
+                'is_primary' => $i == 1,
+            ]);
+        }
     }
 }

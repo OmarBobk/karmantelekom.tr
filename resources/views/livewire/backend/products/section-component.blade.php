@@ -247,10 +247,21 @@
 
                     <form wire:submit="save" class="space-y-4">
                         <div>
-                            <label for="name" class="block text-sm font-medium text-gray-700">Name</label>
-                            <input type="text" wire:model="name" id="name"
-                                class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
-                            @error('name') <span class="mt-1 text-sm text-red-600">{{ $message }}</span> @enderror
+                            <x-label for="name" value="{{ __('Name (English)') }}" />
+                            <x-input id="name" type="text" class="mt-1 block w-full" wire:model="name" />
+                            <x-input-error for="name" class="mt-2" />
+                        </div>
+
+                        <div>
+                            <x-label for="tr_name" value="{{ __('Name (Turkish)') }}" />
+                            <x-input id="tr_name" type="text" class="mt-1 block w-full" wire:model="tr_name" />
+                            <x-input-error for="tr_name" class="mt-2" />
+                        </div>
+
+                        <div>
+                            <x-label for="ar_name" value="{{ __('Name (Arabic)') }}" />
+                            <x-input id="ar_name" type="text" class="mt-1 block w-full" wire:model="ar_name" />
+                            <x-input-error for="ar_name" class="mt-2" />
                         </div>
 
                         <div>

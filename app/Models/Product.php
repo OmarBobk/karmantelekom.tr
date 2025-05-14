@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Traits\Searchable;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -20,42 +21,39 @@ use Spatie\Sluggable\SlugOptions;
  * Products can have multiple prices in different currencies and types (retail/wholesale).
  *
  * @property string $name Product name
- * @property string $slug URL-friendly version of name
+ * @property string $tr_name Product name
+ * @property string $ar_name Product name
+ * @property string $slug URL-friendly version of the name
+ * @property string $tr_slug URL-friendly version of the name
+ * @property string $ar_slug URL-friendly version of the name
  * @property string $serial Unique serial number (optional)
  * @property string $code Product code/SKU
  * @property string $description Detailed product description
- * @property int $category_id Foreign key to categories table
- * @property bool $is_active Whether product is active
+ * @property string $tr_description Detailed product description
+ * @property string $ar_description Detailed product description
+ * @property int $category_id Foreign key to categorize table
+ * @property bool $is_active Whether the product is active
+ * @property string $translated_name Translated name based on the current locale.
+ * @property string $translated_description Translated description based on the current locale.
+ * @property string $translated_slug Translated slug based on the current locale.
  * @property-read Category $category Product category relationship
- * @property-read \Illuminate\Database\Eloquent\Collection<ProductPrice> $prices Product prices in different currencies
- * @property-read \Illuminate\Database\Eloquent\Collection<ProductImage> $images Product images
- * @property-read \Illuminate\Database\Eloquent\Collection<Tag> $tags Product tags
- * @property-read \Illuminate\Database\Eloquent\Collection<Section> $sections Product sections
- * @property-read \Illuminate\Database\Eloquent\Collection<Order> $orders Related orders
+ * @property-read Collection<ProductPrice> $prices Product prices in different currencies
+ * @property-read Collection<ProductImage> $images Product images
+ * @property-read Collection<Tag> $tags Product tags
+ * @property-read Collection<Section> $sections Product sections
+ * @property-read Collection<Order> $orders Related orders
  */
 class Product extends Model
 {
     use HasFactory, HasSlug, Searchable;
 
-    public $searchable_columns = [
+    public array $searchable_columns = [
         'code', 'name', 'description', 'serial'
     ];
 
-    public $return_from_search = [];
-    /**
-     * The attributes that are mass assignable.
-     *
-     * @var array<string>
-     */
-    protected $fillable = [
-        'name',
-        'slug',
-        'serial',
-        'code',
-        'is_active',
-        'description',
-        'category_id'
-    ];
+    public array $return_from_search = [];
+
+    protected $guarded = [];
 
     /**
      * The attributes that should be cast.
@@ -164,7 +162,7 @@ class Product extends Model
     }
 
     /**
-     * Scope to filter products based on user's role and visibility settings.
+     * Scope to filter products based on the user's role and visibility settings.
      *
      * @param Builder $query
      * @return Builder
@@ -204,5 +202,47 @@ class Product extends Model
         return SlugOptions::create()
             ->generateSlugsFrom('name')
             ->saveSlugsTo('slug');
+    }
+
+    /**
+     * Get the translated name based on the current locale.
+     *
+     * @return string
+     */
+    public function getTranslatedNameAttribute(): string
+    {
+        return match (app()->getLocale()) {
+            'tr' => $this->tr_name ?: $this->name,
+            'ar' => $this->ar_name ?: $this->name,
+            default => $this->name,
+        };
+    }
+
+    /**
+     * Get the translated description based on the current locale.
+     *
+     * @return string
+     */
+    public function getTranslatedDescriptionAttribute(): string
+    {
+        return match (app()->getLocale()) {
+            'tr' => $this->tr_description ?: $this->description,
+            'ar' => $this->ar_description ?: $this->description,
+            default => $this->description,
+        };
+    }
+
+    /**
+     * Get the translated slug based on the current locale.
+     *
+     * @return string
+     */
+    public function getTranslatedSlugAttribute(): string
+    {
+        return match (app()->getLocale()) {
+            'tr' => $this->tr_slug ?: $this->slug,
+            'ar' => $this->ar_slug ?: $this->slug,
+            default => $this->slug,
+        };
     }
 }

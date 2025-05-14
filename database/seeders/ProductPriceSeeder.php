@@ -27,21 +27,21 @@ class ProductPriceSeeder extends Seeder
             // Create prices in chunks for better performance
             Product::chunk(100, function ($products) use ($currencyService, $tryCurrency, $usdCurrency) {
                 foreach ($products as $product) {
-                    // Generate base price in TL
-                    $basePrice = fake()->randomFloat(2, 100, 1000);
-                    
-                    // Create price in TRY
+
+                    $base_price = fake()->randomFloat(2, 100, 1000);
+
+                    // Create retail price (TL only)
                     ProductPrice::create([
                         'product_id' => $product->id,
                         'currency_id' => $tryCurrency->id,
-                        'base_price' => $basePrice,
-                        'converted_price' => $basePrice,
+                        'base_price' => $base_price,
+                        'converted_price' => $base_price,
                         'is_main_price' => true
                     ]);
 
                     // Create price in USD
-                    $usdPrice = $currencyService->convertPrice(
-                        $basePrice,
+                    $price_usd = $currencyService->convertPrice(
+                        $base_price,
                         $tryCurrency,
                         $usdCurrency
                     );
@@ -49,8 +49,8 @@ class ProductPriceSeeder extends Seeder
                     ProductPrice::create([
                         'product_id' => $product->id,
                         'currency_id' => $usdCurrency->id,
-                        'base_price' => $basePrice,
-                        'converted_price' => $usdPrice,
+                        'base_price' => $base_price,
+                        'converted_price' => $price_usd,
                         'is_main_price' => false
                     ]);
                 }

@@ -19,7 +19,9 @@ class Tag extends Model
         'border_color',
         'icon',
         'is_active',
-        'display_order'
+        'display_order',
+        'tr_name',
+        'ar_name',
     ];
 
     protected $casts = [
@@ -29,6 +31,21 @@ class Tag extends Model
     public function products(): BelongsToMany
     {
         return $this->belongsToMany(Product::class, 'product_tags');
+    }
+
+
+    /**
+     * Get the translated name based on the current locale.
+     *
+     * @return string
+     */
+    public function getTranslatedNameAttribute(): string
+    {
+        return match (app()->getLocale()) {
+            'tr' => $this->tr_name ?: $this->name,
+            'ar' => $this->ar_name ?: $this->name,
+            default => $this->name,
+        };
     }
 
 }
