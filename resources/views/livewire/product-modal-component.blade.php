@@ -26,7 +26,7 @@
     x-transition:leave="ease-in duration-200"
     @click="closeAndReset()"></div>
 
-    <div class="relative bg-white rounded-xl shadow-2xl w-[90%] sm:w-full max-w-4xl h-[35rem] mx-auto flex flex-col md:flex-row overflow-auto"
+    <div class="relative bg-white rounded-xl shadow-2xl w-[90%] sm:w-full max-w-4xl h-[80%] mx-auto flex flex-col md:flex-row overflow-auto"
          x-transition:enter="ease-out duration-300"
          x-transition:leave="ease-in duration-200">
 
