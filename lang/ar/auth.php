@@ -13,12 +13,12 @@ return [
     |
     */
 
-    'failed' => 'These credentials do not match our records.',
-    'password' => 'The provided password is incorrect.',
-    'throttle' => 'Too many login attempts. Please try again in :seconds seconds.',
-    'account' => 'Account',
-    'dashboard' => 'Dashboard',
-    'logout' => 'Logout',
+    'failed' => 'هذه بيانات الاعتماد لا تتطابق مع سجلاتنا.',
+    'password' => 'كلمة المرور المقدمة غير صحيحة.',
+    'throttle' => 'عدد محاولات تسجيل الدخول مرتفع جدًا. يرجى المحاولة مرة أخرى بعد :seconds ثوانٍ.',
+    'account' => 'الحساب',
+    'dashboard' => 'لوحة التحكم',
+    'logout' => 'تسجيل الخروج',
 
 
 ];

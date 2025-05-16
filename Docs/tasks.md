@@ -9,10 +9,8 @@
 - ###DONE: add is_active field to the tags table.
 - ###DONE: set the dashboard management page.
 - 
-- ###TODO: udpate the most viewed products in the dashboard when you finish the products visualization on the frontend.
+- ###DONE: udpate the most viewed products in the dashboard when you finish the products visualization on the frontend.
 - ###TODO: create the settings management page.
-- ###TODO: create the Users management page.
-- ###TODO: create the ads manager.
 
 ### Frontend
 - ###DONE: remove Login button.

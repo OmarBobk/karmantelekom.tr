@@ -130,6 +130,11 @@ class Product extends Model
         return $this->belongsToMany(Tag::class, 'product_tags');
     }
 
+    public function tag()
+    {
+        return $this->tags()->first() ?? null;
+    }
+
     /**
      * Get the sections associated with the product.
      *
@@ -212,8 +217,8 @@ class Product extends Model
     public function getTranslatedNameAttribute(): string
     {
         return match (app()->getLocale()) {
-            'tr' => $this->tr_name ?: $this->name,
-            'ar' => $this->ar_name ?: $this->name,
+            'TR' => $this->tr_name ?: $this->name,
+            'AR' => $this->ar_name ?: $this->name,
             default => $this->name,
         };
     }
@@ -226,8 +231,8 @@ class Product extends Model
     public function getTranslatedDescriptionAttribute(): string
     {
         return match (app()->getLocale()) {
-            'tr' => $this->tr_description ?: $this->description,
-            'ar' => $this->ar_description ?: $this->description,
+            'TR' => $this->tr_description ?: $this->description,
+            'AR' => $this->ar_description ?: $this->description,
             default => $this->description,
         };
     }
@@ -240,8 +245,8 @@ class Product extends Model
     public function getTranslatedSlugAttribute(): string
     {
         return match (app()->getLocale()) {
-            'tr' => $this->tr_slug ?: $this->slug,
-            'ar' => $this->ar_slug ?: $this->slug,
+            'TR' => $this->tr_slug ?: $this->slug,
+            'AR' => $this->ar_slug ?: $this->slug,
             default => $this->slug,
         };
     }

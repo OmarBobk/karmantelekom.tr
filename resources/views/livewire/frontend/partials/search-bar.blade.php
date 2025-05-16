@@ -1,1 +1,1 @@
-@livewire('frontend.search-component')
+@livewire('frontend.search-component', [], key('search-component'))

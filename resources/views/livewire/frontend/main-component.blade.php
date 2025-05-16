@@ -1,4 +1,21 @@
-<div>
+<div
+    x-data="{
+        direction: '{{ $direction }}',
+        init() {
+            this.$watch('direction', value => {
+                document.documentElement.dir = value;
+                document.documentElement.lang = '{{ App::getLocale() }}';
+            });
+
+            // Listen for direction updates
+            Livewire.on('updateDirection', (data) => {
+                this.direction = data.direction;
+            });
+        }
+    }"
+    x-init="init()"
+    :dir="direction"
+>
     <!-- Loading Overlay -->
     <div
         x-data="{ show: false }"
@@ -20,7 +37,7 @@
         <div class="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
             <div class="bg-white/90 backdrop-blur-sm shadow-xl rounded-lg px-6 py-4 flex items-center gap-3 border border-gray-200/50">
                 <div class="relative">
-                    <svg class="animate-spin size-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <svg class="animate-spin size-6 text-emerald-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
@@ -104,7 +121,7 @@
                         @click="scrollTabsLeft"
                         class="relative ml-1 size-8 flex items-center justify-center rounded-full bg-white shadow-md border border-gray-200/50
                             text-gray-400 hover:text-gray-600 transition-all duration-200
-                            opacity-0 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                            opacity-0 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
                         :class="{ 'opacity-100': !atStart }"
                         x-show="!atStart"
                         aria-label="Scroll categories left"
@@ -127,7 +144,7 @@
                         @click="scrollTabsRight"
                         class="relative mr-1 size-8 flex items-center justify-center rounded-full bg-white shadow-md border border-gray-200/50
                             text-gray-400 hover:text-gray-600 transition-all duration-200
-                            opacity-0 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                            opacity-0 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
                         :class="{ 'opacity-100': !atEnd }"
                         x-show="!atEnd"
                         aria-label="Scroll categories right"
@@ -156,7 +173,7 @@
                                         x-on:click="$wire.activeCategory = {{ $index }}"
                                         class="px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-900 transition-all duration-200 whitespace-nowrap border-b-2 border-transparent
                                             rounded-t-lg"
-                                        :class="$wire.activeCategory === {{ $index }} ? '!text-blue-600 !border-blue-600' : ''"
+                                        :class="$wire.activeCategory === {{ $index }} ? '!text-emerald-600 !border-emerald-600' : ''"
                                         role="tab"
                                         :aria-selected="$wire.activeCategory === {{ $index }}"
                                         aria-controls="panel-{{ $index }}"
@@ -184,7 +201,7 @@
                     <button
                         @click="scrollLeft($wire.activeCategory)"
                         class="hidden lg:flex items-center justify-center size-10 rounded-full bg-white hover:bg-gray-50 text-gray-600 hover:text-gray-900 shadow-lg border border-gray-200 absolute -left-2 md:-left-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 z-10 transition-all duration-200
-                            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                            focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
                         :class="{ 'pointer-events-none opacity-50': atStart }"
                         aria-label="Scroll products left"
                     >
@@ -197,7 +214,7 @@
                     <button
                         @click="scrollRight($wire.activeCategory)"
                         class="hidden lg:flex items-center justify-center size-10 rounded-full bg-white hover:bg-gray-50 text-gray-600 hover:text-gray-900 shadow-lg border border-gray-200 absolute -right-2 md:-right-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 z-10 transition-all duration-200
-                            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                            focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
                         :class="{ 'pointer-events-none opacity-50': atEnd }"
                         aria-label="Scroll products right"
                     >
@@ -249,10 +266,10 @@
                                                     <div class="p-4">
                                                         <!-- Product Info Header -->
                                                         <div class="mb-3">
-                                                            <p class="text-sm text-gray-500">{{ $section->translated_name }}</p>
+                                                            <p class="text-sm font-medium text-emerald-600">{{ $section->translated_name }}</p>
                                                             <button wire:click="$dispatch('openProductModal', { productId: {{ $product->id }} })" class="text-left">
                                                                 <div class="line-clamp-2">
-                                                                    <h3 class="text-base font-medium text-gray-900 hover:text-blue-600 transition-colors duration-200">{{ $product->translated_name }}</h3>
+                                                                    <h3 class="text-base font-medium text-gray-900 hover:text-emerald-600 transition-colors duration-200">{{ $product->translated_name }}</h3>
                                                                     <p class="text-sm text-gray-500">{{ $product->translated_description }}</p>
                                                                 </div>
                                                             </button>
@@ -263,7 +280,7 @@
                                                             <!-- Product Price -->
                                                             <div>
                                                                 @if($product->prices->isNotEmpty())
-                                                                    <p class="text-xl font-semibold text-blue-600">
+                                                                    <p class="text-xl font-semibold text-emerald-600">
                                                                         {{ $product->prices->first()->getFormattedPrice() }}
                                                                     </p>
                                                                 @else
@@ -310,7 +327,6 @@
             }
         </style>
         <script>
-            console.log('f')
             document.addEventListener('alpine:init', () => {
                 Alpine.data('slider', () => ({
                     atStart: true,
@@ -333,6 +349,14 @@
 
                                 // Dispatch event to hide loading state
                                 window.dispatchEvent(new CustomEvent('currency-switched'));
+                            });
+                        });
+
+                        // Add direction change listener
+                        Livewire.on('updateDirection', (data) => {
+                            this.$nextTick(() => {
+                                // Reinitialize slider for RTL support
+                                this.initializeSlider();
                             });
                         });
                     },
@@ -406,6 +430,13 @@
                             this.updateScroll();
                         });
                         window.addEventListener('resize', () => this.updateScroll());
+
+                        // Add direction change listener
+                        Livewire.on('updateDirection', (data) => {
+                            this.$nextTick(() => {
+                                this.updateScroll();
+                            });
+                        });
                     },
 
                     updateScroll() {
@@ -443,14 +474,19 @@
     <!-- End Slider Component -->
 
     <!-- Start Products Section Component -->
-    <div class="w-full bg-white pb-8" x-cloak>
+    <div class="w-full bg-gray-50 pb-8" x-cloak>
         @if(!empty($this->contentSections))
         @foreach($this->contentSections as $section)
-            <div class="w-full bg-white py-8">
+            <div class="w-full bg-white py-8 {{ !$loop->last ? 'border-b border-gray-100' : '' }}">
                 <!-- Section Header -->
                 <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div class="flex items-center justify-between mb-6">
-                        <h2 class="text-2xl font-bold text-gray-900">{{ $section->translated_name }}</h2>
+                        <div class="flex items-center space-x-3">
+                            <h2 class="text-2xl font-bold text-gray-900">{{ $section->translated_name }}</h2>
+                            <span class="px-3 py-1 text-sm font-medium text-emerald-700 bg-emerald-50 rounded-full">
+                                {{ count($section->products) }} {{ __('main.products') }}
+                            </span>
+                        </div>
                     </div>
                 </div>
 
@@ -483,18 +519,23 @@
                         <div
                             x-cloak
                             class="{{ $section->scrollable ? 'swiper-container overflow-hidden pb-5 px-4' : 'mx-auto max-w-7xl' }}"
-
                         >
                             <div class="{{ $section->scrollable ? 'swiper-wrapper' : 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 xl:grid-cols-6 gap-y-4' }}">
                                 @foreach($section->products as $product)
                                     <div class="{{ $section->scrollable ? 'swiper-slide' : '' }}">
-                                        <!-- Existing Product Card Code -->
+                                        <!-- Product Card -->
                                         <div class="{{ $section->scrollable ? 'group/card' : 'group/card ml-4 mr-3' }}" x-data="productSlider">
-                                            <!-- Your existing product card content -->
-                                            <!-- Product Card -->
-                                            <div class="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
+                                            <div class="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 relative">
+                                                @if($product->tag() != null)
+                                                    <span
+                                                        class="absolute top-3 z-10 px-3 py-1 text-xs font-bold rounded-full shadow-md animate-pulse"
+                                                        style="{{ app()->getLocale() === 'AR' ? 'right:0;' : 'left:0;' }} background-color: {{ $product->tag()->background_color }}; color: {{ $product->tag()->text_color }}; border-color: {{ $product->tag()->border_color }};">
+                                                                {{ $product->tag()->icon . ' ' . $product->tag()->translated_name}}
+                                                            </span>
+                                                @endif
+
                                                 <!-- Image Slider -->
-                                                <div class="flex flex-col relative aspect-w-1 aspect-h-1 w-full overflow-hidden h-48 bg-gray-100 rounded-md">
+                                                <div class="flex flex-col relative aspect-w-1 aspect-h-1 w-full overflow-hidden h-48 bg-gray-50 rounded-md">
                                                     <button wire:click="$dispatch('openProductModal', { productId: {{ $product->id }} })" class="">
                                                         <img src="{{ $product->images->where('is_primary', true)->first()?->image_url
                                                                     ? Storage::url($product->images->where('is_primary', true)->first()->image_url)
@@ -505,12 +546,13 @@
                                                     </button>
                                                 </div>
 
+
                                                 <!-- Product Info -->
                                                 <div class="p-4">
                                                     <div class="mb-3">
                                                         <button wire:click="$dispatch('openProductModal', { productId: {{ $product->id }} })" class="text-left">
                                                             <div class="line-clamp-3">
-                                                                <span class="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors duration-200">{{ $product->translated_name }}</span>
+                                                                <span class="text-sm font-medium text-gray-900 hover:text-emerald-600 transition-colors duration-200">{{ $product->translated_name }}</span>
                                                                 <span class="text-sm text-gray-500">{{ $product->translated_description }}</span>
                                                             </div>
                                                         </button>
@@ -518,7 +560,7 @@
                                                     <div class="flex items-center justify-between mt-3">
                                                         <div>
                                                             @if($product->prices->isNotEmpty())
-                                                                <p class="text-xl font-semibold text-blue-600">
+                                                                <p class="text-xl font-semibold text-emerald-600">
                                                                     {{ $product->prices->first()->getFormattedPrice() }}
                                                                 </p>
                                                             @else

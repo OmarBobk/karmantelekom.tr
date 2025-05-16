@@ -41,11 +41,6 @@ class ProductSeeder extends Seeder
             'category_id' => Category::whereName('Cotton Clothes')->first()->id,
         ]);
 
-        // Attach 2-4 random tags to each product
-        $product->tags()->attach(
-            $tags->random(rand(2, 4))->pluck('id')->toArray()
-        );
-
         // Attach Product Images.
         // Create the primary image for the product
         $image = strtolower($code);
@@ -116,11 +111,6 @@ class ProductSeeder extends Seeder
             'ar_description' => " وصف المنتج{$ar_name}",
             'category_id' => Category::whereName('Cotton Clothes')->first()->id,
         ]);
-
-        // Attach 2-4 random tags to each product
-        $product->tags()->attach(
-            $tags->random(rand(2, 4))->pluck('id')->toArray()
-        );
 
         // Attach Product Images.
         // Create the primary image for the product
@@ -193,11 +183,6 @@ class ProductSeeder extends Seeder
             'category_id' => Category::whereName('Leather')->first()->id,
         ]);
 
-        // Attach 2-4 random tags to each product
-        $product->tags()->attach(
-            $tags->random(rand(2, 4))->pluck('id')->toArray()
-        );
-
         // Attach Product Images.
         // Create the primary image for the product
         $image = strtolower($code);
@@ -231,10 +216,6 @@ class ProductSeeder extends Seeder
             'category_id' => Category::whereName('Leather')->first()->id,
         ]);
 
-        // Attach 2-4 random tags to each product
-        $product->tags()->attach(
-            $tags->random(rand(2, 4))->pluck('id')->toArray()
-        );
 
         // Attach Product Images.
         // Create the primary image for the product

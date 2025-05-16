@@ -69,8 +69,8 @@ class Section extends Model
     public function getTranslatedNameAttribute(): string
     {
         return match (app()->getLocale()) {
-            'tr' => $this->tr_name ?: $this->name,
-            'ar' => $this->ar_name ?: $this->name,
+            'TR' => $this->tr_name ?: $this->name,
+            'AR' => $this->ar_name ?: $this->name,
             default => $this->name,
         };
     }

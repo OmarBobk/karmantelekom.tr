@@ -1,18 +1,34 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Livewire\Frontend\Partials;
 
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Facades\Cache;
 use Livewire\Component;
+use App\Services\LanguageService;
+use App\Exceptions\LanguageNotSupportedException;
 
 class HeaderComponent extends Component
 {
-    public $cartCount = 1;
-    public $currentLanguage = 'EN';
+    public string $cartCount = '1';
+    public string $currentLanguage = 'EN';
+    public string $searchComponentKey;
+    public string $currentDirection = 'ltr';
+    private LanguageService $languageService;
 
-    public function mount()
+    public function boot(LanguageService $languageService): void
     {
-        $this->currentLanguage = session('locale', 'EN');
+        $this->languageService = $languageService;
+    }
+
+    public function mount(): void
+    {
+        $this->currentLanguage = $this->languageService->getCurrentLanguage();
+        $this->currentDirection = $this->languageService->getCurrentDirection();
+        $this->searchComponentKey = 'search-' . uniqid();
     }
 
     public function render()
@@ -20,27 +36,37 @@ class HeaderComponent extends Component
         return view('livewire.frontend.partials.header-component');
     }
 
-    public function addToCart()
+    public function changeLanguage(string $code): void
     {
-        $this->cartCount++;
-        $this->dispatch('notify', [
-            'message' => 'Item added to cart',
-            'type' => 'success'
-        ]);
-    }
+        try {
+            $this->languageService->switchLanguage($code);
+            
+            $this->currentLanguage = $this->languageService->getCurrentLanguage();
+            $this->currentDirection = $this->languageService->getCurrentDirection();
+            
+            // Force a re-render of the search component
+            $this->searchComponentKey = 'search-' . uniqid();
 
-    public function removeFromCart(): void
-    {
-        if ($this->cartCount > 0) {
-            $this->cartCount--;
+            // Dispatch event with language metadata
+            $this->dispatch('languageChanged', [
+                'code' => $this->currentLanguage,
+                'direction' => $this->currentDirection,
+                'locale' => strtolower($this->currentLanguage)
+            ]);
+
+        } catch (LanguageNotSupportedException $e) {
+            logger()->error('Language switch failed: ' . $e->getMessage());
+            $this->dispatch('languageError', ['message' => $e->getMessage()]);
         }
     }
 
-    public function changeLanguage($code): void
+    public function getLanguageName(string $code): string
     {
-        $this->currentLanguage = $code;
-        App::setLocale(strtolower($code));
-        session()->put('locale', $code);
-        $this->dispatch('language-changed', ['code' => $code]);
+        return $this->languageService->getLanguageName($code);
+    }
+
+    public function getLanguageFlag(string $code): string
+    {
+        return Storage::url($this->languageService->getLanguageFlag($code));
     }
 }

@@ -12,6 +12,8 @@ class TagSeeder extends Seeder
         $tags = [
             [
                 'name' => 'New Arrival',
+                'tr_name' => 'Yeni Gelen',
+                'ar_name' => 'وصل حديثا',
                 'text_color' => '#FFFFFF',
                 'background_color' => '#3B82F6',
                 'border_color' => '#2563EB',
@@ -21,6 +23,8 @@ class TagSeeder extends Seeder
             ],
             [
                 'name' => 'Best Seller',
+                'tr_name' => 'En Satan',
+                'ar_name' => 'الأكثر مبيعًا',
                 'text_color' => '#FFFFFF',
                 'background_color' => '#10B981',
                 'border_color' => '#059669',
@@ -30,6 +34,8 @@ class TagSeeder extends Seeder
             ],
             [
                 'name' => 'Hot Deal',
+                'tr_name' => 'Fırsat',
+                'ar_name' => 'عروض',
                 'text_color' => '#FFFFFF',
                 'background_color' => '#EF4444',
                 'border_color' => '#DC2626',
@@ -39,6 +45,8 @@ class TagSeeder extends Seeder
             ],
             [
                 'name' => 'Featured',
+                'tr_name' => 'Öne çıkan',
+                'ar_name' => 'مميز',
                 'text_color' => '#FFFFFF',
                 'background_color' => '#8B5CF6',
                 'border_color' => '#7C3AED',
@@ -46,15 +54,6 @@ class TagSeeder extends Seeder
                 'is_active' => true,
                 'display_order' => 4
             ],
-            [
-                'name' => 'Sale',
-                'text_color' => '#FFFFFF',
-                'background_color' => '#F59E0B',
-                'border_color' => '#D97706',
-                'icon' => '🏷️',
-                'is_active' => true,
-                'display_order' => 5
-            ]
         ];
 
         foreach ($tags as $tag) {

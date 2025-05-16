@@ -53,8 +53,8 @@
                     <button wire:click="selectImage('{{ $img->image_url }}', '{{$img->id}}')" class="relative bg-white focus:outline-none group">
                         <img src="{{ Storage::url($img->image_url) }}"
                              alt="Thumbnail"
-                             class="w-16 h-16 object-cover rounded border-2 {{ $selectedImageId === $img->id ? 'border-blue-500' : 'border-transparent' }}">
-                        <span class="absolute inset-0 rounded transition bg-blue-500 bg-opacity-0 group-hover:bg-opacity-30 {{ $selectedImageId === $img->id ? 'bg-opacity-40' : '' }}"></span>
+                             class="w-16 h-16 object-cover rounded border-2 {{ $selectedImageId === $img->id ? 'border-emerald-500' : 'border-transparent' }}">
+                        <span class="absolute inset-0 rounded transition bg-emerald-500 bg-opacity-0 group-hover:bg-opacity-30 {{ $selectedImageId === $img->id ? 'bg-opacity-40' : '' }}"></span>
                     </button>
                 @endforeach
             </div>
@@ -75,10 +75,10 @@
                             }
                         @endphp
                         @foreach($parents as $parent)
-                            <a href="#" class="hover:underline">{{ $parent->name }}</a>
+                            <a href="#" class="hover:underline">{{ $parent->translated_name }}</a>
                             <span>/</span>
                         @endforeach
-                        <span class="text-blue-600 font-semibold">{{ $product->category->name }}</span>
+                        <span class="text-emerald-600 font-semibold">{{ $product->category->translated_name }}</span>
                     </nav>
                 @endif
 
@@ -95,20 +95,20 @@
                         <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                         </svg>
-                        In Stock
+                        {{__('main.in_stock')}}
                     </span>
                 </div>
-                <h4 class="font-semibold mb-1">Description: </h4>
+                <h4 class="font-semibold mb-1">{{__('main.description')}}: </h4>
                 <p class="text-gray-700 mb-4">{{ $product->translated_description }}</p>
-                <h4 class="font-semibold mb-1">Stock Info:</h4>
+                <h4 class="font-semibold mb-1">{{__('main.stock_info')}}:</h4>
                 <ul class="list-none text-gray-600 mb-6 space-y-1">
                     <li>
-                        <span class="font-medium text-gray-700 text-sm mr-1">Code: </span>
+                        <span class="font-medium text-gray-700 text-sm mr-1">{{__('main.code')}}: </span>
                         <span class="font-mono text-gray-900 text-sm">{{$product->code}}</span>
                     </li>
                     @if($product->serial)
                         <li>
-                            <span class="font-medium text-gray-700 text-sm mr-1">Serial: </span>
+                            <span class="font-medium text-gray-700 text-sm mr-1">{{__('main.serial')}}: </span>
                             <span class="font-mono text-gray-900 text-sm">{{$product->serial}}</span>
                         </li>
                     @endif
@@ -118,11 +118,11 @@
                 <a
                    href="{{$requestQuoteUrl}}"
                    target="_blank"
-                   class="flex-1 flex items-center justify-center px-4 py-2 bg-green-600 text-white font-semibold rounded-lg shadow hover:bg-green-700 transition">
+                   class="flex-1 flex items-center justify-center px-4 py-2 bg-emerald-600 text-white font-semibold rounded-lg shadow hover:bg-emerald-700 transition">
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v4a1 1 0 001 1h3m10-5h2a2 2 0 012 2v10a2 2 0 01-2 2H7a2 2 0 01-2-2V7a2 2 0 012-2h2"/>
                     </svg>
-                    Request Quote
+                    {{__('main.request_quote')}}
                 </a>
                 <a
                     href="{{$moreInfoUrl}}"
@@ -131,7 +131,7 @@
                     <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M12 20a8 8 0 100-16 8 8 0 000 16z"/>
                     </svg>
-                    More Info
+                    {{__('main.more_info')}}
                 </a>
             </div>
         </div>
