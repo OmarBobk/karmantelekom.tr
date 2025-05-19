@@ -218,7 +218,9 @@ class Product extends Model
     {
         return match (app()->getLocale()) {
             'TR' => $this->tr_name ?: $this->name,
+            'tr' => $this->tr_name ?: $this->name,
             'AR' => $this->ar_name ?: $this->name,
+            'ar' => $this->ar_name ?: $this->name,
             default => $this->name,
         };
     }
@@ -232,7 +234,9 @@ class Product extends Model
     {
         return match (app()->getLocale()) {
             'TR' => $this->tr_description ?: $this->description,
+            'tr' => $this->tr_description ?: $this->description,
             'AR' => $this->ar_description ?: $this->description,
+            'ar' => $this->ar_description ?: $this->description,
             default => $this->description,
         };
     }
@@ -245,8 +249,8 @@ class Product extends Model
     public function getTranslatedSlugAttribute(): string
     {
         return match (app()->getLocale()) {
-            'TR' => $this->tr_slug ?: $this->slug,
-            'AR' => $this->ar_slug ?: $this->slug,
+            'TR', 'tr' => $this->tr_slug ?: $this->slug,
+            'AR', 'ar' => $this->ar_slug ?: $this->slug,
             default => $this->slug,
         };
     }

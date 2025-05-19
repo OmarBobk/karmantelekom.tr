@@ -21,4 +21,12 @@ return [
     'arabic' => 'Arapça',
     'turkish' => 'Türkçe',
     'english' => 'İngilizce',
+    'subscribe_to_our_newsletter' => 'Abone Ol',
+    'stay_up_to_date_with_the_latest_news_announcements_and_articles' => 'En son haberler, duyurular ve makalelerle güncel kalın.',
+    'subscribe' => 'Abone Ol',
+    'making_the_world_a_better_place_through_constructing_elegant_hierarchies' => 'Zarif hiyerarşiler inşa ederek dünyayı daha iyi bir yer haline getirmek',
+    'enter_your_email' => 'E-postanızı girin',
+    'loading' => 'Yükleniyor',
+    'newest_to_oldest' => 'En Yeniden En Eskiye',
+    'oldest_to_newest' => 'En eskiden en yeniye',
 ];

@@ -42,8 +42,8 @@ class Tag extends Model
     public function getTranslatedNameAttribute(): string
     {
         return match (app()->getLocale()) {
-            'TR' => $this->tr_name ?: $this->name,
-            'AR' => $this->ar_name ?: $this->name,
+            'TR', 'tr' => $this->tr_name ?: $this->name,
+            'AR', 'ar' => $this->ar_name ?: $this->name,
             default => $this->name,
         };
     }

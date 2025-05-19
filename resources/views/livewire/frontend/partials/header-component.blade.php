@@ -79,7 +79,7 @@
                         <div class="py-1">
                             <button wire:click="changeLanguage('en')"
                                     class="flex gap-2 hover:gap-4 items-center w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100"
-                                    :class="{ 'bg-gray-50': '{{ $currentLanguage }}' === 'EN' }"
+                                    :class="{ 'bg-gray-50': '{{ $currentLanguage }}' === 'en' }"
                                     x-transition:enter="transition ease-out duration-200"
                                     x-transition:enter-start="opacity-0 scale-95"
                                     x-transition:enter-end="opacity-100 scale-100"
@@ -88,7 +88,7 @@
                                     x-transition:leave-end="opacity-0 scale-95"
                             >
                                 <div class=" h-6 flex">
-                                    <img src="{{ $this->getLanguageFlag('EN') }}" alt="">
+                                    <img src="{{ $this->getLanguageFlag('en') }}" alt="">
                                 </div>
                                 <span>{{__('main.english')}}</span>
                                 @if($currentLanguage === 'EN')
@@ -99,7 +99,7 @@
                             </button>
                             <button wire:click="changeLanguage('tr')"
                                     class="flex gap-2 hover:gap-4 items-center w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100"
-                                    :class="{ 'bg-gray-50': '{{ $currentLanguage }}' === 'TR' }"
+                                    :class="{ 'bg-gray-50': '{{ $currentLanguage }}' === 'tr' }"
                                     x-transition:enter="transition ease-out duration-200"
                                     x-transition:enter-start="opacity-0 scale-95"
                                     x-transition:enter-end="opacity-100 scale-100"
@@ -108,7 +108,7 @@
                                     x-transition:leave-end="opacity-0 scale-95"
                             >
                                 <div class=" h-6 flex">
-                                    <img src="{{ $this->getLanguageFlag('TR') }}" alt="">
+                                    <img src="{{ $this->getLanguageFlag('tr') }}" alt="">
                                 </div>
                                 <span>{{__('main.turkish')}}</span>
                                 @if($currentLanguage === 'TR')
@@ -119,7 +119,7 @@
                             </button>
                             <button wire:click="changeLanguage('ar')"
                                     class="flex gap-2 hover:gap-4 items-center w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100"
-                                    :class="{ 'bg-gray-50': '{{ $currentLanguage }}' === 'AR' }"
+                                    :class="{ 'bg-gray-50': '{{ $currentLanguage }}' === 'ar' }"
                                     x-transition:enter="transition ease-out duration-200"
                                     x-transition:enter-start="opacity-0 scale-95"
                                     x-transition:enter-end="opacity-100 scale-100"
@@ -128,7 +128,7 @@
                                     x-transition:leave-end="opacity-0 scale-95"
                             >
                                 <div class=" h-6 flex">
-                                    <img src="{{ $this->getLanguageFlag('AR') }}" alt="">
+                                    <img src="{{ $this->getLanguageFlag('ar') }}" alt="">
                                 </div>
                                 <span>{{__('main.arabic')}}</span>
                                 @if($currentLanguage === 'AR')
@@ -199,12 +199,82 @@
                             </svg>
                             {{__('main.home')}}
                         </a>
-                        <a href="{{route('products')}}" class="flex items-center px-4 py-3 text-base font-medium text-gray-900 rounded-xl hover:bg-gray-50 transition-colors duration-200">
-                            <svg class="w-5 h-5 mr-3 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <div x-data="{ open: false }" class="relative">
+                            <button @click="open = !open"
+                                    class="flex items-center justify-between w-full px-4 py-3 text-base font-medium text-gray-900 rounded-xl transition-all duration-200"
+                                    :class="open ? 'bg-emerald-50 text-emerald-700' : 'hover:bg-gray-50'">
+                                <div class="flex items-center">
+                                    <svg class="w-5 h-5 mr-3 transition-colors duration-200"
+                                         :class="open ? 'text-emerald-500' : 'text-gray-500'"
+                                         fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                             </svg>
                             {{__('main.categories')}}
-                        </a>
+                                </div>
+                                <svg class="w-4 h-4 transition-all duration-200"
+                                     :class="open ? 'text-emerald-500 rotate-180' : 'text-gray-500'"
+                                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </button>
+                            <div x-show="open"
+                                 x-transition:enter="transition ease-out duration-200"
+                                 x-transition:enter-start="opacity-0 -translate-y-2"
+                                 x-transition:enter-end="opacity-100 translate-y-0"
+                                 x-transition:leave="transition ease-in duration-150"
+                                 x-transition:leave-start="opacity-100 translate-y-0"
+                                 x-transition:leave-end="opacity-0 -translate-y-2"
+                                 class="pl-4 space-y-1 mt-1">
+                                @foreach($categories as $category)
+                                    <div x-data="{ open: false }" class="relative">
+                                        <button @click="open = !open"
+                                                class="flex items-center justify-between w-full px-4 py-2 text-sm text-left rounded-lg transition-all duration-200 group"
+                                                :class="open ? 'bg-emerald-50 text-emerald-700' : 'text-gray-700 hover:bg-gray-50'">
+                                            <div class="flex items-center">
+                                                <div class="w-4 h-4 mr-2 flex items-center justify-center">
+                                                    <div class="w-0.5 h-4 bg-gray-300 group-hover:bg-emerald-400 transition-colors duration-200"></div>
+                                                </div>
+                                                <span class="font-medium">{{ $category->translated_name }}</span>
+                                            </div>
+                                            @if($category->children->count() > 0)
+                                                <svg class="w-4 h-4 transition-all duration-200"
+                                                     :class="open ? 'text-emerald-500 rotate-90' : 'text-gray-500'"
+                                                     fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
+                                                </svg>
+                                            @endif
+                                        </button>
+                                        @if($category->children->count() > 0)
+                                            <div x-show="open"
+                                                 x-transition:enter="transition ease-out duration-200"
+                                                 x-transition:enter-start="opacity-0 -translate-y-2"
+                                                 x-transition:enter-end="opacity-100 translate-y-0"
+                                                 x-transition:leave="transition ease-in duration-150"
+                                                 x-transition:leave-start="opacity-100 translate-y-0"
+                                                 x-transition:leave-end="opacity-0 -translate-y-2"
+                                                 class="pl-4 space-y-1 mt-1 relative">
+                                                <!-- Vertical line connecting parent to children -->
+                                                <div class="absolute left-0 top-0 bottom-0 w-0.5 bg-gray-200"></div>
+
+                                                @foreach($category->children as $subcategory)
+                                                    <a href="{{ route('products', ['category' => $subcategory->slug]) }}"
+                                                       class="block px-4 py-2 text-sm text-gray-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-all duration-200 group relative">
+                                                        <div class="flex items-center">
+                                                            <div class="w-4 h-4 mr-2 flex items-center justify-center">
+                                                                <div class="w-0.5 h-4 bg-gray-300 group-hover:bg-emerald-400 transition-colors duration-200"></div>
+                                                            </div>
+                                                            <span>{{ $subcategory->translated_name }}</span>
+                                                        </div>
+                                                        <!-- Horizontal line connecting to vertical line -->
+                                                        <div class="absolute left-0 top-1/2 w-4 h-0.5 bg-gray-200 -translate-y-1/2"></div>
+                                                    </a>
+                                                @endforeach
+                                            </div>
+                                        @endif
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
                     </div>
 
                     <div class="space-y-1">
@@ -253,9 +323,9 @@
                                     <button
                                         wire:click="changeLanguage('en')"
                                         class="flex gap-2 hover:gap-4 items-center w-full px-4 py-3 text-sm text-left text-gray-700 hover:bg-gray-50 transition-colors duration-200"
-                                        :class="{ 'bg-gray-50': '{{ $currentLanguage }}' === 'EN' }">
+                                        :class="{ 'bg-gray-50': '{{ $currentLanguage }}' === 'en' }">
                                         <div class="h-6 flex">
-                                            <img src="{{ $this->getLanguageFlag('EN') }}" alt="English">
+                                            <img src="{{ $this->getLanguageFlag('en') }}" alt="English">
                                         </div>
                                         <span>{{__('main.english')}}</span>
                                         @if($currentLanguage === 'EN')
@@ -267,9 +337,9 @@
                                     <button
                                         wire:click="changeLanguage('tr')"
                                         class="flex gap-2 hover:gap-4 items-center w-full px-4 py-3 text-sm text-left text-gray-700 hover:bg-gray-50 transition-colors duration-200"
-                                        :class="{ 'bg-gray-50': '{{ $currentLanguage }}' === 'TR' }">
+                                        :class="{ 'bg-gray-50': '{{ $currentLanguage }}' === 'tr' }">
                                         <div class="h-6 flex">
-                                            <img src="{{ $this->getLanguageFlag('TR') }}" alt="Turkish">
+                                            <img src="{{ $this->getLanguageFlag('tr') }}" alt="Turkish">
                                         </div>
                                         <span>{{__('main.turkish')}}</span>
                                         @if($currentLanguage === 'TR')
@@ -281,9 +351,9 @@
                                     <button
                                         wire:click="changeLanguage('ar')"
                                         class="flex gap-2 hover:gap-4 items-center w-full px-4 py-3 text-sm text-left text-gray-700 hover:bg-gray-50 transition-colors duration-200"
-                                        :class="{ 'bg-gray-50': '{{ $currentLanguage }}' === 'AR' }">
+                                        :class="{ 'bg-gray-50': '{{ $currentLanguage }}' === 'ar' }">
                                         <div class="h-6 flex">
-                                            <img src="{{ $this->getLanguageFlag('AR') }}" alt="Arabic">
+                                            <img src="{{ $this->getLanguageFlag('ar') }}" alt="Arabic">
                                         </div>
                                         <span>{{__('main.arabic')}}</span>
                                         @if($currentLanguage === 'AR')

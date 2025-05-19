@@ -14,10 +14,11 @@ use App\Exceptions\LanguageNotSupportedException;
 class HeaderComponent extends Component
 {
     public string $cartCount = '1';
-    public string $currentLanguage = 'EN';
+    public string $currentLanguage = 'en';
     public string $searchComponentKey;
     public string $currentDirection = 'ltr';
     private LanguageService $languageService;
+    public $categories;
 
     public function boot(LanguageService $languageService): void
     {
@@ -29,6 +30,11 @@ class HeaderComponent extends Component
         $this->currentLanguage = $this->languageService->getCurrentLanguage();
         $this->currentDirection = $this->languageService->getCurrentDirection();
         $this->searchComponentKey = 'search-' . uniqid();
+        $this->categories = \App\Models\Category::with('children')
+            ->whereNull('parent_id')
+            ->where('status', true)
+            ->orderBy('name')
+            ->get();
     }
 
     public function render()
@@ -40,10 +46,10 @@ class HeaderComponent extends Component
     {
         try {
             $this->languageService->switchLanguage($code);
-            
+
             $this->currentLanguage = $this->languageService->getCurrentLanguage();
             $this->currentDirection = $this->languageService->getCurrentDirection();
-            
+
             // Force a re-render of the search component
             $this->searchComponentKey = 'search-' . uniqid();
 

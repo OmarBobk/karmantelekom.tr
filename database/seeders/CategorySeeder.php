@@ -47,13 +47,12 @@ class CategorySeeder extends Seeder
         foreach ($subcategories as $subcategory) {
             Category::create([
                 'name' => $subcategory['name'],
+                'tr_name' => $subcategory['tr_name'],
+                'ar_name' => $subcategory['ar_name'],
                 'slug' => \Illuminate\Support\Str::slug($subcategory['name']),
                 'parent_id' => $subcategory['parent_id'],
                 'status' => $subcategory['status'],
             ]);
         }
-
-        // Create additional random categories
-        Category::factory(10)->create();
     }
 }

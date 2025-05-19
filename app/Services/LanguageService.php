@@ -11,7 +11,7 @@ use App\Exceptions\LanguageNotSupportedException;
 
 class LanguageService
 {
-    private array $supportedLanguages = ['EN', 'TR', 'AR'];
+    private array $supportedLanguages = ['en', 'tr', 'ar'];
     private array $languageConfig;
 
     public function __construct()
@@ -21,8 +21,6 @@ class LanguageService
 
     public function switchLanguage(string $code): void
     {
-        $code = strtoupper($code);
-        
         if (!in_array($code, $this->supportedLanguages, true)) {
             throw new LanguageNotSupportedException("Language {$code} is not supported");
         }
@@ -32,14 +30,14 @@ class LanguageService
 
         // Set the application locale
         App::setLocale($locale);
-        
+
         // Update session
         Session::put('locale', $code);
         Session::put('direction', $direction);
-        
+
         // Clear relevant caches
         Cache::tags(['language', $code])->flush();
-        
+
         // Force refresh of the application locale
         $this->refreshLocale();
     }
@@ -52,7 +50,7 @@ class LanguageService
 
     public function getCurrentLanguage(): string
     {
-        return strtoupper(Session::get('locale', 'EN'));
+        return Session::get('locale', 'en');
     }
 
     public function getCurrentDirection(): string
@@ -63,19 +61,19 @@ class LanguageService
     private function getLanguageConfig(): array
     {
         return [
-            'EN' => [
+            'en' => [
                 'name' => 'English',
                 'flag' => 'languages/en.svg',
                 'direction' => 'ltr',
                 'locale' => 'en'
             ],
-            'TR' => [
+            'tr' => [
                 'name' => 'Turkish',
                 'flag' => 'languages/tr.png',
                 'direction' => 'ltr',
                 'locale' => 'tr'
             ],
-            'AR' => [
+            'ar' => [
                 'name' => 'Arabic',
                 'flag' => 'languages/ar.svg',
                 'direction' => 'rtl',
@@ -98,4 +96,4 @@ class LanguageService
     {
         return $this->languageConfig[$code]['direction'] ?? 'ltr';
     }
-} 
+}

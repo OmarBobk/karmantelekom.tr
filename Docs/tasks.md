@@ -8,20 +8,21 @@
 - ###DONE: create the tags management page.
 - ###DONE: add is_active field to the tags table.
 - ###DONE: set the dashboard management page.
-- 
 - ###DONE: udpate the most viewed products in the dashboard when you finish the products visualization on the frontend.
+- 
 - ###TODO: create the settings management page.
 
 ### Frontend
 - ###DONE: remove Login button.
 - ###DONE: on the main sections "not slider" display only one image for the product.
 - ###DONE: Create a single product Modal it will be shown when the user clicks on the product in everywhere in the website.
+- ###DONE: Put the tag on the products
 - 
 - 
 - ###TODO: Create a new page to show the product with filters like by category, by price, by brand, by color, by size.
 - ###TODO: Create a Contact us page.
-- ###TODO: Put the tag on the products
 
 ### Other
 - ###DOING: Language: Arabic, Turkish
+  - translate the links in the footer.
 - ###TODO: Data.

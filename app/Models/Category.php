@@ -78,7 +78,9 @@ class Category extends Model
     {
         return match (app()->getLocale()) {
             'TR' => $this->tr_name ?: $this->name,
+            'tr' => $this->tr_name ?: $this->name,
             'AR' => $this->ar_name ?: $this->name,
+            'ar' => $this->ar_name ?: $this->name,
             default => $this->name,
         };
     }

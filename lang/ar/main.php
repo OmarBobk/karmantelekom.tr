@@ -21,5 +21,13 @@ return [
     'turkish' => 'التركية',
     'english' => 'الإنجليزية',
     'products' => 'منتجات',
+    'subscribe_to_our_newsletter' => 'اشترك في النشرة البريدية',
+    'stay_up_to_date_with_the_latest_news_announcements_and_articles' => 'ابق على اطلاع بأحدث الإعلانات.',
+    'subscribe' => 'اشترك',
+    'making_the_world_a_better_place_through_constructing_elegant_hierarchies' => '',
+    'enter_your_email' => 'أدخل بريدك الإلكتروني',
+    'loading' => 'جاري التحميل',
+    'newest_to_oldest' => 'من الأحدث إلى الأقدم',
+    'oldest_to_newest' => 'من الأقدم إلى الأحدث',
 
 ];

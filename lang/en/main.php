@@ -26,5 +26,8 @@ return [
     'subscribe' => 'Subscribe',
     'making_the_world_a_better_place_through_constructing_elegant_hierarchies' => 'Making the world a better place through constructing elegant hierarchies',
     'enter_your_email' => 'Enter your email',
+    'loading' => 'Loading',
+    'newest_to_oldest' => 'Newest to Oldest',
+    'oldest_to_newest' => 'Oldest to Newest',
 
 ];

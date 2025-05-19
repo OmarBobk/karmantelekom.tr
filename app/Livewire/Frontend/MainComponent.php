@@ -61,10 +61,10 @@ class MainComponent extends Component
         try {
             $this->currentDirection = $data['direction'] ?? 'ltr';
             $this->loadAllSections($data['code']);
-            
+
             // Update document direction
             $this->dispatch('updateDirection', ['direction' => $this->currentDirection]);
-            
+
         } catch (\Exception $e) {
             logger()->error('Error handling language change: ' . $e->getMessage());
             $this->dispatch('languageError', ['message' => 'Failed to update content for the selected language']);
@@ -77,7 +77,7 @@ class MainComponent extends Component
         try {
             $code = $code ?? $this->languageService->getCurrentLanguage();
             $this->languageService->switchLanguage($code);
-            
+
             $currency = $this->getCurrency();
 
             // Load both types of sections with proper caching
@@ -92,7 +92,11 @@ class MainComponent extends Component
 
         } catch (\Exception $e) {
             logger()->error('Error loading sections: ' . $e->getMessage());
-            $this->dispatch('sectionError', ['message' => 'Failed to load content sections']);
+            $this->dispatch('notify', [
+                'type' => 'error',
+                'message' => 'Failed to load content sections: ' . $e->getMessage(),
+                'sec' => 10000
+            ]);
         }
     }
 
