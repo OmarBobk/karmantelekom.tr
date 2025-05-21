@@ -21,17 +21,14 @@
     </div>
 
     <!-- Main Footer -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 items-center justify-center"">
         <!-- Company Info -->
-        <div>
+        <div class="flex flex-col justify-between items-center">
             <span class="text-2xl font-semibold mb-2" style="font-family: 'Poppins', sans-serif; background: linear-gradient(to right, #059669, #10b981); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-                {{config('app.name')}}
+                <img src="{{ Storage::url('logo.svg') }}" class="w-36" alt="">
             </span>
-            <p class="mt-4 text-gray-600 max-w-xs">
-                {{__('main.making_the_world_a_better_place_through_constructing_elegant_hierarchies')}}.
-            </p>
             <!-- Social Links -->
-            <div class="flex gap-4 mt-6">
+            <div class="flex gap-4 mt-6>
                 @foreach($socialLinks as $social)
                     <a href="{{ $social['url'] }}" class="text-gray-600 hover:text-gray-900 transition-colors duration-200">
                         <span class="sr-only">{{ $social['name'] }}</span>
@@ -53,30 +50,30 @@
 
         <!-- Company Links -->
         <div>
-            <span class="text-lg font-semibold text-gray-900 block mb-4">Company</span>
+            <span class="text-lg font-semibold text-gray-900 block mb-4">{{__('main.company')}}</span>
             <div class="flex flex-col space-y-3 mt-4">
                 @foreach($companyLinks as $link)
-                    <a href="{{ $link['url'] }}" class="text-gray-600 hover:text-gray-900 transition-colors duration-200">{{ $link['name'] }}</a>
+                    <a href="{{ $link['url'] }}" class="text-gray-600 hover:text-gray-900 transition-colors duration-200">{{ __('main.'.strtolower(str_replace(' ', '_', $link['name']))) }}</a>
                 @endforeach
             </div>
         </div>
 
         <!-- Legal Links -->
         <div>
-            <span class="text-lg font-semibold text-gray-900 block mb-4">Legal</span>
+            <span class="text-lg font-semibold text-gray-900 block mb-4">{{__('main.legal')}}</span>
             <div class="flex flex-col space-y-3 mt-4">
                 @foreach($legalLinks as $link)
-                    <a href="{{ $link['url'] }}" class="text-gray-600 hover:text-gray-900 transition-colors duration-200">{{ $link['name'] }}</a>
+                    <a href="{{ $link['url'] }}" class="text-gray-600 hover:text-gray-900 transition-colors duration-200">{{ __('main.'.strtolower(str_replace(' ', '_', $link['name']))) }}</a>
                 @endforeach
             </div>
         </div>
 
         <!-- Support Links -->
         <div>
-            <span class="text-lg font-semibold text-gray-900 block mb-4">Support</span>
+            <span class="text-lg font-semibold text-gray-900 block mb-4">{{__('main.support')}}</span>
             <div class="flex flex-col space-y-3 mt-4">
                 @foreach($supportLinks as $link)
-                    <a href="{{ $link['url'] }}" class="text-gray-600 hover:text-gray-900 transition-colors duration-200">{{ $link['name'] }}</a>
+                    <a href="{{ $link['url'] }}" class="text-gray-600 hover:text-gray-900 transition-colors duration-200">{{ __('main.'.strtolower(str_replace(' ', '_', $link['name']))) }}</a>
                 @endforeach
             </div>
         </div>
@@ -87,55 +84,47 @@
         <div class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex flex-col md:flex-row justify-between items-center gap-4">
                 <div class="text-sm text-gray-600">
-                    <p>Copyright © {{ date('Y') }} {{config('app.name')}}. All rights reserved.</p>
+                    <p>{{__('main.copyright')}} © {{ date('Y') }} {{config('app.name')}}. {{__('main.all_rights_reserved')}}.</p>
                 </div>
                 <div class="flex items-center gap-4">
-                    <select class="w-1/2 py-1 px-2 text-gray-500 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500">
-                        <option disabled selected>EN</option>
-                        <option>English</option>
-                        <option>Türkçe</option>
-                        <option>Deutsch</option>
-                        <option>Français</option>
-                        <option>Español</option>
-                    </select>
-                    @if($canSwitchCurrency)
-                        <div class="relative w-1/2 py-1 px-2 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"
-                            x-data="{ open: false }">
-                            <button
-                                @click="open = !open"
-                                @click.away="open = false"
-                                class="flex w-full justify-between items-center space-x-1 text-sm text-gray-500 hover:text-gray-700"
-                            >
-                                <span>{{ $currentCurrency }}</span>
-                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </button>
+{{--                    @if($canSwitchCurrency)--}}
+{{--                        <div class="relative w-1/2 py-1 px-2 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"--}}
+{{--                            x-data="{ open: false }">--}}
+{{--                            <button--}}
+{{--                                @click="open = !open"--}}
+{{--                                @click.away="open = false"--}}
+{{--                                class="flex w-full justify-between items-center space-x-1 text-sm text-gray-500 hover:text-gray-700"--}}
+{{--                            >--}}
+{{--                                <span>{{ $currentCurrency }}</span>--}}
+{{--                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">--}}
+{{--                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />--}}
+{{--                                </svg>--}}
+{{--                            </button>--}}
 
-                            <div
-                                x-show="open"
-                                x-transition
-                                class="absolute bottom-full mb-2 right-0 w-24 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50"
-                            >
-                                <div class="py-1">
-                                    <button
-                                        wire:click="switchCurrency('USD')"
-                                        class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100"
-                                        :class="{ 'bg-gray-50': '{{ $currentCurrency }}' === 'USD' }"
-                                    >
-                                        USD
-                                    </button>
-                                    <button
-                                        wire:click="switchCurrency('TRY')"
-                                        class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100"
-                                        :class="{ 'bg-gray-50': '{{ $currentCurrency }}' === 'TRY' }"
-                                    >
-                                        TRY
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
-                    @endif
+{{--                            <div--}}
+{{--                                x-show="open"--}}
+{{--                                x-transition--}}
+{{--                                class="absolute bottom-full mb-2 right-0 w-24 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50"--}}
+{{--                            >--}}
+{{--                                <div class="py-1">--}}
+{{--                                    <button--}}
+{{--                                        wire:click="switchCurrency('USD')"--}}
+{{--                                        class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100"--}}
+{{--                                        :class="{ 'bg-gray-50': '{{ $currentCurrency }}' === 'USD' }"--}}
+{{--                                    >--}}
+{{--                                        USD--}}
+{{--                                    </button>--}}
+{{--                                    <button--}}
+{{--                                        wire:click="switchCurrency('TRY')"--}}
+{{--                                        class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100"--}}
+{{--                                        :class="{ 'bg-gray-50': '{{ $currentCurrency }}' === 'TRY' }"--}}
+{{--                                    >--}}
+{{--                                        TRY--}}
+{{--                                    </button>--}}
+{{--                                </div>--}}
+{{--                            </div>--}}
+{{--                        </div>--}}
+{{--                    @endif--}}
                 </div>
             </div>
         </div>

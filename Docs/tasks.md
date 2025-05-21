@@ -8,7 +8,7 @@
 - ###DONE: create the tags management page.
 - ###DONE: add is_active field to the tags table.
 - ###DONE: set the dashboard management page.
-- ###DONE: udpate the most viewed products in the dashboard when you finish the products visualization on the frontend.
+- ###DONE: update the most viewed products in the dashboard when you finish the products visualization on the frontend.
 - 
 - ###TODO: create the settings management page.
 
@@ -19,10 +19,13 @@
 - ###DONE: Put the tag on the products
 - 
 - 
-- ###TODO: Create a new page to show the product with filters like by category, by price, by brand, by color, by size.
-- ###TODO: Create a Contact us page.
+- ###DONE: Create a new page to show the product with filters like by category, by price, by brand, by color, by size.
+- ###DONE: Create a Contact us page.
 
 ### Other
-- ###DOING: Language: Arabic, Turkish
-  - translate the links in the footer.
-- ###TODO: Data.
+- ###DONE: Language: Arabic, Turkish
+  - ##DONE: translate the links in the footer.
+- ###DONE: Data.
+- ###TODO: Design the logo
+- ###TODO: Place the logo on the website.
+- ###TODO: Get the domain name.

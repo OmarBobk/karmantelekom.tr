@@ -36,11 +36,11 @@ class ProductModalComponent extends Component
         $this->selectedImageId = $this->product?->images->where('is_primary', true)->first()?->id
             ?? $this->product?->images->first()?->id;
 
-        $requestQuoteMessage = urlencode('hello I want to get quote about this product *' . $this->product->name . '* Code: *' . $this->product->code . '*');
-        $this->requestQuoteUrl = 'https://wa.me/905353402539?text=' . $requestQuoteMessage;
+        $requestQuoteMessage = urlencode(__('main.wp_quote_message') .' *' . $this->product->name . '* '. __('main.code') .': *' . $this->product->code . '*');
+        $this->requestQuoteUrl = 'https://wa.me/90' . '5353402539' . '?text=' . $requestQuoteMessage;
 
-        $moreInfoMessage = urlencode('hello Can I get more information about this product *' . $this->product->name . '* Code: *' . $this->product->code . '*');
-        $this->moreInfoUrl = 'https://wa.me/905353402539?text=' . $moreInfoMessage;
+        $moreInfoMessage = urlencode(__('main.wp_more_info_message') . ' *' . $this->product->name . '* ' . __('main.code') . ': *' . $this->product->code . '*');
+        $this->moreInfoUrl = 'https://wa.me/90' . '5353402539' . '?text=' . $moreInfoMessage;
     }
 
     public function selectImage($imageUrl, $imageId): void

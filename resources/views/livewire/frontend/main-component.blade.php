@@ -54,6 +54,7 @@
         activeCategory: @entangle('activeCategory'),
         atStart: true,
         atEnd: false,
+        direction: '{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}',
         init() {
             this.$nextTick(() => {
                 this.updateScrollButtons(this.activeCategory);
@@ -62,24 +63,34 @@
         updateScrollButtons(index) {
             const slider = this.$refs[`slider-${index}`];
             if (slider) {
-                this.atStart = slider.scrollLeft <= 0;
-                this.atEnd = slider.scrollLeft + slider.clientWidth >= slider.scrollWidth;
+                if (this.direction === 'rtl') {
+                    this.atStart = Math.abs(slider.scrollLeft) >= slider.scrollWidth - slider.clientWidth - 1;
+                    this.atEnd = slider.scrollLeft >= -1;
+                } else {
+                    this.atStart = slider.scrollLeft <= 0;
+                    this.atEnd = slider.scrollLeft + slider.clientWidth >= slider.scrollWidth;
+                }
             }
         },
         scrollLeft(index) {
             const slider = this.$refs[`slider-${index}`];
             if (slider) {
-                // Get the width of a single product card (including gap)
                 const productCard = slider.querySelector('.flex-none');
                 const cardWidth = productCard.offsetWidth;
-                const gap = 16; // gap-4 = 16px
+                const gap = 16;
 
-                slider.scrollBy({
-                    left: -(cardWidth + gap),
-                    behavior: 'smooth'
-                });
+                if (this.direction === 'rtl') {
+                    slider.scrollBy({
+                        left: cardWidth + gap,
+                        behavior: 'smooth'
+                    });
+                } else {
+                    slider.scrollBy({
+                        left: -(cardWidth + gap),
+                        behavior: 'smooth'
+                    });
+                }
 
-                // Update buttons after scroll animation
                 setTimeout(() => {
                     this.updateScrollButtons(index);
                 }, 300);
@@ -88,17 +99,22 @@
         scrollRight(index) {
             const slider = this.$refs[`slider-${index}`];
             if (slider) {
-                // Get the width of a single product card (including gap)
                 const productCard = slider.querySelector('.flex-none');
                 const cardWidth = productCard.offsetWidth;
-                const gap = 16; // gap-4 = 16px
+                const gap = 16;
 
-                slider.scrollBy({
-                    left: cardWidth + gap,
-                    behavior: 'smooth'
-                });
+                if (this.direction === 'rtl') {
+                    slider.scrollBy({
+                        left: -(cardWidth + gap),
+                        behavior: 'smooth'
+                    });
+                } else {
+                    slider.scrollBy({
+                        left: cardWidth + gap,
+                        behavior: 'smooth'
+                    });
+                }
 
-                // Update buttons after scroll animation
                 setTimeout(() => {
                     this.updateScrollButtons(index);
                 }, 300);
@@ -109,7 +125,7 @@
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div class="relative" x-data="navigationScroll">
                 <!-- Enhanced Shadow indicators for scroll -->
-                <div class="absolute left-0 bottom-[3px] w-12 z-10 hidden md:flex items-center justify-start"
+                <div class="absolute {{ app()->getLocale() === 'ar' ? 'right-0' : 'left-0' }} bottom-[3px] w-12 z-10 hidden md:flex items-center justify-start"
                     :class="{ 'pointer-events-none': atStart }"
                 >
                     <div class="absolute inset-0 bg-gradient-to-r from-white via-white to-transparent
@@ -119,20 +135,20 @@
 
                     <button
                         @click="scrollTabsLeft"
-                        class="relative ml-1 size-8 flex items-center justify-center rounded-full bg-white shadow-md border border-gray-200/50
+                        class="relative {{ app()->getLocale() === 'ar' ? 'mr-1' : 'ml-1' }} size-8 flex items-center justify-center rounded-full bg-white shadow-md border border-gray-200/50
                             text-gray-400 hover:text-gray-600 transition-all duration-200
                             opacity-0 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
                         :class="{ 'opacity-100': !atStart }"
                         x-show="!atStart"
                         aria-label="Scroll categories left"
                     >
-                        <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <svg class="size-4 {{ app()->getLocale() === 'ar' ? 'rotate-180' : '' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                         </svg>
                     </button>
                 </div>
 
-                <div class="absolute right-0 bottom-[3px] w-12 z-10 hidden md:flex items-center justify-end"
+                <div class="absolute {{ app()->getLocale() === 'ar' ? 'left-0' : 'right-0' }} bottom-[3px] w-12 z-10 hidden md:flex items-center justify-end"
                     :class="{ 'pointer-events-none': atEnd }"
                 >
                     <div class="absolute inset-0 bg-gradient-to-l from-white via-white to-transparent
@@ -142,14 +158,14 @@
 
                     <button
                         @click="scrollTabsRight"
-                        class="relative mr-1 size-8 flex items-center justify-center rounded-full bg-white shadow-md border border-gray-200/50
+                        class="relative {{ app()->getLocale() === 'ar' ? 'ml-1' : 'mr-1' }} size-8 flex items-center justify-center rounded-full bg-white shadow-md border border-gray-200/50
                             text-gray-400 hover:text-gray-600 transition-all duration-200
                             opacity-0 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
                         :class="{ 'opacity-100': !atEnd }"
                         x-show="!atEnd"
                         aria-label="Scroll categories right"
                     >
-                        <svg class="size-4" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <svg class="size-4 {{ app()->getLocale() === 'ar' ? 'rotate-180' : '' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
                         </svg>
                     </button>
@@ -200,12 +216,12 @@
                     <!-- Left Navigation Button -->
                     <button
                         @click="scrollLeft($wire.activeCategory)"
-                        class="hidden lg:flex items-center justify-center size-10 rounded-full bg-white hover:bg-gray-50 text-gray-600 hover:text-gray-900 shadow-lg border border-gray-200 absolute -left-2 md:-left-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 z-10 transition-all duration-200
+                        class="hidden lg:flex items-center justify-center size-10 rounded-full bg-white hover:bg-gray-50 text-gray-600 hover:text-gray-900 shadow-lg border border-gray-200 absolute {{ app()->getLocale() === 'ar' ? '-right-2 md:-right-6' : '-left-2 md:-left-6' }} top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 z-10 transition-all duration-200
                             focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
-                        :class="{ 'pointer-events-none opacity-50': atStart }"
+                        :class="{ 'pointer-events-none opacity-50': {{ app()->getLocale() === 'ar' ? 'atEnd' : 'atStart' }} }"
                         aria-label="Scroll products left"
                     >
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <svg class="w-6 h-6 {{ app()->getLocale() === 'ar' ? 'rotate-180' : '' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
                         </svg>
                     </button>
@@ -213,12 +229,12 @@
                     <!-- Right Navigation Button -->
                     <button
                         @click="scrollRight($wire.activeCategory)"
-                        class="hidden lg:flex items-center justify-center size-10 rounded-full bg-white hover:bg-gray-50 text-gray-600 hover:text-gray-900 shadow-lg border border-gray-200 absolute -right-2 md:-right-6 top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 z-10 transition-all duration-200
+                        class="hidden lg:flex items-center justify-center size-10 rounded-full bg-white hover:bg-gray-50 text-gray-600 hover:text-gray-900 shadow-lg border border-gray-200 absolute {{ app()->getLocale() === 'ar' ? '-left-2 md:-left-6' : '-right-2 md:-right-6' }} top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 z-10 transition-all duration-200
                             focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
-                        :class="{ 'pointer-events-none opacity-50': atEnd }"
+                        :class="{ 'pointer-events-none opacity-50': {{ app()->getLocale() === 'ar' ? 'atStart' : 'atEnd' }} }"
                         aria-label="Scroll products right"
                     >
-                        <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                        <svg class="w-6 h-6 {{ app()->getLocale() === 'ar' ? 'rotate-180' : '' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2.5" d="M9 5l7 7-7 7"/>
                         </svg>
                     </button>
@@ -233,11 +249,11 @@
                                 aria-labelledby="tab-{{ $index }}"
                                 x-show="$wire.activeCategory === {{ $index }}"
                                 x-transition:enter="transition ease-out duration-300"
-                                x-transition:enter-start="opacity-0 transform translate-x-full"
+                                x-transition:enter-start="opacity-0 transform {{ app()->getLocale() === 'ar' ? '-translate-x-full' : 'translate-x-full' }}"
                                 x-transition:enter-end="opacity-100 transform translate-x-0"
                                 x-transition:leave="transition ease-in duration-300"
                                 x-transition:leave-start="opacity-100 transform translate-x-0"
-                                x-transition:leave-end="opacity-0 transform -translate-x-full"
+                                x-transition:leave-end="opacity-0 transform {{ app()->getLocale() === 'ar' ? 'translate-x-full' : '-translate-x-full' }}"
                                 class="absolute inset-0 w-full"
                                 x-cloak
                             >
@@ -269,8 +285,8 @@
                                                             <p class="text-sm font-medium text-emerald-600">{{ $section->translated_name }}</p>
                                                             <button wire:click="$dispatch('openProductModal', { productId: {{ $product->id }} })" class="text-left">
                                                                 <div class="line-clamp-2">
-                                                                    <h3 class="text-base font-medium text-gray-900 hover:text-emerald-600 transition-colors duration-200">{{ $product->translated_name }}</h3>
-                                                                    <p class="text-sm text-gray-500">{{ $product->translated_description }}</p>
+                                                                    <h3 class="text-base {{app()->getLocale() == 'ar' ? 'text-right' : ''}} font-medium text-gray-900 hover:text-emerald-600 transition-colors duration-200">{{ $product->translated_name }}</h3>
+                                                                    <p class="text-sm  {{app()->getLocale() == 'ar' ? 'text-right' : ''}} text-gray-500">{{ $product->translated_description }}</p>
                                                                 </div>
                                                             </button>
                                                         </div>
@@ -280,7 +296,7 @@
                                                             <!-- Product Price -->
                                                             <div>
                                                                 @if($product->prices->isNotEmpty())
-                                                                    <p class="text-xl font-semibold text-emerald-600">
+                                                                    <p class="text-xl font-semibold text-emerald-600 ">
                                                                         {{ $product->prices->first()->getFormattedPrice() }}
                                                                     </p>
                                                                 @else
@@ -481,7 +497,7 @@
                 <!-- Section Header -->
                 <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div class="flex items-center justify-between mb-6">
-                        <div class="flex items-center space-x-3">
+                        <div class="flex items-center gap-3">
                             <h2 class="text-2xl font-bold text-gray-900">{{ $section->translated_name }}</h2>
                             <span class="px-3 py-1 text-sm font-medium text-emerald-700 bg-emerald-50 rounded-full">
                                 {{ count($section->products) }} {{ __('main.products') }}
@@ -541,7 +557,7 @@
                                                                     ? Storage::url($product->images->where('is_primary', true)->first()->image_url)
                                                                     : 'https://placehold.co/100' }}"
                                                              alt="{{ $product->name }} - Image {{ $index + 1 }}"
-                                                             class="absolute h-full w-full object-cover lg:object-cover md:object-contain object-center transition-opacity duration-300 opacity-100"
+                                                             class="absolute h-full w-full object-contain lg:object-contain md:object-contain object-center transition-opacity duration-300 opacity-100"
                                                              loading="lazy">
                                                     </button>
                                                 </div>
@@ -551,9 +567,9 @@
                                                 <div class="p-4">
                                                     <div class="mb-3">
                                                         <button wire:click="$dispatch('openProductModal', { productId: {{ $product->id }} })" class="text-left">
-                                                            <div class="line-clamp-3">
-                                                                <span class="text-sm font-medium text-gray-900 hover:text-emerald-600 transition-colors duration-200">{{ $product->translated_name }}</span>
-                                                                <span class="text-sm text-gray-500">{{ $product->translated_description }}</span>
+                                                            <div class="h-[4.5rem] {{ app()->getLocale() == 'ar' ? 'text-right' : '' }}">
+                                                                <h3 class="text-sm font-medium text-gray-900 hover:text-emerald-600 transition-colors duration-200 line-clamp-1">{{ $product->translated_name }}</h3>
+                                                                <p class="text-sm text-gray-500 line-clamp-2">{{ $product->translated_description }}</p>
                                                             </div>
                                                         </button>
                                                     </div>

@@ -114,24 +114,29 @@
                     @endif
                 </ul>
             </div>
-            <div class="flex space-x-3 mt-6">
+            <div class="flex gap-3 mt-6">
                 <a
                    href="{{$requestQuoteUrl}}"
                    target="_blank"
                    class="flex-1 flex items-center justify-center px-4 py-2 bg-emerald-600 text-white font-semibold rounded-lg shadow hover:bg-emerald-700 transition">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-5 h-5 {{app()->getLocale() == 'ar' ? 'ml-2' : 'mr-2'}}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v4a1 1 0 001 1h3m10-5h2a2 2 0 012 2v10a2 2 0 01-2 2H7a2 2 0 01-2-2V7a2 2 0 012-2h2"/>
                     </svg>
-                    {{__('main.request_quote')}}
+                    <span class="{{app()->getLocale() == 'ar' ? 'text-sm' : ''}}">
+                        {{__('main.request_quote')}}
+                    </span>
                 </a>
                 <a
                     href="{{$moreInfoUrl}}"
                     target="_blank"
                     class="flex-1 flex items-center justify-center px-4 py-2 bg-gray-100 text-gray-700 font-semibold rounded-lg shadow hover:bg-gray-200 transition">
-                    <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <svg class="w-5 h-5 {{app()->getLocale() == 'ar' ? 'ml-2' : 'mr-2'}}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M12 20a8 8 0 100-16 8 8 0 000 16z"/>
                     </svg>
-                    {{__('main.more_info')}}
+                    <span class="{{app()->getLocale() == 'ar' ? 'text-sm' : ''}}">
+
+                        {{__('main.more_info')}}
+                    </span>
                 </a>
             </div>
         </div>

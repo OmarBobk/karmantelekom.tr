@@ -48,7 +48,7 @@ class Product extends Model
     use HasFactory, HasSlug, Searchable;
 
     public array $searchable_columns = [
-        'code', 'name', 'description', 'serial'
+        'code', 'name', 'description', 'serial', 'tr_name', 'ar_name', 'tr_description', 'ar_description'
     ];
 
     public array $return_from_search = [];

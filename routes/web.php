@@ -1,5 +1,6 @@
 <?php
 
+use App\Livewire\Frontend\ContactusComponent;
 use App\Livewire\Frontend\Errors\NotFound;
 use App\Livewire\Frontend\MainComponent;
 use App\Livewire\Frontend\ProductsComponent;
@@ -15,7 +16,7 @@ Route::get('/', MainComponent::class)->name('main');
 
 Route::get('/products/{category}', ProductsComponent::class)->name('products');
 //Route::get('/products', ProductsComponent::class)->name('products');
-Route::get('/profile', ProfileComponent::class)->name('account');
+Route::get('/contactus', ContactusComponent::class)->name('contactus');
 
 Route::middleware([
     'auth:sanctum',

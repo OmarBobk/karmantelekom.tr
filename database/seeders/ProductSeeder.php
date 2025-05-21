@@ -24,7 +24,7 @@ class ProductSeeder extends Seeder
         // Clothes - Cotton
         $name    = 'Flash Triko 25-2583 shirt';
         $tr_name = 'Flash Triko 25-2583 gömlek';
-        $ar_name = 'ريكو قميص نسائي رقم 25-2583فلاش ت';
+        $ar_name = 'فلاش تريكو قميص نسائي رقم 25-2583';
         $code = '25-2583';
         $product = Product::create([
             'name' => $name,
@@ -37,7 +37,7 @@ class ProductSeeder extends Seeder
             'code' => $code,
             'description'    => "this is the description of the {$name}",
             'tr_description' => "ürün açıklaması {$tr_name}",
-            'ar_description' => " وصف المنتج{$ar_name}",
+            'ar_description' => " وصف المنتج N {$ar_name}",
             'category_id' => Category::whereName('Cotton Clothes')->first()->id,
         ]);
 
@@ -57,7 +57,7 @@ class ProductSeeder extends Seeder
 
         $name    = 'Flash Triko 25-2531 shirt';
         $tr_name = 'Flash Triko 25-2531 gömlek';
-        $ar_name = 'ريكو قميص نسائي رقم 25-2531فلاش ت';
+        $ar_name = 'فلاش تريكو قميص نسائي رقم 25-2531';
         $code = '25-2531';
         $product = Product::create([
             'name' => $name,
@@ -70,7 +70,7 @@ class ProductSeeder extends Seeder
             'code' => $code,
             'description'    => "this is the description of the {$name}",
             'tr_description' => "ürün açıklaması {$tr_name}",
-            'ar_description' => " وصف المنتج{$ar_name}",
+            'ar_description' => " وصف المنتج N {$ar_name}",
             'category_id' => Category::whereName('Cotton Clothes')->first()->id,
         ]);
 
@@ -95,7 +95,7 @@ class ProductSeeder extends Seeder
 
         $name    = 'Flash Triko 25-2606 shirt';
         $tr_name = 'Flash Triko 25-2606 gömlek';
-        $ar_name = 'ريكو قميص نسائي رقم 25-2606فلاش ت';
+        $ar_name = 'فلاش تريكو قميص نسائي رقم 25-2606';
         $code = '25-2606';
         $product = Product::create([
             'name' => $name,
@@ -108,7 +108,7 @@ class ProductSeeder extends Seeder
             'code' => $code,
             'description'    => "this is the description of the {$name}",
             'tr_description' => "ürün açıklaması {$tr_name}",
-            'ar_description' => " وصف المنتج{$ar_name}",
+            'ar_description' => " وصف المنتج N {$ar_name}",
             'category_id' => Category::whereName('Cotton Clothes')->first()->id,
         ]);
 
@@ -141,7 +141,7 @@ class ProductSeeder extends Seeder
             'code' => $code,
             'description'    => "this is the description of the {$name}",
             'tr_description' => "ürün açıklaması {$tr_name}",
-            'ar_description' => " وصف المنتج{$ar_name}",
+            'ar_description' => " وصف المنتج N {$ar_name}",
             'category_id' => Category::whereName('Leather')->first()->id,
         ]);
 
@@ -179,7 +179,7 @@ class ProductSeeder extends Seeder
             'code' => $code,
             'description'    => "this is the description of the {$name}",
             'tr_description' => "ürün açıklaması {$tr_name}",
-            'ar_description' => " وصف المنتج{$ar_name}",
+            'ar_description' => " وصف المنتج N {$ar_name}",
             'category_id' => Category::whereName('Leather')->first()->id,
         ]);
 
@@ -212,7 +212,7 @@ class ProductSeeder extends Seeder
             'code' => $code,
             'description'    => "this is the description of the {$name}",
             'tr_description' => "ürün açıklaması {$tr_name}",
-            'ar_description' => " وصف المنتج{$ar_name}",
+            'ar_description' => " وصف المنتج N {$ar_name}",
             'category_id' => Category::whereName('Leather')->first()->id,
         ]);
 
@@ -246,7 +246,7 @@ class ProductSeeder extends Seeder
             'code' => $code,
             'description'    => "this is the description of the {$name}",
             'tr_description' => "ürün açıklaması {$tr_name}",
-            'ar_description' => " وصف المنتج{$ar_name}",
+            'ar_description' => " وصف المنتج N {$ar_name}",
             'category_id' => Category::whereName('Skin Care')->first()->id,
         ]);
 
@@ -284,7 +284,7 @@ class ProductSeeder extends Seeder
             'code' => $code,
             'description'    => "this is the description of the {$name}",
             'tr_description' => "ürün açıklaması {$tr_name}",
-            'ar_description' => " وصف المنتج{$ar_name}",
+            'ar_description' => " وصف المنتج N{$ar_name}",
             'category_id' => Category::whereName('Skin Care')->first()->id,
         ]);
 
@@ -322,7 +322,7 @@ class ProductSeeder extends Seeder
             'code' => $code,
             'description'    => "this is the description of the {$name}",
             'tr_description' => "ürün açıklaması {$tr_name}",
-            'ar_description' => " وصف المنتج{$ar_name}",
+            'ar_description' => " وصف المنتج N{$ar_name}",
             'category_id' => Category::whereName('Skin Care')->first()->id,
         ]);
 

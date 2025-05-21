@@ -8,7 +8,7 @@
                 <!-- Search Input Wrapper -->
                 <div class="relative flex items-center w-full h-11">
                     <!-- Search Icon -->
-                    <div class="absolute left-0 p-2.5 text-gray-400">
+                    <div class="absolute {{ app()->getLocale() == 'ar' ? 'right-0' : 'left-0' }} p-2.5 text-gray-400">
                         <svg class="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
                         </svg>
@@ -20,13 +20,13 @@
                            wire:model.live.debounce.300ms="searchQuery"
                            wire:loading.class="opacity-50"
                            @click="isOpen = true"
-                           class="w-full h-full pl-11 pr-4 bg-transparent text-sm placeholder-gray-400 outline-none focus:outline-none focus:ring-0 border-0 focus:border-0"
+                           class="w-full h-full {{ app()->getLocale() == 'ar' ? 'pr-11' : 'pl-11' }} bg-transparent text-sm placeholder-gray-400 outline-none focus:outline-none focus:ring-0 border-0 focus:border-0"
                     >
 
                     <!-- Clear Button -->
                     <button wire:click="$set('searchQuery', '')"
                             x-show="$wire.searchQuery"
-                            class="absolute right-3 p-1 text-gray-400 hover:text-gray-600 focus:outline-none">
+                            class="absolute {{ app()->getLocale() == 'ar' ? 'left-3' : 'right-3' }} p-1 text-gray-400 hover:text-gray-600 focus:outline-none">
                         <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                         </svg>
@@ -71,7 +71,7 @@
                                                         <button wire:click="$dispatch('openProductModal', { productId: {{ $result['id'] }} })" class="">
                                                             <img src="{{ $result['image'] }}"
                                                                  alt="{{ $result['title'] }} - Image"
-                                                                 class="absolute h-full w-full object-cover object-center transition-opacity duration-300 opacity-100"
+                                                                 class="absolute h-full w-full object-contain object-center transition-opacity duration-300 opacity-100"
                                                                  loading="lazy">
                                                         </button>
                                                     </div>
@@ -80,11 +80,9 @@
                                                     <div class="p-2">
                                                         <div class="flex items-start gap-2">
                                                             <button wire:click="$dispatch('openProductModal', { productId: {{ $result['id'] }} })" class="">
-                                                                <div class="line-clamp-3 text-left">
-                                                                    <a href="#">
-                                                                        <span class="text-xs font-medium text-gray-900">{{ $result['title'] }}</span>
-                                                                    </a>
-                                                                    <span class="text-xs text-gray-500">{{ $result['description'] }}</span>
+                                                                <div class="h-[4.5rem] {{ app()->getLocale() == 'ar' ? 'text-right' : '' }}">
+                                                                    <h3 class="text-sm font-medium text-gray-900 hover:text-emerald-600 transition-colors duration-200 line-clamp-1">{{ $result['title'] }}</h3>
+                                                                    <p class="text-sm text-gray-500 line-clamp-2">{{ $result['description'] }}</p>
                                                                 </div>
                                                             </button>
                                                         </div>

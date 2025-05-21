@@ -18,8 +18,6 @@ class FooterComponent extends Component
     public $companyLinks = [
         ['name' => 'About Us', 'url' => '#'],
         ['name' => 'Contact', 'url' => '#'],
-        ['name' => 'Jobs', 'url' => '#'],
-        ['name' => 'Press kit', 'url' => '#'],
         ['name' => 'Blog', 'url' => '#'],
     ];
 
@@ -27,15 +25,12 @@ class FooterComponent extends Component
         ['name' => 'Terms of use', 'url' => '#'],
         ['name' => 'Privacy policy', 'url' => '#'],
         ['name' => 'Cookie policy', 'url' => '#'],
-        ['name' => 'License', 'url' => '#'],
     ];
 
     public $supportLinks = [
         ['name' => 'Help Center', 'url' => '#'],
         ['name' => 'FAQs', 'url' => '#'],
         ['name' => 'Community', 'url' => '#'],
-        ['name' => 'Developer API', 'url' => '#'],
-        ['name' => 'Documentation', 'url' => '#'],
     ];
 
     public $currentCurrency;
