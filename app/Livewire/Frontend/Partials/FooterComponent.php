@@ -2,18 +2,13 @@
 
 namespace App\Livewire\Frontend\Partials;
 
+use App\Facades\Settings;
 use Livewire\Component;
 use Illuminate\Support\Facades\Cache;
 
 class FooterComponent extends Component
 {
-    public $socialLinks = [
-        ['name' => 'Facebook', 'url' => '#', 'icon' => 'facebook'],
-        ['name' => 'Twitter', 'url' => '#', 'icon' => 'twitter'],
-        ['name' => 'Instagram', 'url' => '#', 'icon' => 'instagram'],
-        ['name' => 'LinkedIn', 'url' => '#', 'icon' => 'linkedin'],
-        ['name' => 'YouTube', 'url' => '#', 'icon' => 'youtube'],
-    ];
+    public $socialLinks = [];
 
     public $companyLinks = [
         ['name' => 'About Us', 'url' => '#'],
@@ -40,6 +35,13 @@ class FooterComponent extends Component
     {
         $this->currentCurrency = session('currency', config('app.currency', 'TRY'));
         $this->canSwitchCurrency = auth()->check() && auth()->user()->hasAnyRole(['admin', 'salesperson', 'shop_owner']);
+
+        $this->socialLinks = [
+            ['name' => 'Facebook', 'url' => Settings::get('facebook_url') , 'icon' => 'facebook'],
+            ['name' => 'Instagram', 'url' => Settings::get('instagram_url'), 'icon' => 'instagram'],
+            ['name' => 'WhatsApp', 'url' => 'https://wa.me/' . Settings::get('whatsapp_number'), 'icon' => 'whatsapp'],
+        ];
+
     }
 
     public function switchCurrency($currency)

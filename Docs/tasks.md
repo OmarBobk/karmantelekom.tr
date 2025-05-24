@@ -26,6 +26,7 @@
 - ###DONE: Language: Arabic, Turkish
   - ##DONE: translate the links in the footer.
 - ###DONE: Data.
-- ###TODO: Design the logo
-- ###TODO: Place the logo on the website.
-- ###TODO: Get the domain name.
+- ###DONE: Design the logo
+- ###DONE: Place the logo on the website.
+- ###DONE: Get the domain name.
+- ###TODO: DNS Link.

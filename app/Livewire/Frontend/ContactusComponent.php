@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Livewire\Frontend;
 
+use App\Facades\Settings;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
 use Illuminate\Support\Facades\Mail;
@@ -16,7 +17,19 @@ class ContactusComponent extends Component
     public string $email = '';
     public string $subject = '';
     public string $message = '';
+    public string $contact_email = '';
+    public string $phone_number_1 = '';
+    public string $phone_number_2 = '';
+    public string $phone_number_3 = '';
     public bool $success = false;
+
+    public function mount(): void
+    {
+        $this->contact_email = Settings::get('contact_email', '');
+        $this->phone_number_1 = Settings::get('phone_number_1', '');
+        $this->phone_number_2 = Settings::get('phone_number_2', '');
+        $this->phone_number_3 = Settings::get('phone_number_3', '');
+    }
 
     protected function rules(): array
     {

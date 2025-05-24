@@ -118,8 +118,10 @@
                 :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
             >
                 <div class="h-full px-3 py-4 overflow-y-auto">
-                    <div class="flex items-center justify-between mb-8 px-2">
-                        <a href="#" class="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">{{ config('app.name') }}</a>
+                    <div class="flex items-center justify-center px-2">
+                        <a href="#" class="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                            <img src="{{ Storage::url('title-logo.svg') }}" class="w-32" alt="">
+                        </a>
                         <button @click="sidebarOpen = !sidebarOpen" class="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200">
                             <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />

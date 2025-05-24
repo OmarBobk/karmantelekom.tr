@@ -295,12 +295,15 @@
                                                         <div class="flex items-center justify-between">
                                                             <!-- Product Price -->
                                                             <div>
-                                                                @if($product->prices->isNotEmpty())
-                                                                    <p class="text-xl font-semibold text-emerald-600 ">
-                                                                        {{ $product->prices->first()->getFormattedPrice() }}
-                                                                    </p>
+                                                                @if(App\Facades\Settings::get('product_prices') == 'enabled')
+                                                                    @if($product->prices->isNotEmpty())
+                                                                        <p class="text-xl font-semibold text-emerald-600 ">
+                                                                            {{ $product->prices->first()->getFormattedPrice() }}
+                                                                        </p>
+                                                                    @else
+                                                                        <p class="text-sm text-gray-500">Price not available</p>
+                                                                    @endif
                                                                 @else
-                                                                    <p class="text-sm text-gray-500">Price not available</p>
                                                                 @endif
                                                             </div>
                                                         </div>
@@ -575,12 +578,15 @@
                                                     </div>
                                                     <div class="flex items-center justify-between mt-3">
                                                         <div>
-                                                            @if($product->prices->isNotEmpty())
-                                                                <p class="text-xl font-semibold text-emerald-600">
-                                                                    {{ $product->prices->first()->getFormattedPrice() }}
-                                                                </p>
+                                                            @if(App\Facades\Settings::get('product_prices') == 'enabled')
+                                                                @if($product->prices->isNotEmpty())
+                                                                    <p class="text-xl font-semibold text-emerald-600">
+                                                                        {{ $product->prices->first()->getFormattedPrice() }}
+                                                                    </p>
+                                                                @else
+                                                                    <p class="text-xl font-semibold text-gray-400">Price not available</p>
+                                                                @endif
                                                             @else
-                                                                <p class="text-xl font-semibold text-gray-400">Price not available</p>
                                                             @endif
                                                         </div>
                                                     </div>

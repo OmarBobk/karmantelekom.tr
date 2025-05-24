@@ -9,7 +9,6 @@ use App\Models\Section;
 use App\Models\Currency;
 use App\Models\ProductPrice;
 use Illuminate\Support\Facades\App;
-use Illuminate\Support\Facades\Cache;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
@@ -44,15 +43,11 @@ class MainComponent extends Component
     private function getCurrency(): Currency
     {
         if (!$this->canSwitchCurrency) {
-            return Cache::remember('default_currency', now()->addDay(), function () {
-                return Currency::where('is_default', true)->firstOrFail();
-            });
+            return Currency::where('is_default', true)->firstOrFail();
         }
 
         $currencyCode = session('currency', 'TRY');
-        return Cache::remember("currency_{$currencyCode}", now()->addHour(), function () use ($currencyCode) {
-            return Currency::where('code', $currencyCode)->firstOrFail();
-        });
+        return Currency::where('code', $currencyCode)->firstOrFail();
     }
 
     #[On('languageChanged')]
@@ -84,9 +79,6 @@ class MainComponent extends Component
             $this->loadSectionsByPosition('main.slider', 'sections', true);
             $this->loadSectionsByPosition('main.content', 'contentSections', false);
 
-            // Clear currency cache
-            Cache::forget("currency_{$currency->code}");
-
             // Dispatch update event
             $this->dispatch('content-sections-updated');
 
@@ -104,39 +96,34 @@ class MainComponent extends Component
     {
         $currency = $this->getCurrency();
         $locale = App::getLocale();
-        $cacheKey = "{$propertyName}_{$currency->code}_{$locale}";
 
-        Cache::forget($cacheKey);
-
-        $this->{$propertyName} = Cache::remember($cacheKey, now()->addMinutes(30), function () use ($currency, $position, $scrollable) {
-            $query = Section::with([
-                'products' => function($query) use ($currency, $position) {
-                    $query->visibleToUser()
-                        ->with([
-                            'images' => function($query) use ($position) {
-                                if ($position === 'main.slider') {
-                                    $query->where('is_primary', true);
-                                } else {
-                                    $query->orderBy('is_primary', 'desc');
-                                }
-                            },
-                            'prices' => function($query) use ($currency) {
-                                $query->where('currency_id', $currency->id);
+        $query = Section::with([
+            'products' => function($query) use ($currency, $position) {
+                $query->visibleToUser()
+                    ->with([
+                        'images' => function($query) use ($position) {
+                            if ($position === 'main.slider') {
+                                $query->where('is_primary', true);
+                            } else {
+                                $query->orderBy('is_primary', 'desc');
                             }
-                        ])
-                        ->orderBy('section_products.ordering');
-                }
-            ])
-            ->where('position', $position)
-            ->where('is_active', true)
-            ->orderBy('order');
-
-            if ($scrollable) {
-                $query->where('scrollable', true);
+                        },
+                        'prices' => function($query) use ($currency) {
+                            $query->where('currency_id', $currency->id);
+                        }
+                    ])
+                    ->orderBy('section_products.ordering');
             }
+        ])
+        ->where('position', $position)
+        ->where('is_active', true)
+        ->orderBy('order');
 
-            return $query->get();
-        });
+        if ($scrollable) {
+            $query->where('scrollable', true);
+        }
+
+        $this->{$propertyName} = $query->get();
     }
 
     // Slider Component

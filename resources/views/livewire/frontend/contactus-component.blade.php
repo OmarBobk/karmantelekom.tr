@@ -8,14 +8,18 @@
                     <span class="text-warning-500"><svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='1.5' stroke='currentColor' class='w-6 h-6 text-warning-500'><path stroke-linecap='round' stroke-linejoin='round' d='M2.25 6.75c0-1.243 1.007-2.25 2.25-2.25h2.386c.51 0 .998.194 1.366.543l2.007 1.885a2.25 2.25 0 0 0 1.366.543h6.255c1.243 0 2.25 1.007 2.25 2.25v8.25c0 1.243-1.007 2.25-2.25 2.25H4.5a2.25 2.25 0 0 1-2.25-2.25V6.75Z'/></svg></span>
                     <div>
                         <div class="font-semibold">{{ __('main.phone') }}</div>
-                        <div class="text-gray-700 text-sm">+1 (555) 123-4567<br>+1 (555) 987-6543</div>
+                        <div class="text-gray-700 text-sm">
+                            {{ $phone_number_1 }}<br>
+                            {{ $phone_number_2 }}<br>
+                            {{ $phone_number_3 }}
+                        </div>
                     </div>
                 </div>
                 <div class="flex items-start gap-3">
                     <span class="text-success-500"><svg xmlns='http://www.w3.org/2000/svg' fill='none' viewBox='0 0 24 24' stroke-width='1.5' stroke='currentColor' class='w-6 h-6 text-success-500'><path stroke-linecap='round' stroke-linejoin='round' d='M21.75 6.75v10.5a2.25 2.25 0 0 1-2.25 2.25H4.5a2.25 2.25 0 0 1-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0 0 19.5 4.5H4.5a2.25 2.25 0 0 0-2.25 2.25m19.5 0v.243a2.25 2.25 0 0 1-.659 1.591l-7.591 7.591a2.25 2.25 0 0 1-3.182 0l-7.591-7.591A2.25 2.25 0 0 1 2.25 6.993V6.75'/></svg></span>
                     <div>
                         <div class="font-semibold">{{ __('main.email') }}</div>
-                        <div class="text-gray-700 text-sm">info@company.com<br>support@company.com</div>
+                        <div class="text-gray-700 text-sm">{{$contact_email}}</div>
                     </div>
                 </div>
                 <div class="flex items-start gap-3">
