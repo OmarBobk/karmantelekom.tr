@@ -35,12 +35,12 @@ class Currency extends Model
     {
         // Format with 2 decimal places and proper thousand separators
         $formattedNumber = number_format($amount, 2, '.', ',');
-        
+
         // Handle symbol placement based on currency
         if ($this->code === 'TRY') {
             return $formattedNumber . ' ' . $this->symbol; // Symbol after amount for TRY
         }
-        
+
         return $this->symbol . ' ' . $formattedNumber; // Symbol before amount for other currencies
     }
 
@@ -52,10 +52,5 @@ class Currency extends Model
     public function convertFromDefault(float $amount): float
     {
         return $amount * $this->exchange_rate;
-    }
-
-    public function getCacheTag()
-    {
-        return 'currency_prices';
     }
 }

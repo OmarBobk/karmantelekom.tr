@@ -6,7 +6,6 @@ namespace App\Services;
 
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Session;
-use Illuminate\Support\Facades\Cache;
 use App\Exceptions\LanguageNotSupportedException;
 
 class LanguageService
@@ -34,9 +33,6 @@ class LanguageService
         // Update session
         Session::put('locale', $code);
         Session::put('direction', $direction);
-
-        // Clear relevant caches
-        Cache::tags(['language', $code])->flush();
 
         // Force refresh of the application locale
         $this->refreshLocale();

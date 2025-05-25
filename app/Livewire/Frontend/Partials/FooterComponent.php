@@ -4,7 +4,6 @@ namespace App\Livewire\Frontend\Partials;
 
 use App\Facades\Settings;
 use Livewire\Component;
-use Illuminate\Support\Facades\Cache;
 
 class FooterComponent extends Component
 {
@@ -55,23 +54,6 @@ class FooterComponent extends Component
 
         session(['currency' => $currency]);
         $this->currentCurrency = $currency;
-
-        // Clear ALL relevant caches before dispatching currency change
-        Cache::tags(['currency_prices'])->flush();
-
-        // Clear specific cache keys
-        $cacheKeys = [
-            "main_sections_{$currency}_wholesale",
-            "main_sections_{$currency}_retail",
-            "content_sections_{$currency}_wholesale",
-            "content_sections_{$currency}_retail",
-            "currency_{$currency}",
-            "default_currency",
-        ];
-
-        foreach ($cacheKeys as $key) {
-            Cache::forget($key);
-        }
 
         $this->dispatch('currencyChanged');
     }

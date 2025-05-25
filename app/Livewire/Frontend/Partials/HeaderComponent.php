@@ -6,7 +6,6 @@ namespace App\Livewire\Frontend\Partials;
 
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Facades\Cache;
 use Livewire\Component;
 use App\Services\LanguageService;
 use App\Exceptions\LanguageNotSupportedException;

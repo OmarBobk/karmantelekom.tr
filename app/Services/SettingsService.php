@@ -6,7 +6,6 @@ namespace App\Services;
 
 use App\Models\Setting;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Cache;
 
 class SettingsService
 {
