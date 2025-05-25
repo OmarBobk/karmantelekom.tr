@@ -60,4 +60,9 @@ return [
     'wp_quote_message' => 'hello I want to get quote about this product',
     'wp_more_info_message' => 'hello I want to get more info about this product',
 
+    'page_not_found'  => 'Page Not Found',
+    '404_message'  => 'The page you are looking for does not exist or has been moved.',
+    'back_to_home'  => 'Back to Home',
+    'contact_support'  => 'Contact Support',
+
 ];

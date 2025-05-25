@@ -60,4 +60,10 @@ return [
     'send_message' => 'Mesajı Gönder',
     'wp_quote_message' => 'Merhaba, bu ürün hakkında teklif almak istiyorum',
     'wp_more_info_message' => 'Merhaba, bu ürün hakkında daha fazla bilgi almak istiyorum',
+
+    'page_not_found'  => 'Sayfa Bulunamadı',
+    '404_message'  => 'Aradığınız sayfa mevcut değil veya taşınmış olabilir.',
+    'back_to_home'  => 'Anasayfaya Dön',
+    'contact_support'  => 'Destek ile İletişime Geç',
+
 ];
