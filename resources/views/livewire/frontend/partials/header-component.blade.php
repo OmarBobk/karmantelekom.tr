@@ -51,95 +51,27 @@
 
             <!-- Right Section: Search Icon & Language -->
             <div class="flex items-center gap-x-2">
-                @auth
-                    @include('livewire.frontend.partials.auth-menu')
-                @endauth
-                <!-- Language Selector -->
-                <div class="relative" x-data="{ open: false }">
-                    <button @click="open = !open"
-                            @click.away="open = false"
-                            class="p-2.5 text-gray-700 rounded-xl transition-all duration-200 h-11 w-11 flex items-center justify-center">
-                        <div class="flex items-center gap-2">
-                            <div class="w-8 h-6 flex">
-                                <img src="{{  $this->getLanguageFlag($currentLanguage)  }}" alt="">
-                            </div>
-                        </div>
-                    </button>
 
-                    <!-- Language Dropdown -->
-                    <div x-show="open"
-                         x-transition:enter="transition ease-out duration-200"
-                         x-transition:enter-start="opacity-0 scale-95"
-                         x-transition:enter-end="opacity-100 scale-100"
-                         x-transition:leave="transition ease-in duration-150"
-                         x-transition:leave-start="opacity-100 scale-100"
-                         x-transition:leave-end="opacity-0 scale-95"
-                         class="absolute {{ app()->getLocale() === 'ar' ? 'left-0' : 'right-0' }} mt-2 w-48 rounded-xl bg-white shadow-lg ring-1 ring-black ring-opacity-5 z-50"
-                         x-cloak>
-                        <div class="py-1">
-                            <button wire:click="changeLanguage('en')"
-                                    class="flex gap-2 hover:gap-4 items-center w-full px-4 py-2 text-sm {{ app()->getLocale() === 'ar' ? 'text-right' : 'text-left' }} text-gray-700 hover:bg-gray-100"
-                                    :class="{ 'bg-gray-50': '{{ $currentLanguage }}' === 'en' }"
-                                    x-transition:enter="transition ease-out duration-200"
-                                    x-transition:enter-start="opacity-0 scale-95"
-                                    x-transition:enter-end="opacity-100 scale-100"
-                                    x-transition:leave="transition ease-in duration-150"
-                                    x-transition:leave-start="opacity-100 scale-100"
-                                    x-transition:leave-end="opacity-0 scale-95"
-                            >
-                                <div class="h-6 flex ">
-                                    <img src="{{ $this->getLanguageFlag('en') }}" alt="">
-                                </div>
-                                <span>{{__('main.english')}}</span>
-                                @if($currentLanguage === 'en')
-                                    <svg class="{{ app()->getLocale() === 'ar' ? 'mr-auto' : 'ml-auto' }} h-5 w-5 text-emerald-600" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                                    </svg>
-                                @endif
-                            </button>
-                            <button wire:click="changeLanguage('tr')"
-                                    class="flex gap-2 hover:gap-4 items-center w-full px-4 py-2 text-sm {{ app()->getLocale() === 'ar' ? 'text-right' : 'text-left' }} text-gray-700 hover:bg-gray-100"
-                                    :class="{ 'bg-gray-50': '{{ $currentLanguage }}' === 'tr' }"
-                                    x-transition:enter="transition ease-out duration-200"
-                                    x-transition:enter-start="opacity-0 scale-95"
-                                    x-transition:enter-end="opacity-100 scale-100"
-                                    x-transition:leave="transition ease-in duration-150"
-                                    x-transition:leave-start="opacity-100 scale-100"
-                                    x-transition:leave-end="opacity-0 scale-95"
-                            >
-                                <div class="h-6 flex">
-                                    <img src="{{ $this->getLanguageFlag('tr') }}" alt="">
-                                </div>
-                                <span>{{__('main.turkish')}}</span>
-                                @if($currentLanguage === 'tr')
-                                    <svg class="{{ app()->getLocale() === 'ar' ? 'mr-auto' : 'ml-auto' }} h-5 w-5 text-emerald-600" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                                    </svg>
-                                @endif
-                            </button>
-                            <button wire:click="changeLanguage('ar')"
-                                    class="flex gap-2 hover:gap-4 items-center w-full px-4 py-2 text-sm {{ app()->getLocale() === 'ar' ? 'text-right' : 'text-left' }} text-gray-700 hover:bg-gray-100"
-                                    :class="{ 'bg-gray-50': '{{ $currentLanguage }}' === 'ar' }"
-                                    x-transition:enter="transition ease-out duration-200"
-                                    x-transition:enter-start="opacity-0 scale-95"
-                                    x-transition:enter-end="opacity-100 scale-100"
-                                    x-transition:leave="transition ease-in duration-150"
-                                    x-transition:leave-start="opacity-100 scale-100"
-                                    x-transition:leave-end="opacity-0 scale-95"
-                            >
-                                <div class="h-6 flex ">
-                                    <img src="{{ $this->getLanguageFlag('ar') }}" alt="">
-                                </div>
-                                <span>{{__('main.arabic')}}</span>
-                                @if($currentLanguage === 'ar')
-                                    <svg class="{{ app()->getLocale() === 'ar' ? 'mr-auto' : 'ml-auto' }} h-5 w-5 text-emerald-600" viewBox="0 0 20 20" fill="currentColor">
-                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                                    </svg>
-                                @endif
-                            </button>
-                        </div>
-                    </div>
+                <!-- Cart Component -->
+                <livewire:frontend.cart.cart-component />
+
+                <!-- Profile/Auth Section -->
+                @guest
+                    @include('livewire.frontend.partials.guest-menu')
+                @else
+                    @include('livewire.frontend.partials.auth-menu')
+                @endguest
+
+                <!-- Favorites -->
+                <div class="relative flex items-center gap-x-2">
+                    <button class="p-2.5 text-gray-700 hover:text-blue-600 hover:bg-gray-100 rounded-xl transition-all duration-200 h-11 w-11 flex items-center justify-center">
+                        <svg class="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
+                        </svg>
+                    </button>
+                    <span class="hidden lg:inline text-sm text-gray-700 cursor-pointer hover:text-gray-900">Favorites</span>
                 </div>
+
             </div>
         </div>
 
@@ -292,79 +224,7 @@
                 <div class="mt-auto border-t border-gray-100 pt-6">
                     <div class="px-4">
                         <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">{{__('main.language')}}</h3>
-                        <div class="relative" x-data="{ open: false }">
-                            <button
-                                @click="open = !open"
-                                @click.away="open = false"
-                                class="flex items-center justify-between w-full px-4 py-3 text-base font-medium text-gray-900 rounded-xl hover:bg-gray-50 transition-colors duration-200"
-                                aria-expanded="false">
-                                <div class="flex items-center gap-2">
-                                    <div class="w-8 h-6 flex">
-                                        <img src="{{ $this->getLanguageFlag($currentLanguage) }}" alt="{{ $this->getLanguageName($currentLanguage) }}">
-                                    </div>
-                                    <span>{{ __('main.' . strtolower($this->getLanguageName($currentLanguage)) ) }}</span>
-                                </div>
-                                <svg class="w-4 h-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                                </svg>
-                            </button>
-
-                            <div
-                                x-show="open"
-                                x-transition:enter="transition ease-out duration-100"
-                                x-transition:enter-start="transform opacity-0 scale-95"
-                                x-transition:enter-end="transform opacity-100 scale-100"
-                                x-transition:leave="transition ease-in duration-75"
-                                x-transition:leave-start="transform opacity-100 scale-100"
-                                x-transition:leave-end="transform opacity-0 scale-95"
-                                class="absolute bottom-full mb-2 {{ app()->getLocale() == 'ar' ? 'right-0' : 'left-0' }} w-full rounded-xl shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50"
-                                x-cloak>
-                                <div class="py-1">
-                                    <button
-                                        wire:click="changeLanguage('en')"
-                                        class="flex gap-2 hover:gap-4 items-center w-full px-4 py-3 text-sm text-left text-gray-700 hover:bg-gray-50 transition-colors duration-200"
-                                        :class="{ 'bg-gray-50': '{{ $currentLanguage }}' === 'en' }">
-                                        <div class="h-6 flex">
-                                            <img src="{{ $this->getLanguageFlag('en') }}" alt="English">
-                                        </div>
-                                        <span>{{__('main.english')}}</span>
-                                        @if($currentLanguage === 'EN')
-                                            <svg class="{{ app()->getLocale() == 'ar' ? 'mr-auto' : 'ml-auto' }} h-5 w-5 text-emerald-600" viewBox="0 0 20 20" fill="currentColor">
-                                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                                            </svg>
-                                        @endif
-                                    </button>
-                                    <button
-                                        wire:click="changeLanguage('tr')"
-                                        class="flex gap-2 hover:gap-4 items-center w-full px-4 py-3 text-sm text-left text-gray-700 hover:bg-gray-50 transition-colors duration-200"
-                                        :class="{ 'bg-gray-50': '{{ $currentLanguage }}' === 'tr' }">
-                                        <div class="h-6 flex">
-                                            <img src="{{ $this->getLanguageFlag('tr') }}" alt="Turkish">
-                                        </div>
-                                        <span>{{__('main.turkish')}}</span>
-                                        @if($currentLanguage === 'TR')
-                                            <svg class="{{ app()->getLocale() == 'ar' ? 'mr-auto' : 'ml-auto' }} h-5 w-5 text-emerald-600" viewBox="0 0 20 20" fill="currentColor">
-                                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                                            </svg>
-                                        @endif
-                                    </button>
-                                    <button
-                                        wire:click="changeLanguage('ar')"
-                                        class="flex gap-2 hover:gap-4 items-center w-full px-4 py-3 text-sm text-left text-gray-700 hover:bg-gray-50 transition-colors duration-200"
-                                        :class="{ 'bg-gray-50': '{{ $currentLanguage }}' === 'ar' }">
-                                        <div class="h-6 flex">
-                                            <img src="{{ $this->getLanguageFlag('ar') }}" alt="Arabic">
-                                        </div>
-                                        <span>{{__('main.arabic')}}</span>
-                                        @if($currentLanguage === 'AR')
-                                            <svg class="{{ app()->getLocale() == 'ar' ? 'mr-auto' : 'ml-auto' }} h-5 w-5 text-emerald-600" viewBox="0 0 20 20" fill="currentColor">
-                                                <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
-                                            </svg>
-                                        @endif
-                                    </button>
-                                </div>
-                            </div>
-                        </div>
+                        <x-language-selector :currentLanguage="$currentLanguage" position="bottom" variant="sidebar" />
                     </div>
                 </div>
             </nav>

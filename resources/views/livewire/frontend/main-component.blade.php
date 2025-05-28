@@ -240,7 +240,7 @@
                     </button>
 
                     <!-- Slider Content -->
-                    <div class="relative overflow-hidden h-[500px]">
+                    <div class="relative h-[580px]">
                         @if(!empty($this->sections))
                         @forelse($this->sections as $index => $section)
                             <div
@@ -257,56 +257,94 @@
                                 class="absolute inset-0 w-full"
                                 x-cloak
                             >
-                                <div class="relative overflow-hidden" x-cloak>
+                                <div class="relative" x-cloak>
                                     <div
                                         x-ref="slider-{{ $index }}"
-                                        class="flex lg:rounded md:rounded-none sm:rounded-2xl overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory"
+                                        class="flex lg:rounded md:rounded-none sm:rounded-2xl overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory h-[580px]"
                                         @scroll.debounce.50ms="updateScrollButtons($wire.activeCategory)"
                                         role="list"
                                         aria-label="Products in {{ $section->name }}"
                                     >
                                         @foreach($section->products as $product)
-                                            <div class="flex-none w-72 snap-start p-4" role="listitem">
-                                                <div class="bg-white rounded-lg shadow-lg hover:shadow-xl transition-all duration-300 border border-gray-100">
-                                                    <figure class="relative aspect-w-1 aspect-h-1 w-full overflow-hidden bg-gray-50 rounded-t-lg">
-                                                        <button wire:click="$dispatch('openProductModal', { productId: {{ $product->id }} })" class="w-full h-full">
+                                            <!-- Enhanced Product Card -->
+                                            <div class="flex-none w-72 snap-center p-4 @if($loop->first) ml-4 md:ml-8 @endif">
+                                                <div class="bg-white rounded-2xl shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 border border-gray-100 relative group">
+                                                    <!-- Wishlist Button (top-right) -->
+                                                    <button
+                                                        wire:click="toggleWishlist({{ $product->id }})"
+                                                        class="absolute top-4 right-4 p-2 rounded-full bg-white/80 hover:bg-emerald-50 shadow transition z-20"
+                                                        aria-label="Add to wishlist"
+                                                    >
+                                                        <svg class="w-5 h-5 text-rose-400" fill="currentColor" viewBox="0 0 20 20">
+                                                            <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"/>
+                                                        </svg>
+                                                    </button>
+
+                                                    <!-- Product Image -->
+                                                    <figure class="relative flex items-center justify-center aspect-square w-full bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-t-2xl border-b-2 border-emerald-100 overflow-hidden">
+                                                        <button wire:click="$dispatch('openProductModal', { productId: {{ $product->id }} })" class="w-full h-full flex items-center justify-center">
                                                             <img src="{{ $product->images->where('is_primary', true)->first()?->image_url
                                                                     ? Storage::url($product->images->where('is_primary', true)->first()->image_url)
                                                                     : 'https://placehold.co/100' }}"
                                                                 alt="{{ $product->name }}"
-                                                                class="h-[17.60rem] w-full object-contain group-hover/card:scale-105 transition-transform duration-300"
+                                                                class="h-full w-auto object-contain transition-transform duration-300 group-hover:scale-110"
                                                                 loading="lazy"
                                                             >
                                                         </button>
                                                     </figure>
-                                                    <div class="p-4">
-                                                        <!-- Product Info Header -->
-                                                        <div class="mb-3">
-                                                            <p class="text-sm font-medium text-emerald-600">{{ $section->translated_name }}</p>
-                                                            <button wire:click="$dispatch('openProductModal', { productId: {{ $product->id }} })" class="text-left">
-                                                                <div class="line-clamp-2">
-                                                                    <h3 class="text-base {{app()->getLocale() == 'ar' ? 'text-right' : ''}} font-medium text-gray-900 hover:text-emerald-600 transition-colors duration-200">{{ $product->translated_name }}</h3>
-                                                                    <p class="text-sm  {{app()->getLocale() == 'ar' ? 'text-right' : ''}} text-gray-500">{{ $product->translated_description }}</p>
-                                                                </div>
-                                                            </button>
+
+                                                    <!-- Product Info -->
+                                                    <div class="p-5 flex flex-col gap-2">
+                                                        <!-- Star Rating (above name) -->
+                                                        <div class="flex items-center gap-1 mb-1">
+                                                            @for ($i = 1; $i <= 5; $i++)
+                                                                <svg class="w-4 h-4 {{ $i <= ($product->rating ?? 4) ? 'text-yellow-400' : 'text-gray-300' }}" fill="currentColor" viewBox="0 0 20 20">
+                                                                    <polygon points="9.9,1.1 12.3,6.6 18.2,7.3 13.6,11.3 15,17.1 9.9,14.1 4.8,17.1 6.2,11.3 1.6,7.3 7.5,6.6"/>
+                                                                </svg>
+                                                            @endfor
+                                                            <span class="text-xs text-gray-500 ml-1">({{ $product->reviews_count ?? 12 }})</span>
                                                         </div>
 
-                                                        <!-- Price and Quantity Control on same line -->
-                                                        <div class="flex items-center justify-between">
-                                                            <!-- Product Price -->
-                                                            <div>
-                                                                @if(App\Facades\Settings::get('product_prices') == 'enabled')
-                                                                    @if($product->prices->isNotEmpty())
-                                                                        <p class="text-xl font-semibold text-emerald-600 ">
-                                                                            {{ $product->prices->first()->getFormattedPrice() }}
-                                                                        </p>
-                                                                    @else
-                                                                        <p class="text-sm text-gray-500">Price not available</p>
-                                                                    @endif
-                                                                @else
+                                                        <p class="text-xs font-semibold text-emerald-600 uppercase tracking-wide">{{ $section->translated_name }}</p>
+                                                        <button wire:click="$dispatch('openProductModal', { productId: {{ $product->id }} })" class="text-left">
+                                                            <h3 class="text-lg font-extrabold text-gray-900 group-hover:text-emerald-700 transition-colors duration-200 line-clamp-1">
+                                                                {{ $product->translated_name }}
+                                                            </h3>
+                                                            <p class="text-sm text-gray-500 line-clamp-2">{{ $product->translated_description }}</p>
+                                                        </button>
+
+                                                        <!-- Price & Discount -->
+                                                        <div class="flex items-center gap-2 mt-2">
+                                                            @if(App\Facades\Settings::get('product_prices') == 'enabled' && $product->prices->isNotEmpty())
+                                                                <span class="text-2xl font-bold text-emerald-600">
+                                                                    {{ $product->prices->first()->getFormattedPrice() }}
+                                                                </span>
+                                                                @if($product->prices->first()->old_price && $product->prices->first()->old_price > $product->prices->first()->price)
+                                                                    <span class="text-base text-gray-400 line-through">
+                                                                        {{ number_format($product->prices->first()->old_price, 2) }} ₺
+                                                                    </span>
+                                                                    <span class="ml-2 px-2 py-0.5 rounded-full bg-rose-100 text-rose-600 text-xs font-bold">
+                                                                        -{{ round(100 - ($product->prices->first()->price / $product->prices->first()->old_price * 100)) }}%
+                                                                    </span>
                                                                 @endif
-                                                            </div>
+                                                            @else
+                                                                <span class="text-base text-gray-400">Price not available</span>
+                                                            @endif
                                                         </div>
+
+                                                        <!-- Add to Cart Button -->
+                                                        <button
+                                                            wire:click="addToCart({{ $product->id }})"
+                                                            class="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                                                            aria-label="{{ __('Add to cart') }}"
+                                                        >
+                                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                                <path d="M3 3h2l.4 2M7 13h10l4-8H5.4" stroke-linecap="round" stroke-linejoin="round"/>
+                                                                <circle cx="7" cy="21" r="1" />
+                                                                <circle cx="17" cy="21" r="1" />
+                                                            </svg>
+                                                            {{ __('Add to Cart') }}
+                                                        </button>
                                                     </div>
                                                 </div>
                                             </div>
