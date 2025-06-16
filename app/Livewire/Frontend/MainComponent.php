@@ -4,19 +4,17 @@ declare(strict_types=1);
 
 namespace App\Livewire\Frontend;
 
-use App\Livewire\ProductModalComponent;
-use App\Models\Section;
+use App\Models\Cart;
+use App\Models\CartItem;
 use App\Models\Currency;
-use App\Models\ProductPrice;
+use App\Models\Product;
+use App\Models\Section;
+use App\Services\LanguageService;
 use Illuminate\Support\Facades\App;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
 use Livewire\Component;
-use function Laravel\Prompts\alert;
-use App\Models\Product;
-use App\Services\CartService;
-use App\Services\LanguageService;
 
 class MainComponent extends Component
 {
@@ -130,6 +128,72 @@ class MainComponent extends Component
     public $scrollPosition = 0;
     public $isScrolledLeft = true;
     public $isScrolledRight = false;
+
+    /**
+     * Add a product to the cart.
+     *
+     * @param int $productId
+     * @return void
+     */
+    public function addToCart(int $productId): void
+    {
+        try {
+            // Get the product with its prices
+            $product = Product::with(['prices'])->findOrFail($productId);
+
+
+            // Check if product has price
+            if ($product->prices->isEmpty()) {
+                $this->dispatch('notify', [
+                    'type' => 'error',
+                    'message' => __('Product price is not available'),
+                    'sec' => 3000
+                ]);
+                return;
+            }
+
+            // Get or create user's cart
+            $cart = Cart::firstOrCreate([
+                'user_id' => auth()->id(),
+            ]);
+
+            // Check if product already exists in cart
+            $cartItem = $cart->items()->where('product_id', $productId)->first();
+
+            if ($cartItem) {
+                // Increment quantity if product exists
+                $cartItem->incrementQuantity();
+            } else {
+                $price = $product->prices->first()->base_price; // Get the first price for the product
+
+                $quantity = 1; // Default quantity
+                // Create new cart item
+                $cart->items()->create([
+                    'product_id' => $productId,
+                    'price' => $price,
+                    'quantity' => $quantity,
+                    'subtotal' => $price * $quantity,
+                ]);
+            }
+
+            // Dispatch success notification
+            $this->dispatch('notify', [
+                'type' => 'success',
+                'message' => __('Product added to cart successfully'),
+                'sec' => 3000
+            ]);
+
+            // Dispatch cart update event
+            $this->dispatch('cart-updated');
+
+        } catch (\Exception $e) {
+            $this->dispatch('notify', [
+                'type' => 'error',
+                'message' => __('Failed to add product to cart') . $e->getMessage(),
+                'sec' => 3000
+            ]);
+        }
+    }
 
     #[Layout('layouts.frontend')]
     #[Title('Home')]

@@ -24,7 +24,7 @@ Route::middleware([
     'verified',
 ])->group(function () {
     Route::get('/dashboard', function () {
-        abort(404); // Make `/dashboard` inaccessible by default
+        return redirect()->route('404');
     })->name('dashboard');
 });
 

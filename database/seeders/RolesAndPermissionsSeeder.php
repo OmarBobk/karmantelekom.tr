@@ -71,6 +71,13 @@ class RolesAndPermissionsSeeder extends Seeder
         ]);
         $ahmad->assignRole('salesperson');
 
+        $zain = User::factory()->create([
+            'id' => 9, // Zain Salesperson
+            'name' => 'Zain',
+            'email' => 'zain@gmail.com',
+        ]);
+        $zain->assignRole('salesperson');
+
         $karman_telekom = User::factory()->create([
             'name' => 'Karman Telekom',
             'email' => 'karmantelekom@gmail.com',

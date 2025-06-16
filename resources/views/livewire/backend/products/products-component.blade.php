@@ -174,7 +174,8 @@
                                                     wire:click="viewProductImage('{{ $product->images->where('is_primary', true)->first() ? $product->images->where('is_primary', true)->first()->image_url : 'https://placehold.co/100' }}', '{{ $product->name }}')"
                                                     class="block relative rounded-lg overflow-hidden hover:opacity-75 transition-opacity"
                                                 >
-                                                    <img class="h-10 w-10 rounded-lg object-cover"
+
+                                                    <img class="h-10 w-10 rounded-lg object-containe"
                                                         src="{{ $product->images->where('is_primary', true)->first()
                                                             ? (Storage::disk('public')->exists($product->images->where('is_primary', true)->first()->image_url)
                                                                 ? Storage::url($product->images->where('is_primary', true)->first()->image_url)

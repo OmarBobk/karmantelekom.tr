@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Livewire;
+namespace App\Livewire\Frontend;
 
 use App\Facades\Settings;
 use App\Models\Product;
@@ -65,6 +65,6 @@ class ProductModalComponent extends Component
 
     public function render()
     {
-        return view('livewire.product-modal-component');
+        return view('livewire.frontend.product-modal-component');
     }
 }

@@ -4,7 +4,7 @@
     <div class="relative flex items-center">
         <div class="relative w-full">
             <!-- Search Input Container -->
-            <div class="relative transition-all duration-300 ease-out rounded-lg bg-white shadow-lg border border-gray-200/80">
+            <div class="relative transition-all duration-300 ease-out rounded-sm bg-white shadow-lg border border-gray-200/80">
                 <!-- Search Input Wrapper -->
                 <div class="relative flex items-center w-full h-11">
                     <!-- Search Icon -->

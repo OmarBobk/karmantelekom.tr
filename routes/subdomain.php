@@ -23,11 +23,13 @@ Route::get('sections', SectionComponent::class)->name('sections');
 Route::get('ads', AdsComponent::class)->name('ads');
 Route::get('users', UsersComponent::class)->name('users');
 Route::get('settings', SettingsComponent::class)->name('settings');
+Route::get('shops', \App\Livewire\Backend\Shops\ShopComponent::class)->name('shops');
+Route::get('shops/{shop}', \App\Livewire\Backend\Shops\ShopProfileComponent::class)->name('shop');
 
 Route::get('sections', SectionComponent::class)->name('sections');
 
 Route::get('/dashboard', function () {
-    abort(404); // Return a 404 error
+    return redirect()->route('404');
 })->name('dashboard');
 
 Route::fallback(function () {

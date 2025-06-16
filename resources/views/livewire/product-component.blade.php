@@ -1,3 +1,0 @@
-<div>
-    Fuck shami
-</div>

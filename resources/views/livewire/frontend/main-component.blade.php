@@ -48,10 +48,14 @@
         </div>
     </div>
 
+    <!-- Marquee Component -->
+{{--    <x-marquee />--}}
+
+
     <!-- Start Slider Component -->
     <div
         class="w-full bg-white pt-4" x-data="{
-        activeCategory: @entangle('activeCategory'),
+        activeCategory: $wire.activeCategory,
         atStart: true,
         atEnd: false,
         direction: '{{ app()->getLocale() === 'ar' ? 'rtl' : 'ltr' }}',
@@ -132,20 +136,6 @@
                                 opacity-0 transition-opacity duration-200"
                         :class="{ 'opacity-90': !atStart }"
                     ></div>
-
-                    <button
-                        @click="scrollTabsLeft"
-                        class="relative {{ app()->getLocale() === 'ar' ? 'mr-1' : 'ml-1' }} size-8 flex items-center justify-center rounded-full bg-white shadow-md border border-gray-200/50
-                            text-gray-400 hover:text-gray-600 transition-all duration-200
-                            opacity-0 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
-                        :class="{ 'opacity-100': !atStart }"
-                        x-show="!atStart"
-                        aria-label="Scroll categories left"
-                    >
-                        <svg class="size-4 {{ app()->getLocale() === 'ar' ? 'rotate-180' : '' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/>
-                        </svg>
-                    </button>
                 </div>
 
                 <div class="absolute {{ app()->getLocale() === 'ar' ? 'left-0' : 'right-0' }} bottom-[3px] w-12 z-10 hidden md:flex items-center justify-end"
@@ -155,20 +145,6 @@
                                 opacity-0 transition-opacity duration-200"
                         :class="{ 'opacity-90': !atEnd }"
                     ></div>
-
-                    <button
-                        @click="scrollTabsRight"
-                        class="relative {{ app()->getLocale() === 'ar' ? 'ml-1' : 'mr-1' }} size-8 flex items-center justify-center rounded-full bg-white shadow-md border border-gray-200/50
-                            text-gray-400 hover:text-gray-600 transition-all duration-200
-                            opacity-0 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
-                        :class="{ 'opacity-100': !atEnd }"
-                        x-show="!atEnd"
-                        aria-label="Scroll categories right"
-                    >
-                        <svg class="size-4 {{ app()->getLocale() === 'ar' ? 'rotate-180' : '' }}" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"/>
-                        </svg>
-                    </button>
                 </div>
 
                 <!-- Scrollable Navigation -->
@@ -788,6 +764,6 @@
     @endscript
 
     <!-- Product Modal -->
-    <livewire:product-modal-component />
+    <livewire:frontend.product-modal-component />
 
 </div>

@@ -1,0 +1,4 @@
+- Haylou: [Haylou](https://www.hayloushop.com.tr/)
+- Zore: [Zore Aksesuar](https://www.zoreaksesuar.com/)
+- Simkon: [Simkon](https://b2b.simkon.com.tr/tr)
+- Depom: [Depom](https://www.depomonline.com/)
