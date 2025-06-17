@@ -53,7 +53,9 @@
             <div class="flex items-center gap-x-2">
 
                 <!-- Cart Component -->
-                <livewire:frontend.cart.cart-component />
+
+                @livewire('frontend.cart.cart-component')
+
 
                 <!-- Profile/Auth Section -->
                 @guest

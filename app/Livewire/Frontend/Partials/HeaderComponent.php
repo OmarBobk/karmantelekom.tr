@@ -4,8 +4,11 @@ declare(strict_types=1);
 
 namespace App\Livewire\Frontend\Partials;
 
+use App\Facades\Cart as CartFacade;
+use App\Services\CartService;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Storage;
+use Livewire\Attributes\On;
 use Livewire\Component;
 use App\Services\LanguageService;
 use App\Exceptions\LanguageNotSupportedException;
