@@ -152,9 +152,12 @@ class MainComponent extends Component
                 return;
             }
 
+            $userId = auth()->id();
+            $sessionId = session()->getId();
             // Add product to cart using the facade
             CartFacade::addToCart(
-                auth()->id() ?? 1,
+                $userId,
+                $sessionId,
                 $product,
                 1
             );

@@ -7,56 +7,55 @@ namespace App\Services;
 use App\Models\Cart;
 use App\Models\Product;
 use App\Models\CartItem;
-use Illuminate\Support\Collection;
-use Illuminate\Session\SessionManager;
-use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Auth;
-use Illuminate\Support\Str;
+use Illuminate\Support\Facades\Log;
+use InvalidArgumentException;
 
 class CartService
 {
-    protected function getCartIdentifier(): array
+    public function getOrCreateCart(?int $userId, ?string $sessionId): Cart
     {
-        if (Auth::check()) {
-            return ['user_id' => Auth::id()];
+        $query = Cart::with(['items.product']);
+
+        if ($userId) {
+            return $query->firstOrCreate(['user_id' => $userId]);
+        } elseif ($sessionId) {
+            return $query->firstOrCreate(['session_id' => $sessionId]);
         }
-        
-        return ['session_id' => session()->getId()];
+
+        throw new InvalidArgumentException('Either user_id or session_id must be provided.');
     }
 
-    public function getOrCreateCart(int $userId = null): Cart
+    public function addToCart(?int $userId, ?string $sessionId, Product $product, int $quantity = 1): CartItem
     {
-        $identifier = $this->getCartIdentifier();
-        
-        return Cart::with(['items.product'])
-            ->firstOrCreate($identifier);
-    }
+        $cart = $this->getOrCreateCart($userId, $sessionId);
 
-    public function addToCart(int $userId = null, Product $product, int $quantity = 1): CartItem
-    {
-        $cart = $this->getOrCreateCart($userId);
+        $item = $cart->items()->where('product_id', $product->id)->first();
 
-        $item = $cart->items()->firstOrNew([
-            'product_id' => $product->id
-        ]);
-
-        $item->price = $product->prices->first()->base_price;
-        $item->quantity += $quantity;
-        $item->subtotal = $item->price * $item->quantity;
-        $item->save();
+        if ($item) {
+            $item->quantity += $quantity;
+            $item->subtotal = $item->price * $item->quantity;
+            $item->save();
+        } else {
+            $item = $cart->items()->create([
+                'product_id' => $product->id,
+                'price' => $product->prices->first()->base_price,
+                'quantity' => $quantity,
+                'subtotal' => $product->prices->first()->base_price * $quantity
+            ]);
+        }
 
         return $item;
     }
 
-    public function removeFromCart(int $userId = null, int $productId): bool
+    public function removeFromCart(?int $userId, ?string $sessionId, int $productId): bool
     {
-        $cart = $this->getOrCreateCart($userId);
+        $cart = $this->getOrCreateCart($userId, $sessionId);
         return $cart->items()->where('product_id', $productId)->delete() > 0;
     }
 
-    public function updateQuantity(int $userId = null, int $productId, int $quantity): ?CartItem
+    public function updateQuantity(?int $userId, ?string $sessionId, int $productId, int $quantity): ?CartItem
     {
-        $cart = $this->getOrCreateCart($userId);
+        $cart = $this->getOrCreateCart($userId, $sessionId);
         $item = $cart->items()->where('product_id', $productId)->first();
 
         if (!$item) {
@@ -70,64 +69,87 @@ class CartService
         return $item;
     }
 
-    public function clearCart(int $userId = null): bool
+    public function clearCart(?int $userId, ?string $sessionId): bool
     {
-        $cart = $this->getOrCreateCart($userId);
+        $cart = $this->getOrCreateCart($userId, $sessionId);
         return $cart->items()->delete() > 0;
     }
 
-    public function getCartTotal(int $userId = null): float
+    public function getCartTotal(?int $userId, ?string $sessionId): float
     {
-        $cart = $this->getOrCreateCart($userId);
+        $cart = $this->getOrCreateCart($userId, $sessionId);
         return (float) $cart->items()->sum('subtotal');
     }
 
-    public function getCartItemCount(int $userId = null): int
+    public function getCartItemCount(?int $userId, ?string $sessionId): int
     {
-        $cart = $this->getOrCreateCart($userId);
+        $cart = $this->getOrCreateCart($userId, $sessionId);
         return (int) $cart->items()->sum('quantity');
     }
 
-    /**
-     * Transfer guest cart to user cart after login
-     */
-    public function transferGuestCartToUser(int $userId): void
+    public function syncGuestCartToUser(int $userId, string $sessionId): void
     {
-        $sessionId = session()->getId();
-        
-        // Get guest cart
-        $guestCart = Cart::where('session_id', $sessionId)->first();
-        
+        Log::info("Starting cart sync process", [
+            'user_id' => $userId,
+            'session_id' => $sessionId
+        ]);
+
+        $guestCart = Cart::with('items')->where('session_id', $sessionId)->first();
+        $userCart = Cart::with('items')->where('user_id', $userId)->first();
+
         if (!$guestCart) {
+            Log::info("No guest cart found to sync", ['session_id' => $sessionId]);
             return;
         }
 
-        // Get or create user cart
-        $userCart = Cart::firstOrCreate(['user_id' => $userId]);
+        if (!$userCart) {
+            Log::info("No existing user cart found, converting guest cart to user cart", [
+                'cart_id' => $guestCart->id,
+                'user_id' => $userId
+            ]);
+            
+            $guestCart->user_id = $userId;
+            $guestCart->session_id = null;
+            $guestCart->save();
+            return;
+        }
 
-        // Transfer items from guest cart to user cart
-        foreach ($guestCart->items as $item) {
-            $existingItem = $userCart->items()
-                ->where('product_id', $item->product_id)
-                ->first();
+        Log::info("Merging guest cart with user cart", [
+            'guest_cart_id' => $guestCart->id,
+            'user_cart_id' => $userCart->id
+        ]);
 
-            if ($existingItem) {
-                // If item exists in user cart, add quantities
-                $existingItem->quantity += $item->quantity;
-                $existingItem->subtotal = $existingItem->price * $existingItem->quantity;
-                $existingItem->save();
+        foreach ($guestCart->items as $guestItem) {
+            $userItem = $userCart->items()->where('product_id', $guestItem->product_id)->first();
+            
+            if ($userItem) {
+                $newQuantity = $userItem->quantity + $guestItem->quantity;
+                Log::info("Merging existing item", [
+                    'product_id' => $guestItem->product_id,
+                    'old_quantity' => $userItem->quantity,
+                    'added_quantity' => $guestItem->quantity,
+                    'new_quantity' => $newQuantity
+                ]);
+                
+                $userItem->quantity = $newQuantity;
+                $userItem->subtotal = $userItem->price * $newQuantity;
+                $userItem->save();
             } else {
-                // If item doesn't exist, create new item
+                Log::info("Adding new item to user cart", [
+                    'product_id' => $guestItem->product_id,
+                    'quantity' => $guestItem->quantity
+                ]);
+                
                 $userCart->items()->create([
-                    'product_id' => $item->product_id,
-                    'price' => $item->price,
-                    'quantity' => $item->quantity,
-                    'subtotal' => $item->subtotal
+                    'product_id' => $guestItem->product_id,
+                    'price' => $guestItem->price,
+                    'quantity' => $guestItem->quantity,
+                    'subtotal' => $guestItem->subtotal,
                 ]);
             }
         }
 
-        // Delete guest cart
+        Log::info("Deleting guest cart after successful sync", ['cart_id' => $guestCart->id]);
         $guestCart->delete();
     }
 }

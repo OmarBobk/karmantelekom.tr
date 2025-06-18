@@ -36,7 +36,9 @@ class CartComponent extends Component
      */
     protected function loadCart(): void
     {
-        $this->cart = CartFacade::getOrCreateCart(auth()->id() ?? 1);
+        $userId = auth()->id();
+        $sessionId = session()->getId();
+        $this->cart = CartFacade::getOrCreateCart($userId, $sessionId);
     }
 
     /**
@@ -44,9 +46,12 @@ class CartComponent extends Component
      */
     public function increase(int $itemId): void
     {
+        $userId = auth()->id();
+        $sessionId = session()->getId();
         $item = $this->cart->items()->findOrFail($itemId);
         CartFacade::updateQuantity(
-            auth()->id() ?? 1,
+            $userId,
+            $sessionId,
             $item->product_id,
             $item->quantity + 1
         );
@@ -58,10 +63,13 @@ class CartComponent extends Component
      */
     public function decrease(int $itemId): void
     {
+        $userId = auth()->id();
+        $sessionId = session()->getId();
         $item = $this->cart->items()->findOrFail($itemId);
         if ($item->quantity > 1) {
             CartFacade::updateQuantity(
-                auth()->id() ?? 1,
+                $userId,
+                $sessionId,
                 $item->product_id,
                 $item->quantity - 1
             );
@@ -74,8 +82,10 @@ class CartComponent extends Component
      */
     public function removeItem(int $itemId): void
     {
+        $userId = auth()->id();
+        $sessionId = session()->getId();
         $item = $this->cart->items()->findOrFail($itemId);
-        CartFacade::removeFromCart(auth()->id() ?? 1, $item->product_id);
+        CartFacade::removeFromCart($userId, $sessionId, $item->product_id);
         $this->dispatch('cart-updated');
     }
 
@@ -84,7 +94,9 @@ class CartComponent extends Component
      */
     public function clearCart(): void
     {
-        CartFacade::clearCart(auth()->id() ?? 1);
+        $userId = auth()->id();
+        $sessionId = session()->getId();
+        CartFacade::clearCart($userId, $sessionId);
         $this->dispatch('cart-updated');
     }
 
@@ -103,7 +115,9 @@ class CartComponent extends Component
     #[Computed]
     public function getSubtotalProperty(): float
     {
-        return CartFacade::getCartTotal(auth()->id() ?? 1);
+        $userId = auth()->id();
+        $sessionId = session()->getId();
+        return CartFacade::getCartTotal($userId, $sessionId);
     }
 
     /**
@@ -112,7 +126,9 @@ class CartComponent extends Component
     #[Computed]
     public function getItemsCountProperty(): int
     {
-        return CartFacade::getCartItemCount(auth()->id() ?? 1);
+        $userId = auth()->id();
+        $sessionId = session()->getId();
+        return CartFacade::getCartItemCount($userId, $sessionId);
     }
 
     /**

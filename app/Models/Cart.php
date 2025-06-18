@@ -28,7 +28,7 @@ class Cart extends Model
     /** @use HasFactory<CartFactory> */
     use HasFactory;
 
-    protected $fillable = ['user_id'];
+    protected $fillable = ['user_id', 'session_id'];
 
     protected $casts = [
         'created_at' => 'datetime',

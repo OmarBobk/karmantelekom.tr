@@ -14,6 +14,7 @@
 
         <form method="POST" action="{{ route('login') }}">
             @csrf
+            <input type="hidden" name="old_session_id" value="{{ session()->getId() }}">
 
             <div>
                 <x-label for="email" value="{{ __('Email') }}" />
