@@ -24,11 +24,13 @@
                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
             </svg>
             <div
+                x-show="$store.cart.itemsCount > 0"
+                x-text="$store.cart.itemsCount"
                 x-transition:enter="transition ease-out duration-300"
                 x-transition:enter-start="opacity-0 scale-50"
                 x-transition:enter-end="opacity-100 scale-100"
                 class="absolute -top-1 -right-1 bg-blue-500 text-white text-xs font-bold rounded-full h-5 min-w-[1.25rem] px-1 flex items-center justify-center group-hover:bg-blue-600 transition-colors duration-200 z-50"
-            >{{ $itemsCount }}</div>
+            ></div>
         </button>
         <span @click="toggleCart()"
               class="hidden sm:block text-sm text-gray-700 cursor-pointer hover:text-gray-900">Cart</span>
@@ -78,85 +80,79 @@
 
                         <div class="mt-8">
                             <div class="flow-root">
-                                @if($items->isEmpty())
-                                    <div class="text-center py-12">
-                                        <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z"/>
-                                        </svg>
-                                        <h3 class="mt-2 text-sm font-medium text-gray-900">Your cart is empty</h3>
-                                        <p class="mt-1 text-sm text-gray-500">Start adding some items to your cart.</p>
-                                    </div>
-                                @else
-                                    <ul role="list" class="-my-6 divide-y divide-gray-200">
-                                        @foreach($items as $item)
-                                            <li class="py-6 flex items-center">
-                                                <div class="flex-shrink-0 w-24 h-24 border border-gray-200 rounded-md overflow-hidden">
-                                                    <img src="{{ $item->product->image_url ?? 'https://placehold.co/600x400/png' }}"
-                                                         alt="{{ $item->product->name }}"
-                                                         class="w-full h-full object-center object-cover">
-                                                </div>
 
-                                                <div class="ml-4 flex-1 flex flex-col gap-2">
-                                                    <div class="flex justify-between text-base font-medium text-gray-900">
-                                                        <div class="flex-1 line-clamp-3">
-                                                            <span class="text-base font-medium text-gray-900">{{ $item->product->name }}</span>
-                                                            <span class="text-sm text-gray-700">{{ Str::limit($item->product->description, 100) }}</span>
-                                                        </div>
-                                                        <div>
-                                                            <p class="ml-4">{{ number_format($item->price, 2) }} TL</p>
-                                                        </div>
+                                <ul role="list" class="-my-6 divide-y divide-gray-200">
+                                    <template x-for="item in $store.cart.items" :key="item.product_id">
+                                        <li class="py-6 flex items-center">
+                                            <div class="flex-shrink-0 w-24 h-24 border border-gray-200 rounded-md overflow-hidden">
+                                                <img :src="'/storage/' + item.image" :alt="item.name" class="w-full h-full object-center object-cover">
+                                            </div>
+
+                                            <div class="ml-4 flex-1 flex flex-col gap-2">
+                                                <div class="flex justify-between text-base font-medium text-gray-900">
+                                                    <div class="flex-1 line-clamp-3">
+                                                        <span class="text-base font-medium text-gray-900" x-text="item.name"></span>
+                                                        <span class="text-sm text-gray-700" x-text="item.description"></span>
                                                     </div>
-                                                    <div class="flex-1 flex items-end justify-between text-sm">
-                                                        <div class="flex items-center">
-                                                            <button wire:click="decrease({{ $item->id }})"
-                                                                    class="text-gray-500 hover:text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-md p-1 transition-colors duration-200">
-                                                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 12h12" />
-                                                                </svg>
-                                                            </button>
-                                                            <span class="mx-2">{{ $item->quantity }}</span>
-                                                            <button wire:click="increase({{ $item->id }})"
-                                                                    class="text-gray-500 hover:text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-md p-1 transition-colors duration-200">
-                                                                <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v12m6-6H6" />
-                                                                </svg>
-                                                            </button>
-                                                        </div>
-                                                        <button wire:click="removeItem({{ $item->id }})"
-                                                                class="font-medium text-indigo-600 hover:text-indigo-500">
-                                                            Remove
+                                                    <div>
+                                                        <p class="ml-4" x-text="`${item.price} TL`"></p>
+                                                    </div>
+                                                </div>
+                                                <div class="flex-1 flex items-end justify-between text-sm">
+                                                    <div class="flex items-center">
+                                                        <button @click="$store.cart.updateQuantity(item.product_id, item.quantity - 1)"
+                                                                class="text-gray-500 hover:text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-md p-1 transition-colors duration-200">
+                                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 12h12" />
+                                                            </svg>
+                                                        </button>
+                                                        <span class="mx-2" x-text="item.quantity"></span>
+                                                        <button @click="$store.cart.updateQuantity(item.product_id, item.quantity + 1)"
+                                                                class="text-gray-500 hover:text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-md p-1 transition-colors duration-200">
+                                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v12m6-6H6" />
+                                                            </svg>
                                                         </button>
                                                     </div>
+                                                    <button @click="$store.cart.removeItem(item.product_id)" class="font-medium text-indigo-600 hover:text-indigo-500">Remove</button>
                                                 </div>
-                                            </li>
-                                        @endforeach
-                                    </ul>
-                                @endif
+                                            </div>
+                                        </li>
+                                    </template>
+                                    <li x-show="$store.cart.items.length === 0" class="py-6">
+                                        <p class="text-gray-500 text-center">Your cart is empty</p>
+                                    </li>
+                                </ul>
+
+
                             </div>
                         </div>
                     </div>
 
-                    @if(!$items->isEmpty())
-                        <div class="border-t border-gray-200 py-6 px-4 sm:px-6">
-                            <div class="flex justify-between text-base font-medium text-gray-900">
-                                <p>Subtotal</p>
-                                <p>{{ number_format($subtotal, 2) }} TL</p>
-                            </div>
-                            <p class="mt-0.5 text-sm text-gray-500">Shipping and taxes calculated at checkout.</p>
-                            <div class="mt-6">
-                                <a href="#"
-                                   class="flex justify-center items-center w-full px-6 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-indigo-600 hover:bg-indigo-700">
-                                    <span>Checkout</span>
-                                </a>
-                            </div>
-                            <div class="mt-6 flex justify-center text-sm text-center text-gray-500">
-                                <button wire:click="clearCart"
-                                        class="text-indigo-600 font-medium hover:text-indigo-500">
-                                    Clear Cart<span aria-hidden="true"> &rarr;</span>
-                                </button>
-                            </div>
+                    <div x-show="$store.cart.items.length > 0" class="border-t border-gray-200 py-6 px-4 sm:px-6">
+                        <div class="flex justify-between text-base font-medium text-gray-900">
+                            <p>Subtotal</p>
+                            <p x-text="`${$store.cart.subtotal.toFixed(2)} TL`"></p>
                         </div>
-                    @endif
+                        <p class="mt-0.5 text-sm text-gray-500">Shipping and taxes calculated at checkout.</p>
+                        <div class="mt-6">
+                            <button
+                                x-data="{loading: false}"
+                                :disabled="loading"
+                                @click.prevent="loading = true; $store.cart.syncWithServer().then(() => window.location.href = '/checkout')"
+                                class="flex justify-center items-center w-full px-6 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-indigo-600 hover:bg-indigo-700">
+                                <span x-show="!loading">Checkout</span>
+                                <span x-show="loading">Syncing...</span>
+                            </button>
+                        </div>
+                        <div class="mt-6 flex justify-center text-sm text-center text-gray-500">
+                            <button @click="$store.cart.clear()"
+                                    class="text-indigo-600 font-medium hover:text-indigo-500">
+                                Clear Cart<span aria-hidden="true"> &rarr;</span>
+                            </button>
+                        </div>
+                    </div>
+
                 </div>
             </div>
         </div>

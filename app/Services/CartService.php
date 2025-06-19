@@ -7,8 +7,11 @@ namespace App\Services;
 use App\Models\Cart;
 use App\Models\Product;
 use App\Models\CartItem;
+use Illuminate\Database\QueryException;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use InvalidArgumentException;
+use Throwable;
 
 class CartService
 {
@@ -107,7 +110,7 @@ class CartService
                 'cart_id' => $guestCart->id,
                 'user_id' => $userId
             ]);
-            
+
             $guestCart->user_id = $userId;
             $guestCart->session_id = null;
             $guestCart->save();
@@ -121,7 +124,7 @@ class CartService
 
         foreach ($guestCart->items as $guestItem) {
             $userItem = $userCart->items()->where('product_id', $guestItem->product_id)->first();
-            
+
             if ($userItem) {
                 $newQuantity = $userItem->quantity + $guestItem->quantity;
                 Log::info("Merging existing item", [
@@ -130,7 +133,7 @@ class CartService
                     'added_quantity' => $guestItem->quantity,
                     'new_quantity' => $newQuantity
                 ]);
-                
+
                 $userItem->quantity = $newQuantity;
                 $userItem->subtotal = $userItem->price * $newQuantity;
                 $userItem->save();
@@ -139,7 +142,7 @@ class CartService
                     'product_id' => $guestItem->product_id,
                     'quantity' => $guestItem->quantity
                 ]);
-                
+
                 $userCart->items()->create([
                     'product_id' => $guestItem->product_id,
                     'price' => $guestItem->price,
@@ -151,5 +154,161 @@ class CartService
 
         Log::info("Deleting guest cart after successful sync", ['cart_id' => $guestCart->id]);
         $guestCart->delete();
+    }
+
+    /**
+     * @throws Throwable
+     */
+    public function syncCart(int $user_id, array $items): void
+    {
+        // Validate that user_id is provided and not null
+        if (!$user_id) {
+            Log::warning('Attempted to sync cart without user_id');
+            throw new InvalidArgumentException('User ID is required for cart syncing');
+        }
+
+        try {
+            Log::info('Start Syncing', ['user_id' => $user_id, 'items_count' => count($items)]);
+            $cart = $this->getOrCreateCart($user_id, null);
+
+            DB::transaction(function () use ($cart, $items) {
+                Log::info('Start Transaction');
+
+                foreach ($items as $item) {
+                    $productId = $item['product_id'];
+                    $quantity = $item['quantity'];
+
+                    // Use a database query instead of a collection to avoid race conditions
+                    $existingItem = $cart->items()->where('product_id', $productId)->first();
+
+                    if ($existingItem) {
+                        Log::info('Updating existing cart item', [
+                            'product_id' => $productId,
+                            'old_quantity' => $existingItem->quantity,
+                            'new_quantity' => $quantity
+                        ]);
+
+                        $newQuantity = $quantity;
+                        $existingItem->update([
+                            'quantity' => $newQuantity,
+                            'subtotal' => $existingItem->price * $newQuantity,
+                        ]);
+                    } else {
+                        Log::info('Creating new cart item', [
+                            'product_id' => $productId,
+                            'quantity' => $quantity
+                        ]);
+
+                        // Get product price safely
+                        $product = Product::with('prices')->find($productId);
+                        if (!$product || $product->prices->isEmpty()) {
+                            Log::warning('Product not found or has no prices', ['product_id' => $productId]);
+                            continue;
+                        }
+
+                        $price = $product->prices->first()->base_price ?? 0;
+                        $subtotal = $price * $quantity;
+
+                        try {
+                            $cart->items()->create([
+                                'product_id' => $productId,
+                                'price' => $price,
+                                'quantity' => $quantity,
+                                'subtotal' => $subtotal,
+                            ]);
+                        } catch (QueryException $e) {
+                            // Handle another process might have created duplicate entry - item
+                            if ($e->getCode() == 23000 && str_contains($e->getMessage(), 'Duplicate entry')) {
+                                Log::info('Duplicate entry detected, updating existing item', ['product_id' => $productId]);
+
+                                // Try to update the existing item
+                                $existingItem = $cart->items()->where('product_id', $productId)->first();
+                                if ($existingItem) {
+                                    $newQuantity = $existingItem->quantity + $quantity;
+                                    $existingItem->update([
+                                        'quantity' => $newQuantity,
+                                        'subtotal' => $existingItem->price * $newQuantity,
+                                    ]);
+                                }
+                            } else {
+                                throw $e; // Re-throw if it's not a duplicate entry error
+                            }
+                        }
+                    }
+                }
+                Log::info('End Transaction');
+            });
+
+        } catch (Throwable $th) {
+            Log::error('Error syncing cart', [
+                'user_id' => $user_id,
+                'error' => $th->getMessage(),
+                'trace' => $th->getTraceAsString()
+            ]);
+
+            // Re-throw the exception so the calling code can handle it
+            throw $th;
+        }
+    }
+
+    /**
+     * Alternative sync method using updateOrCreate for better race condition handling
+     * @throws Throwable
+     */
+    public function syncCartOptimized(int $user_id, array $items): void
+    {
+        // Validate that user_id is provided and not null
+        if (!$user_id) {
+            Log::warning('Attempted to sync cart without user_id');
+            throw new InvalidArgumentException('User ID is required for cart syncing');
+        }
+
+        try {
+            Log::info('Start Optimized Syncing', ['user_id' => $user_id, 'items_count' => count($items)]);
+            $cart = $this->getOrCreateCart($user_id, null);
+
+            DB::transaction(function () use ($cart, $items) {
+                Log::info('Start Optimized Transaction');
+
+                foreach ($items as $item) {
+                    $productId = $item['product_id'];
+                    $quantity = $item['quantity'];
+
+                    // Get product price safely
+                    $product = Product::with('prices')->find($productId);
+                    if (!$product || $product->prices->isEmpty()) {
+                        Log::warning('Product not found or has no prices', ['product_id' => $productId]);
+                        continue;
+                    }
+
+                    $price = $product->prices->first()->base_price ?? 0;
+
+                    // Use updateOrCreate to handle race conditions elegantly
+                    $cart->items()->updateOrCreate(
+                        ['product_id' => $productId], // Search criteria
+                        [
+                            'price' => $price,
+                            'quantity' => DB::raw("quantity + $quantity"), // Add to existing quantity
+                            'subtotal' => DB::raw("price * (quantity + $quantity)"), // Recalculate subtotal
+                        ]
+                    );
+
+                    Log::info('Cart item synced', [
+                        'product_id' => $productId,
+                        'quantity' => $quantity
+                    ]);
+                }
+                Log::info('End Optimized Transaction');
+            });
+
+        } catch (Throwable $th) {
+            Log::error('Error in optimized cart sync', [
+                'user_id' => $user_id,
+                'error' => $th->getMessage(),
+                'trace' => $th->getTraceAsString()
+            ]);
+
+            throw $th;
+        }
     }
 }

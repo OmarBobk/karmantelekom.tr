@@ -24,6 +24,94 @@
         <!-- Alpine Cart Store -->
         <script>
             document.addEventListener('alpine:init', () => {
+                Alpine.store('cart', {
+                    items: Alpine.$persist([]).as('cart_items'),
+                    itemsCount: 0,
+                    subtotal: 0,
+                    syncTimeout: null,
+
+                    init() {
+                        this.updateTotals();
+
+                        // Listen for currency changes
+                        window.addEventListener('currency-switched', () => {
+                            this.syncWithServer();
+                        });
+
+                        // Initial sync with server after a short delay to ensure Livewire is loaded
+                        setTimeout(() => {
+                            this.syncWithServer();
+                        }, 500);
+                    },
+
+                    updateTotals() {
+                        this.itemsCount = this.items.reduce((sum, item) => sum + item.quantity ,0);
+                        this.subtotal = this.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
+                    },
+
+                    addItem(product, quantity = 1) {
+                        const existingItem = this.items.find(item => item.product_id === product.id);
+
+                        if (existingItem) {
+                            existingItem.quantity += quantity;
+                        } else {
+                            this.items.push({
+                                price: product.prices[0].base_price,
+                                quantity: quantity,
+                                subtotal: this.subtotal,
+                                product_id: product.id,
+
+                                name: product.name,
+                                description: product.description,
+                                image: product.images[0].image_url
+                            });
+                        }
+
+                        this.updateTotals();
+                        this.scheduleSync();
+                    },
+
+                    updateQuantity(productId, quantity) {
+                        const item = this.items.find(item => item.product_id === productId);
+                        if (item) {
+                            if (quantity < 1) {
+                                this.removeItem(productId);
+                            } else {
+                                item.quantity = quantity;
+                                this.updateTotals();
+                                this.scheduleSync();
+                            }
+                        }
+                    },
+
+                    scheduleSync() {
+                        if (this.syncTimeout) {
+                            clearTimeout(this.syncTimeout)
+                        }
+
+                        this.syncTimeout = setTimeout(() => {
+                            this.syncWithServer();
+                        }, 1000)
+                    },
+
+                    async syncWithServer() {
+                        if(this.syncTimeout) {
+                            clearTimeout(this.syncTimeout);
+                        }
+
+                        try {
+                            const items = this.items.map(item => ({
+                                product_id: item.product_id,
+                                quantity: item.quantity
+                            }));
+
+                            await window.Livewire.dispatch('sync-cart', { items })
+                        } catch (error) {
+                            console.error('Error syncing cart:', error);
+                        }
+
+                    }
+                })
             });
         </script>
     </head>

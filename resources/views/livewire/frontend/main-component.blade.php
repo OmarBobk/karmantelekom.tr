@@ -310,7 +310,7 @@
 
                                                         <!-- Add to Cart Button -->
                                                         <button
-                                                            wire:click="addToCart({{ $product->id }})"
+                                                            @click="$store.cart.addItem({{ json_encode($product) }}, 1);"
                                                             class="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-400"
                                                             aria-label="{{ __('Add to cart') }}"
                                                         >

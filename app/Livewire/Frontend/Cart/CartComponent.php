@@ -9,6 +9,7 @@ use App\Models\CartItem;
 use App\Facades\Cart as CartFacade;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
 use Livewire\Component;
@@ -16,7 +17,6 @@ use Livewire\Attributes\Computed;
 
 /**
  * @property-read Cart $cart
- * @property-read Collection $items
  * @property-read float $total
  */
 class CartComponent extends Component
@@ -28,116 +28,43 @@ class CartComponent extends Component
      */
     public function mount(): void
     {
-        $this->loadCart();
+
     }
 
-    /**
-     * Load the user's cart.
-     */
-    protected function loadCart(): void
+    #[On('sync-cart')]
+    public function handleSyncCart(array $items): void
     {
-        $userId = auth()->id();
-        $sessionId = session()->getId();
-        $this->cart = CartFacade::getOrCreateCart($userId, $sessionId);
-    }
+        Log::info('Cart sync requested', ['items_count' => count($items)]);
 
-    /**
-     * Increase the quantity of a cart item.
-     */
-    public function increase(int $itemId): void
-    {
-        $userId = auth()->id();
-        $sessionId = session()->getId();
-        $item = $this->cart->items()->findOrFail($itemId);
-        CartFacade::updateQuantity(
-            $userId,
-            $sessionId,
-            $item->product_id,
-            $item->quantity + 1
-        );
-        $this->dispatch('cart-updated');
-    }
+        $user_id = auth()->id();
 
-    /**
-     * Decrease the quantity of a cart item.
-     */
-    public function decrease(int $itemId): void
-    {
-        $userId = auth()->id();
-        $sessionId = session()->getId();
-        $item = $this->cart->items()->findOrFail($itemId);
-        if ($item->quantity > 1) {
-            CartFacade::updateQuantity(
-                $userId,
-                $sessionId,
-                $item->product_id,
-                $item->quantity - 1
-            );
-            $this->dispatch('cart-updated');
+        // If the user is not authenticated, we cannot sync the cart.
+
+        try {
+            if (!$user_id) {
+                Log::info('User is not authenticated, skipping cart sync');
+                return;
+            } else {
+                CartFacade::syncCart($user_id, $items);
+                Log::info('Cart synced successfully', ['user_id' => $user_id]);
+            }
+        } catch (\Exception $e) {
+            Log::error('Error syncing cart', [
+                'user_id' => $user_id,
+                'error' => $e->getMessage()
+            ]);
         }
-    }
 
-    /**
-     * Remove an item from the cart.
-     */
-    public function removeItem(int $itemId): void
-    {
-        $userId = auth()->id();
-        $sessionId = session()->getId();
-        $item = $this->cart->items()->findOrFail($itemId);
-        CartFacade::removeFromCart($userId, $sessionId, $item->product_id);
-        $this->dispatch('cart-updated');
-    }
+//        // the combined cart.
+//        $items = Cart::syncCartToDatabase(
+//            user: $user,
+//            items: $items,
+//        );
+//
+//        $this->cartItems  = $items;
+//
+//        $this->dispatch('cart-synced', $this->cartItems->toJson());
 
-    /**
-     * Clear all items from the cart.
-     */
-    public function clearCart(): void
-    {
-        $userId = auth()->id();
-        $sessionId = session()->getId();
-        CartFacade::clearCart($userId, $sessionId);
-        $this->dispatch('cart-updated');
-    }
-
-    /**
-     * Get the cart items.
-     */
-    #[Computed]
-    public function getItemsProperty(): Collection
-    {
-        return $this->cart->items;
-    }
-
-    /**
-     * Get the cart subtotal.
-     */
-    #[Computed]
-    public function getSubtotalProperty(): float
-    {
-        $userId = auth()->id();
-        $sessionId = session()->getId();
-        return CartFacade::getCartTotal($userId, $sessionId);
-    }
-
-    /**
-     * Get the number of items in the cart.
-     */
-    #[Computed]
-    public function getItemsCountProperty(): int
-    {
-        $userId = auth()->id();
-        $sessionId = session()->getId();
-        return CartFacade::getCartItemCount($userId, $sessionId);
-    }
-
-    /**
-     * Listen for cart update events.
-     */
-    #[On('cart-updated')]
-    public function refreshCart(): void
-    {
-        $this->loadCart();
     }
 
     /**
@@ -146,10 +73,6 @@ class CartComponent extends Component
     #[Layout('layouts.frontend')]
     public function render(): View
     {
-        return view('livewire.frontend.cart.cart-component', [
-            'items' => $this->items,
-            'subtotal' => $this->subtotal,
-            'itemsCount' => $this->items_count,
-        ]);
+        return view('livewire.frontend.cart.cart-component');
     }
 }

@@ -25,22 +25,22 @@ class SyncCartAfterLogin
      */
     public function handle(Login $event): void
     {
-        $oldSessionId = $this->request->input('old_session_id');
-        $user = $event->user;
-
-        if (!$oldSessionId) {
-            Log::warning('No old session ID found during cart sync', [
-                'user_id' => $user->id,
-                'current_session' => Session::getId()
-            ]);
-            return;
-        }
-
-        Log::info('Syncing cart with old session ID', [
-            'old_session_id' => $oldSessionId,
-            'user_id' => $user->id
-        ]);
-
-        app(\App\Services\CartService::class)->syncGuestCartToUser($user->id, $oldSessionId);
+//        $oldSessionId = $this->request->input('old_session_id');
+//        $user = $event->user;
+//
+//        if (!$oldSessionId) {
+//            Log::warning('No old session ID found during cart sync', [
+//                'user_id' => $user->id,
+//                'current_session' => Session::getId()
+//            ]);
+//            return;
+//        }
+//
+//        Log::info('Syncing cart with old session ID', [
+//            'old_session_id' => $oldSessionId,
+//            'user_id' => $user->id
+//        ]);
+//
+//        app(\App\Services\CartService::class)->syncGuestCartToUser($user->id, $oldSessionId);
     }
 }
