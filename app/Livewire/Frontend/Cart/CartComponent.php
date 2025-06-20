@@ -45,7 +45,11 @@ class CartComponent extends Component
                 Log::info('User is not authenticated, skipping cart sync');
                 return;
             } else {
-                CartFacade::syncCart($user_id, $items);
+                $cart = CartFacade::syncCart($user_id, $items);
+                if (is_array($cart) && !empty($cart)) {
+                    $this->dispatch('cart-items-from-server', $cart);
+                }
+
                 Log::info('Cart synced successfully', ['user_id' => $user_id]);
             }
         } catch (\Exception $e) {
@@ -55,15 +59,23 @@ class CartComponent extends Component
             ]);
         }
 
-//        // the combined cart.
-//        $items = Cart::syncCartToDatabase(
-//            user: $user,
-//            items: $items,
-//        );
-//
-//        $this->cartItems  = $items;
-//
-//        $this->dispatch('cart-synced', $this->cartItems->toJson());
+    }
+
+    #[On('clear-cart')]
+    public function handleClearCart(): void
+    {
+
+        $user_id = auth()->id();
+        CartFacade::clearCart($user_id, null);
+
+    }
+
+    #[On('remove-item')]
+    public function handleRemoveItem(int $product_id): void
+    {
+
+        $user_id = auth()->id();
+        CartFacade::removeFromCart($user_id, null, $product_id);
 
     }
 

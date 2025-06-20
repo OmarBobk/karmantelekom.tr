@@ -38,10 +38,21 @@
                             this.syncWithServer();
                         });
 
+                        // Listen for cart items from server
+                        window.addEventListener('cart-items-from-server', (event) => {
+                            this.loadItemsFromServer(event.detail[0]);
+                        });
+
                         // Initial sync with server after a short delay to ensure Livewire is loaded
                         setTimeout(() => {
                             this.syncWithServer();
                         }, 500);
+                    },
+
+                    loadItemsFromServer(items) {
+                        console.log('Loading items from server:', items);
+                        this.items = items;
+                        this.updateTotals();
                     },
 
                     updateTotals() {
@@ -66,6 +77,11 @@
                                 image: product.images[0].image_url
                             });
                         }
+                        window.Livewire.dispatch('notify', [{
+                            type: 'success',
+                            message: `Added ${product.name} to cart`,
+                            sec: 1000
+                        }]);
 
                         this.updateTotals();
                         this.scheduleSync();
@@ -82,6 +98,22 @@
                                 this.scheduleSync();
                             }
                         }
+                    },
+
+                    removeItem(productId) {
+                        this.items = this.items.filter(item => item.product_id !== productId);
+                        this.updateTotals();
+
+                        window.Livewire.dispatch('remove-item', { productId });
+                    },
+
+                    clear() {
+                        this.items = [];
+                        this.updateTotals();
+
+                        // this.syncWithServer();
+
+                        window.Livewire.dispatch('clear-cart')
                     },
 
                     scheduleSync() {

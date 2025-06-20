@@ -50,12 +50,6 @@ class CartService
         return $item;
     }
 
-    public function removeFromCart(?int $userId, ?string $sessionId, int $productId): bool
-    {
-        $cart = $this->getOrCreateCart($userId, $sessionId);
-        return $cart->items()->where('product_id', $productId)->delete() > 0;
-    }
-
     public function updateQuantity(?int $userId, ?string $sessionId, int $productId, int $quantity): ?CartItem
     {
         $cart = $this->getOrCreateCart($userId, $sessionId);
@@ -72,6 +66,12 @@ class CartService
         return $item;
     }
 
+    public function removeFromCart(?int $userId, ?string $sessionId, int $productId): bool
+    {
+        $cart = $this->getOrCreateCart($userId, $sessionId);
+        return $cart->items()->where('product_id', $productId)->delete() > 0;
+    }
+
     public function clearCart(?int $userId, ?string $sessionId): bool
     {
         $cart = $this->getOrCreateCart($userId, $sessionId);
@@ -81,13 +81,13 @@ class CartService
     public function getCartTotal(?int $userId, ?string $sessionId): float
     {
         $cart = $this->getOrCreateCart($userId, $sessionId);
-        return (float) $cart->items()->sum('subtotal');
+        return (float)$cart->items()->sum('subtotal');
     }
 
     public function getCartItemCount(?int $userId, ?string $sessionId): int
     {
         $cart = $this->getOrCreateCart($userId, $sessionId);
-        return (int) $cart->items()->sum('quantity');
+        return (int)$cart->items()->sum('quantity');
     }
 
     public function syncGuestCartToUser(int $userId, string $sessionId): void
@@ -159,7 +159,7 @@ class CartService
     /**
      * @throws Throwable
      */
-    public function syncCart(int $user_id, array $items): void
+    public function syncCart(int $user_id, array $items)
     {
         // Validate that user_id is provided and not null
         if (!$user_id) {
@@ -171,7 +171,28 @@ class CartService
             Log::info('Start Syncing', ['user_id' => $user_id, 'items_count' => count($items)]);
             $cart = $this->getOrCreateCart($user_id, null);
 
+            // if the $items is empty,
+            // and the cart has items,
+            // we need to sync in the opposite direction from db to localStorage.
+            if (empty($items) && $cart->items()->exists()) {
+                Log::info('No items provided, clearing existing cart items', ['cart_id' => $cart->id]);
+                return $cart->items->map(function ($item) {
+                    return [
+                        'product_id' => $item->product_id,
+                        'quantity' => $item->quantity,
+                        'price' => $item->price,
+                        'subtotal' => $item->subtotal,
+                        'name' => $item->product->name ?? '',
+                        'description' => $item->product->description ?? '',
+                        'image' => $item->product->primaryImageUrl ?? '',
+                    ];
+                })->toArray();
+            }
+
             DB::transaction(function () use ($cart, $items) {
+
+                $cart->items()->delete(); // Clear existing items before syncing
+
                 Log::info('Start Transaction');
 
                 foreach ($items as $item) {
