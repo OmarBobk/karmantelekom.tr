@@ -21,6 +21,7 @@
 
 ### 2. **Week 2**
 * Cart System (Salesperson can add products to the cart and create an order).
+* Checkout Stage.
 * Create Bills System (the bills will be created after the order status is delivered).
 * Build the frontend
     * Product listing page with filters
