@@ -15,7 +15,7 @@ use Throwable;
 
 class CartService
 {
-    public function getOrCreateCart(?int $userId, ?string $sessionId): Cart
+    public function getOrCreateCart(?int $userId = null, ?string $sessionId = null): Cart
     {
         $query = Cart::with(['items.product']);
 
@@ -68,13 +68,13 @@ class CartService
 
     public function removeFromCart(?int $userId, ?string $sessionId, int $productId): bool
     {
-        $cart = $this->getOrCreateCart($userId, $sessionId);
+        $cart = $this->getOrCreateCart($userId, null);
         return $cart->items()->where('product_id', $productId)->delete() > 0;
     }
 
     public function clearCart(?int $userId, ?string $sessionId): bool
     {
-        $cart = $this->getOrCreateCart($userId, $sessionId);
+        $cart = $this->getOrCreateCart($userId, null);
         return $cart->items()->delete() > 0;
     }
 
