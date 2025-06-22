@@ -157,7 +157,7 @@
                     </ul>
                 </div>
                 <!-- Quantity -->
-                <div class="mt-2">
+                <div class="mt-4 sm:mt-2">
                     <label for="quantity" class=" font-medium text-gray-700 mb-2 block flex items-center gap-2">Quantity:
                     <div class="inline-flex items-center rounded-lg border border-gray-300">
                         <button @click="quantity = Math.max(1, quantity - 1)" class="p-2 pl-3 hover:bg-gray-100 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
@@ -172,7 +172,7 @@
 
             </div>
 
-            <div class="mt-8">
+            <div class="mt-4 sm:mt-8">
 
                 <div class="flex flex-col sm:flex-row gap-3">
                     <button
