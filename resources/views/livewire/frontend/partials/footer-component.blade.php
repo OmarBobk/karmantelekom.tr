@@ -1,15 +1,15 @@
 <div class="bg-gray-100">
     <!-- Newsletter Section -->
-    <div class="bg-gradient-to-r from-emerald-600 to-emerald-700">
+    <div class="bg-gradient-to-r from-blue-600 to-purple-700">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
             <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
                 <div class="text-white">
                     <h3 class="text-2xl font-bold mb-2">{{__('main.subscribe_to_our_newsletter')}}</h3>
-                    <p class="text-emerald-100">{{__('main.stay_up_to_date_with_the_latest_news_announcements_and_articles')}}</p>
+                    <p class="text-blue-100">{{__('main.stay_up_to_date_with_the_latest_news_announcements_and_articles')}}</p>
                 </div>
                 <form class="flex flex-col md:flex-col sm:flex-row gap-3">
-                    <input type="email" placeholder="{{__('main.enter_your_email')}}" class="w-full px-4 py-3 text-lg rounded-lg bg-white/10 text-white placeholder-emerald-200 border border-white/20 focus:border-white focus:ring-2 focus:ring-white outline-none">
-                    <button class="inline-flex items-center justify-center px-6 py-3 text-lg font-medium bg-white text-emerald-600 hover:bg-emerald-50 rounded-lg border border-white transition-colors duration-200">
+                    <input type="email" placeholder="{{__('main.enter_your_email')}}" class="w-full px-4 py-3 text-lg rounded-lg bg-white/10 text-white placeholder-blue-200 border border-white/20 focus:border-white focus:ring-2 focus:ring-white outline-none">
+                    <button class="inline-flex items-center justify-center px-6 py-3 text-lg font-medium bg-white text-blue-600 hover:bg-blue-50 rounded-lg border border-white transition-colors duration-200">
                         {{__('main.subscribe')}}
                         <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
@@ -24,13 +24,13 @@
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 items-center justify-center"">
         <!-- Company Info -->
         <div class="flex flex-col justify-between items-center">
-            <span class="text-2xl font-semibold mb-2" style="font-family: 'Poppins', sans-serif; background: linear-gradient(to right, #059669, #10b981); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
+            <span class="text-2xl font-semibold mb-2 bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">
                 <img src="{{ Storage::url('logo.svg') }}" class="w-36" alt="">
             </span>
             <!-- Social Links -->
             <div class="flex gap-4 mt-6>
                 @foreach($socialLinks as $social)
-                    <a href="{{ $social['url'] }}" class="text-gray-600 hover:text-gray-900 transition-colors duration-200">
+                    <a href="{{ $social['url'] }}" class="text-gray-600 hover:text-blue-600 transition-colors duration-200">
                         <span class="sr-only">{{ $social['name'] }}</span>
                         @if($social['icon'] === 'facebook')
                             <svg class="size-6" fill="currentColor" viewBox="0 0 24 24"><path d="M9 8h-3v4h3v12h5v-12h3.642l.358-4h-4v-1.667c0-.955.192-1.333 1.115-1.333h2.885v-5h-3.808c-3.596 0-5.192 1.583-5.192 4.615v3.385z"/></svg>
@@ -49,7 +49,7 @@
             <span class="text-lg font-semibold text-gray-900 block mb-4">{{__('main.company')}}</span>
             <div class="flex flex-col space-y-3 mt-4">
                 @foreach($companyLinks as $link)
-                    <a href="{{ $link['url'] }}" class="text-gray-600 hover:text-gray-900 transition-colors duration-200">{{ __('main.'.strtolower(str_replace(' ', '_', $link['name']))) }}</a>
+                    <a href="{{ $link['url'] }}" class="text-gray-600 hover:text-blue-600 transition-colors duration-200">{{ __('main.'.strtolower(str_replace(' ', '_', $link['name']))) }}</a>
                 @endforeach
             </div>
         </div>
@@ -59,7 +59,7 @@
             <span class="text-lg font-semibold text-gray-900 block mb-4">{{__('main.legal')}}</span>
             <div class="flex flex-col space-y-3 mt-4">
                 @foreach($legalLinks as $link)
-                    <a href="{{ $link['url'] }}" class="text-gray-600 hover:text-gray-900 transition-colors duration-200">{{ __('main.'.strtolower(str_replace(' ', '_', $link['name']))) }}</a>
+                    <a href="{{ $link['url'] }}" class="text-gray-600 hover:text-blue-600 transition-colors duration-200">{{ __('main.'.strtolower(str_replace(' ', '_', $link['name']))) }}</a>
                 @endforeach
             </div>
         </div>
@@ -69,7 +69,7 @@
             <span class="text-lg font-semibold text-gray-900 block mb-4">{{__('main.support')}}</span>
             <div class="flex flex-col space-y-3 mt-4">
                 @foreach($supportLinks as $link)
-                    <a href="{{ $link['url'] }}" class="text-gray-600 hover:text-gray-900 transition-colors duration-200">{{ __('main.'.strtolower(str_replace(' ', '_', $link['name']))) }}</a>
+                    <a href="{{ $link['url'] }}" class="text-gray-600 hover:text-blue-600 transition-colors duration-200">{{ __('main.'.strtolower(str_replace(' ', '_', $link['name']))) }}</a>
                 @endforeach
             </div>
         </div>
@@ -84,7 +84,7 @@
                 </div>
                 <div class="flex items-center gap-4">
 {{--                    @if($canSwitchCurrency)--}}
-{{--                        <div class="relative w-1/2 py-1 px-2 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-emerald-500"--}}
+{{--                        <div class="relative w-1/2 py-1 px-2 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"--}}
 {{--                            x-data="{ open: false }">--}}
 {{--                            <button--}}
 {{--                                @click="open = !open"--}}

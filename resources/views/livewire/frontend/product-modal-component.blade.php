@@ -53,8 +53,8 @@
                     <button wire:click="selectImage('{{ $img->image_url }}', '{{$img->id}}')" class="relative bg-white focus:outline-none group">
                         <img src="{{ Storage::url($img->image_url) }}"
                              alt="Thumbnail"
-                             class="w-16 h-16 object-cover rounded border-2 {{ $selectedImageId === $img->id ? 'border-emerald-500' : 'border-transparent' }}">
-                        <span class="absolute inset-0 rounded transition bg-emerald-500 bg-opacity-0 group-hover:bg-opacity-30 {{ $selectedImageId === $img->id ? 'bg-opacity-40' : '' }}"></span>
+                             class="w-16 h-16 object-cover rounded border-2 {{ $selectedImageId === $img->id ? 'border-blue-500' : 'border-transparent' }}">
+                        <span class="absolute inset-0 rounded transition bg-blue-500 bg-opacity-0 group-hover:bg-opacity-30 {{ $selectedImageId === $img->id ? 'bg-opacity-40' : '' }}"></span>
                     </button>
                 @endforeach
             </div>
@@ -78,7 +78,7 @@
                             <a href="#" class="hover:underline">{{ $parent->translated_name }}</a>
                             <span>/</span>
                         @endforeach
-                        <span class="text-emerald-600 font-semibold">{{ $product->category->translated_name }}</span>
+                        <span class="text-blue-600 font-semibold">{{ $product->category->translated_name }}</span>
                     </nav>
                 @endif
 
@@ -91,7 +91,7 @@
                     </span>
                 </div>
                 <div class="flex items-center mb-4">
-                    <span class="text-green-600 font-medium flex items-center">
+                    <span class="text-blue-600 font-medium flex items-center">
                         <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
                         </svg>
@@ -114,30 +114,18 @@
                     @endif
                 </ul>
             </div>
-            <div class="flex gap-3 mt-6">
-                <a
-                   href="{{$requestQuoteUrl}}"
-                   target="_blank"
-                   class="flex-1 flex items-center justify-center px-4 py-2 bg-emerald-600 text-white font-semibold rounded-lg shadow hover:bg-emerald-700 transition">
-                    <svg class="w-5 h-5 {{app()->getLocale() == 'ar' ? 'ml-2' : 'mr-2'}}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 7v4a1 1 0 001 1h3m10-5h2a2 2 0 012 2v10a2 2 0 01-2 2H7a2 2 0 01-2-2V7a2 2 0 012-2h2"/>
+            <div class="mt-6">
+                <button
+                    @click="$store.cart.addItem({{ json_encode($product) }}, 1); show = false;"
+                    class="w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-px transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                    aria-label="{{ __('Add to cart') }}">
+                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                        <path d="M3 3h2l.4 2M7 13h10l4-8H5.4" stroke-linecap="round" stroke-linejoin="round"/>
+                        <circle cx="7" cy="21" r="1" />
+                        <circle cx="17" cy="21" r="1" />
                     </svg>
-                    <span class="{{app()->getLocale() == 'ar' ? 'text-sm' : ''}}">
-                        {{__('main.request_quote')}}
-                    </span>
-                </a>
-                <a
-                    href="{{$moreInfoUrl}}"
-                    target="_blank"
-                    class="flex-1 flex items-center justify-center px-4 py-2 bg-gray-100 text-gray-700 font-semibold rounded-lg shadow hover:bg-gray-200 transition">
-                    <svg class="w-5 h-5 {{app()->getLocale() == 'ar' ? 'ml-2' : 'mr-2'}}" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M12 20a8 8 0 100-16 8 8 0 000 16z"/>
-                    </svg>
-                    <span class="{{app()->getLocale() == 'ar' ? 'text-sm' : ''}}">
-
-                        {{__('main.more_info')}}
-                    </span>
-                </a>
+                    <span>{{ __('Add to cart') }}</span>
+                </button>
             </div>
         </div>
         @endif

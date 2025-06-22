@@ -37,7 +37,7 @@
         <div class="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
             <div class="bg-white/90 backdrop-blur-sm shadow-xl rounded-lg px-6 py-4 flex items-center gap-3 border border-gray-200/50">
                 <div class="relative">
-                    <svg class="animate-spin size-6 text-emerald-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                    <svg class="animate-spin size-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                         <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                     </svg>
@@ -54,7 +54,7 @@
 
     <!-- Start Slider Component -->
     <div
-        class="w-full bg-white pt-4" x-data="{
+        class="w-full bg-white" x-data="{
         activeCategory: $wire.activeCategory,
         atStart: true,
         atEnd: false,
@@ -155,37 +155,47 @@
                     @scroll.debounce.50ms="updateScroll"
                     x-cloak
                 >
-                    <div class="flex flex-nowrap border-b border-gray-200" x-cloak>
-                        <div class="flex flex-nowrap whitespace-nowrap">
-                            @if(empty($sections))
-                                <p class="text-gray-500 px-4 py-2">No sections found</p>
-                            @else
-                                @forelse($sections as $index => $section)
-                                    <button
-                                        x-on:click="$wire.activeCategory = {{ $index }}"
-                                        class="px-4 py-2 text-base font-medium text-gray-500 hover:text-gray-900 transition-all duration-200 whitespace-nowrap border-b-2 border-transparent
-                                            rounded-t-lg"
-                                        :class="$wire.activeCategory === {{ $index }} ? '!text-emerald-600 !border-emerald-600' : ''"
-                                        role="tab"
-                                        :aria-selected="$wire.activeCategory === {{ $index }}"
-                                        aria-controls="panel-{{ $index }}"
-                                        id="tab-{{ $index }}"
-                                        x-cloak
+                    <div class="flex whitespace-nowrap border-b border-gray-200" x-cloak>
+                        @if(empty($sections))
+                            <p class="text-gray-500 px-4 py-2">No sections found</p>
+                        @else
+                            @forelse($sections as $index => $section)
+                                <button
+                                    @click="$wire.activeCategory = {{ $index }}"
+                                    class="flex items-center gap-2 {{ $index === 0 ? 'px-0 mr-3': 'px-3' }} py-3 text-sm font-medium border-b-2 whitespace-nowrap transition-all duration-200"
+                                    :class="{
+                                'border-blue-500 text-blue-600': $wire.activeCategory === {{ $index }},
+                                'border-transparent text-gray-500 hover:text-gray-900 hover:border-gray-300': $wire.activeCategory !== {{ $index }}
+                            }"
+                                    role="tab"
+                                    :aria-selected="$wire.activeCategory === {{ $index }}"
+                                    aria-controls="panel-{{ $index }}"
+                                    id="tab-{{ $index }}"
+                                    x-cloak
+                                >
+                                    <span>{{ $section->translated_name }}</span>
+                                    <span
+
+                                        class="flex items-center ml-2 px-2 py-1 justify-center text-xs font-semibold rounded-full"
+                                        :class="{
+                                    'bg-blue-100 text-blue-700': $wire.activeCategory === {{ $index }},
+                                    'bg-gray-100 text-gray-600': $wire.activeCategory !== {{ $index }}
+                                }"
                                     >
-                                        {{ $section->translated_name }}
-                                    </button>
-                                @empty
-                                    <p class="text-gray-500 px-4 py-2">No sections found</p>
-                                @endforelse
-                            @endif
-                        </div>
+                                {{ count($section->products) }}
+                            </span>
+                                </button>
+                            @empty
+                                <p class="text-gray-500 px-4 py-2">No sections found</p>
+                            @endforelse
+                        @endif
                     </div>
                 </nav>
             </div>
         </div>
 
         <!-- Product Panels -->
-        <div class="relative mt-8">
+        <div class="relative mt-4">
             <div class="mx-auto max-w-7xl px-0 lg:px-8">
                 <!-- Slider Container with Navigation Buttons -->
                 <div class="group relative">
@@ -193,7 +203,7 @@
                     <button
                         @click="scrollLeft($wire.activeCategory)"
                         class="hidden lg:flex items-center justify-center size-10 rounded-full bg-white hover:bg-gray-50 text-gray-600 hover:text-gray-900 shadow-lg border border-gray-200 absolute {{ app()->getLocale() === 'ar' ? '-right-2 md:-right-6' : '-left-2 md:-left-6' }} top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 z-10 transition-all duration-200
-                            focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+                            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                         :class="{ 'pointer-events-none opacity-50': {{ app()->getLocale() === 'ar' ? 'atEnd' : 'atStart' }} }"
                         aria-label="Scroll products left"
                     >
@@ -206,7 +216,7 @@
                     <button
                         @click="scrollRight($wire.activeCategory)"
                         class="hidden lg:flex items-center justify-center size-10 rounded-full bg-white hover:bg-gray-50 text-gray-600 hover:text-gray-900 shadow-lg border border-gray-200 absolute {{ app()->getLocale() === 'ar' ? '-left-2 md:-left-6' : '-right-2 md:-right-6' }} top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 z-10 transition-all duration-200
-                            focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:ring-offset-2"
+                            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                         :class="{ 'pointer-events-none opacity-50': {{ app()->getLocale() === 'ar' ? 'atStart' : 'atEnd' }} }"
                         aria-label="Scroll products right"
                     >
@@ -243,21 +253,21 @@
                                     >
                                         @foreach($section->products as $product)
                                             <!-- Enhanced Product Card -->
-                                            <div class="flex-none w-72 snap-center p-4 @if($loop->first) ml-4 md:ml-8 @endif">
+                                            <div class="flex-none w-72 snap-center p-4">
                                                 <div class="bg-white rounded-2xl shadow-xl hover:shadow-2xl transform hover:scale-105 transition-all duration-300 border border-gray-100 relative group">
                                                     <!-- Wishlist Button (top-right) -->
-                                                    <button
-                                                        wire:click="toggleWishlist({{ $product->id }})"
-                                                        class="absolute top-4 right-4 p-2 rounded-full bg-white/80 hover:bg-emerald-50 shadow transition z-20"
-                                                        aria-label="Add to wishlist"
-                                                    >
-                                                        <svg class="w-5 h-5 text-rose-400" fill="currentColor" viewBox="0 0 20 20">
-                                                            <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"/>
-                                                        </svg>
-                                                    </button>
+{{--                                                    <button--}}
+{{--                                                        wire:click="toggleWishlist({{ $product->id }})"--}}
+{{--                                                        class="absolute top-4 right-4 p-2 rounded-full bg-white/80 hover:bg-blue-50 shadow transition z-20"--}}
+{{--                                                        aria-label="Add to wishlist"--}}
+{{--                                                    >--}}
+{{--                                                        <svg class="w-5 h-5 text-rose-400" fill="currentColor" viewBox="0 0 20 20">--}}
+{{--                                                            <path d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z"/>--}}
+{{--                                                        </svg>--}}
+{{--                                                    </button>--}}
 
                                                     <!-- Product Image -->
-                                                    <figure class="relative flex items-center justify-center aspect-square w-full bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-t-2xl border-b-2 border-emerald-100 overflow-hidden">
+                                                    <figure class="relative flex items-center justify-center aspect-square w-full bg-gradient-to-br from-blue-50 to-purple-100 rounded-t-2xl border-b-2 border-blue-100 overflow-hidden">
                                                         <button wire:click="$dispatch('openProductModal', { productId: {{ $product->id }} })" class="w-full h-full flex items-center justify-center">
                                                             <img src="{{ $product->images->where('is_primary', true)->first()?->image_url
                                                                     ? Storage::url($product->images->where('is_primary', true)->first()->image_url)
@@ -272,18 +282,18 @@
                                                     <!-- Product Info -->
                                                     <div class="p-5 flex flex-col gap-2">
                                                         <!-- Star Rating (above name) -->
-                                                        <div class="flex items-center gap-1 mb-1">
-                                                            @for ($i = 1; $i <= 5; $i++)
-                                                                <svg class="w-4 h-4 {{ $i <= ($product->rating ?? 4) ? 'text-yellow-400' : 'text-gray-300' }}" fill="currentColor" viewBox="0 0 20 20">
-                                                                    <polygon points="9.9,1.1 12.3,6.6 18.2,7.3 13.6,11.3 15,17.1 9.9,14.1 4.8,17.1 6.2,11.3 1.6,7.3 7.5,6.6"/>
-                                                                </svg>
-                                                            @endfor
-                                                            <span class="text-xs text-gray-500 ml-1">({{ $product->reviews_count ?? 12 }})</span>
-                                                        </div>
+{{--                                                        <div class="flex items-center gap-1 mb-1">--}}
+{{--                                                            @for ($i = 1; $i <= 5; $i++)--}}
+{{--                                                                <svg class="w-4 h-4 {{ $i <= ($product->rating ?? 4) ? 'text-yellow-400' : 'text-gray-300' }}" fill="currentColor" viewBox="0 0 20 20">--}}
+{{--                                                                    <polygon points="9.9,1.1 12.3,6.6 18.2,7.3 13.6,11.3 15,17.1 9.9,14.1 4.8,17.1 6.2,11.3 1.6,7.3 7.5,6.6"/>--}}
+{{--                                                                </svg>--}}
+{{--                                                            @endfor--}}
+{{--                                                            <span class="text-xs text-gray-500 ml-1">({{ $product->reviews_count ?? 12 }})</span>--}}
+{{--                                                        </div>--}}
 
-                                                        <p class="text-xs font-semibold text-emerald-600 uppercase tracking-wide">{{ $section->translated_name }}</p>
+                                                        <p class="text-xs font-semibold text-blue-600 uppercase tracking-wide">{{ $section->translated_name }}</p>
                                                         <button wire:click="$dispatch('openProductModal', { productId: {{ $product->id }} })" class="text-left">
-                                                            <h3 class="text-lg font-extrabold text-gray-900 group-hover:text-emerald-700 transition-colors duration-200 line-clamp-1">
+                                                            <h3 class="text-lg font-extrabold text-gray-900 group-hover:text-blue-700 transition-colors duration-200 line-clamp-1">
                                                                 {{ $product->translated_name }}
                                                             </h3>
                                                             <p class="text-sm text-gray-500 line-clamp-2">{{ $product->translated_description }}</p>
@@ -292,7 +302,7 @@
                                                         <!-- Price & Discount -->
                                                         <div class="flex items-center gap-2 mt-2">
                                                             @if(App\Facades\Settings::get('product_prices') == 'enabled' && $product->prices->isNotEmpty())
-                                                                <span class="text-2xl font-bold text-emerald-600">
+                                                                <span class="text-2xl font-bold text-blue-600">
                                                                     {{ $product->prices->first()->getFormattedPrice() }}
                                                                 </span>
                                                                 @if($product->prices->first()->old_price && $product->prices->first()->old_price > $product->prices->first()->price)
@@ -311,7 +321,7 @@
                                                         <!-- Add to Cart Button -->
                                                         <button
                                                             @click="$store.cart.addItem({{ json_encode($product) }}, 1);"
-                                                            class="mt-4 w-full flex items-center justify-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white font-bold rounded-xl shadow transition-all duration-200 focus:outline-none focus:ring-2 focus:ring-emerald-400"
+                                                            class="mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-px transition-all duration-300 focus:outline-none "
                                                             aria-label="{{ __('Add to cart') }}"
                                                         >
                                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -516,7 +526,7 @@
                     <div class="flex items-center justify-between mb-6">
                         <div class="flex items-center gap-3">
                             <h2 class="text-2xl font-bold text-gray-900">{{ $section->translated_name }}</h2>
-                            <span class="px-3 py-1 text-sm font-medium text-emerald-700 bg-emerald-50 rounded-full">
+                            <span class="px-3 py-1 text-sm font-medium text-blue-700 bg-blue-50 rounded-full">
                                 {{ count($section->products) }} {{ __('main.products') }}
                             </span>
                         </div>
@@ -558,7 +568,7 @@
                                     <div class="{{ $section->scrollable ? 'swiper-slide' : '' }}">
                                         <!-- Product Card -->
                                         <div class="{{ $section->scrollable ? 'group/card' : 'group/card ml-4 mr-3' }}" x-data="productSlider">
-                                            <div class="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 relative">
+                                            <div class="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 relative flex flex-col h-full">
                                                 @if($product->tag() != null)
                                                     <span
                                                         class="absolute top-3 z-10 px-3 py-1 text-xs font-bold rounded-full shadow-md animate-pulse"
@@ -581,28 +591,51 @@
 
 
                                                 <!-- Product Info -->
-                                                <div class="p-4">
-                                                    <div class="mb-3">
-                                                        <button wire:click="$dispatch('openProductModal', { productId: {{ $product->id }} })" class="text-left">
-                                                            <div class="h-[4.5rem] {{ app()->getLocale() == 'ar' ? 'text-right' : '' }}">
-                                                                <h3 class="text-sm font-medium text-gray-900 hover:text-emerald-600 transition-colors duration-200 line-clamp-1">{{ $product->translated_name }}</h3>
-                                                                <p class="text-sm text-gray-500 line-clamp-2">{{ $product->translated_description }}</p>
-                                                            </div>
-                                                        </button>
-                                                    </div>
-                                                    <div class="flex items-center justify-between mt-3">
-                                                        <div>
-                                                            @if(App\Facades\Settings::get('product_prices') == 'enabled')
-                                                                @if($product->prices->isNotEmpty())
-                                                                    <p class="text-xl font-semibold text-emerald-600">
-                                                                        {{ $product->prices->first()->getFormattedPrice() }}
-                                                                    </p>
-                                                                @else
-                                                                    <p class="text-xl font-semibold text-gray-400">Price not available</p>
+                                                <div class="p-4 flex flex-col flex-grow">
+                                                    <div class="flex-grow">
+                                                        <div class="mb-3">
+                                                            <button wire:click="$dispatch('openProductModal', { productId: {{ $product->id }} })" class="text-left">
+                                                                <div class="h-[4.5rem] {{ app()->getLocale() == 'ar' ? 'text-right' : '' }}">
+                                                                    <h3 class="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors duration-200 line-clamp-1">{{ $product->translated_name }}</h3>
+                                                                    <p class="text-sm text-gray-500 line-clamp-2">{{ $product->translated_description }}</p>
+                                                                </div>
+                                                            </button>
+                                                        </div>
+                                                        <!-- Price & Discount -->
+                                                        <div class="flex items-center gap-2 mt-2">
+                                                            @if(App\Facades\Settings::get('product_prices') == 'enabled' && $product->prices->isNotEmpty())
+                                                                <span class="text-2xl font-bold text-blue-600">
+                                                                    {{ $product->prices->first()->getFormattedPrice() }}
+                                                                </span>
+                                                                @if($product->prices->first()->old_price && $product->prices->first()->old_price > $product->prices->first()->price)
+                                                                    <span class="text-base text-gray-400 line-through">
+                                                                        {{ number_format($product->prices->first()->old_price, 2) }} ₺
+                                                                    </span>
+                                                                    <span class="ml-2 px-2 py-0.5 rounded-full bg-rose-100 text-rose-600 text-xs font-bold">
+                                                                        -{{ round(100 - ($product->prices->first()->price / $product->prices->first()->old_price * 100)) }}%
+                                                                    </span>
                                                                 @endif
                                                             @else
+                                                                <span class="text-base text-gray-400">Price not available</span>
                                                             @endif
                                                         </div>
+
+                                                    </div>
+
+                                                    <!-- Add to Cart Button -->
+                                                    <div class="mt-4">
+                                                        <button
+                                                            @click="$store.cart.addItem({{ json_encode($product) }}, 1);"
+                                                            class="w-full flex items-center justify-center gap-2 py-1 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-px transition-all duration-300 focus:outline-none"
+                                                            aria-label="{{ __('Add to cart') }}"
+                                                        >
+                                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                                                <path d="M3 3h2l.4 2M7 13h10l4-8H5.4" stroke-linecap="round" stroke-linejoin="round"/>
+                                                                <circle cx="7" cy="21" r="1" />
+                                                                <circle cx="17" cy="21" r="1" />
+                                                            </svg>
+                                                            {{ __('Add to Cart') }}
+                                                        </button>
                                                     </div>
                                                 </div>
                                             </div>

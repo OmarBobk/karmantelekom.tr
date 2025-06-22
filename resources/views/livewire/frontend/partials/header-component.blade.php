@@ -21,7 +21,7 @@ class="relative">
                 <!-- Logo -->
                 <a href="{{ route('main') }}" class="text-2xl font-bold tracking-tight ml-4 lg:ml-0">
                     <span class="text-gray-900">WINDS</span>
-                    <span class="text-emerald-600">OF ROSES</span>
+                    <span class="text-blue-600">OF ROSES</span>
                 </a>
             </div>
 
@@ -33,11 +33,14 @@ class="relative">
             <!-- Right Section: Icons -->
             <div class="flex items-center justify-end space-x-1 sm:space-x-2">
                 <!-- Favorites -->
-                <div class="hidden sm:flex">
-                    <button class="p-2 text-gray-700 hover:text-blue-600 hover:bg-gray-100 rounded-xl transition-all duration-200 h-11 w-11 flex items-center justify-center">
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-heart-icon lucide-heart"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
-                    </button>
-                </div>
+{{--                <div class="hidden sm:flex">--}}
+{{--                    <button class="p-2 text-gray-700 hover:text-blue-600 hover:bg-gray-100 rounded-xl transition-all duration-200 h-11 w-11 flex items-center justify-center">--}}
+{{--                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-heart-icon lucide-heart"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>--}}
+{{--                    </button>--}}
+{{--                </div>--}}
+                <!-- Cart Component -->
+                @livewire('frontend.cart.cart-component')
+
 
                 <!-- Profile/Auth Section -->
                 @guest
@@ -46,8 +49,7 @@ class="relative">
                     @include('livewire.frontend.partials.auth-menu')
                 @endguest
 
-                <!-- Cart Component -->
-                @livewire('frontend.cart.cart-component')
+
             </div>
         </div>
     </div>
@@ -63,7 +65,7 @@ class="relative">
             <div class="flex h-12 items-center justify-start space-x-8">
                 @foreach($categories as $category)
                     <div x-data="{ open: false }" class="relative py-4">
-                        <button @mouseover="open = true" @mouseleave="open = false" class="flex items-center text-md font-medium text-gray-700 hover:text-emerald-600 transition-colors duration-200">
+                        <button @mouseover="open = true" @mouseleave="open = false" class="flex items-center text-md font-medium text-gray-700 hover:text-blue-600 transition-colors duration-200">
                             {{ $category->translated_name }}
                             @if($category->children->isNotEmpty())
                             <svg class="ml-1 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -85,7 +87,7 @@ class="relative">
                             class="absolute z-20 mt-1 w-56 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
                             <div class="py-1">
                                 @foreach($category->children as $child)
-                                    <a href="{{ route('products', ['category' => $child->slug]) }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-emerald-600">{{ $child->translated_name }}</a>
+                                    <a href="{{ route('products', ['category' => $child->slug]) }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-blue-600">{{ $child->translated_name }}</a>
                                 @endforeach
                             </div>
                         </div>
@@ -127,7 +129,7 @@ class="relative">
 
             <!-- Sidebar Header -->
             <div class="flex items-center justify-between py-6 {{app()->getLocale() == 'ar' ? 'pl-8 pr-10' : 'pl-10 pr-8'}} border-b border-gray-100">
-                <a href="{{ route('main') }}" class="text-2xl font-semibold font-poppins bg-gradient-to-r from-emerald-500 to-teal-600 bg-clip-text text-transparent">
+                <a href="{{ route('main') }}" class="text-2xl font-semibold font-poppins bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">
                     <img src="{{ Storage::url('title-logo.svg') }}" class="w-24" alt="">
                 </a>
                 <button @click="sidebarOpen = false"
@@ -153,17 +155,17 @@ class="relative">
                         <div x-data="{ open: false }" class="relative">
                             <button @click="open = !open"
                                     class="flex items-center justify-between w-full px-4 py-3 text-base font-medium text-gray-900 rounded-xl transition-all duration-200"
-                                    :class="open ? 'bg-emerald-50 text-emerald-700' : 'hover:bg-gray-50'">
+                                    :class="open ? 'bg-blue-50 text-blue-700' : 'hover:bg-gray-50'">
                                 <div class="flex items-center">
                                     <svg class="w-5 h-5 {{ app()->getLocale() == 'ar' ? 'ml-3' : 'mr-3' }} transition-colors duration-200"
-                                         :class="open ? 'text-emerald-500' : 'text-gray-500'"
+                                         :class="open ? 'text-blue-500' : 'text-gray-500'"
                                          fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
                                     </svg>
                                     {{__('main.categories')}}
                                 </div>
                                 <svg class="w-4 h-4 transition-all duration-200"
-                                     :class="open ? 'text-emerald-500 rotate-90' : 'text-gray-500'"
+                                     :class="open ? 'text-blue-500 rotate-90' : 'text-gray-500'"
                                      fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                                 </svg>
@@ -180,16 +182,16 @@ class="relative">
                                     <div x-data="{ open: false }" class="relative">
                                         <button @click="open = !open"
                                                 class="flex items-center justify-between w-full px-4 py-2 text-sm text-left rounded-lg transition-all duration-200 group"
-                                                :class="open ? 'bg-emerald-50 text-emerald-700' : 'text-gray-700 hover:bg-gray-50'">
+                                                :class="open ? 'bg-blue-50 text-blue-700' : 'text-gray-700 hover:bg-gray-50'">
                                             <div class="flex items-center">
                                                 <div class="w-4 h-4 {{ app()->getLocale() == 'ar' ? 'ml-2' : 'mr-2' }} flex items-center justify-center">
-                                                    <div class="w-0.5 h-4 bg-gray-300 group-hover:bg-emerald-400 transition-colors duration-200"></div>
+                                                    <div class="w-0.5 h-4 bg-gray-300 group-hover:bg-blue-400 transition-colors duration-200"></div>
                                                 </div>
                                                 <span class="font-medium">{{ $category->translated_name }}</span>
                                             </div>
                                             @if($category->children->count() > 0)
                                                 <svg class="w-4 h-4 transition-all duration-200 {{ app()->getLocale() == 'ar' ? 'rotate-180' : '' }}"
-                                                     :class="open ? 'text-emerald-500 rotate-90' : 'text-gray-500'"
+                                                     :class="open ? 'text-blue-500 rotate-90' : 'text-gray-500'"
                                                      fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7" />
                                                 </svg>
@@ -209,10 +211,10 @@ class="relative">
 
                                                 @foreach($category->children as $subcategory)
                                                     <a href="{{ route('products', ['category' => $subcategory->slug]) }}"
-                                                       class="block px-4 py-2 text-sm text-gray-600 hover:text-emerald-700 hover:bg-emerald-50 rounded-lg transition-all duration-200 group relative">
+                                                       class="block px-4 py-2 text-sm text-gray-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-all duration-200 group relative">
                                                         <div class="flex items-center">
                                                             <div class="w-4 h-4 {{ app()->getLocale() == 'ar' ? 'ml-2' : 'mr-2' }} flex items-center justify-center">
-                                                                <div class="w-0.5 h-4 bg-gray-300 group-hover:bg-emerald-400 transition-colors duration-200"></div>
+                                                                <div class="w-0.5 h-4 bg-gray-300 group-hover:bg-blue-400 transition-colors duration-200"></div>
                                                             </div>
                                                             <span>{{ $subcategory->translated_name }}</span>
                                                         </div>

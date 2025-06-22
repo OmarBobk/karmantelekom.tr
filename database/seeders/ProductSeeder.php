@@ -49,7 +49,7 @@ class ProductSeeder extends Seeder
         for ($i = 1; $i < 4; $i++) {
             ProductImage::create([
                 'product_id' => $product->id,
-                'image_url' => "products/{$image}-{$i}.jpg",
+                'image_url' => "products/{$image}-{$i}.png",
                 'is_primary' => $i == 1,
             ]);
         }
@@ -87,7 +87,7 @@ class ProductSeeder extends Seeder
         for ($i = 1; $i < 4; $i++) {
             ProductImage::create([
                 'product_id' => $product->id,
-                'image_url' => "products/{$image}-{$i}.jpg",
+                'image_url' => "products/{$image}-{$i}.png",
                 'is_primary' => $i == 1,
             ]);
         }
@@ -120,7 +120,7 @@ class ProductSeeder extends Seeder
         for ($i = 1; $i < 4; $i++) {
             ProductImage::create([
                 'product_id' => $product->id,
-                'image_url' => "products/{$image}-{$i}.jpg",
+                'image_url' => "products/{$image}-{$i}.png",
                 'is_primary' => $i == 1,
             ]);
         }
@@ -158,7 +158,7 @@ class ProductSeeder extends Seeder
         for ($i = 1; $i < 4; $i++) {
             ProductImage::create([
                 'product_id' => $product->id,
-                'image_url' => "products/{$image}-{$i}.jpg",
+                'image_url' => "products/{$image}-{$i}.png",
                 'is_primary' => $i == 1,
             ]);
         }
@@ -191,7 +191,7 @@ class ProductSeeder extends Seeder
         for ($i = 1; $i < 4; $i++) {
             ProductImage::create([
                 'product_id' => $product->id,
-                'image_url' => "products/{$image}-{$i}.jpg",
+                'image_url' => "products/{$image}-{$i}.png",
                 'is_primary' => $i == 1,
             ]);
         }
@@ -225,7 +225,7 @@ class ProductSeeder extends Seeder
         for ($i = 1; $i < 4; $i++) {
             ProductImage::create([
                 'product_id' => $product->id,
-                'image_url' => "products/{$image}-{$i}.jpg",
+                'image_url' => "products/{$image}-{$i}.png",
                 'is_primary' => $i == 1,
             ]);
         }
@@ -234,7 +234,7 @@ class ProductSeeder extends Seeder
         $name    = 'Foo Moisturizing cream';
         $tr_name = 'Foo Nemlendirici krem';
         $ar_name = 'كريم ترطيب';
-        $code = 'FOO-MOISTURIZER';
+        $code = '081';
         $product = Product::create([
             'name' => $name,
             'tr_name' => $tr_name,
@@ -263,7 +263,7 @@ class ProductSeeder extends Seeder
         for ($i = 1; $i < 2; $i++) {
             ProductImage::create([
                 'product_id' => $product->id,
-                'image_url' => "products/{$image}-{$i}.jpg",
+                'image_url' => "products/{$image}-{$i}.png",
                 'is_primary' => $i == 1,
             ]);
         }
@@ -272,7 +272,7 @@ class ProductSeeder extends Seeder
         $name    = 'Foo Day Care Cream';
         $tr_name = 'Foo gündüz bakım kremi';
         $ar_name = 'كريم العناية النهارية';
-        $code = 'FOO-DAY-CARE';
+        $code = '082';
         $product = Product::create([
             'name' => $name,
             'tr_name' => $tr_name,
@@ -301,7 +301,7 @@ class ProductSeeder extends Seeder
         for ($i = 1; $i < 2; $i++) {
             ProductImage::create([
                 'product_id' => $product->id,
-                'image_url' => "products/{$image}-{$i}.jpg",
+                'image_url' => "products/{$image}-{$i}.png",
                 'is_primary' => $i == 1,
             ]);
         }
@@ -310,7 +310,7 @@ class ProductSeeder extends Seeder
         $name    = 'FOO Lip Balm & Blush Cream';
         $tr_name = 'Foo dudak Balmı & Allık kremi';
         $ar_name = 'مرطب الشفاه وكريم الخدود';
-        $code = 'FOO-LIP-BALM';
+        $code = '083';
         $product = Product::create([
             'name' => $name,
             'tr_name' => $tr_name,
@@ -339,7 +339,7 @@ class ProductSeeder extends Seeder
         for ($i = 1; $i < 2; $i++) {
             ProductImage::create([
                 'product_id' => $product->id,
-                'image_url' => "products/{$image}-{$i}.jpg",
+                'image_url' => "products/{$image}-{$i}.png",
                 'is_primary' => $i == 1,
             ]);
         }

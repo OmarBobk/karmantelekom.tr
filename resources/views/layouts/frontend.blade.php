@@ -236,12 +236,12 @@
         isScrolled = window.scrollY > 10;
     })"
             :class="isScrolled
-        ? 'fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-white/95 backdrop-blur-md shadow-lg'
+        ? 'fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-white/90 backdrop-blur-md shadow-lg'
         : 'fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-white'"
         >
             <livewire:frontend.partials.header-component />
         </header>
-        <main class="pt-[8.5rem] sm:pt-32">
+        <main class="pt-28">
             {{ $slot }}
         </main>
         <footer>
