@@ -267,7 +267,7 @@
 {{--                                                    </button>--}}
 
                                                     <!-- Product Image -->
-                                                    <figure class="relative flex items-center justify-center aspect-square w-full bg-gradient-to-br from-blue-50 to-purple-100 rounded-t-2xl border-b-2 border-blue-100 overflow-hidden">
+                                                    <figure class="relative flex items-center justify-center aspect-square w-full bg-gray-50 rounded-t-2xl overflow-hidden">
                                                         <button wire:click="$dispatch('openProductModal', { productId: {{ $product->id }} })" class="w-full h-full flex items-center justify-center">
                                                             <img src="{{ $product->images->where('is_primary', true)->first()?->image_url
                                                                     ? Storage::url($product->images->where('is_primary', true)->first()->image_url)
@@ -571,7 +571,7 @@
                                             <div class="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 relative flex flex-col h-full">
                                                 @if($product->tag() != null)
                                                     <span
-                                                        class="absolute top-3 z-10 px-3 py-1 text-xs font-bold rounded-full shadow-md animate-pulse"
+                                                        class="absolute top-3 z-10 px-3 py-1 text-xs font-bold rounded-full shadow-md"
                                                         style="{{ app()->getLocale() === 'AR' ? 'right:0;' : 'left:0;' }} background-color: {{ $product->tag()->background_color }}; color: {{ $product->tag()->text_color }}; border-color: {{ $product->tag()->border_color }};">
                                                                 {{ $product->tag()->icon . ' ' . $product->tag()->translated_name}}
                                                             </span>

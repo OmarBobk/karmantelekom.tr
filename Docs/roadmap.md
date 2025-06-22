@@ -19,6 +19,15 @@
 
 ---
 
+| Month | Revenue      | Gross Profit (30%) | Expenses | Net Profit        |
+| ----- | ------------ | ------------------ | -------- | ----------------- |
+| 1–2   | ₺15,000      | ₺4,500             | ₺35,000  | **₺–30,500**      |
+| 3–4   | ₺60,000      | ₺18,000            | ₺45,000  | **₺–27,000**      |
+| 5–6   | ₺150,000     | ₺45,000            | ₺55,000  | **₺–10,000**      |
+| 7–12  | ₺400,000 avg | ₺120,000           | ₺60,000  | **₺60,000/month** |
+
+---
+
 ### 2. **Week 2**
 * Cart System (Salesperson can add products to the cart and create an order).
 * Checkout Stage.
@@ -42,6 +51,5 @@
 * Browse shop visits and track them.
 
 ---
-
 
 
