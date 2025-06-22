@@ -28,7 +28,7 @@
     x-transition:leave="ease-in duration-200"
     @click="closeAndReset()"></div>
 
-    <div class="relative bg-white rounded-xl shadow-2xl w-[90%] sm:w-full max-w-6xl h-auto max-h-[90vh] mx-auto flex flex-col md:flex-row"
+    <div class="relative bg-white rounded-xl shadow-2xl w-[90%] sm:w-full max-w-6xl h-auto max-h-[90vh] mx-auto flex flex-col md:flex-row overflow-y-auto" 
          x-transition:enter="ease-out duration-300"
          x-transition:leave="ease-in duration-200">
 
@@ -87,7 +87,7 @@
         </div>
 
         <!-- Right: Details -->
-        <div class="md:w-1/2 flex flex-col justify-between p-8 overflow-y-auto">
+        <div class="md:w-1/2 flex flex-col justify-between p-8">
             <div class="flex flex-col flex-1 justify-between">
                 {{-- Breadcrumbs --}}
                 @if($product->category)
