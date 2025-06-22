@@ -1,37 +1,33 @@
 <!-- Desktop Search -->
-<div class="lg:block relative" x-data="{ isOpen: false }" @click.away="isOpen = false; $wire.resetSearch()">
+<div class="lg:block relative w-full" x-data="{ isOpen: false }" @click.away="isOpen = false; $wire.resetSearch()">
     <!-- Search Container -->
     <div class="relative flex items-center">
         <div class="relative w-full">
             <!-- Search Input Container -->
-            <div class="relative transition-all duration-300 ease-out rounded-sm bg-white shadow-lg border border-gray-200/80">
-                <!-- Search Input Wrapper -->
-                <div class="relative flex items-center w-full h-11">
-                    <!-- Search Icon -->
-                    <div class="absolute {{ app()->getLocale() == 'ar' ? 'right-0' : 'left-0' }} p-2.5 text-gray-400">
-                        <svg class="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                        </svg>
-                    </div>
-
-                    <!-- Search Input -->
-                    <input type="text"
-                           placeholder="{{__('main.search_for_products')}}..."
-                           wire:model.live.debounce.300ms="searchQuery"
-                           wire:loading.class="opacity-50"
-                           @click="isOpen = true"
-                           class="w-full h-full {{ app()->getLocale() == 'ar' ? 'pr-11' : 'pl-11' }} bg-transparent text-sm placeholder-gray-400 outline-none focus:outline-none focus:ring-0 border-0 focus:border-0"
-                    >
-
-                    <!-- Clear Button -->
-                    <button wire:click="$set('searchQuery', '')"
-                            x-show="$wire.searchQuery"
-                            class="absolute {{ app()->getLocale() == 'ar' ? 'left-3' : 'right-3' }} p-1 text-gray-400 hover:text-gray-600 focus:outline-none">
-                        <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
+            <div class="relative flex items-center w-full h-11 bg-white border border-gray-300 rounded-lg">
+                <!-- Search Icon -->
+                <div class="absolute {{ app()->getLocale() == 'ar' ? 'right-0' : 'left-0' }} p-3 text-gray-500">
+                    
+                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search h-5 w-5 text-gray-400"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
                 </div>
+
+                <!-- Search Input -->
+                <input type="text"
+                       placeholder="{{__('main.search_for_products')}}..."
+                       wire:model.live.debounce.300ms="searchQuery"
+                       wire:loading.class="opacity-50"
+                       @click="isOpen = true"
+                       class="w-full h-full {{ app()->getLocale() == 'ar' ? 'pr-11' : 'pl-11' }} bg-transparent text-base placeholder-gray-400 outline-none focus:outline-none focus:ring-0 border-0 focus:border-0"
+                >
+
+                <!-- Clear Button -->
+                <button wire:click="$set('searchQuery', '')"
+                        x-show="$wire.searchQuery"
+                        class="absolute {{ app()->getLocale() == 'ar' ? 'left-3' : 'right-3' }} p-1 text-gray-400 hover:text-gray-600 focus:outline-none">
+                    <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                    </svg>
+                </button>
             </div>
 
             <!-- Search Results Dropdown -->

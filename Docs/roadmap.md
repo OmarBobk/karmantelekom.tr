@@ -22,11 +22,9 @@
 ### 2. **Week 2**
 * Cart System (Salesperson can add products to the cart and create an order).
 * Checkout Stage.
-* Create Bills System (the bills will be created after the order status is delivered).
 * Build the frontend
     * Product listing page with filters
     * Product detail page
-* Track shop visits
 * Upload 10–15 products including the markup.
 
 ## Outcome:
@@ -34,3 +32,16 @@
 * Browse shop visits and track them.
 
 ---
+### 3. **Week 3**
+* Orders Manager (on the backend side).
+* Create Bills System (the bills will be created after the order status is delivered).
+* Track shop visits
+
+## Outcome:
+* Salespersons can log in and view products.
+* Browse shop visits and track them.
+
+---
+
+
+

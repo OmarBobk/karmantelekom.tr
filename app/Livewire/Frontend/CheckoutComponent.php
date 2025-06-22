@@ -5,7 +5,8 @@ namespace App\Livewire\Frontend;
 use App\Models\Shop;
 use App\Models\Order;
 use App\Enums\OrderStatus;
-use App\Services\CartService;
+use App\Facades\Cart;
+use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -18,12 +19,12 @@ class CheckoutComponent extends Component
     public string $orderNotes = '';
     public bool $isProcessing = false;
 
-    protected $rules = [
+    protected array $rules = [
         'selectedShopId' => 'required|exists:shops,id',
         'orderNotes' => 'nullable|string|max:1000',
     ];
 
-    protected $messages = [
+    protected array $messages = [
         'selectedShopId.required' => 'Please select a shop.',
         'selectedShopId.exists' => 'The selected shop is invalid.',
         'orderNotes.max' => 'Order notes cannot exceed 1000 characters.',
@@ -31,19 +32,26 @@ class CheckoutComponent extends Component
 
     public function mount()
     {
-        // Get user's shops on component mount
-        $this->loadUserShops();
+        // Remove cart initialization from mount
     }
 
-    public function loadUserShops()
+    // Use computed properties instead of private properties
+    public function getCartProperty()
     {
-        // This will be used in the view to populate the dropdown
-        // The actual query is done in the render method
+        return Cart::getOrCreateCart(Auth::id(), null);
     }
 
-    public function placeOrder()
+    public function getCartTotalProperty()
     {
+        return Cart::getCartTotal(Auth::id(), null);
+    }
+
+    public function placeOrder(): void
+    {
+        Log::info('Starting order placement');
         $this->validate();
+
+        Log::info('Order Validation passed');
 
         if (!$this->hasItemsInCart()) {
             $this->addError('cart', 'Your cart is empty. Please add items before placing an order.');
@@ -54,8 +62,9 @@ class CheckoutComponent extends Component
 
         try {
             DB::transaction(function () {
-                $cartService = app(CartService::class);
-                $cart = $cartService->getOrCreateCart(Auth::id());
+                Log::info('Starting order Transaction');
+
+                $cart = $this->cart; // Get fresh cart data
 
                 if ($cart->items->isEmpty()) {
                     throw new \Exception('Cart is empty');
@@ -84,16 +93,22 @@ class CheckoutComponent extends Component
                 }
 
                 // Clear the cart after successful order creation
-                $cartService->clearCart(Auth::id(), null);
-
-                // Reset form
-                $this->reset(['selectedShopId', 'orderNotes']);
-
-                // Redirect to main page after successful order
-                $this->redirect(route('main'));
+                Cart::clearCart(Auth::id(), null);
             });
 
-            session()->flash('success', 'Order placed successfully!');
+            // Reset form after successful transaction
+            $this->reset(['selectedShopId', 'orderNotes']);
+
+            // Dispatch event to clear localStorage cart
+            $this->dispatch('clear-cart');
+
+            $this->dispatch('notify', [
+                'type' => 'success',
+                'message' => 'Order placed successfully!'
+            ]);
+
+            // Redirect to main page after successful order
+            $this->redirect(route('main'));
 
         } catch (\Exception $e) {
             $this->addError('order', 'Failed to place order. Please try again. Error: ' . $e->getMessage());
@@ -104,23 +119,19 @@ class CheckoutComponent extends Component
 
     private function hasItemsInCart(): bool
     {
-        $cartService = app(CartService::class);
-        $cart = $cartService->getOrCreateCart(Auth::id());
-        return $cart->items->isNotEmpty();
+        return $this->cart->items->isNotEmpty();
     }
 
     #[Layout('layouts.frontend')]
     #[Title('Checkout')]
     public function render()
     {
-        $shops = Shop::all();
-        $cartService = app(CartService::class);
-        $cart = $cartService->getOrCreateCart(Auth::id());
+        $shops = Shop::visibleTo(auth()->user())->get();
 
         return view('livewire.frontend.checkout-component', [
             'shops' => $shops,
-            'cart' => $cart,
-            'cartTotal' => $cartService->getCartTotal(Auth::id(), null),
+            'cart' => $this->cart,
+            'cartTotal' => $this->cartTotal,
         ]);
     }
 }

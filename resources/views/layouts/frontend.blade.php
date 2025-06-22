@@ -43,6 +43,11 @@
                             this.loadItemsFromServer(event.detail[0]);
                         });
 
+                        // Listen for clear-cart event from Livewire
+                        window.addEventListener('clear-cart', () => {
+                            this.clear();
+                        });
+
                         // Initial sync with server after a short delay to ensure Livewire is loaded
                         setTimeout(() => {
                             this.syncWithServer();
@@ -224,10 +229,19 @@
         </template>
     </div>
 
-        <header class="bg-white shadow-sm">
+        <header
+            class="fixed top-0 left-0 right-0 z-50 transition-all duration-300"
+            x-data="{ isScrolled: false }"
+            x-init="window.addEventListener('scroll', () => {
+        isScrolled = window.scrollY > 10;
+    })"
+            :class="isScrolled
+        ? 'fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-white/95 backdrop-blur-md shadow-lg'
+        : 'fixed top-0 left-0 right-0 z-50 transition-all duration-300 bg-white'"
+        >
             <livewire:frontend.partials.header-component />
         </header>
-        <main>
+        <main class="pt-[8.5rem] sm:pt-32">
             {{ $slot }}
         </main>
         <footer>

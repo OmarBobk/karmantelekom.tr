@@ -1,61 +1,43 @@
 <!-- Navigation Component -->
 <div x-data="{
     sidebarOpen: false,
-    searchOpen: false,
-    searchQuery: '',
-    searchResults: [],
-    isLoading: false,
     profileDropdownOpen: false,
-    mobileProfileDropdownOpen: false,
-    languageOpen: false,
+    languageOpen: false
+}"
+x-on:keydown.escape.window="sidebarOpen = false; profileDropdownOpen = false"
+class="relative">
 
-    init() {
-        this.$watch('sidebarOpen', value => {
-            document.body.styl2e.overflow = value ? 'hidden' : '';
-            document.body.style.touchAction = value ? 'none' : '';
-        });
-    }
-}" class="relative">
-    <!-- Main Navigation Bar -->
-    <nav class="mx-auto max-w-7xl px-4 lg:px-8 bg-white shadow-sm"
-         aria-label="Global"
-         :class="{ 'fixed inset-x-0 top-0 z-50 bg-white/95 backdrop-blur-sm': searchOpen }">
-
-        <!-- Desktop Navigation -->
-        <div class=" flex items-center justify-between pt-6 pb-2 sm:flex-nowrap flex-wrap">
-            <!-- Left Section: Logo & Menu -->
-            <div class="flex items-center gap-x-2">
-                <button @click="sidebarOpen = true"
-                        class="p-2.5 pl-0 text-gray-700 hover:pl-2.5 hover:text-gray-900 hover:bg-gray-100 rounded-xl transition-all duration-200"
-                        aria-expanded="false"
-                        aria-controls="navigation-menu">
-                    <span class="sr-only">Open menu</span>
-                    <svg class="size-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
-                        <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 6.75h16.5M3.75 12h16.5m-16.5 5.25h16.5" />
-                    </svg>
-                </button>
-                <a href="{{ route('main') }}" class="hidden sm:block text-2xl font-semibold" style="font-family: 'Poppins', sans-serif; background: linear-gradient(to right, #059669, #10b981); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-                    <img src="{{ Storage::url('title-logo.svg') }}" class="w-24" alt="">
-                </a>
-            </div>
-            <div class="block sm:hidden">
-                <a href="{{ route('main') }}" class="text-4xl font-semibold" style="font-family: 'Poppins', sans-serif; background: linear-gradient(to right, #059669, #10b981); -webkit-background-clip: text; -webkit-text-fill-color: transparent;">
-                    <img src="{{ Storage::url('title-logo.svg') }}" class="w-24" alt="">
+    <!-- Top bar -->
+    <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+        <div class="flex h-16 items-center justify-between">
+            <div class="flex items-center">
+                 <!-- Mobile menu button -->
+                 <div class="flex items-center lg:hidden">
+                    <button @click="sidebarOpen = true" type="button" class="-m-2 inline-flex items-center justify-center rounded-md p-2 text-gray-400">
+                        <span class="sr-only">Open menu</span>
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-menu-icon lucide-menu"><path d="M4 12h16"/><path d="M4 18h16"/><path d="M4 6h16"/></svg>
+                    </button>
+                </div>
+                <!-- Logo -->
+                <a href="{{ route('main') }}" class="text-2xl font-bold tracking-tight ml-4 lg:ml-0">
+                    <span class="text-gray-900">WINDS</span>
+                    <span class="text-emerald-600">OF ROSES</span>
                 </a>
             </div>
 
             <!-- Center Section: Search -->
-            <div class="flex-auto max-w-xl px-0 sm:px-4 py-4 sm:py-0 order-last sm:order-none">
-                @livewire('frontend.search-component', [], key($searchComponentKey))
+            <div class="hidden lg:flex flex-1 max-w-lg mx-8">
+                @livewire('frontend.search-component', [], key('search-'.time()))
             </div>
 
-            <!-- Right Section: Search Icon & Language -->
-            <div class="flex items-center gap-x-2">
-
-                <!-- Cart Component -->
-
-                @livewire('frontend.cart.cart-component')
-
+            <!-- Right Section: Icons -->
+            <div class="flex items-center justify-end space-x-1 sm:space-x-2">
+                <!-- Favorites -->
+                <div class="hidden sm:flex">
+                    <button class="p-2 text-gray-700 hover:text-blue-600 hover:bg-gray-100 rounded-xl transition-all duration-200 h-11 w-11 flex items-center justify-center">
+                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-heart-icon lucide-heart"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>
+                    </button>
+                </div>
 
                 <!-- Profile/Auth Section -->
                 @guest
@@ -64,19 +46,54 @@
                     @include('livewire.frontend.partials.auth-menu')
                 @endguest
 
-                <!-- Favorites -->
-                <div class="relative flex items-center gap-x-2">
-                    <button class="p-2.5 text-gray-700 hover:text-blue-600 hover:bg-gray-100 rounded-xl transition-all duration-200 h-11 w-11 flex items-center justify-center">
-                        <svg class="size-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z" />
-                        </svg>
-                    </button>
-                    <span class="hidden lg:inline text-sm text-gray-700 cursor-pointer hover:text-gray-900">Favorites</span>
-                </div>
-
+                <!-- Cart Component -->
+                @livewire('frontend.cart.cart-component')
             </div>
         </div>
+    </div>
+     <!-- Search for mobile -->
+    <div class="lg:hidden px-4 pb-4">
+        @livewire('frontend.search-component', [], key('search-mobile-'.time()))
+    </div>
 
+
+    <!-- Bottom bar (Desktop Navigation) -->
+    <nav class="hidden lg:block border-t border-b border-gray-100">
+        <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+            <div class="flex h-12 items-center justify-start space-x-8">
+                @foreach($categories as $category)
+                    <div x-data="{ open: false }" class="relative py-4">
+                        <button @mouseover="open = true" @mouseleave="open = false" class="flex items-center text-md font-medium text-gray-700 hover:text-emerald-600 transition-colors duration-200">
+                            {{ $category->translated_name }}
+                            @if($category->children->isNotEmpty())
+                            <svg class="ml-1 h-5 w-5 text-gray-400" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                                <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.25 4.25a.75.75 0 01-1.06 0L5.23 8.27a.75.75 0 010-1.06z" clip-rule="evenodd" />
+                            </svg>
+                            @endif
+                        </button>
+
+                        @if($category->children->isNotEmpty())
+                        <div x-show="open"
+                            x-cloak
+                            @mouseover="open = true" @mouseleave="open = false"
+                            x-transition:enter="transition ease-out duration-200"
+                            x-transition:enter-start="opacity-0 translate-y-1"
+                            x-transition:enter-end="opacity-100 translate-y-0"
+                            x-transition:leave="transition ease-in duration-150"
+                            x-transition:leave-start="opacity-100 translate-y-0"
+                            x-transition:leave-end="opacity-0 translate-y-1"
+                            class="absolute z-20 mt-1 w-56 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                            <div class="py-1">
+                                @foreach($category->children as $child)
+                                    <a href="{{ route('products', ['category' => $child->slug]) }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-emerald-600">{{ $child->translated_name }}</a>
+                                @endforeach
+                            </div>
+                        </div>
+                        @endif
+                    </div>
+                @endforeach
+            </div>
+        </div>
     </nav>
 
     <!-- Sidebar Navigation Menu -->

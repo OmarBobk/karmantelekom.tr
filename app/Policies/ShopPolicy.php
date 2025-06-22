@@ -15,7 +15,7 @@ class ShopPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->hasRole(['admin', 'salesperson']);
+        return $user->hasRole(['salesperson']);
     }
 
     /**
@@ -23,11 +23,7 @@ class ShopPolicy
      */
     public function view(User $user, Shop $shop): bool
     {
-        if ($user->hasRole('admin')) {
-            return true;
-        }
-
-        return $user->hasRole('salesperson') && $shop->salesperson === $user;
+        return $user->hasRole(['salesperson']);
     }
 
     /**

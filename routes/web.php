@@ -16,7 +16,10 @@ Route::get('/', MainComponent::class)->name('main');
 Route::get('/products/{category}', ProductsComponent::class)->name('products');
 //Route::get('/products', ProductsComponent::class)->name('products');
 Route::get('/contactus', ContactusComponent::class)->name('contactus');
-Route::get('/checkout', \App\Livewire\Frontend\CheckoutComponent::class)->name('checkout');
+
+Route::get('/checkout', \App\Livewire\Frontend\CheckoutComponent::class)
+            ->middleware('auth')
+            ->name('checkout');
 
 Route::middleware([
     'auth:sanctum',

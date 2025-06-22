@@ -38,6 +38,10 @@ class Order extends Model
         'updated_at' => 'datetime'
     ];
 
+    protected $appends = [
+        'items_count',
+    ];
+
     public function shop(): BelongsTo
     {
         return $this->belongsTo(Shop::class);
@@ -77,8 +81,8 @@ class Order extends Model
      *
      * @return string
      */
-    public function getStatusColorAttribute(): string
+    public function getItemsCountAttribute(): int
     {
-        return $this->status->getBackgroundColor();
+        return $this->items->sum('quantity');
     }
 }

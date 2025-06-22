@@ -1,6 +1,6 @@
 <div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
     <!-- Header Section -->
-    <div class="bg-white/80 backdrop-blur-sm border-b border-gray-200/50 sticky top-0 z-40">
+    <div class="bg-white/80 backdrop-blur-sm border-b border-gray-200/50 sticky top-0 z-[999999]">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
                 <div class="flex items-center space-x-3">
@@ -95,7 +95,7 @@
 
         <div class="grid grid-cols-1 xl:grid-cols-3 gap-8">
             <!-- Checkout Form -->
-            <div class="xl:col-span-2 space-y-6">
+            <div class="xl:col-span-2 space-y-6 order-2 sm:order-1">
                 <!-- Shop Selection Card -->
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-200/50 overflow-visible">
                     <div class="px-6 py-4 bg-gradient-to-r from-gray-50 to-gray-100/50 border-b border-gray-200/50">
@@ -113,9 +113,9 @@
                     </div>
 
                     <div class="p-6 overflow-visible">
-                        <div x-data="{ 
-                            open: false, 
-                            selectedShop: null, 
+                        <div x-data="{
+                            open: false,
+                            selectedShop: null,
                             searchQuery: '',
                             get filteredShops() {
                                 const query = this.searchQuery.toLowerCase();
@@ -126,9 +126,9 @@
                                             name: '{{ $shop->name }}',
                                             address: '{{ $shop->address }}',
                                             phone: '{{ $shop->phone ?? '' }}',
-                                            visible: query === '' || 
-                                                '{{ strtolower($shop->name) }}'.includes(query) || 
-                                                '{{ strtolower($shop->address) }}'.includes(query) || 
+                                            visible: query === '' ||
+                                                '{{ strtolower($shop->name) }}'.includes(query) ||
+                                                '{{ strtolower($shop->address) }}'.includes(query) ||
                                                 '{{ strtolower($shop->phone ?? '') }}'.includes(query)
                                         },
                                     @endforeach
@@ -141,7 +141,7 @@
                             <label class="block text-sm font-medium text-gray-700 mb-3">
                                 Shop Location <span class="text-red-500">*</span>
                             </label>
-                            
+
                             <div class="relative">
                                 <button
                                     type="button"
@@ -224,7 +224,7 @@
                                         </template>
 
                                         <!-- No search results -->
-                                        <div 
+                                        <div
                                             x-show="searchQuery !== '' && visibleShops.length === 0"
                                             class="px-4 py-6 text-center"
                                         >
@@ -236,7 +236,7 @@
                                         </div>
 
                                         <!-- No shops available -->
-                                        <div 
+                                        <div
                                             x-show="searchQuery === '' && filteredShops.length === 0"
                                             class="px-4 py-6 text-center"
                                         >
@@ -338,7 +338,7 @@
             </div>
 
             <!-- Order Summary -->
-            <div class="xl:col-span-1">
+            <div class="xl:col-span-1 order-1 sm:order-2">
                 <div class="bg-white rounded-2xl shadow-sm border border-gray-200/50 overflow-hidden sticky top-24">
                     <div class="px-6 py-4 bg-gradient-to-r from-gray-50 to-gray-100/50 border-b border-gray-200/50">
                         <div class="flex items-center space-x-3">
@@ -349,13 +349,13 @@
                             </div>
                             <div>
                                 <h2 class="text-lg font-semibold text-gray-900">Order Summary</h2>
-                                <p class="text-sm text-gray-600">{{ $cart->items->count() }} items</p>
+                                <p class="text-sm text-gray-600">{{ $cart ? $cart->items->count() : 0 }} items</p>
                             </div>
                         </div>
                     </div>
 
                     <div class="p-6">
-                        @if($cart->items->isNotEmpty())
+                        @if($cart && $cart->items->isNotEmpty())
                             <!-- Cart Items -->
                             <div class="space-y-4 mb-6 max-h-96 overflow-y-auto">
                                 @foreach($cart->items as $item)
