@@ -74,8 +74,9 @@ class ShopProfileComponent extends Component
         ];
 
         $statusCounts = $orders
-            ->selectRaw('status, count(*) as count')
+            ->selectRaw('status, count(*) as count, MAX(created_at) as latest')
             ->groupBy('status')
+            ->orderByDesc('latest')
             ->pluck('count', 'status')
             ->all();
 
