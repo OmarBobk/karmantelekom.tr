@@ -34,7 +34,6 @@
 * Build the frontend
     * Product listing page with filters
     * Product detail page
-* Upload 10–15 products including the markup.
 
 ## Outcome:
 * Salespersons can log in and view products.
@@ -42,14 +41,19 @@
 
 ---
 ### 3. **Week 3**
+* Design the logo.
 * Orders Manager (on the backend side).
 * Create Bills System (the bills will be created after the order status is delivered).
 * Track shop visits
+* Upload 10–15 products including the markup.
+* Redesign the product listing page.
+* add breadcrumbs to the dashboard.
+* TODO: add salesperson name to the shop profile
 
 ## Outcome:
-* Salespersons can log in and view products.
-* Browse shop visits and track them.
+
 
 ---
+
 
 

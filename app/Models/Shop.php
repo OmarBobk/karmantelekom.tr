@@ -31,6 +31,7 @@ class Shop extends Model
     {
         return [
             'links' => 'array',
+            'total_prices' => 'decimal:2',
         ];
     }
 

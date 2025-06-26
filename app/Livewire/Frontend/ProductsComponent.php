@@ -33,7 +33,7 @@ class ProductsComponent extends Component
         $query = Product::with(['category', 'images', 'prices'])
             ->where('is_active', true);
 
-        if ($this->category) {
+        if ($this->category != 'all') {
             $query->whereHas('category', function ($q) {
                 $q->where('slug', $this->category);
             });

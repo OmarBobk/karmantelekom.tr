@@ -25,6 +25,34 @@ Route::get('users', UsersComponent::class)->name('users');
 Route::get('settings', SettingsComponent::class)->name('settings');
 Route::get('shops', \App\Livewire\Backend\Shops\ShopComponent::class)->name('shops');
 Route::get('shops/{shop}', \App\Livewire\Backend\Shops\ShopProfileComponent::class)->name('shop');
+Route::get('orders', \App\Livewire\Backend\Orders\OrdersManager::class)->name('orders');
+
+
+// PDF Export Route
+Route::get('/orders/{order}/pdf', function (\App\Models\Order $order) {
+    // Force HTTPS for this route
+    if (!request()->secure() && app()->environment('production') && !app()->environment('local')) {
+        return redirect()->secure(request()->url());
+    }
+
+    // Load the order with relationships
+    $order->load(['items.product', 'shop', 'salesperson']);
+
+    // Generate HTML content
+    $html = view('pdf.order-details', compact('order'))->render();
+
+    // Create PDF using DomPDF
+    $pdf = \Barryvdh\DomPDF\Facade\Pdf::loadHTML($html);
+
+    // Set paper size and orientation
+    $pdf->setPaper('A4', 'portrait');
+
+    // Generate filename
+    $filename = "order-{$order->id}-" . now()->format('Y-m-d') . ".pdf";
+
+    // Return PDF as download
+    return $pdf->download($filename);
+})->name('orders.pdf');
 
 Route::get('sections', SectionComponent::class)->name('sections');
 

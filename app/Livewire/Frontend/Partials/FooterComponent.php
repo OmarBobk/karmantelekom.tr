@@ -9,11 +9,7 @@ class FooterComponent extends Component
 {
     public $socialLinks = [];
 
-    public $companyLinks = [
-        ['name' => 'About Us', 'url' => '#'],
-        ['name' => 'Contact', 'url' => '#'],
-        ['name' => 'Blog', 'url' => '#'],
-    ];
+    public $companyLinks = [];
 
     public $legalLinks = [
         ['name' => 'Terms of use', 'url' => '#'],
@@ -34,6 +30,12 @@ class FooterComponent extends Component
     {
         $this->currentCurrency = session('currency', config('app.currency', 'TRY'));
         $this->canSwitchCurrency = auth()->check() && auth()->user()->hasAnyRole(['admin', 'salesperson', 'shop_owner']);
+
+        $this->companyLinks = [
+            ['name' => 'About Us', 'url' => '#'],
+            ['name' => 'Contact', 'url' => route('contactus')],
+            ['name' => 'Blog', 'url' => '#'],
+        ];
 
         $this->socialLinks = [
             ['name' => 'Facebook', 'url' => Settings::get('facebook_url') , 'icon' => 'facebook'],

@@ -9,7 +9,7 @@
                 <button
                     wire:click="$set('sortBy', '{{ $sortBy === 'newest' ? 'oldest' : 'newest' }}')"
                     type="button"
-                    class="flex items-center justify-between min-w-[180px] px-6 py-2 border border-emerald-400 rounded-lg bg-white hover:bg-emerald-50 transition-colors duration-150 shadow-sm group focus:outline-none focus:ring-2 focus:ring-emerald-400 {{ app()->getLocale() === 'ar' ? 'flex-row-reverse' : '' }}"
+                    class="flex items-center justify-between min-w-[180px] px-6 py-2 border border-blue-400 rounded-lg bg-white hover:bg-blue-50 transition-colors duration-150 shadow-sm group focus:outline-none focus:ring-2 focus:ring-blue-400 {{ app()->getLocale() === 'ar' ? 'flex-row-reverse' : '' }}"
                 >
                     <span class="text-base text-gray-800 font-medium">
                         {{ $sortBy === 'newest' ? __('main.newest_to_oldest') : __('main.oldest_to_newest') }}
@@ -17,12 +17,12 @@
                     <span class="{{ app()->getLocale() === 'ar' ? 'mr-4' : 'ml-4' }}">
                         @if($sortBy === 'newest')
                             <!-- Up-Down Icon (Newest to Oldest) -->
-                            <svg class="w-6 h-6 text-emerald-500 group-hover:text-emerald-600 transition" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <svg class="w-6 h-6 text-blue-500 group-hover:text-blue-600 transition" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M7 7v6m0 0l-2.5-2.5M7 13l2.5-2.5M17 17v-6m0 0l-2.5 2.5M17 11l2.5 2.5" />
                             </svg>
                         @else
                             <!-- Down-Up Icon (Oldest to Newest) -->
-                            <svg class="w-6 h-6 text-emerald-500 group-hover:text-emerald-600 transition" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                            <svg class="w-6 h-6 text-blue-500 group-hover:text-blue-600 transition" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" d="M7 17v-6m0 0l-2.5 2.5M7 11l2.5 2.5M17 7v6m0 0l-2.5-2.5M17 13l2.5-2.5" />
                             </svg>
                         @endif
@@ -36,7 +36,7 @@
     <div wire:loading.delay wire:loading.class="!flex" class="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 items-center justify-center">
         <div class="bg-white rounded-lg shadow-xl p-6 max-w-sm mx-auto">
             <div class="flex items-center space-x-4 {{ app()->getLocale() === 'ar' ? 'space-x-reverse' : '' }}">
-                <svg class="animate-spin size-6 text-emerald-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <svg class="animate-spin size-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                     <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                 </svg>
@@ -75,7 +75,7 @@
                             <div class="mb-3">
                                 <button wire:click="$dispatch('openProductModal', { productId: {{ $product->id }} })" class="text-left">
                                     <div class="line-clamp-3">
-                                        <span class="text-sm font-medium text-gray-900 hover:text-emerald-600 transition-colors duration-200">{{ $product->translated_name }}</span>
+                                        <span class="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors duration-200">{{ $product->translated_name }}</span>
                                         <span class="text-sm text-gray-500">{{ $product->translated_description }}</span>
                                     </div>
                                 </button>
@@ -83,13 +83,29 @@
                             <div class="flex items-center justify-between mt-3">
                                 <div>
                                     @if($product->prices->isNotEmpty())
-                                        <p class="text-xl font-semibold text-emerald-600">
+                                        <p class="text-xl font-semibold text-blue-600">
                                             {{ $product->prices->first()->getFormattedPrice() }}
                                         </p>
                                     @else
                                         <p class="text-xl font-semibold text-gray-400">Price not available</p>
                                     @endif
                                 </div>
+                            </div>
+
+                            <!-- Add to Cart Button -->
+                            <div class="mt-auto pt-4">
+                                <button
+                                    @click="$store.cart.addItem({{ json_encode($product) }}, 1);"
+                                    class=" w-full flex items-center justify-center gap-2 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-px transition-all duration-300 focus:outline-none "
+                                    aria-label="{{ __('Add to cart') }}"
+                                >
+                                    <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                                        <path d="M3 3h2l.4 2M7 13h10l4-8H5.4" stroke-linecap="round" stroke-linejoin="round"/>
+                                        <circle cx="7" cy="21" r="1" />
+                                        <circle cx="17" cy="21" r="1" />
+                                    </svg>
+                                    {{ __('Add to Cart') }}
+                                </button>
                             </div>
                         </div>
                     </div>
@@ -115,7 +131,7 @@
     </div>
 
     <!-- Product Modal -->
-    <livewire:product-modal-component />
+    <livewire:frontend.product-modal-component />
 
     <style>
         .line-clamp-3 {

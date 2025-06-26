@@ -37,5 +37,10 @@ class AppServiceProvider extends ServiceProvider
             ->middleware(['web', 'auth', 'role.redirect'])
             ->name('subdomain.')
             ->group(base_path('routes/subdomain.php'));
+
+        // Force HTTPS in production
+        if (app()->environment('production') && !app()->environment('local')) {
+            \URL::forceScheme('https');
+        }
     }
 }

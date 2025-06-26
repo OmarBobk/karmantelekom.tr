@@ -27,20 +27,33 @@ trait Searchable
                                 string  $needle,
                                 string  $orderByColumn,
                                 string  $orderByDirection = 'asc',
+                                bool $table = false
     ): ?Builder
     {
         if ($this->searchable_columns == null) {
             return null;
         }
 
-        // $this->searchable_columns = ['id', 'code'];
-        $searchableColumns = array_map(function ($column) use ($builder) {
-            return "`{$this->getTable()}`" . ".`$column`";
-        }, $this->searchable_columns);
-        // $searchableColumns = [
-        //      0 => "`products`.`id`"
-        //      1 => "`products`.`code`"
-        //  ]
+        if ($table) {
+            // $this->searchable_columns = ['id', 'code'];
+            $searchableColumns = array_map(function ($column) use ($builder, $table) {
+                return "$column";
+            }, $this->searchable_columns);
+
+            // $searchableColumns = [
+            //      0 => "`products`.`id`"
+            //      1 => "`orders`.`code`"
+            //  ]
+        } else {
+            // $this->searchable_columns = ['id', 'code'];
+            $searchableColumns = array_map(function ($column) use ($builder) {
+                return "`{$this->getTable()}`" . ".`$column`";
+            }, $this->searchable_columns);
+            // $searchableColumns = [
+            //      0 => "`products`.`id`"
+            //      1 => "`products`.`code`"
+            //  ]
+        }
 
         $queryString = $this->buildQuery($searchableColumns, $needle);
         // $queryString = '`products`.`id` LIKE %search% OR

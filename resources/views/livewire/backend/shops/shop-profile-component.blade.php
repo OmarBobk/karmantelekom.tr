@@ -10,7 +10,7 @@
     ];
     $links = $shop->links ?? [];
 @endphp
-<div class="max-w-7xl mx-auto p-6 space-y-8">
+<div class="max-w-7xl mx-auto space-y-8">
     {{-- Shop Header --}}
     <div class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl py-6 px-8 text-white shadow-lg flex flex-col md:flex-row md:items-center md:justify-between min-h-[96px]">
         {{-- Shop Header left section --}}
@@ -59,18 +59,18 @@
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <x-metric-card
             title="Total Revenue"
-            :value="'$12,450.75'"
+            :value="$metrics['revenue'] . ' ₺'"
             icon="currency-dollar"
             trend='<span class="ml-2 px-3 py-1 rounded-full text-sm font-semibold bg-green-100 text-green-700 flex items-center gap-1"><svg class="w-4 h-4 inline" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M5 10l7-7m0 0l7 7m-7-7v18" stroke-linecap="round" stroke-linejoin="round"/></svg>+12.5%</span>'>
-            <span class="text-gray-500">This month</span>
+            <span class="text-gray-500">All Time</span>
         </x-metric-card>
         <x-metric-card
             title="Total Orders"
-            :value="'190'"
+            :value="$metrics['orders']"
             icon="clipboard-list"
-            trend="<span class='ml-2 px-3 py-1 rounded-full text-sm font-semibold bg-blue-100 text-blue-700'>45 active</span>"
+            trend="<span class='ml-2 px-3 py-1 rounded-full text-sm font-semibold bg-blue-100 text-blue-700'>{{$metrics['active_orders']}} active</span>"
         >
-            <span class="text-gray-500">Avg: $145.25</span>
+            <span class="text-gray-500">Avg: {{$metrics['avg'] . ' ₺'}}</span>
         </x-metric-card>
         <x-metric-card
             title="Customer Rating"
@@ -192,7 +192,7 @@
                     ],
                 ];
             @endphp
-            @foreach($products as $i => $product)
+            @foreach($top_products as $i => $product)
                 <div
                     x-data="{hover:false}"
                     @mouseenter="hover=true" @mouseleave="hover=false"
@@ -207,14 +207,14 @@
                         </span>
                     </div>
                     <div class="ml-6 flex-1">
-                        <div class="font-bold text-xl text-gray-900">{{ $product['name'] }}</div>
-                        <div class="text-gray-500 text-base mt-1">{{ $product['orders_count'] }} orders this month</div>
+                        <div class="font-bold text-xl text-gray-900">{{ $product->product->name }}</div>
+                        <div class="text-gray-500 text-base mt-1">{{ $product->total_quantity }} orders this month</div>
                     </div>
                     <div class="flex items-center gap-6 ml-auto">
-                        {!! $trendLabels[$product['trend']] !!}
+                        {!! $trendLabels['trending'] !!}
                         <div class="w-48 h-3 bg-gray-200 rounded-full overflow-hidden">
                             <div class="h-3 rounded-full"
-                                style="background: linear-gradient(90deg, #4264fa 0%, #3b82f6 100%); width: {{ $product['progress'] }}%;">
+                                style="background: linear-gradient(90deg, #4264fa 0%, #3b82f6 100%); width: 100%;">
                             </div>
                         </div>
                     </div>
@@ -260,7 +260,7 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($orders as $order)
+                    @forelse($orders_table as $order)
                         <tr>
                             <td class="py-2 px-4">{{ $order->order_number }}</td>
                             <td class="py-2 px-4">{{ $order->items_count }}</td>
@@ -282,7 +282,7 @@
             </table>
         </div>
         <div class="mt-4">
-            {{ $orders->links() }}
+            {{ $orders_table->links() }}
         </div>
     </div>
 </div>

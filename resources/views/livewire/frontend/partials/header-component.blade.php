@@ -63,6 +63,9 @@ class="relative">
     <nav class="hidden lg:block border-t border-b border-gray-100">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div class="flex h-12 items-center justify-start space-x-8">
+                <a href="{{ route('products', ['category' => 'all']) }}" class="flex items-center text-md font-medium text-gray-700 hover:text-blue-600 transition-colors duration-200">
+                    All
+                </a>
                 @foreach($categories as $category)
                     <div x-data="{ open: false }" class="relative py-4">
                         <button @mouseover="open = true" @mouseleave="open = false" class="flex items-center text-md font-medium text-gray-700 hover:text-blue-600 transition-colors duration-200">
