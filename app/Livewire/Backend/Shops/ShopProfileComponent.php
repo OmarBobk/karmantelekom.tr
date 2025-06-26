@@ -52,18 +52,16 @@ class ShopProfileComponent extends Component
             ->with('product:id,name') // eager load product details
             ->limit(3)
             ->get();
-
-
-        $orders = $this->shop->orders();
-        $orders_table = $orders
+        
+        $orders_table = $this->shop->orders()
             ->when($this->search, fn($q) => $q->where('customer_name', 'like', "%{$this->search}%"))
             ->when($this->statusFilter !== 'all', fn($q) => $q->where('status', $this->statusFilter))
             ->latest()
             ->paginate(10);
 
-        $sum_total_price = $orders->sum('total_price');
-        $orders_count = $orders->count();
-        $active_orders = $orders;
+        $sum_total_price = $this->shop->orders()->sum('total_price');
+        $orders_count = $this->shop->orders()->count();
+        $active_orders = $this->shop->orders();
         $metrics = [
             'revenue' => number_format((float) $sum_total_price, 2, '.', ','),
             'orders' => $orders_count,
@@ -73,7 +71,7 @@ class ShopProfileComponent extends Component
             'avg' => number_format(($sum_total_price / $orders_count), 2, '.', ','), // $this->shop->delivery_success_rate,
         ];
 
-        $statusCounts = $orders
+        $statusCounts = $this->shop->orders()
             ->selectRaw('status, count(*) as count, MAX(created_at) as latest')
             ->groupBy('status')
             ->orderByDesc('latest')
