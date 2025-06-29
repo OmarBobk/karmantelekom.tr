@@ -20,3 +20,6 @@ yarn-error.log
 /.nova
 /.vscode
 /.zed
+/storage/*
+!/storage/app
+!/storage/app/public
