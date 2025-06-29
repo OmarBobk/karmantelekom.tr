@@ -13,6 +13,7 @@
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     </head>
     <body class="min-h-screen bg-gray-100">
+
         <!-- Notification Component -->
         <div
             x-data="{
@@ -269,7 +270,9 @@
                             </div>
 
                             <!-- Profile Dropdown -->
-                            <div class="flex items-center">
+                            <div class="flex items-center gap-4">
+                                <!-- Notification Bell Dropdown -->
+                                <livewire:backend.partials.notification-dropdown />
                                 <div x-data="{ open: false }" class="relative">
                                     <button
                                         @click="open = !open"

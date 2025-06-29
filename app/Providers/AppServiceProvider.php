@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Models\User;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 use App\Services\CurrencyService;
+use Spatie\Activitylog\Models\Activity;
 
 class AppServiceProvider extends ServiceProvider
 {
@@ -18,6 +20,10 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(CurrencyService::class, function ($app) {
             return new CurrencyService();
         });
+
+        $this->app->singleton(\App\Services\NotificationRecipientsService::class, function ($app) {
+            return new \App\Services\NotificationRecipientsService();
+        });
     }
 
     /**
@@ -28,6 +34,17 @@ class AppServiceProvider extends ServiceProvider
 //        if (Str::startsWith(request()->uri()->host(), 'sub.') && !Auth::check()) {
 //            abort(Response::redirectTo(config('app.url') . '/404'));
 //        }
+
+        // Register event listeners
+//        $this->registerEventListeners();
+
+//        Activity::created(function ($activity) {
+//            $recipient = User::whereId(1)->first();
+//
+//            if ($recipient) {
+//                $recipient->notify(new \App\Notifications\NewActivityLogged($activity));
+//            }
+//        });
 
         if (app()->environment('local')) {
             config(['cache.default' => 'array']);
@@ -43,4 +60,20 @@ class AppServiceProvider extends ServiceProvider
             \URL::forceScheme('https');
         }
     }
+
+    /**
+     * Register event listeners for the application.
+     */
+//    private function registerEventListeners(): void
+//    {
+//        \Illuminate\Support\Facades\Event::listen(
+//            \App\Events\OrderCreated::class,
+//            \App\Listeners\HandleOrderCreated::class
+//        );
+//
+//        \Illuminate\Support\Facades\Event::listen(
+//            \App\Events\OrderUpdated::class,
+//            \App\Listeners\HandleOrderUpdated::class
+//        );
+//    }
 }

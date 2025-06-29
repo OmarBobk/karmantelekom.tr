@@ -52,7 +52,7 @@ class ShopProfileComponent extends Component
             ->with('product:id,name') // eager load product details
             ->limit(3)
             ->get();
-        
+
         $orders_table = $this->shop->orders()
             ->when($this->search, fn($q) => $q->where('customer_name', 'like', "%{$this->search}%"))
             ->when($this->statusFilter !== 'all', fn($q) => $q->where('status', $this->statusFilter))

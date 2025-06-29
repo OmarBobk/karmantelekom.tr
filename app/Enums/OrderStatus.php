@@ -10,7 +10,7 @@ enum OrderStatus: string
     case READY = 'ready';
     case DELIVERING = 'delivering';
     case DELIVERED = 'delivered';
-    case CANCELLED = 'cancelled';
+    case CANCELED = 'canceled';
 
     public static function values(): array
     {
@@ -20,14 +20,80 @@ enum OrderStatus: string
     public function getBackgroundColor(): string
     {
         return match($this) {
-            self::PENDING => 'bg-yellow-100 text-yellow-800',
-            self::CONFIRMED => 'bg-blue-100 text-blue-800',
-            self::PROCESSING => 'bg-purple-100 text-purple-800',
-            self::READY => 'bg-green-100 text-green-800',
-            self::DELIVERING => 'bg-indigo-100 text-indigo-800',
-            self::DELIVERED => 'bg-emerald-100 text-emerald-800',
-            self::CANCELLED => 'bg-red-100 text-red-800',
-            default => 'bg-gray-100 text-gray-800'
+            self::PENDING => 'bg-yellow-100',
+            self::CONFIRMED => 'bg-blue-100',
+            self::PROCESSING => 'bg-purple-100',
+            self::READY => 'bg-green-100',
+            self::DELIVERING => 'bg-indigo-100',
+            self::DELIVERED => 'bg-emerald-100',
+            self::CANCELED => 'bg-red-100',
+            default => 'bg-gray-100'
+        };
+    }
+
+    public function getTextColor(): string
+    {
+        return match($this) {
+            self::PENDING => 'text-yellow-800',
+            self::CONFIRMED => 'text-blue-800',
+            self::PROCESSING => 'text-purple-800',
+            self::READY => 'text-green-800',
+            self::DELIVERING => 'text-indigo-800',
+            self::DELIVERED => 'text-emerald-800',
+            self::CANCELED => 'text-red-800',
+            default => 'text-gray-800'
+        };
+    }
+
+    public function label(): string
+    {
+        return match($this) {
+            self::PENDING => 'Pending',
+            self::CONFIRMED => 'Confirmed',
+            self::PROCESSING => 'Processing',
+            self::READY => 'Ready',
+            self::DELIVERING => 'Delivering',
+            self::DELIVERED => 'Delivered',
+            self::CANCELED => 'Canceled',
+        };
+    }
+
+    public function description(): string
+    {
+        return match($this) {
+            self::PENDING => 'Awaiting confirmation',
+            self::CONFIRMED => 'Order has been confirmed',
+            self::PROCESSING => 'Being prepared for shipment',
+            self::READY => 'Ready for pickup or delivery',
+            self::DELIVERING => 'Out for delivery',
+            self::DELIVERED => 'Order delivered',
+            self::CANCELED => 'Order canceled',
+        };
+    }
+
+    public function icon(): string
+    {
+        return match($this) {
+            self::PENDING => '<svg class="w-6 h-6 text-yellow-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="2"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6l4 2"/></svg>',
+            self::CONFIRMED => '<svg class="w-6 h-6 text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>',
+            self::PROCESSING => '<svg class="w-6 h-6 text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10" stroke-width="2"/><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6l4 2"/></svg>',
+            self::READY => '<svg class="w-6 h-6 text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>',
+            self::DELIVERING => '<svg class="w-6 h-6 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h1l2 7h13l2-7h1"/></svg>',
+            self::DELIVERED => '<svg class="w-6 h-6 text-emerald-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>',
+            self::CANCELED => '<svg class="w-6 h-6 text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/></svg>',
+        };
+    }
+
+    public function colorClasses(): string
+    {
+        return match($this) {
+            self::PENDING => 'bg-yellow-50 text-yellow-700 ring-yellow-200',
+            self::CONFIRMED => 'bg-blue-50 text-blue-700 ring-blue-200',
+            self::PROCESSING => 'bg-purple-50 text-purple-700 ring-purple-200',
+            self::READY => 'bg-green-50 text-green-700 ring-green-200',
+            self::DELIVERING => 'bg-indigo-50 text-indigo-700 ring-indigo-200',
+            self::DELIVERED => 'bg-emerald-50 text-emerald-700 ring-emerald-200',
+            self::CANCELED => 'bg-red-50 text-red-700 ring-red-200',
         };
     }
 }

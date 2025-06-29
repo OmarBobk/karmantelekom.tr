@@ -1,147 +1,200 @@
 <div>
-    <div class="flex justify-between items-center mb-4">
-        <h1 class="text-2xl font-bold text-gray-800">Orders Manager</h1>
-        <div class="flex space-x-2 items-center">
-            <!-- Search -->
-            <div class="relative">
-                <input
-                    wire:model.live.debounce.300ms="search"
-                    type="text"
-                    placeholder="Search by order ID, shop, or salesperson..."
-                    class="w-64 px-10 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500"
-                />
-                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                    <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                    </svg>
-                </div>
-                @if($search)
-                    <button
-                        wire:click="$set('search', '')"
-                        class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-                    >
-                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+    <div class="bg-white rounded-3xl shadow-lg border border-gray-100">
+        <div class="flex flex-col md:flex-row md:items-center md:justify-between px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-white to-gray-50">
+            <h1 class="text-2xl font-extrabold text-gray-900 tracking-tight">Orders Manager</h1>
+            <div class="flex flex-wrap gap-2 mt-4 md:mt-0 md:gap-4 items-center">
+                <!-- Search -->
+                <div class="relative">
+                    <input
+                        wire:model.live.debounce.300ms="search"
+                        type="text"
+                        placeholder="Search by order ID, shop, or salesperson..."
+                        class="w-64 pl-10 pr-8 py-2 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 text-gray-700 placeholder-gray-400 shadow-sm transition"
+                    />
+                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                         </svg>
-                    </button>
-                @endif
+                    </div>
+                    @if($search)
+                        <button
+                            wire:click="$set('search', '')"
+                            class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                        >
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    @endif
+                </div>
+                <!-- Date Range Filter -->
+                <div class="flex items-center gap-2">
+                    <input
+                        type="date"
+                        wire:model.live="fromDate"
+                        class="rounded-xl border-gray-200 bg-gray-50 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 px-3 py-2 text-gray-700 shadow-sm w-36"
+                        placeholder="From"
+                    />
+                    <span class="text-gray-400">-</span>
+                    <input
+                        type="date"
+                        wire:model.live="toDate"
+                        class="rounded-xl border-gray-200 bg-gray-50 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 px-3 py-2 text-gray-700 shadow-sm w-36"
+                        placeholder="To"
+                    />
+                </div>
+                <!-- Status Filter -->
+                <select
+                    wire:model.live="statusFilter"
+                    class="rounded-xl border-gray-200 bg-gray-50 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 px-3 py-2 text-gray-700 shadow-sm"
+                >
+                    <option value="">All Statuses</option>
+                    @foreach($statuses as $status)
+                        <option value="{{ $status->value }}">{{ ucfirst($status->value) }}</option>
+                    @endforeach
+                </select>
+                <!-- Bulk Actions -->
+                <select
+                    wire:model="bulkAction"
+                    class="rounded-xl border-gray-200 bg-gray-50 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 px-3 py-2 text-gray-700 shadow-sm"
+                >
+                    <option value="">Bulk Actions</option>
+                    <option value="delete">Delete</option>
+                    <option value="export">Export</option>
+                </select>
+                <button
+                    wire:click="confirmBulkAction"
+                    wire:loading.attr="disabled"
+                    class="px-4 py-2 bg-indigo-600 text-white rounded-xl font-semibold shadow hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition"
+                >
+                    Apply
+                </button>
             </div>
-            <!-- Status Filter -->
-            <select
-                wire:model.live="statusFilter"
-                class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 px-3 py-2"
-            >
-                <option value="">All Statuses</option>
-                @foreach($statuses as $status)
-                    <option value="{{ $status->value }}">{{ ucfirst($status->value) }}</option>
-                @endforeach
-            </select>
-            <!-- Bulk Actions -->
-            <select
-                wire:model="bulkAction"
-                class="rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-            >
-                <option value="">Bulk Actions</option>
-                <option value="delete">Delete</option>
-                <option value="export">Export</option>
-            </select>
-            <button
-                wire:click="confirmBulkAction"
-                wire:loading.attr="disabled"
-                class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-            >
-                Apply
-            </button>
         </div>
-    </div>
 
-    <div class="bg-white shadow-sm rounded-lg overflow-hidden">
-        <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
+        <div class="">
+            <table class="min-w-full divide-y divide-gray-100">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">
                             <input
                                 type="checkbox"
                                 wire:model="selectAll"
-                                class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-400 focus:ring-indigo-200"
                             />
                         </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Order ID
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Shop
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Salesperson
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Total
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Status
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Date
-                        </th>
-                        <th scope="col" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                            Actions
-                        </th>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Order</th>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Salesperson</th>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Shop</th>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Total</th>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Date</th>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody class="bg-white divide-y divide-gray-100">
                     @forelse ($orders as $order)
                         @can('view', $order->shop)
-                            <tr>
+                            <tr class="hover:bg-indigo-50/30 transition">
                                 <td class="px-6 py-4 whitespace-nowrap">
                                     <input
                                         type="checkbox"
                                         wire:model="selectedOrders"
                                         value="{{ $order->id }}"
-                                        class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                                        class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-400 focus:ring-indigo-200"
                                     />
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    {{ $order->id }}
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
+                                    <span class="inline-flex items-center gap-2">
+                                        #{{ $order->id }}
+                                    </span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    <a href="{{ route('subdomain.shop', ['shop' => $order->shop->id]) }}" target="_blank" class="text-indigo-600 hover:underline">
-                                        {{ $order->shop->name }}
-                                    </a>
+                                    <div class="flex items-center gap-3">
+                                        <img src="https://ui-avatars.com/api/?name={{ urlencode($order->salesperson->name) }}&background=4f46e5&color=fff&size=32" alt="{{ $order->salesperson->name }}" class="w-8 h-8 rounded-full shadow border border-white" />
+                                        <div>
+                                            <div class="font-semibold">{{ $order->salesperson->name }}</div>
+                                            <div class="text-xs text-gray-400">{{ $order->salesperson->email }}</div>
+                                        </div>
+                                    </div>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    {{ $order->salesperson->name }}
+                                    <div class="flex items-center gap-3">
+                                        <div>
+                                            <a href="{{ route('subdomain.shop', ['shop' => $order->shop->id]) }}" target="_blank" class="text-indigo-600 hover:underline font-semibold">{{ $order->shop->name }}</a>
+                                        </div>
+                                    </div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    ${{ number_format($order->total_price, 2) }}
+                                <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-600">
+                                    {{ number_format($order->total_price, 2) }} TL
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                <span class="px-2 py-1 text-xs rounded-full {{ $order->status->getBackgroundColor() }}">
-                                    {{ ucfirst($order->status->value) }}
-                                </span>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                    <div class="relative" x-data="{ open: false }" @keydown.escape.window="open = false" @click.away="open = false">
+                                        <button type="button"
+                                            @click="open = !open"
+                                            class="w-48 flex items-center justify-between px-4 py-3 rounded-2xl border-2 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition {{ $order->status->colorClasses() }} shadow-sm"
+                                            :aria-expanded="open"
+                                        >
+                                            <div class="flex items-center gap-3">
+                                                {!! $order->status->icon() !!}
+                                                <div class="flex flex-col text-left">
+                                                    <span class="font-bold text-base">{{ $order->status->label() }}</span>
+                                                </div>
+                                            </div>
+                                            <svg class="ml-2 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                            </svg>
+                                        </button>
+                                        <div x-show="open" x-transition.origin.top.left class="absolute z-30 mt-2 w-72 rounded-2xl shadow-2xl bg-white ring-1 ring-black ring-opacity-5 focus:outline-none" style="display: none;">
+                                            <div class="py-2 max-h-96 overflow-y-auto">
+                                                @foreach($availableStatuses as $status)
+                                                    <button type="button"
+                                                        wire:click="updateOrderStatus({{ $order->id }}, '{{ $status->value }}')"
+                                                        @click="open = false"
+                                                        class="w-full flex items-center gap-3 px-4 py-3 mb-1 transition font-semibold focus:outline-none {{ $status->colorClasses() }} {{ $order->status->value === $status->value ? 'ring-2 ring-indigo-400 border border-indigo-200' : 'hover:bg-gray-50' }}"
+                                                    >
+                                                        {!! $status->icon() !!}
+                                                        <div class="flex flex-col text-left flex-1">
+                                                            <span class="font-bold text-base">{{ $status->label() }}</span>
+                                                            <span class="text-xs text-gray-500">{{ $status->description() }}</span>
+                                                        </div>
+                                                        @if($order->status->value === $status->value)
+                                                            <svg class="w-5 h-5 text-green-500 ml-2" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/></svg>
+                                                        @endif
+                                                    </button>
+                                                @endforeach
+                                            </div>
+                                        </div>
+                                    </div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    {{ $order->created_at->format('d-m-Y') }}
-                                </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    <button
-                                        wire:click="showOrderDetails({{ $order->id }})"
-                                        class="inline-flex items-center px-3 py-1 border border-transparent text-xs leading-4 font-medium rounded-md text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200"
-                                    >
-                                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                    <span class="inline-flex items-center gap-1">
+                                        <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                                         </svg>
-                                        View
-                                    </button>
+                                        {{ $order->created_at->format('d-m-Y') }}
+                                    </span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    <div class="flex gap-2">
+                                        <button
+                                            wire:click="showOrderDetails({{ $order->id }})"
+                                            class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-transparent hover:border-indigo-200 transition"
+                                            title="View Order"
+                                        >
+                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                                            </svg>
+                                        </button>
+                                        <!-- Add more action buttons here if needed -->
+                                    </div>
                                 </td>
                             </tr>
-
                         @endcan
                     @empty
                         <tr>
-                            <td colspan="6" class="px-6 py-4 text-center text-sm text-gray-500">
+                            <td colspan="8" class="px-6 py-4 text-center text-sm text-gray-400">
                                 No orders found.
                             </td>
                         </tr>
@@ -149,7 +202,7 @@
                 </tbody>
             </table>
         </div>
-        <div class="px-6 py-4 bg-gray-50 border-t border-gray-200">
+        <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 rounded-b-3xl">
             {{ $orders->links() }}
         </div>
     </div>
@@ -214,7 +267,7 @@
                             <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
                                 Order Details #{{ $selectedOrder?->id }}
                             </h3>
-                            
+
                             @if($selectedOrder)
                             <div class="space-y-6">
                                 <!-- Order Information -->
@@ -236,9 +289,38 @@
                                         </div>
                                         <div>
                                             <span class="font-medium text-gray-700">Status:</span>
-                                            <span class="ml-2 px-2 py-1 text-xs rounded-full {{ $selectedOrder->status->getBackgroundColor() }}">
-                                                {{ ucfirst($selectedOrder->status->value) }}
-                                            </span>
+                                            <div class="ml-2 relative" x-data="{ open: false }" @keydown.escape.window="open = false" @click.away="open = false">
+                                                <button type="button"
+                                                    @click="open = !open"
+                                                    class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 transition {{ $selectedOrder->status->getBackgroundColor() }}"
+                                                    :aria-expanded="open"
+                                                >
+                                                    {{ ucfirst($selectedOrder->status->value) }}
+                                                    <svg class="ml-2 h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                                    </svg>
+                                                </button>
+                                                <div x-show="open" class="absolute z-20 mt-2 w-40 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none" style="display: none;">
+                                                    <div class="py-1">
+                                                        @foreach($availableStatuses as $status)
+                                                            <button type="button"
+                                                                wire:click="updateOrderStatus({{ $selectedOrder->id }}, '{{ $status->value }}')"
+                                                                @click="open = false"
+                                                                class="w-full text-left px-4 py-2 text-xs rounded-full mb-1 font-semibold focus:outline-none transition {{ $status->getBackgroundColor() }} {{ $selectedOrder->status->value === $status->value ? 'ring-2 ring-indigo-400' : '' }}"
+                                                                style="margin-bottom: 0.25rem;"
+                                                            >
+                                                                {{ ucfirst($status->value) }}
+                                                            </button>
+                                                        @endforeach
+                                                    </div>
+                                                </div>
+                                                <div wire:loading wire:target="updateOrderStatus" class="inline-block ml-2">
+                                                    <svg class="animate-spin h-4 w-4 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                                    </svg>
+                                                </div>
+                                            </div>
                                         </div>
                                         <div>
                                             <span class="font-medium text-gray-700">Date:</span>
@@ -246,7 +328,7 @@
                                         </div>
                                         <div class="md:col-span-2">
                                             <span class="font-medium text-gray-700">Total:</span>
-                                            <span class="ml-2 text-lg font-bold text-green-600">${{ number_format($selectedOrder->total_price, 2) }}</span>
+                                            <span class="ml-2 text-lg font-bold text-green-600">{{ number_format($selectedOrder->total_price, 2) }} TL</span>
                                         </div>
                                     </div>
                                 </div>
@@ -350,10 +432,10 @@
         // Ensure HTTPS is used
         let url = event.detail.url;
         // Only force HTTPS if not in local development
-        const isLocalDev = window.location.hostname === 'localhost' || 
-                           window.location.hostname.includes('.local') || 
+        const isLocalDev = window.location.hostname === 'localhost' ||
+                           window.location.hostname.includes('.local') ||
                            window.location.hostname.includes('dev.bobk');
-        
+
         if (!isLocalDev && window.location.protocol === 'https:' && url.startsWith('http:')) {
             url = url.replace('http:', 'https:');
         }

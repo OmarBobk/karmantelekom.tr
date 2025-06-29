@@ -20,8 +20,7 @@ class="relative">
                 </div>
                 <!-- Logo -->
                 <a href="{{ route('main') }}" class="text-2xl font-bold tracking-tight ml-4 lg:ml-0">
-                    <span class="text-gray-900">WINDS</span>
-                    <span class="text-blue-600">OF ROSES</span>
+                    <span class="text-blue-600">İndirim<span class="text-gray-900">Go</span></span>
                 </a>
             </div>
 
@@ -38,6 +37,12 @@ class="relative">
 {{--                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-heart-icon lucide-heart"><path d="M19 14c1.49-1.46 3-3.21 3-5.5A5.5 5.5 0 0 0 16.5 3c-1.76 0-3 .5-4.5 2-1.5-1.5-2.74-2-4.5-2A5.5 5.5 0 0 0 2 8.5c0 2.3 1.5 4.05 3 5.5l7 7Z"/></svg>--}}
 {{--                    </button>--}}
 {{--                </div>--}}
+
+                <!-- Notifications Bell (for authenticated users with admin/salesperson roles) -->
+                @hasanyrole('admin|salesperson')
+                    <livewire:frontend.partials.notification-bell />
+                @endhasanyrole
+
                 <!-- Cart Component -->
                 @livewire('frontend.cart.cart-component')
 

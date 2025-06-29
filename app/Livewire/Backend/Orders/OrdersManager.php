@@ -7,6 +7,7 @@ use App\Enums\OrderStatus;
 use App\Models\Shop;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Pagination\LengthAwarePaginator;
+use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -27,10 +28,14 @@ class OrdersManager extends Component
     public string $search = '';
     public ?Order $selectedOrder = null;
     public bool $showOrderDetailsModal = false;
+    public string $fromDate = '';
+    public string $toDate = '';
 
     protected array $queryString = [
         'statusFilter' => ['except' => ''],
         'search' => ['except' => ''],
+        'fromDate' => ['except' => ''],
+        'toDate' => ['except' => ''],
     ];
 
     public function updatingStatusFilter(): void
@@ -59,6 +64,12 @@ class OrdersManager extends Component
                 ->when($this->statusFilter, function ($query) {
                     $query->where('status', $this->statusFilter);
                 })
+                ->when($this->fromDate, function ($query) {
+                    $query->whereDate('created_at', '>=', \Carbon\Carbon::parse($this->fromDate)->toDateString());
+                })
+                ->when($this->toDate, function ($query) {
+                    $query->whereDate('created_at', '<=', \Carbon\Carbon::parse($this->toDate)->toDateString());
+                })
                 ->paginate(10);
         } catch (Throwable $e) {
             $this->dispatch('notify', [
@@ -78,6 +89,7 @@ class OrdersManager extends Component
         return view('livewire.backend.orders.orders-manager', [
             'orders' => $this->orders,
             'statuses' => $statuses,
+            'availableStatuses' => $this->getAvailableStatuses(),
         ]);
     }
 
@@ -134,6 +146,60 @@ class OrdersManager extends Component
     {
         $this->showOrderDetailsModal = false;
         $this->selectedOrder = null;
+    }
+
+    public function updateOrderStatus($orderId, $newStatus): void
+    {
+        try {
+            // Validate the new status
+            if (!in_array($newStatus, OrderStatus::values())) {
+                $this->dispatch('notify', [
+                    'type' => 'error',
+                    'message' => 'Invalid order status provided.'
+                ]);
+                return;
+            }
+
+            $order = Order::findOrFail($orderId);
+
+            // Check if user has permission to update this order
+            if (!auth()->user()->can('update', $order)) {
+                $this->dispatch('notify', [
+                    'type' => 'error',
+                    'message' => 'You do not have permission to update this order.'
+                ]);
+                return;
+            }
+
+            $oldStatus = $order->status->value;
+            $originalData = $order->toArray();
+
+            $order->update(['status' => $newStatus]);
+
+            // Dispatch OrderUpdated event
+            \App\Events\OrderUpdated::dispatch($order, $originalData);
+
+            // Refresh selectedOrder if it's currently being viewed
+            if ($this->selectedOrder && $this->selectedOrder->id === $order->id) {
+                $this->selectedOrder = $order->fresh(['items.product', 'shop', 'salesperson']);
+            }
+
+            $this->dispatch('notify', [
+                'type' => 'success',
+                'message' => "Order #{$order->id} status updated from " . ucfirst($oldStatus) . " to " . ucfirst($newStatus)
+            ]);
+
+        } catch (Throwable $e) {
+            $this->dispatch('notify', [
+                'type' => 'error',
+                'message' => 'Failed to update order status: ' . $e->getMessage()
+            ]);
+        }
+    }
+
+    public function getAvailableStatuses(): array
+    {
+        return OrderStatus::cases();
     }
 
     public function exportOrderToPdf($orderId): void
