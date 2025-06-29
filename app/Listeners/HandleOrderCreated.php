@@ -54,8 +54,15 @@ class HandleOrderCreated implements ShouldQueue
             if (auth()->check()) {
                 $activityLogger->causedBy(auth()->user());
             }
+            Log::info('Order created event handled successfully', [
+                'order_id' => $order->id,
+                'shop_id' => $order->shop_id,
+                'total_price' => $order->total_price,
+                'status' => $order->status->value,
+                'notes' => $order->notes,
+            ]);
 
-            $activityLogger->log("Order #{$order->id} has been created with status '{$order->status->label()}' for " . number_format($order->total_price, 2));
+            $activityLogger->log("Order #{$order->id} has been created with status '{$order->status->label()}' for " . number_format((float) $order->total_price, 2));
 
             // Send notification to resolved recipients
             $recipients = $this->recipientsService->resolveNotificationRecipientsFor($order, excludeCauser: true);
@@ -84,4 +91,4 @@ class HandleOrderCreated implements ShouldQueue
             ]);
         }
     }
-} 
+}

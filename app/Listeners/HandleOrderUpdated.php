@@ -29,8 +29,6 @@ class HandleOrderUpdated implements ShouldQueue
     public function __construct(
         private NotificationRecipientsService $recipientsService
     ) {
-
-        Log::info('HandleOrderUpdated listener created');
     }
 
     /**
@@ -123,8 +121,8 @@ class HandleOrderUpdated implements ShouldQueue
                     $descriptions[] = "status changed from {$oldStatus} to {$newStatus}";
                     break;
                 case 'total_price':
-                    $oldTotal = number_format($change['old'], 2);
-                    $newTotal = number_format($change['new'], 2);
+                    $oldTotal = number_format((float) $change['old'], 2);
+                    $newTotal = number_format((float) $change['new'], 2);
                     $descriptions[] = "total changed from {$oldTotal} to {$newTotal}";
                     break;
                 case 'shop_id':
