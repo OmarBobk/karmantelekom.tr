@@ -46,14 +46,14 @@
              x-transition:leave="transition-opacity ease-linear duration-300"
              x-transition:leave-start="opacity-100"
              x-transition:leave-end="opacity-0"
-             class="fixed inset-0 bg-gray-900/80"
+             class="fixed inset-0 bg-gray-900/80 h-screen"
              @click="toggleCart()"
              aria-hidden="true">
         </div>
 
         <div
              x-show="showCart"
-             class="fixed inset-y-0 right-0 max-w-full flex bg-white shadow-lg"
+             class="fixed inset-y-0 right-0 max-w-full flex bg-white shadow-lg h-screen"
              x-transition:enter="transition ease-in-out duration-300 transform"
              x-transition:enter-start="translate-x-full"
              x-transition:enter-end="translate-x-0"

@@ -46,7 +46,6 @@ class="relative">
                 <!-- Cart Component -->
                 @livewire('frontend.cart.cart-component')
 
-
                 <!-- Profile/Auth Section -->
                 @guest
                     @include('livewire.frontend.partials.guest-menu')
@@ -120,7 +119,7 @@ class="relative">
              x-transition:leave="transition-opacity ease-linear duration-300"
              x-transition:leave-start="opacity-100"
              x-transition:leave-end="opacity-0"
-             class="fixed inset-0 bg-gray-900/80"
+             class="fixed inset-0 bg-gray-900/80 h-screen"
              @click="sidebarOpen = false"
              aria-hidden="true">
         </div>
@@ -133,7 +132,7 @@ class="relative">
              x-transition:leave="transition ease-in-out duration-300 transform"
              x-transition:leave-start="translate-x-0"
              x-transition:leave-end="{{ app()->getLocale() === 'ar' ? 'translate-x-full' : '-translate-x-full' }}"
-             class="fixed inset-y-0 {{ app()->getLocale() == 'ar' ? 'right-0' : 'left-0' }} w-full max-w-xs bg-white shadow-lg overflow-y-auto">
+             class="fixed inset-y-0 {{ app()->getLocale() == 'ar' ? 'right-0' : 'left-0' }} w-full max-w-xs bg-white shadow-lg overflow-y-auto h-screen">
 
             <!-- Sidebar Header -->
             <div class="flex items-center justify-between py-6 {{app()->getLocale() == 'ar' ? 'pl-8 pr-10' : 'pl-10 pr-8'}} border-b border-gray-100">
