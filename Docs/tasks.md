@@ -42,4 +42,4 @@
 
 
 ###BUGS:
-- **TODO**: 
+- **TODO**: You can not clear the cart if user not logged in.'

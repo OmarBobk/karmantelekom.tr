@@ -64,9 +64,20 @@ class CartComponent extends Component
     #[On('clear-cart')]
     public function handleClearCart(): void
     {
-
         $user_id = auth()->id();
-        CartFacade::clearCart($user_id, null);
+        try {
+            if (!$user_id) {
+                Log::info('User is not authenticated, skipping cart clear User ID: ' . $user_id);
+                return;
+            } else {
+                CartFacade::clearCart($user_id, null);
+            }
+        } catch (\Exception $e) {
+            Log::error('Error Clearing cart', [
+                'user_id' => $user_id,
+                'error' => $e->getMessage()
+            ]);
+        }
 
     }
 

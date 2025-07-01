@@ -42,11 +42,11 @@
                         window.addEventListener('cart-items-from-server', (event) => {
                             this.loadItemsFromServer(event.detail[0]);
                         });
-
-                        // Listen for clear-cart event from Livewire
-                        window.addEventListener('clear-cart', () => {
-                            this.clear();
-                        });
+                        //
+                        // // Listen for clear-cart event from Livewire
+                        // window.addEventListener('clear-cart', () => {
+                        //     this.clear();
+                        // });
 
                         // Initial sync with server after a short delay to ensure Livewire is loaded
                         setTimeout(() => {
