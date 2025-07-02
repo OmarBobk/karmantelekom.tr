@@ -208,7 +208,7 @@
                         'alert-info': notification.type === 'info',
                         'alert-warning': notification.type === 'warning'
                     }"
-                class="w-full shadow-lg rounded-lg pointer-events-auto alert"
+                class="ml-8 shadow-lg rounded-lg pointer-events-auto alert"
             >
                 <div class="p-4">
                     <div class="flex items-center justify-between">
