@@ -82,12 +82,22 @@ class CartComponent extends Component
     }
 
     #[On('remove-item')]
-    public function handleRemoveItem(int $product_id): void
+    public function handleRemoveItem($id): void
     {
-
         $user_id = auth()->id();
-        CartFacade::removeFromCart($user_id, null, $product_id);
-
+        try {
+            if (!$user_id) {
+                Log::info('User is not authenticated, skipping Removing : ' . $user_id);
+                return;
+            } else {
+                CartFacade::removeFromCart($user_id, null, $id);
+            }
+        } catch (\Exception $e) {
+            Log::error('Error Clearing cart', [
+                'user_id' => $user_id,
+                'error' => $e->getMessage()
+            ]);
+        }
     }
 
     /**

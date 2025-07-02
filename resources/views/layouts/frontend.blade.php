@@ -109,7 +109,10 @@
                         this.items = this.items.filter(item => item.product_id !== productId);
                         this.updateTotals();
 
-                        window.Livewire.dispatch('remove-item', {productId});
+                        console.log('remove item', productId);
+
+                        let id = productId
+                        window.Livewire.dispatch('remove-item', {id});
                     },
 
                     clear() {
