@@ -103,7 +103,7 @@ class CheckoutComponent extends Component
             $this->reset(['selectedShopId', 'orderNotes']);
 
             // Dispatch event to clear localStorage cart
-            $this->dispatch('clear-cart');
+            $this->dispatch('checkout');
 
             $this->dispatch('notify', [
                 'type' => 'success',

@@ -38,15 +38,15 @@
                             this.syncWithServer();
                         });
 
+                        // Listen for the checkout event from CheckoutComponent to clear the cart.
+                        window.addEventListener('checkout', () => {
+                            this.clear();
+                        });
+
                         // Listen for cart items from server
                         window.addEventListener('cart-items-from-server', (event) => {
                             this.loadItemsFromServer(event.detail[0]);
                         });
-                        //
-                        // // Listen for clear-cart event from Livewire
-                        // window.addEventListener('clear-cart', () => {
-                        //     this.clear();
-                        // });
 
                         // Initial sync with server after a short delay to ensure Livewire is loaded
                         setTimeout(() => {
@@ -109,7 +109,7 @@
                         this.items = this.items.filter(item => item.product_id !== productId);
                         this.updateTotals();
 
-                        window.Livewire.dispatch('remove-item', { productId });
+                        window.Livewire.dispatch('remove-item', {productId});
                     },
 
                     clear() {
