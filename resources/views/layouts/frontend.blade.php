@@ -244,9 +244,12 @@
         >
             <livewire:frontend.partials.header-component />
         </header>
+
         <main class="pt-28">
             {{ $slot }}
         </main>
+
+
         <footer>
             <livewire:frontend.partials.footer-component />
         </footer>

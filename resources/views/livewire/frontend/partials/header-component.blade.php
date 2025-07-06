@@ -9,8 +9,8 @@ class="relative">
 
     <!-- Top bar -->
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
-        <div class="flex h-16 items-center justify-between">
-            <div class="flex items-center">
+        <div class="flex items-center justify-between flex-wrap my-[.65rem]">
+            <div class="flex items-center order-1 sm:order-none w-1/2 sm:w-1/4">
                  <!-- Mobile menu button -->
                  <div class="flex items-center lg:hidden">
                     <button @click="sidebarOpen = true" type="button" class="-m-2 inline-flex items-center justify-center rounded-md p-2 text-gray-400">
@@ -25,12 +25,129 @@ class="relative">
             </div>
 
             <!-- Center Section: Search -->
-            <div class="hidden lg:flex flex-1 max-w-lg mx-8">
-                @livewire('frontend.search-component', [], key('search-'.time()))
+            <div class="lg:flex flex-1 max-w-lg order-3 sm:order-none w-1/2 sm:w-1/2">
+                <!-- Desktop Search -->
+                <div class="lg:block relative w-full" x-data="{ isOpen: false }" @click.away="isOpen = false; $wire.resetSearch()">
+                    <!-- Search Container -->
+                    <div class="relative flex items-center">
+                        <div class="relative w-full">
+                            <!-- Search Input Container -->
+                            <div class="relative flex items-center w-full h-11 bg-white border border-gray-300 rounded-lg">
+                                <!-- Search Icon -->
+                                <div class="absolute {{ app()->getLocale() == 'ar' ? 'right-0' : 'left-0' }} p-3 text-gray-500">
+
+                                    <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search h-5 w-5 text-gray-400"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
+                                </div>
+
+                                <!-- Search Input -->
+                                <input type="text"
+                                       placeholder="{{__('main.search_for_products')}}..."
+                                       wire:model.live.debounce.300ms="searchQuery"
+                                       wire:loading.class="opacity-50"
+                                       @click="isOpen = true"
+                                       class="w-full h-full {{ app()->getLocale() == 'ar' ? 'pr-11' : 'pl-11' }} bg-transparent text-base placeholder-gray-400 outline-none focus:outline-none focus:ring-0 border-0 focus:border-0"
+                                >
+
+                                <!-- Clear Button -->
+                                <button wire:click="$set('searchQuery', '')"
+                                        x-show="$wire.searchQuery"
+                                        class="absolute {{ app()->getLocale() == 'ar' ? 'left-3' : 'right-3' }} p-1 text-gray-400 hover:text-gray-600 focus:outline-none">
+                                    <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
+                                        <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
+                                    </svg>
+                                </button>
+                            </div>
+
+                            <!-- Search Results Dropdown -->
+                            <div x-show="isOpen && $wire.searchQuery.length >= 2"
+                                 x-cloak
+                                 class="absolute mt-2 w-full bg-white/95 backdrop-blur-sm rounded-xl shadow-xl border border-gray-200/80 overflow-hidden z-50 search-results"
+                            >
+
+                                <!-- Loading State -->
+                                <div wire:loading
+                                     class="p-4">
+                                    <div class="flex items-center justify-center space-x-2 text-sm text-gray-500">
+                                        <svg class="animate-spin size-5 text-emerald-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                        <span>Searching...</span>
+                                    </div>
+                                </div>
+
+                                <!-- Results -->
+                                <div wire:loading.remove
+                                     x-show="!$wire.isLoading && Array.isArray($wire.searchResults) && $wire.searchResults.length > 0"
+                                     class="max-h-[570px] overflow-y-auto">
+
+                                    <div class="w-full bg-white/30 backdrop-blur-md" x-cloak>
+                                        <div class="mx-auto max-w-7xl">
+                                            <div class="relative">
+                                                <div class="m-4 max-w-7xl">
+                                                    <div class="grid grid-cols-2 sm:grid-cols-3 gap-y-4">
+                                                        @foreach($searchResults as $result)
+                                                            <div>
+                                                                <div class="group/card mx-2">
+                                                                    <!-- Product Card -->
+                                                                    <div class="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
+                                                                        <div class="flex flex-col relative aspect-w-1 aspect-h-1 w-full overflow-hidden h-40 bg-gray-100 rounded-md">
+                                                                            <button wire:click="$dispatch('openProductModal', { productId: {{ $result['id'] }} })" class="">
+                                                                                <img src="{{ $result['image'] }}"
+                                                                                     alt="{{ $result['title'] }} - Image"
+                                                                                     class="absolute h-full w-full object-contain object-center transition-opacity duration-300 opacity-100"
+                                                                                     loading="lazy">
+                                                                            </button>
+                                                                        </div>
+
+                                                                        <!-- Product Info -->
+                                                                        <div class="p-2">
+                                                                            <div class="flex items-start gap-2">
+                                                                                <button wire:click="$dispatch('openProductModal', { productId: {{ $result['id'] }} })" class="">
+                                                                                    <div class="h-[4.5rem] {{ app()->getLocale() == 'ar' ? 'text-right' : '' }}">
+                                                                                        <h3 class="text-sm font-medium text-gray-900 hover:text-emerald-600 transition-colors duration-200 line-clamp-1">{{ $result['title'] }}</h3>
+                                                                                        <p class="text-sm text-gray-500 line-clamp-2">{{ $result['description'] }}</p>
+                                                                                    </div>
+                                                                                </button>
+                                                                            </div>
+
+                                                                            <div class="flex items-center justify-between mt-3">
+                                                                                <div>
+                                                                                </div>
+                                                                            </div>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            </div>
+                                                        @endforeach
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- No Results -->
+                                <div wire:loading.remove
+                                     x-show="!$wire.isLoading && Array.isArray($wire.searchResults) && $wire.searchResults.length === 0 && $wire.searchQuery.length >= 2"
+                                     class="p-4 text-center">
+                                    <div class="text-gray-500 text-sm">
+                                        <svg class="size-6 mx-auto mb-2 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M12 14a3 3 0 100-6 3 3 0 000 6z"/>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                        </svg>
+                                        <p>No results found for "<span class="font-medium">{{ $searchQuery }}</span>"</p>
+                                        <p class="mt-1 text-xs text-gray-400">Try adjusting your search or filter to find what you're looking for.</p>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <!-- Right Section: Icons -->
-            <div class="flex items-center justify-end space-x-1 sm:space-x-2">
+            <div class="flex items-center justify-end space-x-1 sm:space-x-2 order-2 sm:order-none w-1/2 sm:w-1/4">
                 <!-- Favorites -->
 {{--                <div class="hidden sm:flex">--}}
 {{--                    <button class="p-2 text-gray-700 hover:text-blue-600 hover:bg-gray-100 rounded-xl transition-all duration-200 h-11 w-11 flex items-center justify-center">--}}
@@ -44,7 +161,163 @@ class="relative">
                 @endhasanyrole
 
                 <!-- Cart Component -->
-                @livewire('frontend.cart.cart-component')
+                <div
+                    x-data="{
+                    showCart: false,
+                    toggleCart() {
+                        this.showCart = !this.showCart;
+                        this.updateBodyScroll();
+                    },
+                    updateBodyScroll() {
+                        document.body.classList.toggle('overflow-hidden', this.showCart);
+                    },
+                    init() {
+                        Livewire.on('cart-updated', () => {
+            {{--                this.$refresh;--}}
+                        });
+                    }
+                }"
+                >
+                    <!-- Cart Icon -->
+                    <div class="relative flex items-center gap-x-2">
+                        <button
+                            @click="toggleCart()"
+                            class="p-2 text-gray-700 hover:text-blue-600 hover:bg-gray-100 rounded-xl transition-all duration-200 relative group h-11 w-11 flex items-center justify-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shopping-cart-icon lucide-shopping-cart"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+                            <div
+                                x-show="$store.cart.itemsCount > 0"
+                                x-text="$store.cart.itemsCount"
+                                x-transition:enter="transition ease-out duration-300"
+                                x-transition:enter-start="opacity-0 scale-50"
+                                x-transition:enter-end="opacity-100 scale-100"
+                                class="absolute -top-1 -right-1 bg-blue-500 text-white text-xs font-bold rounded-full h-5 min-w-[1.25rem] px-1 flex items-center justify-center group-hover:bg-blue-600 transition-colors duration-200 z-50"
+                            ></div>
+                        </button>
+                    </div>
+
+                    <!-- Cart Modal -->
+                    <div x-show="showCart"
+                         class="fixed inset-0 z-50 overflow-hidden"
+                         style="display: none;">
+
+                        <!-- Backdrop -->
+                        <div
+                            x-show="showCart"
+                            x-transition:enter="transition-opacity ease-linear duration-300"
+                            x-transition:enter-start="opacity-0"
+                            x-transition:enter-end="opacity-100"
+                            x-transition:leave="transition-opacity ease-linear duration-300"
+                            x-transition:leave-start="opacity-100"
+                            x-transition:leave-end="opacity-0"
+                            class="fixed inset-0 bg-gray-900/80"
+                            @click="toggleCart()"
+                            aria-hidden="true">
+                        </div>
+
+                        <div
+                            x-show="showCart"
+                            class="fixed inset-y-0 right-0 max-w-full flex bg-white shadow-lg"
+                            x-transition:enter="transition ease-in-out duration-300 transform"
+                            x-transition:enter-start="translate-x-full"
+                            x-transition:enter-end="translate-x-0"
+                            x-transition:leave="transition ease-in-out duration-300 transform"
+                            x-transition:leave-start="translate-x-0"
+                            x-transition:leave-end="translate-x-full"
+                        >
+                            <div class=" max-w-md">
+                                <div class="h-full flex flex-col bg-white shadow-xl">
+                                    <div class="flex-1 py-6 overflow-y-auto px-4 sm:px-6">
+                                        <div class="flex items-start justify-between">
+                                            <h2 class="text-lg font-medium text-gray-900">Shopping Cart</h2>
+                                            <button @click="toggleCart()" class="text-gray-400 hover:text-gray-500">
+                                                <span class="sr-only">Close panel</span>
+                                                <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                                </svg>
+                                            </button>
+                                        </div>
+
+                                        <div class="mt-8">
+                                            <div class="flow-root">
+
+                                                <ul role="list" class="-my-6 divide-y divide-gray-200">
+                                                    <template x-for="item in $store.cart.items" :key="item.product_id">
+                                                        <li class="py-6 flex items-center">
+                                                            <div class="flex-shrink-0 w-24 h-24 border border-gray-200 rounded-md overflow-hidden">
+                                                                <img :src="'/storage/' + item.image" :alt="item.name" class="w-full h-full object-center object-cover">
+                                                            </div>
+
+                                                            <div class="ml-4 flex-1 flex flex-col gap-2">
+                                                                <div class="flex justify-between text-base font-medium text-gray-900">
+                                                                    <div class="flex-1 line-clamp-3">
+                                                                        <span class="text-base font-medium text-gray-900" x-text="item.name"></span>
+                                                                        <span class="text-sm text-gray-700" x-text="item.description"></span>
+                                                                    </div>
+                                                                    <div>
+                                                                        <p class="ml-4" x-text="`${item.price} TL`"></p>
+                                                                    </div>
+                                                                </div>
+                                                                <div class="flex-1 flex items-end justify-between text-sm">
+                                                                    <div class="flex items-center">
+                                                                        <button @click="$store.cart.updateQuantity(item.product_id, item.quantity - 1)"
+                                                                                class="text-gray-500 hover:text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-md p-1 transition-colors duration-200">
+                                                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 12h12" />
+                                                                            </svg>
+                                                                        </button>
+                                                                        <span class="mx-2" x-text="item.quantity"></span>
+                                                                        <button @click="$store.cart.updateQuantity(item.product_id, item.quantity + 1)"
+                                                                                class="text-gray-500 hover:text-gray-700 bg-gray-200 hover:bg-gray-300 rounded-md p-1 transition-colors duration-200">
+                                                                            <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v12m6-6H6" />
+                                                                            </svg>
+                                                                        </button>
+                                                                    </div>
+                                                                    <button @click="$store.cart.removeItem(item.product_id)" class="font-medium text-indigo-600 hover:text-indigo-500">Remove</button>
+                                                                </div>
+                                                            </div>
+                                                        </li>
+                                                    </template>
+                                                    <li x-show="$store.cart.items.length === 0" class="py-6">
+                                                        <p class="text-gray-500 text-center">Your cart is empty</p>
+                                                    </li>
+                                                </ul>
+
+
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <div x-show="$store.cart.items.length > 0" class="border-t border-gray-200 py-6 px-4 sm:px-6">
+                                        <div class="flex justify-between text-base font-medium text-gray-900">
+                                            <p>Subtotal</p>
+                                            <p x-text="`${$store.cart.subtotal.toFixed(2)} TL`"></p>
+                                        </div>
+                                        <p class="mt-0.5 text-sm text-gray-500">Shipping and taxes calculated at checkout.</p>
+                                        <div class="mt-6">
+                                            <button
+                                                x-data="{loading: false}"
+                                                :disabled="loading"
+                                                @click.prevent="loading = true; $store.cart.syncWithServer().then(() => window.location.href = '/checkout')"
+                                                class="flex justify-center items-center w-full px-6 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-indigo-600 hover:bg-indigo-700">
+                                                <span x-show="!loading">Checkout</span>
+                                                <span x-show="loading">Syncing...</span>
+                                            </button>
+                                        </div>
+                                        <div class="mt-6 flex justify-center text-sm text-center text-gray-500">
+                                            <button @click="$store.cart.clear()"
+                                                    class="text-indigo-600 font-medium hover:text-indigo-500">
+                                                Clear Cart<span aria-hidden="true"> &rarr;</span>
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
 
                 <!-- Profile/Auth Section -->
                 @guest
@@ -56,10 +329,6 @@ class="relative">
 
             </div>
         </div>
-    </div>
-     <!-- Search for mobile -->
-    <div class="lg:hidden px-4 pb-4">
-        @livewire('frontend.search-component', [], key('search-mobile-'.time()))
     </div>
 
 
@@ -119,7 +388,7 @@ class="relative">
              x-transition:leave="transition-opacity ease-linear duration-300"
              x-transition:leave-start="opacity-100"
              x-transition:leave-end="opacity-0"
-             class="fixed inset-0 bg-gray-900/80 h-screen"
+             class="fixed inset-0 bg-gray-900/80"
              @click="sidebarOpen = false"
              aria-hidden="true">
         </div>
@@ -132,7 +401,7 @@ class="relative">
              x-transition:leave="transition ease-in-out duration-300 transform"
              x-transition:leave-start="translate-x-0"
              x-transition:leave-end="{{ app()->getLocale() === 'ar' ? 'translate-x-full' : '-translate-x-full' }}"
-             class="fixed inset-y-0 {{ app()->getLocale() == 'ar' ? 'right-0' : 'left-0' }} w-full max-w-xs bg-white shadow-lg overflow-y-auto h-screen">
+             class="fixed inset-y-0 {{ app()->getLocale() == 'ar' ? 'right-0' : 'left-0' }} w-full max-w-xs bg-white shadow-lg overflow-y-auto">
 
             <!-- Sidebar Header -->
             <div class="flex items-center justify-between py-6 {{app()->getLocale() == 'ar' ? 'pl-8 pr-10' : 'pl-10 pr-8'}} border-b border-gray-100">

@@ -41,19 +41,6 @@ class SearchComponent extends Component
         }
 
         $this->isLoading = true;
-//
-//        // Search in products
-//        $products = Product::where('name', 'like', '%' . $this->searchQuery . '%')
-//            ->orWhere('description', 'like', '%' . $this->searchQuery . '%')
-//            ->take(5)
-//            ->get()
-//            ->map(function ($product) {
-//                return [
-//                    'title' => $product->name,
-//                    'category' => 'Product',
-//                    'url' => '#',
-//                ];
-//            });
 
         // Search in products
         $products = Product::where('is_active', true)
