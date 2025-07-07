@@ -36,5 +36,5 @@ Route::get('test', function() {
 });
 
 Route::fallback(function () {
-    dd('fallback');
+//    dd('fallback');
 });

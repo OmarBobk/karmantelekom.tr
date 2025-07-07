@@ -1,9 +1,6 @@
 ---
-description: 
-globs: 
-alwaysApply: false
+alwaysApply: true
 ---
-
     You are an expert in Laravel, Jetstream, PHP, Livewire, Alpine.js and TailwindCSS.
 
     Key Principles
