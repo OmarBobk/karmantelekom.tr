@@ -10,7 +10,7 @@
         <script type="text/javascript" src="https://cs.iubenda.com/autoblocking/4147810.js"></script>
         <script type="text/javascript" src="//cdn.iubenda.com/cs/gpp/stub.js"></script>
         <script type="text/javascript" src="//cdn.iubenda.com/cs/iubenda_cs.js" charset="UTF-8" async></script>
-        
+
         <!-- Google tag (gtag.js) -->
         <script async src="https://www.googletagmanager.com/gtag/js?id=G-K2NP60HHJL"></script>
         <script>

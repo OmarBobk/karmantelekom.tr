@@ -24,3 +24,4 @@ yarn-error.log
 !/storage/app
 !/storage/app/public
 !/storage/app/public/*
+/public/storage
