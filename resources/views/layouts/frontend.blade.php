@@ -3,6 +3,14 @@
       lang="{{ strtolower(str_replace('_', '-', app()->getLocale())) }}"
       class="light" style="border:none">
     <head>
+        <script type="text/javascript">
+            var _iub = _iub || [];
+            _iub.csConfiguration = {"siteId":4147810,"cookiePolicyId":69197729,"lang":"en","storage":{"useSiteId":true}};
+        </script>
+        <script type="text/javascript" src="https://cs.iubenda.com/autoblocking/4147810.js"></script>
+        <script type="text/javascript" src="//cdn.iubenda.com/cs/gpp/stub.js"></script>
+        <script type="text/javascript" src="//cdn.iubenda.com/cs/iubenda_cs.js" charset="UTF-8" async></script>
+        
         <!-- Google tag (gtag.js) -->
         <script async src="https://www.googletagmanager.com/gtag/js?id=G-K2NP60HHJL"></script>
         <script>
