@@ -301,7 +301,7 @@
 
                                                         <!-- Price & Discount -->
                                                         <div class="flex items-center gap-2 mt-2">
-                                                            @if(App\Facades\Settings::get('product_prices') == 'enabled' && $product->prices->isNotEmpty())
+                                                            @if($arePricesEnabled && $product->prices->isNotEmpty())
                                                                 <span class="text-2xl font-bold text-blue-600">
                                                                     {{ $product->prices->first()->getFormattedPrice() }}
                                                                 </span>
@@ -603,7 +603,7 @@
                                                         </div>
                                                         <!-- Price & Discount -->
                                                         <div class="flex items-center gap-2 mt-2">
-                                                            @if(App\Facades\Settings::get('product_prices') == 'enabled' && $product->prices->isNotEmpty())
+                                                            @if($arePricesEnabled && $product->prices->isNotEmpty())
                                                                 <span class="text-2xl font-bold text-blue-600">
                                                                     {{ $product->prices->first()->getFormattedPrice() }}
                                                                 </span>

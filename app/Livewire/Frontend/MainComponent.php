@@ -4,14 +4,17 @@ declare(strict_types=1);
 
 namespace App\Livewire\Frontend;
 
+use App\Facades\Settings;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\Currency;
 use App\Models\Product;
 use App\Models\Section;
+use App\Models\Setting;
 use App\Services\LanguageService;
 use App\Facades\Cart as CartFacade;
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\View;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
@@ -27,6 +30,8 @@ class MainComponent extends Component
     public string $currentDirection = 'ltr';
     private LanguageService $languageService;
 
+    public bool $arePricesEnabled = false;
+    private bool $arePricesEnabledLoaded = false;
     public function boot(LanguageService $languageService): void
     {
         $this->languageService = $languageService;
@@ -36,7 +41,16 @@ class MainComponent extends Component
     {
         $this->canSwitchCurrency = true;
         $this->currentDirection = $this->languageService->getCurrentDirection();
+        $this->loadArePricesEnabled();
         $this->loadAllSections();
+    }
+
+    private function loadArePricesEnabled(): void
+    {
+        if (!$this->arePricesEnabledLoaded) {
+            $this->arePricesEnabled = Setting::where('key', 'product_prices')->first()->value === 'enabled';
+            $this->arePricesEnabledLoaded = true;
+        }
     }
 
     private function getCurrency(): Currency
@@ -195,4 +209,5 @@ class MainComponent extends Component
     {
         $this->activeCategory = $index;
     }
+
 }

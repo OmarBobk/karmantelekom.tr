@@ -3,15 +3,14 @@
       lang="{{ strtolower(str_replace('_', '-', app()->getLocale())) }}"
       class="light" style="border:none">
     <head>
-
         <!-- Google tag (gtag.js) -->
-        <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZHW5S051EH"></script>
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-K2NP60HHJL"></script>
         <script>
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
 
-            gtag('config', 'G-ZHW5S051EH');
+            gtag('config', 'G-K2NP60HHJL');
         </script>
 
         <link rel="icon" type="image/png" href="{{ asset('assets/images/favicon.svg') }}">

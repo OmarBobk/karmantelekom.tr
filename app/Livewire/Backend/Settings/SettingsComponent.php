@@ -54,7 +54,14 @@ class SettingsComponent extends Component
                     : $value;
             }
 
-            Settings::set($key, $value);
+            Settings::set(
+                key: $key,
+                value: $value,
+                type: 'string',
+                group: $this->activeTab,
+                description: null,
+                isPublic: false
+            );
         }
 
         $this->dispatch('notify', [

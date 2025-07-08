@@ -25,6 +25,16 @@ class SettingsService
         return Setting::where('group', $group)->get();
     }
 
+    public function getGroups()
+    {
+        return Setting::select('group')
+            ->distinct()
+            ->get()
+            ->pluck('group')
+            ->filter(fn($group) => !empty($group))
+            ->values();
+    }
+
     public function set(string $key, $value, string $type = 'string', string $group = 'general', ?string $description = null, bool $isPublic = false): Setting
     {
         return Setting::updateOrCreate(

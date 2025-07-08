@@ -22,13 +22,16 @@ class HeaderComponent extends Component
     private LanguageService $languageService;
     public $categories;
 
+    public array $settings = [];
+
     public function boot(LanguageService $languageService): void
     {
         $this->languageService = $languageService;
     }
 
-    public function mount(): void
+    public function mount(array $settings = []): void
     {
+        $this->settings = $settings;
         $this->currentLanguage = $this->languageService->getCurrentLanguage();
         $this->currentDirection = $this->languageService->getCurrentDirection();
         $this->searchComponentKey = 'search-' . uniqid();

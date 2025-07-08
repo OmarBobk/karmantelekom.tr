@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Facades\Settings;
 use App\Models\User;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\Facades\View;
 use Illuminate\Support\ServiceProvider;
 use App\Services\CurrencyService;
 use Spatie\Activitylog\Models\Activity;
@@ -59,6 +61,7 @@ class AppServiceProvider extends ServiceProvider
         if (app()->environment('production') && !app()->environment('local')) {
             \URL::forceScheme('https');
         }
+
     }
 
     /**

@@ -2,7 +2,7 @@
 
 namespace App\Livewire\Frontend\Partials;
 
-use App\Facades\Settings;
+use App\Models\Setting;
 use Livewire\Component;
 
 class FooterComponent extends Component
@@ -26,8 +26,15 @@ class FooterComponent extends Component
     public $currentCurrency;
     public bool $canSwitchCurrency;
 
+    public array $settings = [];
+
     public function mount()
     {
+        $this->settings = Setting::whereGroup('social')
+            ->get()
+            ->pluck('value', 'key')
+            ->toArray();
+
         $this->currentCurrency = session('currency', config('app.currency', 'TRY'));
         $this->canSwitchCurrency = auth()->check() && auth()->user()->hasAnyRole(['admin', 'salesperson', 'shop_owner']);
 
@@ -38,9 +45,9 @@ class FooterComponent extends Component
         ];
 
         $this->socialLinks = [
-            ['name' => 'Facebook', 'url' => Settings::get('facebook_url') , 'icon' => 'facebook'],
-            ['name' => 'Instagram', 'url' => Settings::get('instagram_url'), 'icon' => 'instagram'],
-            ['name' => 'WhatsApp', 'url' => 'https://wa.me/' . Settings::get('whatsapp_number'), 'icon' => 'whatsapp'],
+            ['name' => 'Facebook', 'url' => $this->settings['facebook_url'] , 'icon' => 'facebook'],
+            ['name' => 'Instagram', 'url' => $this->settings['instagram_url'], 'icon' => 'instagram'],
+            ['name' => 'WhatsApp', 'url' => 'https://wa.me/' . $this->settings['whatsapp_number'], 'icon' => 'whatsapp'],
         ];
 
     }
