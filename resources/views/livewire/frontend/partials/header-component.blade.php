@@ -185,6 +185,25 @@ class="relative">
                                  x-transition:leave-start="opacity-100 translate-y-0"
                                  x-transition:leave-end="opacity-0 -translate-y-2"
                                  class="{{ app()->getLocale() == 'ar' ? 'pr-4' : 'pl-4' }} space-y-1 mt-1">
+                                <div x-show="open"
+                                     x-transition:enter="transition ease-out duration-200"
+                                     x-transition:enter-start="opacity-0 -translate-y-2"
+                                     x-transition:enter-end="opacity-100 translate-y-0"
+                                     x-transition:leave="transition ease-in duration-150"
+                                     x-transition:leave-start="opacity-100 translate-y-0"
+                                     x-transition:leave-end="opacity-0 -translate-y-2"
+                                     class="{{ app()->getLocale() == 'ar' ? 'pr-4' : 'pl-4' }} space-y-1 mt-1 relative">
+                                    
+                                    <a href="{{ route('products', ['category' => 'all']) }}"
+                                       class="block px-4 py-2 text-sm text-gray-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-all duration-200 group relative">
+                                        <div class="flex items-center">
+                                            <div class="w-4 h-4 {{ app()->getLocale() == 'ar' ? 'ml-2' : 'mr-2' }} flex items-center justify-center">
+                                                <div class="w-0.5 h-4 bg-gray-300 group-hover:bg-blue-400 transition-colors duration-200"></div>
+                                            </div>
+                                            <span>All</span>
+                                        </div>
+                                    </a>
+                                </div>
                                 @foreach($categories as $category)
                                     <div x-data="{ open: false }" class="relative">
                                         <button @click="open = !open"
