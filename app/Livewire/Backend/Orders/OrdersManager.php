@@ -5,6 +5,7 @@ namespace App\Livewire\Backend\Orders;
 use App\Models\Order;
 use App\Enums\OrderStatus;
 use App\Models\Shop;
+use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Facades\Log;
@@ -25,6 +26,7 @@ class OrdersManager extends Component
     public string $bulkAction = '';
     public bool $showBulkActionModal = false;
     public string $statusFilter = '';
+    public string $salespersonFilter = '';
     public string $search = '';
     public ?Order $selectedOrder = null;
     public bool $showOrderDetailsModal = false;
@@ -33,6 +35,7 @@ class OrdersManager extends Component
 
     protected array $queryString = [
         'statusFilter' => ['except' => ''],
+        'salespersonFilter' => ['except' => ''],
         'search' => ['except' => ''],
         'fromDate' => ['except' => ''],
         'toDate' => ['except' => ''],
@@ -43,14 +46,26 @@ class OrdersManager extends Component
         $this->resetPage();
     }
 
+    public function updatingSalespersonFilter(): void
+    {
+        $this->resetPage();
+    }
+
     public function updatingSearch(): void
     {
         $this->resetPage();
     }
 
-    public function getOrdersProperty()
+    public function clearAllFilters(): void
+    {
+        $this->reset(['statusFilter', 'salespersonFilter', 'search', 'fromDate', 'toDate']);
+        $this->resetPage();
+    }
+
+    public function getOrdersProperty(): LengthAwarePaginator
     {
         try {
+            $user_id = auth()->id();
             return Order::query()
                 ->with(['salesperson', 'items', 'shop'])
                 ->when($this->search, function ($query) {
@@ -61,8 +76,18 @@ class OrdersManager extends Component
                             ->orWhereHas('salesperson', fn($q3) => $q3->where('name', 'like', "%$search%"));
                     });
                 })
+                ->whereHas('shop', function ($query) {
+                    if (!auth()->user()->hasRole('admin')) {
+                        $query->where('user_id', auth()->id());
+                    }
+                })
                 ->when($this->statusFilter, function ($query) {
                     $query->where('status', $this->statusFilter);
+                })
+                ->when($this->salespersonFilter && auth()->user()->hasRole('admin'), function ($query) {
+                    $query->whereHas('shop', function ($q) {
+                        $q->where('user_id', $this->salespersonFilter);
+                    });
                 })
                 ->when($this->fromDate, function ($query) {
                     $query->whereDate('created_at', '>=', \Carbon\Carbon::parse($this->fromDate)->toDateString());
@@ -80,6 +105,13 @@ class OrdersManager extends Component
         }
     }
 
+    public function getSalespeopleProperty()
+    {
+        return User::whereHas('roles', function ($query) {
+            $query->where('name', 'salesperson');
+        })->orderBy('name')->get();
+    }
+
     #[Layout('layouts.backend')]
     #[Title('Orders Manager')]
     public function render()
@@ -90,6 +122,7 @@ class OrdersManager extends Component
             'orders' => $this->orders,
             'statuses' => $statuses,
             'availableStatuses' => $this->getAvailableStatuses(),
+            'salespeople' => $this->salespeople,
         ]);
     }
 

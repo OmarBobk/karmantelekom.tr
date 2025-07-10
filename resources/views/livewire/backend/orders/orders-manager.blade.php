@@ -1,102 +1,159 @@
 <div>
     <div class="bg-white rounded-3xl shadow-lg border border-gray-100">
-        <div class="flex flex-col md:flex-row md:items-center md:justify-between px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-white to-gray-50">
-            <h1 class="text-2xl font-extrabold text-gray-900 tracking-tight">Orders Manager</h1>
-            <div class="flex flex-wrap gap-2 mt-4 md:mt-0 md:gap-4 items-center">
-                <!-- Search -->
-                <div class="relative">
-                    <input
-                        wire:model.live.debounce.300ms="search"
-                        type="text"
-                        placeholder="Search by order ID, shop, or salesperson..."
-                        class="w-64 pl-10 pr-8 py-2 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 text-gray-700 placeholder-gray-400 shadow-sm transition"
-                    />
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                        </svg>
+        <div class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-white to-gray-50">
+            <div class="flex flex-col space-y-4">
+                <h1 class="text-2xl font-extrabold text-gray-900 tracking-tight">Orders Manager</h1>
+                <div class="flex flex-col lg:flex-row lg:items-center gap-4">
+                    <!-- Search -->
+                    <div class="relative flex-1 min-w-0">
+                        <input
+                            wire:model.live.debounce.300ms="search"
+                            type="text"
+                            placeholder="Search by order ID, shop, or salesperson..."
+                            class="w-full pl-10 pr-8 py-2 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 text-gray-700 placeholder-gray-400 shadow-sm transition"
+                        />
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </div>
+                        @if($search)
+                            <button
+                                wire:click="$set('search', '')"
+                                class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                            >
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        @endif
                     </div>
-                    @if($search)
+
+                    <!-- Filters Row -->
+                    <div class="flex flex-col sm:flex-row gap-3 flex-wrap">
+                        <!-- Date Range Filter -->
+                        <div class="flex items-center justify-around gap-2 min-w-fit">
+                            <input
+                                type="date"
+                                wire:model.live="fromDate"
+                                class="rounded-xl border-gray-200 bg-gray-50 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 px-3 py-2 text-gray-700 shadow-sm w-32 sm:w-36"
+                                placeholder="From"
+                            />
+                            <span class="text-gray-400 text-sm">-</span>
+                            <input
+                                type="date"
+                                wire:model.live="toDate"
+                                class="rounded-xl border-gray-200 bg-gray-50 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 px-3 py-2 text-gray-700 shadow-sm w-32 sm:w-36"
+                                placeholder="To"
+                            />
+                        </div>
+                        <!-- Status Filter -->
+                        <div class="relative min-w-32">
+                            <select
+                                wire:model.live="statusFilter"
+                                class="rounded-xl border-gray-200 bg-gray-50 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 pl-3 pr-10 py-2 text-gray-700 shadow-sm appearance-none w-full"
+                            >
+                                <option value="">All Statuses</option>
+                                @foreach($statuses as $status)
+                                    <option value="{{ $status->value }}">{{ ucfirst($status->value) }}</option>
+                                @endforeach
+                            </select>
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                        </div>
+
+                        <!-- Salesperson Filter (Admin Only) -->
+                        @if(auth()->user()->hasRole('admin'))
+                            <div class="relative min-w-36">
+                                <select
+                                    wire:model.live="salespersonFilter"
+                                    class="rounded-xl border-gray-200 bg-gray-50 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 pl-3 pr-10 py-2 text-gray-700 shadow-sm appearance-none w-full"
+                                >
+                                    <option value="">All Salespeople</option>
+                                    @foreach($salespeople as $salesperson)
+                                        <option value="{{ $salesperson->id }}">{{ $salesperson->name }}</option>
+                                    @endforeach
+                                </select>
+                                <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                    </svg>
+                                </div>
+                            </div>
+                        @endif
+
+                        <!-- Bulk Actions -->
+                        <div class="relative min-w-32">
+                            <select
+                                wire:model="bulkAction"
+                                class="rounded-xl border-gray-200 bg-gray-50 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 pl-3 pr-10 py-2 text-gray-700 shadow-sm appearance-none w-full"
+                            >
+                                <option value="">Bulk Actions</option>
+                                <option value="delete">Delete</option>
+                                <option value="export">Export</option>
+                            </select>
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Action Buttons -->
+                    <div class="flex flex-col sm:flex-row gap-3">
                         <button
-                            wire:click="$set('search', '')"
-                            class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                            wire:click="confirmBulkAction"
+                            wire:loading.attr="disabled"
+                            class="px-4 py-2 bg-indigo-600 text-white rounded-xl font-semibold shadow hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition whitespace-nowrap"
                         >
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            Apply
+                        </button>
+                        <!-- Clear All Filters Button -->
+                        <button
+                            wire:click="clearAllFilters"
+                            wire:loading.attr="disabled"
+                            class="px-4 py-2 bg-gray-500 text-white rounded-xl font-semibold shadow hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400 transition whitespace-nowrap"
+                            title="Clear all filters"
+                        >
+                            <svg class="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                             </svg>
+                            Clear Filters
                         </button>
-                    @endif
+                    </div>
                 </div>
-                <!-- Date Range Filter -->
-                <div class="flex items-center gap-2">
-                    <input
-                        type="date"
-                        wire:model.live="fromDate"
-                        class="rounded-xl border-gray-200 bg-gray-50 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 px-3 py-2 text-gray-700 shadow-sm w-36"
-                        placeholder="From"
-                    />
-                    <span class="text-gray-400">-</span>
-                    <input
-                        type="date"
-                        wire:model.live="toDate"
-                        class="rounded-xl border-gray-200 bg-gray-50 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 px-3 py-2 text-gray-700 shadow-sm w-36"
-                        placeholder="To"
-                    />
-                </div>
-                <!-- Status Filter -->
-                <select
-                    wire:model.live="statusFilter"
-                    class="rounded-xl border-gray-200 bg-gray-50 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 px-3 py-2 text-gray-700 shadow-sm"
-                >
-                    <option value="">All Statuses</option>
-                    @foreach($statuses as $status)
-                        <option value="{{ $status->value }}">{{ ucfirst($status->value) }}</option>
-                    @endforeach
-                </select>
-                <!-- Bulk Actions -->
-                <select
-                    wire:model="bulkAction"
-                    class="rounded-xl border-gray-200 bg-gray-50 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 px-3 py-2 text-gray-700 shadow-sm"
-                >
-                    <option value="">Bulk Actions</option>
-                    <option value="delete">Delete</option>
-                    <option value="export">Export</option>
-                </select>
-                <button
-                    wire:click="confirmBulkAction"
-                    wire:loading.attr="disabled"
-                    class="px-4 py-2 bg-indigo-600 text-white rounded-xl font-semibold shadow hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition"
-                >
-                    Apply
-                </button>
             </div>
         </div>
 
-        <div class="">
+        <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-100">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">
+                        <th class="px-3 sm:px-6 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider w-12">
                             <input
                                 type="checkbox"
                                 wire:model="selectAll"
                                 class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-400 focus:ring-indigo-200"
                             />
                         </th>
-                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Order</th>
-                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Salesperson</th>
-                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Shop</th>
-                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Total</th>
-                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Status</th>
-                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Date</th>
-                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider">Actions</th>
+                        <th class="px-3 sm:px-6 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider min-w-20">Order</th>
+                        <th class="px-3 sm:px-6 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider min-w-32 hidden md:table-cell">Salesperson</th>
+                        <th class="px-3 sm:px-6 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider min-w-32">Shop</th>
+                        <th class="px-3 sm:px-6 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider min-w-24">Total</th>
+                        <th class="px-3 sm:px-6 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider min-w-40">Status</th>
+                        <th class="px-3 sm:px-6 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider min-w-24 hidden sm:table-cell">Date</th>
+                        <th class="px-3 sm:px-6 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider min-w-20">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-100">
                     @forelse ($orders as $order)
                         @can('view', $order->shop)
                             <tr class="hover:bg-indigo-50/30 transition">
-                                <td class="px-6 py-4 whitespace-nowrap">
+                                <td class="px-3 sm:px-6 py-4 whitespace-nowrap">
                                     <input
                                         type="checkbox"
                                         wire:model="selectedOrders"
@@ -104,12 +161,12 @@
                                         class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-400 focus:ring-indigo-200"
                                     />
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
+                                <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
                                     <span class="inline-flex items-center gap-2">
                                         #{{ $order->id }}
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900 hidden md:table-cell">
                                     <div class="flex items-center gap-3">
                                         <img src="https://ui-avatars.com/api/?name={{ urlencode($order->salesperson->name) }}&background=4f46e5&color=fff&size=32" alt="{{ $order->salesperson->name }}" class="w-8 h-8 rounded-full shadow border border-white" />
                                         <div>
@@ -118,34 +175,36 @@
                                         </div>
                                     </div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                <td class="px-3 sm:px-6 py-4 text-sm text-gray-900">
                                     <div class="flex items-center gap-3">
                                         <div>
                                             <a href="{{ route('subdomain.shop', ['shop' => $order->shop->id]) }}" target="_blank" class="text-indigo-600 hover:underline font-semibold">{{ $order->shop->name }}</a>
+                                            <!-- Show salesperson info on mobile when hidden column is not visible -->
+                                            <div class="text-xs text-gray-400 md:hidden">by {{ $order->salesperson->name }}</div>
                                         </div>
                                     </div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-green-600">
+                                <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-bold text-green-600">
                                     {{ number_format($order->total_price, 2) }} TL
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                <td class="px-3 sm:px-6 py-4 text-sm">
                                     <div class="relative" x-data="{ open: false }" @keydown.escape.window="open = false" @click.away="open = false">
                                         <button type="button"
                                             @click="open = !open"
-                                            class="w-48 flex items-center justify-between px-4 py-3 rounded-2xl border-2 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition {{ $order->status->colorClasses() }} shadow-sm"
+                                            class="w-full max-w-48 flex items-center justify-between px-3 py-2 rounded-xl border-2 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition {{ $order->status->colorClasses() }} shadow-sm"
                                             :aria-expanded="open"
                                         >
-                                            <div class="flex items-center gap-3">
+                                            <div class="flex items-center gap-2">
                                                 {!! $order->status->icon() !!}
                                                 <div class="flex flex-col text-left">
-                                                    <span class="font-bold text-base">{{ $order->status->label() }}</span>
+                                                    <span class="font-bold text-sm">{{ $order->status->label() }}</span>
                                                 </div>
                                             </div>
-                                            <svg class="ml-2 h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <svg class="ml-1 h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                                             </svg>
                                         </button>
-                                        <div x-show="open" x-transition.origin.top.left class="absolute z-30 mt-2 w-72 rounded-2xl shadow-2xl bg-white ring-1 ring-black ring-opacity-5 focus:outline-none" style="display: none;">
+                                        <div x-show="open" x-transition.origin.top.left class="absolute z-30 mt-2 w-72 rounded-2xl shadow-2xl bg-white ring-1 ring-black ring-opacity-5 focus:outline-none right-0 sm:left-0" style="display: none;">
                                             <div class="py-2 max-h-96 overflow-y-auto">
                                                 @foreach($availableStatuses as $status)
                                                     <button type="button"
@@ -166,8 +225,10 @@
                                             </div>
                                         </div>
                                     </div>
+                                    <!-- Show date on mobile when date column is hidden -->
+                                    <div class="text-xs text-gray-400 mt-1 sm:hidden">{{ $order->created_at->format('d-m-Y') }}</div>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                                <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-500 hidden sm:table-cell">
                                     <span class="inline-flex items-center gap-1">
                                         <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
@@ -175,14 +236,14 @@
                                         {{ $order->created_at->format('d-m-Y') }}
                                     </span>
                                 </td>
-                                <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
-                                    <div class="flex gap-2">
+                                <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                    <div class="flex gap-1">
                                         <button
                                             wire:click="showOrderDetails({{ $order->id }})"
                                             class="inline-flex items-center justify-center w-8 h-8 rounded-full bg-indigo-50 hover:bg-indigo-100 text-indigo-600 border border-transparent hover:border-indigo-200 transition"
                                             title="View Order"
                                         >
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
                                             </svg>
@@ -194,8 +255,14 @@
                         @endcan
                     @empty
                         <tr>
-                            <td colspan="8" class="px-6 py-4 text-center text-sm text-gray-400">
-                                No orders found.
+                            <td colspan="8" class="px-3 sm:px-6 py-8 text-center text-sm text-gray-400">
+                                <div class="flex flex-col items-center">
+                                    <svg class="w-12 h-12 text-gray-300 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                    </svg>
+                                    <p class="text-gray-500 font-medium">No orders found</p>
+                                    <p class="text-gray-400 text-xs mt-1">Try adjusting your filters or search terms</p>
+                                </div>
                             </td>
                         </tr>
                     @endforelse
