@@ -61,6 +61,8 @@ class HandleOrderUpdated implements ShouldQueue
                 // Log the order update activity with meaningful fields only
                 $activityLogger = activity('order')
                     ->performedOn($order)
+                    ->by(auth()->user()->id ?? User::find(1)->id) // Fallback to system user if not authenticated
+                    ->causedBy(auth()->user()->id ?? User::find(1)->id) // Fallback to system user if not authenticated
                     ->withProperties([
                         'order_id' => $order->id,
                         'status' => $order->status->value,
@@ -69,11 +71,6 @@ class HandleOrderUpdated implements ShouldQueue
                         'notes' => $order->notes,
                         'changes' => $changes,
                     ]);
-
-                // Use authenticated user as causer
-                if (auth()->check()) {
-                    $activityLogger->causedBy(auth()->user());
-                }
 
                 $activityLogger->log($description);
 

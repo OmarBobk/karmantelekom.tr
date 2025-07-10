@@ -51,7 +51,7 @@ class NewActivityLogged extends Notification
             'description' => $this->activity->description,
             'model_type' => $this->activity->subject_type,
             'model_id' => $this->activity->subject_id,
-            'performed_by' => $this->activity->causer?->name ?? 'System',
+            'performed_by' => $this->activity->causer ? $this->activity->causer->name : 'System',
         ];
     }
 
