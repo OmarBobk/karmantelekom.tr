@@ -32,14 +32,15 @@
     - ###DONE When Logged-In User Changes Device
         - Why: User opens site on a new device; need to load their cart from DB.
         - What to Do: Pull cart from DB and push it into localStorage.
+- **DONE** Update the analytics id.
 
 - **TODO** Create an announcement Manager.
 - **TODO** Place the announcement at the top of the main page.
 - **TODO** Create a marquee.
 - **TODO** Design the marquee using https://magicui.design/docs/tailwind-v4.
-- **TODO** Update the analytics id.
 - **TODO** Put this code in the footer : "<x-language-selector :currentLanguage="$currentLanguage" />"
+- **TODO** Start using JsonRespond trait
 
 
 ###BUGS:
-- **TODO**: You can not clear the cart if user not logged in.'
+- **DONE**: You can not clear the cart if user not logged in.'

@@ -6,16 +6,16 @@ use App\Models\Order;
 use App\Enums\OrderStatus;
 use App\Models\Shop;
 use App\Models\User;
-use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Facades\Log;
+use LaravelDaily\Invoices\Classes\Buyer;
+use LaravelDaily\Invoices\Classes\InvoiceItem;
+use LaravelDaily\Invoices\Invoice;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Spatie\Browsershot\Browsershot;
 use Throwable;
-use Illuminate\Support\Facades\View;
-use Illuminate\Support\Facades\Response;
 
 class OrdersManager extends Component
 {
@@ -235,33 +235,61 @@ class OrdersManager extends Component
         return OrderStatus::cases();
     }
 
-    public function exportOrderToPdf($orderId): void
+    public function exportOrderToPdf($orderId)
     {
         try {
-            if (!$orderId || $orderId <= 0) {
-                $this->dispatch('notify', [
-                    'type' => 'error',
-                    'message' => 'Invalid order ID provided.'
-                ]);
-                return;
-            }
 
             $order = Order::with(['items.product', 'shop', 'salesperson'])
                 ->findOrFail($orderId);
 
-            $this->dispatch('notify', [
-                'type' => 'success',
-                'message' => 'PDF download started. Please check your downloads folder.'
+            $customer = new Buyer([
+                'serial' => $order->id,
+                'date' => $order->updated_at->format('d M Y'),
+                'invoice_records' => $order->items,
+                'total' => $order->total_price
             ]);
 
-            // Dispatch browser event to trigger PDF download
-            $this->dispatch('download-pdf', url: route('subdomain.orders.pdf', $order->id));
+            $invoice = Invoice::make()
+                ->template('indirimgo')
+                ->buyer($customer)
+                ->discountByPercent(10)
+                ->taxRate(18)
+                ->addItem((new InvoiceItem())->pricePerUnit(2));
+
+
+            $html = view('vendor.invoices.templates.indirimgo', compact('invoice'))->render();
+
+            return response()->stream(function () use ($html) {
+                print Browsershot::html($html)
+                    ->format('A4')
+                    ->noSandbox()
+                    ->waitUntilNetworkIdle()
+                    ->showBackground()
+                    ->pdf();
+            }, 200,
+                [
+                    'Content-Type' => 'application/pdf',
+                    'Content-Disposition' => 'inline; filename="invoice.pdf"',
+                ]);
+
+//            return  $invoice->stream();
+
+//
+//            $this->dispatch('notify', [
+//                'type' => 'success',
+//                'message' => 'PDF download started. Please check your downloads folder.'
+//            ]);
+//
+//            // Dispatch browser event to trigger PDF download
+//            $this->dispatch('download-pdf', url: route('subdomain.orders.pdf', $order->id));
 
         } catch (Throwable $e) {
             $this->dispatch('notify', [
                 'type' => 'error',
                 'message' => 'Failed to export order: ' . $e->getMessage()
             ]);
+
+            dd($e->getMessage());
         }
     }
 }

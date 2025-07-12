@@ -20,6 +20,7 @@
     "dependencies": {
         "alpinejs": "^3.14.8",
         "clockwork-browser": "^1.1.2",
+        "puppeteer": "^24.12.1",
         "tailwindcss-rtl": "^0.9.0"
     }
 }

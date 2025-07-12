@@ -16,7 +16,7 @@ return new class extends Migration
             $table->decimal('subtotal', 10, 2); // Price per unit at the time of order
 
             $table->foreignId('order_id')->constrained('orders')->cascadeOnDelete();
-            $table->foreignId('product_id')->constrained('products')->cascadeOnDelete();
+            $table->foreignId('product_id')->nullable()->constrained('products')->nullOnDelete();
             $table->timestamps();
         });
     }

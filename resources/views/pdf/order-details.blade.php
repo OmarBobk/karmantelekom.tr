@@ -6,7 +6,7 @@
     <title>Order #{{ $order->id }} - {{ config('app.name') }}</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'DejaVu Sans', sans-serif;
             margin: 0;
             padding: 20px;
             color: #333;
@@ -62,7 +62,7 @@
         .status-delivering { background-color: #e0e7ff; color: #3730a3; }
         .status-delivered { background-color: #d1fae5; color: #065f46; }
         .status-cancelled { background-color: #fee2e2; color: #991b1b; }
-        
+
         .items-table {
             width: 100%;
             border-collapse: collapse;
@@ -167,7 +167,7 @@
                 </span>
             </div>
         </div>
-        
+
         <div class="customer-details">
             <h3>Shop & Salesperson</h3>
             <div class="info-row">
@@ -195,8 +195,8 @@
             <tr>
                 <td>
                     <div class="product-info">
-                        <img src="{{ asset('storage/' . $item->product->primary_image_url) }}" 
-                             alt="{{ $item->product->name }}" 
+                        <img src="{{ asset('storage/' . $item->product->primary_image_url) }}"
+                             alt="{{ $item->product->name }}"
                              class="product-image">
                         <div>
                             <div class="product-name">{{ $item->product->name }}</div>
@@ -232,4 +232,4 @@
         <p>Thank you for your business!</p>
     </div>
 </body>
-</html> 
+</html>
