@@ -300,148 +300,259 @@
     </x-confirmation-modal>
 
     <!-- Order Details Modal -->
-    <div class="fixed inset-0 z-50 overflow-y-auto" style="display: {{ $showOrderDetailsModal ? 'block' : 'none' }};">
-        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div class="fixed inset-0 transition-opacity" aria-hidden="true">
-                <div class="absolute inset-0 bg-gray-500 opacity-75" wire:click="closeOrderDetailsModal"></div>
+    <div class="fixed inset-0 z-50 overflow-y-auto" style="display: {{ $showOrderDetailsModal ? 'block' : 'none' }};" x-data="{ show: @entangle('showOrderDetailsModal') }">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <!-- Backdrop -->
+            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+                 wire:click="closeOrderDetailsModal"
+                 x-show="show"
+                 x-transition:enter="ease-out duration-300"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100"
+                 x-transition:leave="ease-in duration-200"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0">
             </div>
 
+            <!-- Modal positioning helper -->
             <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
 
-            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
-                <!-- Close Button -->
-                <div class="absolute top-0 right-0 pt-4 pr-4 z-10">
-                    <button
-                        wire:click="closeOrderDetailsModal"
-                        type="button"
-                        class="bg-white rounded-md text-gray-400 hover:text-gray-500 focus:outline-none focus:ring-2 focus:ring-indigo-500"
-                    >
-                        <span class="sr-only">Close</span>
-                        <svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
-                        </svg>
-                    </button>
+            <!-- Modal panel -->
+            <div class="relative inline-block align-bottom bg-white rounded-t-2xl sm:rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle w-full sm:max-w-6xl sm:w-full max-h-[90vh] sm:max-h-[85vh]"
+                 x-show="show"
+                 x-transition:enter="ease-out duration-300"
+                 x-transition:enter-start="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+                 x-transition:enter-end="opacity-100 translate-y-0 sm:scale-100"
+                 x-transition:leave="ease-in duration-200"
+                 x-transition:leave-start="opacity-100 translate-y-0 sm:scale-100"
+                 x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95">
+
+                <!-- Modal Header -->
+                <div class="bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-6 sm:px-6">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center space-x-3">
+                            <div class="flex-shrink-0 w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                </svg>
+                            </div>
+                            <div>
+                                <h3 class="text-lg sm:text-xl font-bold text-white">
+                                    Order #{{ $selectedOrder?->id }}
+                                </h3>
+                                <p class="text-indigo-100 text-sm">
+                                    {{ $selectedOrder?->created_at->format('d M Y, H:i') }}
+                                </p>
+                            </div>
+                        </div>
+                        <button wire:click="closeOrderDetailsModal"
+                                class="rounded-full bg-white bg-opacity-20 p-2 text-white hover:bg-opacity-30 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 transition-all">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                            </svg>
+                        </button>
+                    </div>
                 </div>
 
-                <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
-                    <div class="sm:flex sm:items-start">
-                        <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-indigo-100 sm:mx-0 sm:h-10 sm:w-10">
-                            <svg class="h-6 w-6 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                        </div>
-                        <div class="mt-3 text-center sm:mt-0 sm:ml-4 sm:text-left w-full">
-                            <h3 class="text-lg leading-6 font-medium text-gray-900 mb-4">
-                                Order Details #{{ $selectedOrder?->id }}
-                            </h3>
+                <!-- Modal Content -->
+                <div class="bg-white flex flex-col max-h-[calc(90vh-120px)] sm:max-h-[calc(85vh-120px)]">
+                    @if($selectedOrder)
+                        <div class="flex-1 overflow-y-auto">
+                            <div class="p-4 sm:p-6 space-y-6">
 
-                            @if($selectedOrder)
-                            <div class="space-y-6">
-                                <!-- Order Information -->
-                                <div class="bg-gray-50 rounded-lg p-4">
-                                    <h4 class="text-sm font-medium text-gray-900 mb-3 flex items-center">
-                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                                        </svg>
-                                        Order Information
-                                    </h4>
-                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                                        <div>
-                                            <span class="font-medium text-gray-700">Shop:</span>
-                                            <span class="ml-2 text-gray-900">{{ $selectedOrder->shop->name }}</span>
+                                <!-- Order Summary Cards -->
+                                <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                                    <!-- Shop Card -->
+                                    <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
+                                        <div class="flex items-center space-x-3">
+                                            <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
+                                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-6m-8 0H3m2 0h6M9 7h6m-6 4h6m-6 4h6" />
+                                                </svg>
+                                            </div>
+                                            <div class="flex-1 min-w-0">
+                                                <p class="text-xs font-medium text-blue-600 uppercase tracking-wide">Shop</p>
+                                                <p class="text-sm font-bold text-blue-900 truncate">{{ $selectedOrder->shop->name }}</p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <span class="font-medium text-gray-700">Salesperson:</span>
-                                            <span class="ml-2 text-gray-900">{{ $selectedOrder->salesperson->name }}</span>
+                                    </div>
+
+                                    <!-- Salesperson Card -->
+                                    <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
+                                        <div class="flex items-center space-x-3">
+                                            <div class="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
+                                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+                                                </svg>
+                                            </div>
+                                            <div class="flex-1 min-w-0">
+                                                <p class="text-xs font-medium text-green-600 uppercase tracking-wide">Salesperson</p>
+                                                <p class="text-sm font-bold text-green-900 truncate">{{ $selectedOrder->salesperson->name }}</p>
+                                            </div>
                                         </div>
-                                        <div>
-                                            <span class="font-medium text-gray-700">Status:</span>
-                                            <div class="ml-2 relative" x-data="{ open: false }" @keydown.escape.window="open = false" @click.away="open = false">
-                                                <button type="button"
-                                                    @click="open = !open"
-                                                    class="inline-flex items-center px-3 py-1 rounded-full text-xs font-semibold focus:outline-none focus:ring-2 focus:ring-indigo-500 transition {{ $selectedOrder->status->getBackgroundColor() }}"
-                                                    :aria-expanded="open"
-                                                >
-                                                    {{ ucfirst($selectedOrder->status->value) }}
-                                                    <svg class="ml-2 h-4 w-4 text-gray-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
-                                                    </svg>
-                                                </button>
-                                                <div x-show="open" class="absolute z-20 mt-2 w-40 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 focus:outline-none" style="display: none;">
-                                                    <div class="py-1">
-                                                        @foreach($availableStatuses as $status)
-                                                            <button type="button"
-                                                                wire:click="updateOrderStatus({{ $selectedOrder->id }}, '{{ $status->value }}')"
-                                                                @click="open = false"
-                                                                class="w-full text-left px-4 py-2 text-xs rounded-full mb-1 font-semibold focus:outline-none transition {{ $status->getBackgroundColor() }} {{ $selectedOrder->status->value === $status->value ? 'ring-2 ring-indigo-400' : '' }}"
-                                                                style="margin-bottom: 0.25rem;"
-                                                            >
-                                                                {{ ucfirst($status->value) }}
-                                                            </button>
-                                                        @endforeach
+                                    </div>
+
+                                    <!-- Status Card -->
+                                    <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 border border-purple-200">
+                                        <div class="flex items-center space-x-3">
+                                            <div class="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
+                                                {!! $selectedOrder->status->icon() !!}
+                                            </div>
+                                            <div class="flex-1 min-w-0">
+                                                <p class="text-xs font-medium text-purple-600 uppercase tracking-wide">Status</p>
+                                                <div class="relative" x-data="{ open: false }" @keydown.escape.window="open = false" @click.away="open = false">
+                                                    <button type="button"
+                                                            @click="open = !open"
+                                                            class="text-sm font-bold text-purple-900 hover:text-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 rounded-md transition-colors"
+                                                            :aria-expanded="open">
+                                                        {{ $selectedOrder->status->label() }}
+                                                        <svg class="inline ml-1 w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
+                                                        </svg>
+                                                    </button>
+                                                    <div x-show="open"
+                                                         x-transition:enter="transition ease-out duration-100"
+                                                         x-transition:enter-start="transform opacity-0 scale-95"
+                                                         x-transition:enter-end="transform opacity-100 scale-100"
+                                                         x-transition:leave="transition ease-in duration-75"
+                                                         x-transition:leave-start="transform opacity-100 scale-100"
+                                                         x-transition:leave-end="transform opacity-0 scale-95"
+                                                         class="absolute z-30 mt-2 w-64 rounded-xl shadow-2xl bg-white ring-1 ring-black ring-opacity-5 focus:outline-none right-0 sm:left-0"
+                                                         style="display: none;">
+                                                        <div class="py-2 max-h-80 overflow-y-auto">
+                                                            @foreach($availableStatuses as $status)
+                                                                <button type="button"
+                                                                        wire:click="updateOrderStatus({{ $selectedOrder->id }}, '{{ $status->value }}')"
+                                                                        @click="open = false"
+                                                                        class="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors focus:outline-none focus:bg-gray-50 {{ $selectedOrder->status->value === $status->value ? 'bg-indigo-50 border-l-4 border-indigo-400' : '' }}">
+                                                                    <div class="flex-shrink-0">
+                                                                        {!! $status->icon() !!}
+                                                                    </div>
+                                                                    <div class="flex-1 min-w-0">
+                                                                        <p class="text-sm font-semibold text-gray-900">{{ $status->label() }}</p>
+                                                                        <p class="text-xs text-gray-500">{{ $status->description() }}</p>
+                                                                    </div>
+                                                                    @if($selectedOrder->status->value === $status->value)
+                                                                        <svg class="w-4 h-4 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"/>
+                                                                        </svg>
+                                                                    @endif
+                                                                </button>
+                                                            @endforeach
+                                                        </div>
                                                     </div>
-                                                </div>
-                                                <div wire:loading wire:target="updateOrderStatus" class="inline-block ml-2">
-                                                    <svg class="animate-spin h-4 w-4 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                                                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                                                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                                                    </svg>
                                                 </div>
                                             </div>
                                         </div>
-                                        <div>
-                                            <span class="font-medium text-gray-700">Date:</span>
-                                            <span class="ml-2 text-gray-900">{{ $selectedOrder->created_at->format('d M Y, H:i') }}</span>
-                                        </div>
-                                        <div class="md:col-span-2">
-                                            <span class="font-medium text-gray-700">Total:</span>
-                                            <span class="ml-2 text-lg font-bold text-green-600">{{ number_format($selectedOrder->total_price, 2) }} TL</span>
+                                    </div>
+
+                                    <!-- Total Card -->
+                                    <div class="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl p-4 border border-emerald-200">
+                                        <div class="flex items-center space-x-3">
+                                            <div class="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center">
+                                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
+                                                </svg>
+                                            </div>
+                                            <div class="flex-1 min-w-0">
+                                                <p class="text-xs font-medium text-emerald-600 uppercase tracking-wide">Total</p>
+                                                <p class="text-sm font-bold text-emerald-900">{{ number_format($selectedOrder->total_price, 2) }} TL</p>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
 
                                 <!-- Order Items -->
-                                <div class="bg-white border border-gray-200 rounded-lg">
-                                    <div class="px-4 py-3 border-b border-gray-200">
-                                        <h4 class="text-sm font-medium text-gray-900 flex items-center">
-                                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <div class="bg-white border border-gray-200 rounded-2xl overflow-hidden">
+                                    <div class="bg-gradient-to-r from-gray-50 to-gray-100 px-4 sm:px-6 py-4 border-b border-gray-200">
+                                        <h4 class="text-lg font-bold text-gray-900 flex items-center">
+                                            <svg class="w-5 h-5 mr-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
                                             </svg>
-                                            Order Items ({{ $selectedOrder->items->count() }})
+                                            Order Items
+                                            <span class="ml-2 inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-indigo-100 text-indigo-800">
+                                                {{ $selectedOrder->items->count() }}
+                                            </span>
                                         </h4>
                                     </div>
-                                    <div class="overflow-hidden">
+
+                                    <!-- Mobile View -->
+                                    <div class="block sm:hidden">
+                                        <div class="divide-y divide-gray-200">
+                                            @foreach($selectedOrder->items as $item)
+                                                <div class="p-4 hover:bg-gray-50 transition-colors">
+                                                    <div class="flex items-start space-x-3">
+                                                        <div class="flex-shrink-0">
+                                                            <img class="w-16 h-16 rounded-lg object-cover border border-gray-200"
+                                                                 src="{{ asset('storage/' . $item->product->primary_image_url) }}"
+                                                                 alt="{{ $item->product->name }}">
+                                                        </div>
+                                                        <div class="flex-1 min-w-0">
+                                                            <div class="flex items-start justify-between">
+                                                                <div class="flex-1 min-w-0">
+                                                                    <p class="text-sm font-semibold text-gray-900 truncate">{{ $item->product->name }}</p>
+                                                                    <p class="text-xs text-gray-500">{{ $item->product->code }}</p>
+                                                                </div>
+                                                                <div class="flex-shrink-0 ml-2">
+                                                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                                        Qty: {{ $item->quantity }}
+                                                                    </span>
+                                                                </div>
+                                                            </div>
+                                                            <div class="mt-2 flex items-center justify-between">
+                                                                <div class="text-sm text-gray-600">
+                                                                    {{ number_format($item->price, 2) }} TL each
+                                                                </div>
+                                                                <div class="text-sm font-bold text-gray-900">
+                                                                    {{ number_format($item->subtotal, 2) }} TL
+                                                                </div>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+
+                                    <!-- Desktop View -->
+                                    <div class="hidden sm:block overflow-x-auto">
                                         <table class="min-w-full divide-y divide-gray-200">
                                             <thead class="bg-gray-50">
                                                 <tr>
-                                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-                                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
-                                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
-                                                    <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subtotal</th>
+                                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
+                                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
+                                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Price</th>
+                                                    <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Subtotal</th>
                                                 </tr>
                                             </thead>
                                             <tbody class="bg-white divide-y divide-gray-200">
                                                 @foreach($selectedOrder->items as $item)
-                                                <tr class="hover:bg-gray-50">
-                                                    <td class="px-4 py-3 whitespace-nowrap">
-                                                        <div class="flex items-center">
-                                                            <div class="flex-shrink-0 h-10 w-10">
-                                                                <img class="h-10 w-10 rounded-lg object-cover" src="{{ asset('storage/' . $item->product->primary_image_url) }}" alt="{{ $item->product->name }}">
+                                                    <tr class="hover:bg-gray-50 transition-colors">
+                                                        <td class="px-6 py-4 whitespace-nowrap">
+                                                            <div class="flex items-center">
+                                                                <div class="flex-shrink-0 w-12 h-12">
+                                                                    <img class="w-12 h-12 rounded-lg object-cover border border-gray-200"
+                                                                         src="{{ asset('storage/' . $item->product->primary_image_url) }}"
+                                                                         alt="{{ $item->product->name }}">
+                                                                </div>
+                                                                <div class="ml-4">
+                                                                    <div class="text-sm font-semibold text-gray-900">{{ $item->product->name }}</div>
+                                                                    <div class="text-sm text-gray-500">{{ $item->product->code }}</div>
+                                                                </div>
                                                             </div>
-                                                            <div class="ml-3">
-                                                                <div class="text-sm font-medium text-gray-900">{{ $item->product->name }}</div>
-                                                                <div class="text-sm text-gray-500">{{ $item->product->code }}</div>
-                                                            </div>
-                                                        </div>
-                                                    </td>
-                                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">
-                                                        <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
-                                                            {{ $item->quantity }}
-                                                        </span>
-                                                    </td>
-                                                    <td class="px-4 py-3 whitespace-nowrap text-sm text-gray-900">${{ number_format($item->price, 2) }}</td>
-                                                    <td class="px-4 py-3 whitespace-nowrap text-sm font-medium text-gray-900">${{ number_format($item->subtotal, 2) }}</td>
-                                                </tr>
+                                                        </td>
+                                                        <td class="px-6 py-4 whitespace-nowrap">
+                                                            <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                                                {{ $item->quantity }}
+                                                            </span>
+                                                        </td>
+                                                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-900">
+                                                            {{ number_format($item->price, 2) }} TL
+                                                        </td>
+                                                        <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-gray-900">
+                                                            {{ number_format($item->subtotal, 2) }} TL
+                                                        </td>
+                                                    </tr>
                                                 @endforeach
                                             </tbody>
                                         </table>
@@ -450,43 +561,46 @@
 
                                 <!-- Order Notes -->
                                 @if($selectedOrder->notes)
-                                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
-                                    <h4 class="text-sm font-medium text-yellow-900 mb-2 flex items-center">
-                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                                        </svg>
-                                        Order Notes
-                                    </h4>
-                                    <p class="text-sm text-yellow-800">{{ $selectedOrder->notes }}</p>
-                                </div>
+                                    <div class="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 sm:p-6">
+                                        <h4 class="text-lg font-bold text-amber-900 mb-3 flex items-center">
+                                            <svg class="w-5 h-5 mr-3 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                                            </svg>
+                                            Order Notes
+                                        </h4>
+                                        <div class="bg-white rounded-xl p-4 border border-amber-200">
+                                            <p class="text-sm text-gray-700 leading-relaxed">{{ $selectedOrder->notes }}</p>
+                                        </div>
+                                    </div>
                                 @endif
                             </div>
-                            @endif
                         </div>
-                    </div>
-                </div>
-                <div class="bg-gray-50 px-4 py-3 sm:px-6 sm:flex sm:flex-row-reverse">
-                    <form target="_blank" action="{{route('subdomain.invoice_pdf', $selectedOrder->id ?? 0)}}" method="POST">
-                        @csrf
-                        <button
-                            wire:loading.attr="disabled"
-                            @if(!$selectedOrder) disabled @endif
-                            type="submit"
-                            class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-green-600 text-base font-medium text-white hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 sm:ml-3 sm:w-auto sm:text-sm"
-                        >
-                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-                            </svg>
-                            Export PDF
-                        </button>
-                    </form>
-                    <button
-                        wire:click="closeOrderDetailsModal"
-                        type="button"
-                        class="w-full inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:ml-3 sm:w-auto sm:text-sm"
-                    >
-                        Close
-                    </button>
+                    @endif
+                        <!-- Modal Footer -->
+                        <div class="bg-gray-50 px-4 py-4 sm:px-6 sm:py-6 border-t border-gray-200 flex flex-col sm:flex-row gap-3 sm:gap-0 sm:justify-between">
+                            <div class="flex flex-col sm:flex-row gap-3">
+                                <form target="_blank" action="{{route('subdomain.invoice_pdf', $selectedOrder->id ?? 0)}}" method="POST">
+                                    @csrf
+                                    <button type="submit"
+                                            wire:loading.attr="disabled"
+                                            @if(!$selectedOrder) disabled @endif
+                                            class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-xl text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                                        </svg>
+                                        <span wire:loading.remove>Export PDF</span>
+                                        <span wire:loading>Generating...</span>
+                                    </button>
+                                </form>
+                            </div>
+                            <div class="flex flex-col sm:flex-row gap-3">
+                                <button wire:click="closeOrderDetailsModal"
+                                        type="button"
+                                        class="w-full sm:w-auto inline-flex items-center justify-center px-6 py-2 border border-gray-300 text-sm font-medium rounded-xl text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+                                    Close
+                                </button>
+                            </div>
+                        </div>
                 </div>
             </div>
         </div>
@@ -516,3 +630,4 @@
         document.body.removeChild(link);
     });
 </script>
+
