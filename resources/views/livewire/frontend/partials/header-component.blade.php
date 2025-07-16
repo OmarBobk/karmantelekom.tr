@@ -20,7 +20,7 @@ class="relative">
                 </div>
                 <!-- Logo -->
                 <a href="{{ route('main') }}" class="text-2xl font-bold tracking-tight ml-4 lg:ml-0">
-                    <span class="text-blue-600">İndirim<span class="text-gray-900">Go</span></span>
+                    <img src="{{ asset('assets/images/indirimgo.png') }}" class="w-24 lg:w-32" alt="Logo">
                 </a>
             </div>
 
@@ -137,7 +137,7 @@ class="relative">
             <!-- Sidebar Header -->
             <div class="flex items-center justify-between py-6 {{app()->getLocale() == 'ar' ? 'pl-8 pr-10' : 'pl-10 pr-8'}} border-b border-gray-100">
                 <a href="{{ route('main') }}" class="text-2xl font-semibold font-poppins bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">
-                    <img src="{{ Storage::url('title-logo.svg') }}" class="w-24" alt="">
+                    <img src="{{ Storage::url('indirimgo_logo.png') }}" class="w-24" alt="">
                 </a>
                 <button @click="sidebarOpen = false"
                         class="p-2 text-gray-500 hover:text-gray-700 hover:bg-gray-100 rounded-lg transition-colors duration-200"
@@ -193,7 +193,7 @@ class="relative">
                                      x-transition:leave-start="opacity-100 translate-y-0"
                                      x-transition:leave-end="opacity-0 -translate-y-2"
                                      class="{{ app()->getLocale() == 'ar' ? 'pr-4' : 'pl-4' }} space-y-1 mt-1 relative">
-                                    
+
                                     <a href="{{ route('products', ['category' => 'all']) }}"
                                        class="block px-4 py-2 text-sm text-gray-600 hover:text-blue-700 hover:bg-blue-50 rounded-lg transition-all duration-200 group relative">
                                         <div class="flex items-center">

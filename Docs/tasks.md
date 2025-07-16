@@ -39,7 +39,10 @@
 - **TODO** Create a marquee.
 - **TODO** Design the marquee using https://magicui.design/docs/tailwind-v4.
 - **TODO** Put this code in the footer : "<x-language-selector :currentLanguage="$currentLanguage" />"
-- **TODO** Start using JsonRespond trait
+- **TODO** Dashboard:
+    - **TODO** a page to view all notifications.
+    - **TODO** Users Manager.
+    - **TODO** when product is deleted, it should be removed from the analyics
 
 
 ###BUGS:

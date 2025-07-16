@@ -25,7 +25,7 @@
         <!-- Company Info -->
         <div class="flex flex-col justify-between items-center">
             <span class="text-2xl font-semibold mb-2 bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">
-                <img src="{{ Storage::url('logo.svg') }}" class="w-36" alt="">
+                <img src="{{ asset('assets/images/indirimgo_logo.png') }}" class="w-36" alt="">
             </span>
             <!-- Social Links -->
             <div class="flex gap-4 mt-6">

@@ -32,6 +32,8 @@ class OrdersManager extends Component
     public bool $showOrderDetailsModal = false;
     public string $fromDate = '';
     public string $toDate = '';
+    public string $sortBy = 'id';
+    public string $sortDirection = 'asc';
 
     protected array $queryString = [
         'statusFilter' => ['except' => ''],
@@ -39,6 +41,8 @@ class OrdersManager extends Component
         'search' => ['except' => ''],
         'fromDate' => ['except' => ''],
         'toDate' => ['except' => ''],
+        'sortBy' => ['except' => 'id'],
+        'sortDirection' => ['except' => 'asc'],
     ];
 
     public function updatingStatusFilter(): void
@@ -58,7 +62,18 @@ class OrdersManager extends Component
 
     public function clearAllFilters(): void
     {
-        $this->reset(['statusFilter', 'salespersonFilter', 'search', 'fromDate', 'toDate']);
+        $this->reset(['statusFilter', 'salespersonFilter', 'search', 'fromDate', 'toDate', 'sortBy', 'sortDirection']);
+        $this->resetPage();
+    }
+
+    public function sortByColumn(string $field): void
+    {
+        if ($this->sortBy === $field) {
+            $this->sortDirection = $this->sortDirection === 'asc' ? 'desc' : 'asc';
+        } else {
+            $this->sortBy = $field;
+            $this->sortDirection = 'asc';
+        }
         $this->resetPage();
     }
 
@@ -66,7 +81,7 @@ class OrdersManager extends Component
     {
         try {
             $user_id = auth()->id();
-            return Order::query()
+            $query = Order::query()
                 ->with(['salesperson', 'items', 'shop'])
                 ->when($this->search, function ($query) {
                     $search = $this->search;
@@ -94,8 +109,35 @@ class OrdersManager extends Component
                 })
                 ->when($this->toDate, function ($query) {
                     $query->whereDate('created_at', '<=', \Carbon\Carbon::parse($this->toDate)->toDateString());
-                })
-                ->paginate(10);
+                });
+
+            // Apply sorting
+            switch ($this->sortBy) {
+                case 'shop':
+                    $query->join('shops', 'orders.shop_id', '=', 'shops.id')
+                          ->orderBy('shops.name', $this->sortDirection)
+                          ->select('orders.*');
+                    break;
+                case 'salesperson':
+                    $query->join('users', 'orders.user_id', '=', 'users.id')
+                          ->orderBy('users.name', $this->sortDirection)
+                          ->select('orders.*');
+                    break;
+                case 'total':
+                    $query->orderBy('total_price', $this->sortDirection);
+                    break;
+                case 'status':
+                    $query->orderBy('status', $this->sortDirection);
+                    break;
+                case 'created_at':
+                    $query->orderBy('created_at', $this->sortDirection);
+                    break;
+                default:
+                    $query->orderBy('id', 'desc');
+                    break;
+            }
+
+            return $query->paginate(10);
         } catch (Throwable $e) {
             $this->dispatch('notify', [
                 'type' => 'error',
