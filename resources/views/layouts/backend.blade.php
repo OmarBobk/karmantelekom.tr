@@ -163,6 +163,7 @@
                                         <span class="ml-3">Shops Manager</span>
                                     </a>
                                 </li>
+                                @role('admin')
                                 <li>
                                     <a href="{{route('subdomain.users')}}" class="flex items-center p-2 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600 group transition-colors duration-200">
                                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 transition duration-75 group-hover:text-blue-600">
@@ -180,6 +181,7 @@
                                         <span class="ml-3">Settings</span>
                                     </a>
                                 </li>
+                                @endrole
                             </ul>
                         </div>
 

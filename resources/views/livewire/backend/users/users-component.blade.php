@@ -127,16 +127,24 @@
                         @endif
                     </select>
 
-                    <!-- Loading indicator for bulk actions -->
+                    <!-- Enhanced loading indicator for bulk actions dropdown -->
                     <div wire:loading wire:target="bulkAction"
-                         class="absolute inset-0 bg-white bg-opacity-50 flex items-center justify-center rounded-md">
-                        <svg class="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none"
-                             viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor"
-                                    stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor"
-                                  d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                        </svg>
+                         class="absolute inset-0 bg-gradient-to-r from-violet-50/90 to-purple-50/90 backdrop-blur-sm flex items-center justify-center rounded-md border border-violet-200/50"
+                         x-data="{}" 
+                         x-show="true"
+                         x-transition:enter="ease-out duration-200" 
+                         x-transition:enter-start="opacity-0 scale-95" 
+                         x-transition:enter-end="opacity-100 scale-100">
+                        
+                        <div class="flex items-center space-x-2">
+                            <!-- Mini animated dots -->
+                            <div class="flex space-x-1">
+                                <div class="w-1.5 h-1.5 bg-violet-400 rounded-full animate-bounce" style="animation-delay: 0s;"></div>
+                                <div class="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce" style="animation-delay: 0.1s;"></div>
+                                <div class="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style="animation-delay: 0.2s;"></div>
+                            </div>
+                            <span class="text-xs font-medium text-violet-600">Processing...</span>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -413,16 +421,217 @@
             </div>
         @endif
 
-        <!-- Loading Indicator -->
-        <div wire:loading.delay class="fixed inset-0 bg-gray-900 bg-opacity-50 flex items-center justify-center z-50">
-            <div class="bg-white rounded-lg p-6 flex items-center space-x-3">
-                <svg class="animate-spin h-6 w-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none"
-                     viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor"
-                          d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
-                <span class="text-gray-700">Loading...</span>
+        <!-- Enhanced Loading Indicators -->
+        
+        <!-- Main Loading Indicator for CRUD Operations (Exclude modal close operations) -->
+        <div wire:loading.delay 
+             wire:target="createUser,updateUser,deleteUser,performBulkAction,sortBy,updatedSearch,updatedRoleFilter,updatedVerificationFilter,updatedPerPage"
+             class="fixed inset-0 bg-gradient-to-br from-indigo-900/20 via-purple-900/20 to-pink-900/20 backdrop-blur-sm flex items-center justify-center z-50"
+             x-data="{}" 
+             x-show="true"
+             x-transition:enter="ease-out duration-300" 
+             x-transition:enter-start="opacity-0 scale-95" 
+             x-transition:enter-end="opacity-100 scale-100">
+            
+            <div class="relative">
+                <!-- Glassmorphism container with floating animation -->
+                <div class="bg-white/10 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/20 animate-pulse">
+                    <div class="flex flex-col items-center space-y-6">
+                        
+                        <!-- Multi-layered spinner animation -->
+                        <div class="relative w-16 h-16">
+                            <!-- Outer ring -->
+                            <div class="absolute inset-0 border-4 border-blue-200/30 rounded-full animate-spin"></div>
+                            <!-- Middle ring -->
+                            <div class="absolute inset-2 border-4 border-l-blue-500 border-t-purple-500 border-r-pink-500 border-b-transparent rounded-full animate-spin" style="animation-duration: 1.5s;"></div>
+                            <!-- Inner ring -->
+                            <div class="absolute inset-4 border-2 border-white/50 rounded-full animate-spin" style="animation-duration: 0.8s; animation-direction: reverse;"></div>
+                            <!-- Center dot -->
+                            <div class="absolute inset-6 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full animate-ping"></div>
+                        </div>
+                        
+                        <!-- Loading text with gradient -->
+                        <div class="text-center">
+                            <div class="text-lg font-semibold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+                                Processing...
+                            </div>
+                            <div class="text-sm text-gray-600 mt-1 opacity-80">
+                                Please wait while we handle your request
+                            </div>
+                        </div>
+                        
+                        <!-- Floating particles animation -->
+                        <div class="absolute -top-2 -left-2 w-2 h-2 bg-blue-400 rounded-full animate-ping" style="animation-delay: 0.5s;"></div>
+                        <div class="absolute -top-1 -right-3 w-1 h-1 bg-purple-400 rounded-full animate-ping" style="animation-delay: 1s;"></div>
+                        <div class="absolute -bottom-2 -left-3 w-1.5 h-1.5 bg-pink-400 rounded-full animate-ping" style="animation-delay: 1.5s;"></div>
+                        <div class="absolute -bottom-1 -right-2 w-2 h-2 bg-indigo-400 rounded-full animate-ping" style="animation-delay: 2s;"></div>
+                    </div>
+                </div>
+                
+                <!-- Glow effect -->
+                <div class="absolute inset-0 bg-gradient-to-r from-blue-400/20 via-purple-400/20 to-pink-400/20 rounded-3xl blur-xl animate-pulse"></div>
+            </div>
+        </div>
+
+        <!-- Specific Loading for Creating User -->
+        <div wire:loading.delay 
+             wire:target="createUser"
+             class="fixed inset-0 bg-gradient-to-br from-green-900/20 via-emerald-900/20 to-teal-900/20 backdrop-blur-sm flex items-center justify-center z-50"
+             x-data="{}" 
+             x-show="true"
+             x-transition:enter="ease-out duration-300" 
+             x-transition:enter-start="opacity-0 scale-95" 
+             x-transition:enter-end="opacity-100 scale-100">
+            
+            <div class="relative">
+                <div class="bg-white/10 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/20">
+                    <div class="flex flex-col items-center space-y-6">
+                        <!-- User creation icon with animation -->
+                        <div class="relative">
+                            <div class="w-16 h-16 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full flex items-center justify-center animate-bounce">
+                                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
+                                </svg>
+                            </div>
+                            <div class="absolute inset-0 bg-green-400 rounded-full animate-ping opacity-30"></div>
+                        </div>
+                        
+                        <div class="text-center">
+                            <div class="text-lg font-semibold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                                Creating User...
+                            </div>
+                            <div class="text-sm text-gray-600 mt-1 opacity-80">
+                                Setting up the new account
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Specific Loading for Updating User -->
+        <div wire:loading.delay 
+             wire:target="updateUser"
+             class="fixed inset-0 bg-gradient-to-br from-amber-900/20 via-orange-900/20 to-red-900/20 backdrop-blur-sm flex items-center justify-center z-50"
+             x-data="{}" 
+             x-show="true"
+             x-transition:enter="ease-out duration-300" 
+             x-transition:enter-start="opacity-0 scale-95" 
+             x-transition:enter-end="opacity-100 scale-100">
+            
+            <div class="relative">
+                <div class="bg-white/10 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/20">
+                    <div class="flex flex-col items-center space-y-6">
+                        <!-- Update icon with rotation animation -->
+                        <div class="relative">
+                            <div class="w-16 h-16 bg-gradient-to-r from-amber-400 to-orange-500 rounded-full flex items-center justify-center">
+                                <svg class="w-8 h-8 text-white animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
+                                </svg>
+                            </div>
+                            <div class="absolute inset-0 bg-amber-400 rounded-full animate-ping opacity-30"></div>
+                        </div>
+                        
+                        <div class="text-center">
+                            <div class="text-lg font-semibold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
+                                Updating User...
+                            </div>
+                            <div class="text-sm text-gray-600 mt-1 opacity-80">
+                                Saving changes to the account
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Specific Loading for Deleting User -->
+        <div wire:loading.delay 
+             wire:target="deleteUser"
+             class="fixed inset-0 bg-gradient-to-br from-red-900/20 via-rose-900/20 to-pink-900/20 backdrop-blur-sm flex items-center justify-center z-50"
+             x-data="{}" 
+             x-show="true"
+             x-transition:enter="ease-out duration-300" 
+             x-transition:enter-start="opacity-0 scale-95" 
+             x-transition:enter-end="opacity-100 scale-100">
+            
+            <div class="relative">
+                <div class="bg-white/10 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/20">
+                    <div class="flex flex-col items-center space-y-6">
+                        <!-- Delete icon with pulsing animation -->
+                        <div class="relative">
+                            <div class="w-16 h-16 bg-gradient-to-r from-red-400 to-rose-500 rounded-full flex items-center justify-center animate-pulse">
+                                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                </svg>
+                            </div>
+                            <div class="absolute inset-0 bg-red-400 rounded-full animate-ping opacity-30"></div>
+                        </div>
+                        
+                        <div class="text-center">
+                            <div class="text-lg font-semibold bg-gradient-to-r from-red-600 to-rose-600 bg-clip-text text-transparent">
+                                Deleting User...
+                            </div>
+                            <div class="text-sm text-gray-600 mt-1 opacity-80">
+                                Removing account from system
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Bulk Actions Loading -->
+        <div wire:loading.delay 
+             wire:target="performBulkAction"
+             class="fixed inset-0 bg-gradient-to-br from-violet-900/20 via-purple-900/20 to-indigo-900/20 backdrop-blur-sm flex items-center justify-center z-50"
+             x-data="{}" 
+             x-show="true"
+             x-transition:enter="ease-out duration-300" 
+             x-transition:enter-start="opacity-0 scale-95" 
+             x-transition:enter-end="opacity-100 scale-100">
+            
+            <div class="relative">
+                <div class="bg-white/10 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/20">
+                    <div class="flex flex-col items-center space-y-6">
+                        <!-- Bulk action icon with multiple dots -->
+                        <div class="relative flex space-x-1">
+                            <div class="w-3 h-3 bg-violet-400 rounded-full animate-bounce" style="animation-delay: 0s;"></div>
+                            <div class="w-3 h-3 bg-purple-400 rounded-full animate-bounce" style="animation-delay: 0.2s;"></div>
+                            <div class="w-3 h-3 bg-indigo-400 rounded-full animate-bounce" style="animation-delay: 0.4s;"></div>
+                            <div class="w-3 h-3 bg-blue-400 rounded-full animate-bounce" style="animation-delay: 0.6s;"></div>
+                        </div>
+                        
+                        <div class="text-center">
+                            <div class="text-lg font-semibold bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">
+                                Processing Bulk Action...
+                            </div>
+                            <div class="text-sm text-gray-600 mt-1 opacity-80">
+                                Applying changes to selected users
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Search/Filter Loading (Subtle) -->
+        <div wire:loading 
+             wire:target="updatedSearch,updatedRoleFilter,updatedVerificationFilter,updatedPerPage"
+             class="fixed top-4 right-4 z-50"
+             x-data="{}" 
+             x-show="true"
+             x-transition:enter="ease-out duration-200" 
+             x-transition:enter-start="opacity-0 translate-x-4" 
+             x-transition:enter-end="opacity-100 translate-x-0">
+            
+            <div class="bg-white/90 backdrop-blur-sm rounded-full px-4 py-2 shadow-lg border border-gray-200/50 flex items-center space-x-2">
+                <div class="flex space-x-1">
+                    <div class="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse" style="animation-delay: 0s;"></div>
+                    <div class="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse" style="animation-delay: 0.2s;"></div>
+                    <div class="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse" style="animation-delay: 0.4s;"></div>
+                </div>
+                <span class="text-sm text-gray-600">Filtering...</span>
             </div>
         </div>
     </div>
@@ -546,14 +755,19 @@
                         >
                             Cancel
                         </button>
-                        <button
-                            type="submit"
-                            class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                            wire:loading.attr="disabled"
-                        >
-                            <span wire:loading.remove wire:target="createUser">Create User</span>
-                            <span wire:loading wire:target="createUser">Creating...</span>
-                        </button>
+                                            <button 
+                        type="submit"
+                        class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-75 disabled:cursor-not-allowed transition-all duration-200"
+                        wire:loading.attr="disabled"
+                    >
+                        <span wire:loading.remove wire:target="createUser" class="flex items-center">
+                            Create User
+                        </span>
+                        <span wire:loading wire:target="createUser" class="flex items-center space-x-2">
+                            <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                            <span>Creating...</span>
+                        </span>
+                    </button>
                     </div>
                 </form>
             </div>
@@ -680,14 +894,19 @@
                         >
                             Cancel
                         </button>
-                        <button
-                            type="submit"
-                            class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                            wire:loading.attr="disabled"
-                        >
-                            <span wire:loading.remove wire:target="updateUser">Update User</span>
-                            <span wire:loading wire:target="updateUser">Updating...</span>
-                        </button>
+                                            <button 
+                        type="submit"
+                        class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-75 disabled:cursor-not-allowed transition-all duration-200"
+                        wire:loading.attr="disabled"
+                    >
+                        <span wire:loading.remove wire:target="updateUser" class="flex items-center">
+                            Update User
+                        </span>
+                        <span wire:loading wire:target="updateUser" class="flex items-center space-x-2">
+                            <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                            <span>Updating...</span>
+                        </span>
+                    </button>
                     </div>
                 </form>
             </div>
@@ -736,14 +955,19 @@
                     >
                         Cancel
                     </button>
-                    <button
-                        wire:click="deleteUser"
-                        class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-                        wire:loading.attr="disabled"
-                    >
-                        <span wire:loading.remove wire:target="deleteUser">Delete User</span>
-                        <span wire:loading wire:target="deleteUser">Deleting...</span>
-                    </button>
+                                    <button 
+                    wire:click="deleteUser"
+                    class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-75 disabled:cursor-not-allowed transition-all duration-200"
+                    wire:loading.attr="disabled"
+                >
+                    <span wire:loading.remove wire:target="deleteUser" class="flex items-center">
+                        Delete User
+                    </span>
+                    <span wire:loading wire:target="deleteUser" class="flex items-center space-x-2">
+                        <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                        <span>Deleting...</span>
+                    </span>
+                </button>
                 </div>
             </div>
         </div>

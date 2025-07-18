@@ -45,6 +45,7 @@
     - **TODO** when product is deleted, it should be removed from the analytics (Most Viewed Products).
 - **TODO** new user registration process
 - **TODO** Users Manager.
+- **TODO** Implements the new font type to the frontend.
 
 ###BUGS:
 - **DONE**: You can not clear the cart if user not logged in.'
