@@ -42,8 +42,9 @@
 - **TODO** Dashboard:
     - **TODO** a page to view all notifications.
     - **TODO** Users Manager.
-    - **TODO** when product is deleted, it should be removed from the analyics
-
+    - **TODO** when product is deleted, it should be removed from the analytics (Most Viewed Products).
+- **TODO** new user registration process
+- **TODO** Users Manager.
 
 ###BUGS:
 - **DONE**: You can not clear the cart if user not logged in.'
