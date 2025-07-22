@@ -26,6 +26,7 @@ Route::get('settings', SettingsComponent::class)->name('settings');
 Route::get('shops', \App\Livewire\Backend\Shops\ShopComponent::class)->name('shops');
 Route::get('shops/{shop}', \App\Livewire\Backend\Shops\ShopProfileComponent::class)->name('shop');
 Route::get('orders', \App\Livewire\Backend\Orders\OrdersManager::class)->name('orders');
+Route::get('activities', \App\Livewire\Backend\ActivitiesComponent::class)->name('activities');
 
 
 // PDF Export Route

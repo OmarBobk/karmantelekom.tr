@@ -48,4 +48,4 @@
 - **TODO** Implements the new font type to the frontend.
 
 ###BUGS:
-- **DONE**: You can not clear the cart if user not logged in.'
+- **DONE**: You can not clear the cart if user not logged in.

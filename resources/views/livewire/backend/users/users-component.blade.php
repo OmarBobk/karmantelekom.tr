@@ -1,160 +1,343 @@
-<div class="min-h-screen bg-gray-100 py-8">
-    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <!-- Flash Messages -->
-        @if (session()->has('message'))
-            <div class="mb-4 bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded relative"
-                 role="alert">
-                <span class="block sm:inline">{{ session('message') }}</span>
-                <span class="absolute top-0 bottom-0 right-0 px-4 py-3">
-                    <svg class="fill-current h-6 w-6 text-green-500" role="button" xmlns="http://www.w3.org/2000/svg"
-                         viewBox="0 0 20 20"><title>Close</title><path
-                            d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/></svg>
-                </span>
-            </div>
-        @endif
+<div x-data="{
+    toasts: [],
+    showToast(message, type = 'success') {
+        const id = Date.now();
+        this.toasts.push({ id, message, type });
+        setTimeout(() => {
+            this.removeToast(id);
+        }, 5000);
+    },
+    removeToast(id) {
+        this.toasts = this.toasts.filter(toast => toast.id !== id);
+    }
+}"
+x-init="
+    @if (session()->has('message'))
+        showToast('{{ session('message') }}', 'success');
+    @endif
+    @if (session()->has('error'))
+        showToast('{{ session('error') }}', 'error');
+    @endif
+"
+class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-8">
 
-        @if (session()->has('error'))
-            <div class="mb-4 bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative" role="alert">
-                <span class="block sm:inline">{{ session('error') }}</span>
-                <span class="absolute top-0 bottom-0 right-0 px-4 py-3">
-                    <svg class="fill-current h-6 w-6 text-red-500" role="button" xmlns="http://www.w3.org/2000/svg"
-                         viewBox="0 0 20 20"><title>Close</title><path
-                            d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.152 2.758 3.15a1.2 1.2 0 0 1 0 1.698z"/></svg>
-                </span>
-            </div>
-        @endif
+    <!-- Custom Styles -->
+    <style>
 
-        <!-- Header -->
-        <div class="mb-8">
-            <div class="flex flex-col md:flex-row md:items-center md:justify-between">
-                <div class="flex-1 min-w-0">
-                    <h2 class="text-2xl font-bold leading-7 text-gray-900 sm:text-3xl sm:truncate">
-                        Users Management
-                    </h2>
-                    <p class="mt-1 text-sm text-gray-500">
-                        Manage system users and their roles
-                    </p>
-                </div>
-                <div class="mt-4 flex md:mt-0 md:ml-4">
-                    <button
-                        wire:click="openAddModal"
-                        class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 transition-colors duration-200"
-                    >
-                        <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                  d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
-                        </svg>
-                        Add User
-                    </button>
-                </div>
-            </div>
-        </div>
 
-        <!-- Filters -->
-        <div class="bg-white rounded-lg shadow-lg mb-6 p-4">
-            <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-5">
-                <!-- Search -->
-                <div class="relative">
-                    <input
-                        wire:model.live.debounce.300ms="search"
-                        type="text"
-                        placeholder="Search users..."
-                        class="w-full px-10 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                    <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                        <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                  d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                        </svg>
+        @keyframes progress {
+            from { width: 100%; }
+            to { width: 0%; }
+        }
+
+        .filter-dropdown {
+            backdrop-filter: blur(8px);
+            background: rgba(255, 255, 255, 0.95);
+        }
+
+        .search-input:focus {
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.1);
+        }
+
+        .table-hover:hover {
+            background: linear-gradient(135deg, rgba(79, 70, 229, 0.05) 0%, rgba(99, 102, 241, 0.05) 100%);
+        }
+    </style>
+
+    <!-- Toast Notification System -->
+    <div class="fixed top-4 right-4 z-[60] space-y-2">
+        <template x-for="toast in toasts" :key="toast.id">
+            <div x-show="true"
+                 x-transition:enter="transform ease-out duration-300 transition"
+                 x-transition:enter-start="translate-y-2 opacity-0 sm:translate-y-0 sm:translate-x-2"
+                 x-transition:enter-end="translate-y-0 opacity-100 sm:translate-x-0"
+                 x-transition:leave="transition ease-in duration-100"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0"
+                 class="max-w-sm w-full bg-white/95 backdrop-blur-sm shadow-2xl rounded-2xl pointer-events-auto ring-1 ring-black/5 overflow-hidden border border-white/20">
+
+                <div class="p-4">
+                    <div class="flex items-start">
+                        <div class="flex-shrink-0">
+                            <template x-if="toast.type === 'success'">
+                                <div class="w-8 h-8 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full flex items-center justify-center shadow-lg">
+                                    <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
+                                    </svg>
+                                </div>
+                            </template>
+                            <template x-if="toast.type === 'error'">
+                                <div class="w-8 h-8 bg-gradient-to-r from-red-400 to-rose-500 rounded-full flex items-center justify-center shadow-lg">
+                                    <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                    </svg>
+                                </div>
+                            </template>
+                        </div>
+                        <div class="ml-3 flex-1">
+                            <p x-text="toast.message"
+                               :class="toast.type === 'success' ? 'text-gray-800' : 'text-gray-800'"
+                               class="text-sm font-semibold leading-5"></p>
+                        </div>
+                        <div class="ml-4 flex-shrink-0 flex">
+                            <button @click="removeToast(toast.id)"
+                                    class="bg-transparent rounded-full inline-flex text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200">
+                                <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
+                                    <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
+                                </svg>
+                            </button>
+                        </div>
                     </div>
-                    @if($search)
-                        <button
-                            wire:click="$set('search', '')"
-                            class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
-                        >
-                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                      d="M6 18L18 6M6 6l12 12"/>
-                            </svg>
-                        </button>
-                    @endif
                 </div>
 
-                <!-- Role Filter -->
-                <select wire:model.live="roleFilter"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    <option value="">All Roles</option>
-                    @foreach($roles as $role)
-                        <option value="{{ $role->name }}">{{ ucfirst($role->name) }}</option>
-                    @endforeach
-                </select>
+                <!-- Enhanced Progress bar -->
+                <div class="bg-gray-100 h-1.5">
+                    <div :class="toast.type === 'success' ? 'bg-gradient-to-r from-green-400 to-emerald-500' : 'bg-gradient-to-r from-red-400 to-rose-500'"
+                         class="h-1.5 rounded-b-2xl"
+                         style="animation: progress 5s linear forwards;">
+                    </div>
+                </div>
+            </div>
+        </template>
+    </div>
 
-                <!-- Verification Filter -->
-                <select wire:model.live="verificationFilter"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    <option value="">All Verification Status</option>
-                    <option value="verified">Verified</option>
-                    <option value="unverified">Unverified</option>
-                </select>
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
 
-                <!-- Per Page -->
-                <select wire:model.live="perPage"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
-                    <option value="10">10 per page</option>
-                    <option value="25">25 per page</option>
-                    <option value="50">50 per page</option>
-                    <option value="100">100 per page</option>
-                </select>
-
-                <!-- Bulk Actions -->
-                <div class="relative">
-                    <select
-                        wire:model.live="bulkAction"
-                        class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                        @disabled(count($selectedUsers) === 0)
-                    >
-                        <option value="">Bulk Actions ({{ count($selectedUsers) }})</option>
-                        @if(count($selectedUsers) > 0)
-                            <option value="delete">Delete Selected</option>
-                            <option value="verify">Verify Email</option>
-                            <option value="unverify">Unverify Email</option>
-                            <optgroup label="Change Role">
-                                <option value="role_admin">Set as Admin</option>
-                                <option value="role_salesperson">Set as Salesperson</option>
-                                <option value="role_shop_owner">Set as Shop Owner</option>
-                                <option value="role_customer">Set as Customer</option>
-                            </optgroup>
-                        @endif
-                    </select>
-
-                    <!-- Enhanced loading indicator for bulk actions dropdown -->
-                    <div wire:loading wire:target="bulkAction"
-                         class="absolute inset-0 bg-gradient-to-r from-violet-50/90 to-purple-50/90 backdrop-blur-sm flex items-center justify-center rounded-md border border-violet-200/50"
-                         x-data="{}" 
-                         x-show="true"
-                         x-transition:enter="ease-out duration-200" 
-                         x-transition:enter-start="opacity-0 scale-95" 
-                         x-transition:enter-end="opacity-100 scale-100">
-                        
-                        <div class="flex items-center space-x-2">
-                            <!-- Mini animated dots -->
-                            <div class="flex space-x-1">
-                                <div class="w-1.5 h-1.5 bg-violet-400 rounded-full animate-bounce" style="animation-delay: 0s;"></div>
-                                <div class="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce" style="animation-delay: 0.1s;"></div>
-                                <div class="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style="animation-delay: 0.2s;"></div>
+        <!-- Enhanced Header -->
+        <div class="mb-10">
+            <div class="bg-white/60 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-white/20">
+                <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
+                    <div class="flex-1 min-w-0">
+                        <div class="flex items-center space-x-4">
+                            <div class="p-3 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl shadow-lg">
+                                <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
+                                </svg>
                             </div>
-                            <span class="text-xs font-medium text-violet-600">Processing...</span>
+                            <div>
+                                <h1 class="text-3xl font-bold bg-gradient-to-r from-gray-900 via-indigo-800 to-purple-800 bg-clip-text text-transparent">
+                                    Users Management
+                                </h1>
+                                <p class="mt-2 text-sm text-gray-600">
+                                    Manage system users, roles, and permissions with advanced controls
+                                </p>
+                                <div class="mt-3 flex items-center space-x-4 text-sm text-gray-500">
+                                    <span class="inline-flex items-center">
+                                        <div class="w-2 h-2 bg-green-400 rounded-full mr-2 animate-pulse"></div>
+                                        {{ $users->total() }} Total Users
+                                    </span>
+                                    <span class="inline-flex items-center">
+                                        <div class="w-2 h-2 bg-blue-400 rounded-full mr-2"></div>
+                                        {{ count($selectedUsers) }} Selected
+                                    </span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="mt-6 lg:mt-0 lg:ml-8">
+                        <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
+                            <!-- Export Button -->
+                            <button class="inline-flex items-center px-4 py-2.5 border border-gray-300 rounded-xl shadow-sm text-sm font-medium text-gray-700 bg-white/80 backdrop-blur-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200">
+                                <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                </svg>
+                                Export
+                            </button>
+
+                            <!-- Add User Button -->
+                            <button
+                                wire:click="openAddModal"
+                                class="inline-flex items-center px-6 py-2.5 border border-transparent rounded-xl shadow-lg text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 transform hover:scale-105"
+                            >
+                                <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+                                </svg>
+                                Add User
+                            </button>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
 
-        <!-- Table -->
-        <div class="bg-white shadow-lg rounded-lg overflow-hidden">
+        <!-- Enhanced Filters -->
+        <div class="bg-white/70 backdrop-blur-lg rounded-2xl shadow-xl mb-8 p-6 border border-white/20">
+            <div class="flex items-center justify-between mb-6">
+                <div class="flex items-center space-x-3">
+                    <div class="p-2 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.414A1 1 0 013 6.707V4z"/>
+                        </svg>
+                    </div>
+                    <h3 class="text-lg font-semibold text-gray-800">Filters & Search</h3>
+                </div>
+
+                @if($search || $roleFilter || $verificationFilter)
+                    <button
+                        wire:click="clearAllFilters"
+                        class="inline-flex items-center px-3 py-1.5 text-xs font-medium text-gray-600 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors duration-200"
+                    >
+                        <svg class="w-4 h-4 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                        </svg>
+                        Clear All
+                    </button>
+                @endif
+            </div>
+
+            <div class="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-5">
+                <!-- Enhanced Search -->
+                <div class="lg:col-span-2">
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Search Users</label>
+                    <div class="relative group">
+                        <input
+                            wire:model.live.debounce.300ms="search"
+                            type="text"
+                            placeholder="Search by name or email..."
+                            class="search-input w-full pl-11 pr-10 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 bg-white/80 backdrop-blur-sm"
+                        />
+                        <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                            <svg class="w-5 h-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                            </svg>
+                        </div>
+                        @if($search)
+                            <button
+                                wire:click="$set('search', '')"
+                                class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-red-500 transition-colors duration-200"
+                            >
+                                <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
+                                </svg>
+                            </button>
+                        @endif
+                    </div>
+                </div>
+
+                <!-- Enhanced Role Filter -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Role</label>
+                    <div class="relative">
+                        <select wire:model.live="roleFilter" class="filter-dropdown appearance-none w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200">
+                            <option value="">All Roles</option>
+                            @foreach($roles as $role)
+                                <option value="{{ $role->name }}">{{ ucfirst(str_replace('_', ' ', $role->name)) }}</option>
+                            @endforeach
+                        </select>
+                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Enhanced Verification Filter -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
+                    <div class="relative">
+                        <select wire:model.live="verificationFilter" class="filter-dropdown appearance-none w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200">
+                            <option value="">All Status</option>
+                            <option value="verified">✓ Verified</option>
+                            <option value="unverified">✗ Unverified</option>
+                        </select>
+                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Enhanced Per Page -->
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-2">Show</label>
+                    <div class="relative">
+                        <select wire:model.live="perPage" class="filter-dropdown appearance-none w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200">
+                            <option value="10">10 per page</option>
+                            <option value="25">25 per page</option>
+                            <option value="50">50 per page</option>
+                            <option value="100">100 per page</option>
+                        </select>
+                        <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                            <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                            </svg>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Bulk Actions Bar -->
+            @if(count($selectedUsers) > 0)
+                <div class="mt-6 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border border-indigo-200/50">
+                    <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
+                        <div class="flex items-center space-x-3">
+                            <div class="p-2 bg-indigo-500 rounded-lg">
+                                <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <p class="text-sm font-medium text-gray-900">
+                                    {{ count($selectedUsers) }} user{{ count($selectedUsers) > 1 ? 's' : '' }} selected
+                                </p>
+                                <p class="text-xs text-gray-500">Choose an action to apply to selected users</p>
+                            </div>
+                        </div>
+
+                        <div class="relative">
+                            <select
+                                wire:model.live="bulkAction"
+                                class="filter-dropdown appearance-none pl-4 pr-10 py-2.5 border border-indigo-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 text-sm"
+                            >
+                                <option value="">Choose Action...</option>
+                                <option value="delete">🗑️ Delete Selected</option>
+                                <option value="verify">✅ Verify Email</option>
+                                <option value="unverify">❌ Unverify Email</option>
+                                <optgroup label="Change Role">
+                                    <option value="role_admin">👑 Set as Admin</option>
+                                    <option value="role_salesperson">💼 Set as Salesperson</option>
+                                    <option value="role_shop_owner">🏪 Set as Shop Owner</option>
+                                    <option value="role_customer">👤 Set as Customer</option>
+                                </optgroup>
+                            </select>
+
+                            <!-- Enhanced loading indicator for bulk actions -->
+                            <div wire:loading wire:target="bulkAction"
+                                 class="absolute inset-0 bg-gradient-to-r from-violet-50/90 to-purple-50/90 backdrop-blur-sm flex items-center justify-center rounded-lg border border-violet-200/50"
+                                 x-data="{}"
+                                 x-show="true"
+                                 x-transition:enter="ease-out duration-200"
+                                 x-transition:enter-start="opacity-0 scale-95"
+                                 x-transition:enter-end="opacity-100 scale-100">
+
+                                <div class="flex items-center space-x-2">
+                                    <div class="flex space-x-1">
+                                        <div class="w-1.5 h-1.5 bg-violet-400 rounded-full animate-bounce" style="animation-delay: 0s;"></div>
+                                        <div class="w-1.5 h-1.5 bg-purple-400 rounded-full animate-bounce" style="animation-delay: 0.1s;"></div>
+                                        <div class="w-1.5 h-1.5 bg-indigo-400 rounded-full animate-bounce" style="animation-delay: 0.2s;"></div>
+                                    </div>
+                                    <span class="text-xs font-medium text-violet-600">Processing...</span>
+                                </div>
+                            </div>
+
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none">
+                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            @endif
+        </div>
+
+        <!-- Enhanced Table -->
+        <div class="bg-white/70 backdrop-blur-lg rounded-2xl shadow-2xl overflow-hidden border border-white/20">
             <div class="overflow-x-auto">
-                <table class="min-w-full divide-y divide-gray-200">
-                    <thead class="bg-gray-50">
+                <table class="min-w-full divide-y divide-gray-100">
+                    <thead class="bg-gradient-to-r from-gray-50 to-gray-100 backdrop-blur-sm">
                     <tr>
                         <!-- Select All Checkbox -->
                         <th scope="col"
@@ -271,7 +454,7 @@
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                     @forelse($users as $user)
-                        <tr class="hover:bg-gray-50 transition-colors duration-200">
+                                                    <tr class="table-hover hover:shadow-md transition-all duration-300 border-b border-gray-50/50">
                             <!-- Select Checkbox -->
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <input
@@ -356,40 +539,38 @@
                                 <div class="text-xs text-gray-400">{{ $user->created_at->format('H:i') }}</div>
                             </td>
 
-                            <!-- Actions -->
+                            <!-- Enhanced Actions -->
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                 <div class="flex items-center justify-end space-x-2">
+                                    <!-- Edit Button -->
                                     <button
                                         wire:click="openEditModal({{ $user->id }})"
-                                        class="text-blue-600 hover:text-blue-900 transition-colors duration-200"
+                                        class="inline-flex items-center p-2 text-blue-600 bg-blue-50 rounded-lg hover:bg-blue-100 hover:text-blue-700 transition-all duration-200 transform hover:scale-105"
                                         title="Edit User"
                                     >
-                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                  d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                        <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
                                         </svg>
                                     </button>
 
                                     @if($user->id !== auth()->id())
+                                        <!-- Delete Button -->
                                         <button
                                             wire:click="openDeleteModal({{ $user->id }})"
-                                            class="text-red-600 hover:text-red-900 transition-colors duration-200"
+                                            class="inline-flex items-center p-2 text-red-600 bg-red-50 rounded-lg hover:bg-red-100 hover:text-red-700 transition-all duration-200 transform hover:scale-105"
                                             title="Delete User"
                                         >
-                                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                             </svg>
                                         </button>
                                     @else
-                                        <span class="text-gray-400" title="Cannot delete your own account">
-                                                <svg class="w-5 h-5" fill="none" stroke="currentColor"
-                                                     viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round"
-                                                          stroke-width="2"
-                                                          d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636M5.636 18.364l12.728-12.728"/>
-                                                </svg>
-                                            </span>
+                                        <!-- Self Account Indicator -->
+                                        <span class="inline-flex items-center p-2 text-gray-400 bg-gray-50 rounded-lg" title="Cannot delete your own account">
+                                            <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728L5.636 5.636m12.728 12.728L18.364 5.636M5.636 18.364l12.728-12.728"/>
+                                            </svg>
+                                        </span>
                                     @endif
                                 </div>
                             </td>
@@ -422,22 +603,22 @@
         @endif
 
         <!-- Enhanced Loading Indicators -->
-        
+
         <!-- Main Loading Indicator for CRUD Operations (Exclude modal close operations) -->
-        <div wire:loading.delay 
+        <div wire:loading.delay
              wire:target="createUser,updateUser,deleteUser,performBulkAction,sortBy,updatedSearch,updatedRoleFilter,updatedVerificationFilter,updatedPerPage"
              class="fixed inset-0 bg-gradient-to-br from-indigo-900/20 via-purple-900/20 to-pink-900/20 backdrop-blur-sm flex items-center justify-center z-50"
-             x-data="{}" 
+             x-data="{}"
              x-show="true"
-             x-transition:enter="ease-out duration-300" 
-             x-transition:enter-start="opacity-0 scale-95" 
+             x-transition:enter="ease-out duration-300"
+             x-transition:enter-start="opacity-0 scale-95"
              x-transition:enter-end="opacity-100 scale-100">
-            
+
             <div class="relative">
                 <!-- Glassmorphism container with floating animation -->
                 <div class="bg-white/10 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/20 animate-pulse">
                     <div class="flex flex-col items-center space-y-6">
-                        
+
                         <!-- Multi-layered spinner animation -->
                         <div class="relative w-16 h-16">
                             <!-- Outer ring -->
@@ -449,7 +630,7 @@
                             <!-- Center dot -->
                             <div class="absolute inset-6 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full animate-ping"></div>
                         </div>
-                        
+
                         <!-- Loading text with gradient -->
                         <div class="text-center">
                             <div class="text-lg font-semibold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
@@ -459,7 +640,7 @@
                                 Please wait while we handle your request
                             </div>
                         </div>
-                        
+
                         <!-- Floating particles animation -->
                         <div class="absolute -top-2 -left-2 w-2 h-2 bg-blue-400 rounded-full animate-ping" style="animation-delay: 0.5s;"></div>
                         <div class="absolute -top-1 -right-3 w-1 h-1 bg-purple-400 rounded-full animate-ping" style="animation-delay: 1s;"></div>
@@ -467,22 +648,22 @@
                         <div class="absolute -bottom-1 -right-2 w-2 h-2 bg-indigo-400 rounded-full animate-ping" style="animation-delay: 2s;"></div>
                     </div>
                 </div>
-                
+
                 <!-- Glow effect -->
                 <div class="absolute inset-0 bg-gradient-to-r from-blue-400/20 via-purple-400/20 to-pink-400/20 rounded-3xl blur-xl animate-pulse"></div>
             </div>
         </div>
 
         <!-- Specific Loading for Creating User -->
-        <div wire:loading.delay 
+        <div wire:loading.delay
              wire:target="createUser"
              class="fixed inset-0 bg-gradient-to-br from-green-900/20 via-emerald-900/20 to-teal-900/20 backdrop-blur-sm flex items-center justify-center z-50"
-             x-data="{}" 
+             x-data="{}"
              x-show="true"
-             x-transition:enter="ease-out duration-300" 
-             x-transition:enter-start="opacity-0 scale-95" 
+             x-transition:enter="ease-out duration-300"
+             x-transition:enter-start="opacity-0 scale-95"
              x-transition:enter-end="opacity-100 scale-100">
-            
+
             <div class="relative">
                 <div class="bg-white/10 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/20">
                     <div class="flex flex-col items-center space-y-6">
@@ -495,7 +676,7 @@
                             </div>
                             <div class="absolute inset-0 bg-green-400 rounded-full animate-ping opacity-30"></div>
                         </div>
-                        
+
                         <div class="text-center">
                             <div class="text-lg font-semibold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
                                 Creating User...
@@ -510,15 +691,15 @@
         </div>
 
         <!-- Specific Loading for Updating User -->
-        <div wire:loading.delay 
+        <div wire:loading.delay
              wire:target="updateUser"
              class="fixed inset-0 bg-gradient-to-br from-amber-900/20 via-orange-900/20 to-red-900/20 backdrop-blur-sm flex items-center justify-center z-50"
-             x-data="{}" 
+             x-data="{}"
              x-show="true"
-             x-transition:enter="ease-out duration-300" 
-             x-transition:enter-start="opacity-0 scale-95" 
+             x-transition:enter="ease-out duration-300"
+             x-transition:enter-start="opacity-0 scale-95"
              x-transition:enter-end="opacity-100 scale-100">
-            
+
             <div class="relative">
                 <div class="bg-white/10 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/20">
                     <div class="flex flex-col items-center space-y-6">
@@ -531,7 +712,7 @@
                             </div>
                             <div class="absolute inset-0 bg-amber-400 rounded-full animate-ping opacity-30"></div>
                         </div>
-                        
+
                         <div class="text-center">
                             <div class="text-lg font-semibold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
                                 Updating User...
@@ -546,15 +727,15 @@
         </div>
 
         <!-- Specific Loading for Deleting User -->
-        <div wire:loading.delay 
+        <div wire:loading.delay
              wire:target="deleteUser"
              class="fixed inset-0 bg-gradient-to-br from-red-900/20 via-rose-900/20 to-pink-900/20 backdrop-blur-sm flex items-center justify-center z-50"
-             x-data="{}" 
+             x-data="{}"
              x-show="true"
-             x-transition:enter="ease-out duration-300" 
-             x-transition:enter-start="opacity-0 scale-95" 
+             x-transition:enter="ease-out duration-300"
+             x-transition:enter-start="opacity-0 scale-95"
              x-transition:enter-end="opacity-100 scale-100">
-            
+
             <div class="relative">
                 <div class="bg-white/10 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/20">
                     <div class="flex flex-col items-center space-y-6">
@@ -567,7 +748,7 @@
                             </div>
                             <div class="absolute inset-0 bg-red-400 rounded-full animate-ping opacity-30"></div>
                         </div>
-                        
+
                         <div class="text-center">
                             <div class="text-lg font-semibold bg-gradient-to-r from-red-600 to-rose-600 bg-clip-text text-transparent">
                                 Deleting User...
@@ -582,15 +763,15 @@
         </div>
 
         <!-- Bulk Actions Loading -->
-        <div wire:loading.delay 
+        <div wire:loading.delay
              wire:target="performBulkAction"
              class="fixed inset-0 bg-gradient-to-br from-violet-900/20 via-purple-900/20 to-indigo-900/20 backdrop-blur-sm flex items-center justify-center z-50"
-             x-data="{}" 
+             x-data="{}"
              x-show="true"
-             x-transition:enter="ease-out duration-300" 
-             x-transition:enter-start="opacity-0 scale-95" 
+             x-transition:enter="ease-out duration-300"
+             x-transition:enter-start="opacity-0 scale-95"
              x-transition:enter-end="opacity-100 scale-100">
-            
+
             <div class="relative">
                 <div class="bg-white/10 backdrop-blur-xl rounded-3xl p-8 shadow-2xl border border-white/20">
                     <div class="flex flex-col items-center space-y-6">
@@ -601,7 +782,7 @@
                             <div class="w-3 h-3 bg-indigo-400 rounded-full animate-bounce" style="animation-delay: 0.4s;"></div>
                             <div class="w-3 h-3 bg-blue-400 rounded-full animate-bounce" style="animation-delay: 0.6s;"></div>
                         </div>
-                        
+
                         <div class="text-center">
                             <div class="text-lg font-semibold bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">
                                 Processing Bulk Action...
@@ -616,15 +797,15 @@
         </div>
 
         <!-- Search/Filter Loading (Subtle) -->
-        <div wire:loading 
+        <div wire:loading
              wire:target="updatedSearch,updatedRoleFilter,updatedVerificationFilter,updatedPerPage"
              class="fixed top-4 right-4 z-50"
-             x-data="{}" 
+             x-data="{}"
              x-show="true"
-             x-transition:enter="ease-out duration-200" 
-             x-transition:enter-start="opacity-0 translate-x-4" 
+             x-transition:enter="ease-out duration-200"
+             x-transition:enter-start="opacity-0 translate-x-4"
              x-transition:enter-end="opacity-100 translate-x-0">
-            
+
             <div class="bg-white/90 backdrop-blur-sm rounded-full px-4 py-2 shadow-lg border border-gray-200/50 flex items-center space-x-2">
                 <div class="flex space-x-1">
                     <div class="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse" style="animation-delay: 0s;"></div>
@@ -755,7 +936,7 @@
                         >
                             Cancel
                         </button>
-                                            <button 
+                                            <button
                         type="submit"
                         class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-75 disabled:cursor-not-allowed transition-all duration-200"
                         wire:loading.attr="disabled"
@@ -894,7 +1075,7 @@
                         >
                             Cancel
                         </button>
-                                            <button 
+                                            <button
                         type="submit"
                         class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-75 disabled:cursor-not-allowed transition-all duration-200"
                         wire:loading.attr="disabled"
@@ -955,7 +1136,7 @@
                     >
                         Cancel
                     </button>
-                                    <button 
+                                    <button
                     wire:click="deleteUser"
                     class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-75 disabled:cursor-not-allowed transition-all duration-200"
                     wire:loading.attr="disabled"

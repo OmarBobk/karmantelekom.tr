@@ -455,6 +455,17 @@ class UsersComponent extends Component
     }
 
     /**
+     * Clear all filters
+     */
+    public function clearAllFilters(): void
+    {
+        $this->search = '';
+        $this->roleFilter = '';
+        $this->verificationFilter = '';
+        $this->resetPage();
+    }
+
+    /**
      * Render component
      */
     #[Layout('layouts.backend')]
