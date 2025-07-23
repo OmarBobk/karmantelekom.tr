@@ -1,14 +1,11 @@
 <?php
 
+use App\Livewire\Frontend\CheckoutComponent;
 use App\Livewire\Frontend\ContactusComponent;
 use App\Livewire\Frontend\Errors\NotFound;
 use App\Livewire\Frontend\MainComponent;
 use App\Livewire\Frontend\ProductsComponent;
-use App\Models\Order;
 use Illuminate\Support\Facades\Route;
-use LaravelDaily\Invoices\Classes\Buyer;
-use LaravelDaily\Invoices\Classes\InvoiceItem;
-use LaravelDaily\Invoices\Invoice;
 
 
 Route::get('/404', NotFound::class)->name('404');
@@ -21,9 +18,9 @@ Route::get('/products/{category}', ProductsComponent::class)->name('products');
 //Route::get('/products', ProductsComponent::class)->name('products');
 Route::get('/contactus', ContactusComponent::class)->name('contactus');
 
-Route::get('/checkout', \App\Livewire\Frontend\CheckoutComponent::class)
-            ->middleware('auth')
-            ->name('checkout');
+Route::get('/checkout', CheckoutComponent::class)
+    ->middleware('auth')
+    ->name('checkout');
 
 Route::middleware([
     'auth:sanctum',
@@ -40,9 +37,8 @@ Route::get('test', function() {
 });
 
 Route::fallback(function () {
-//    dd('fallback');
+    dd('fallback');
 });
-
 
 // For testing PDF generation
 //Route::get('pdf', function() {

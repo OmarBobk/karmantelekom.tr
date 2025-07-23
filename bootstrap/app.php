@@ -28,13 +28,13 @@ return Application::configure(basePath: dirname(__DIR__))
     })
     ->withExceptions(function (Exceptions $exceptions) {
         // Customize the response for unauthenticated users
-        $exceptions->renderable(function (AuthenticationException $e, Request $request) {
-            if ($request->expectsJson()) {
-                dd('bootstrap/app.php error');
-                return response()->json(['message' => 'Unauthenticated.'], 401);
-            }
-
-            // Redirect to your custom login route
-            return redirect()->to(config('app.url') . '/404');
-        });
+//        $exceptions->renderable(function (AuthenticationException $e, Request $request) {
+//            if ($request->expectsJson()) {
+//                dd('bootstrap/app.php error');
+//                return response()->json(['message' => 'Unauthenticated.'], 401);
+//            }
+//
+//            // Redirect to your custom login route
+//            return redirect()->to(config('app.url') . '/404');
+//        });
     })->create();

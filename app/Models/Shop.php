@@ -66,8 +66,12 @@ class Shop extends Model
         return $this->monthlyOrders()->count();
     }
 
-    public function scopeVisibleTo($query, $user)
+    public function scopeVisibleTo($query, $user = null)
     {
+        if (!$user) {
+            return $query->where('user_id', 0); // Return empty query if no user
+        }
+
         if ($user->hasRole('admin')) {
             return $query;
         }

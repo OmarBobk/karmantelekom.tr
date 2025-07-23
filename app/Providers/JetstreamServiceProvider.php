@@ -29,10 +29,11 @@ class JetstreamServiceProvider extends ServiceProvider
 
         Vite::prefetch(concurrency: 3);
 
-        $this->app->singleton(
-            LoginResponse::class,
-            \App\Http\Responses\LoginResponse::class
-        );
+        // Remove or comment out this line:
+        // $this->app->singleton(
+        //     LoginResponse::class,
+        //     \App\Http\Responses\LoginResponse::class
+        // );
     }
 
     /**

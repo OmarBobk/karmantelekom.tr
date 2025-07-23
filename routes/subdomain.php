@@ -38,9 +38,9 @@ Route::get('/dashboard', function () {
     return redirect()->route('404');
 })->name('dashboard');
 
-Route::fallback(function () {
-    return redirect()->route('404');
-});
+ Route::fallback(function () {
+     return redirect()->route('404');
+ });
 
 
 Route::get('/404', NotFound::class)->name('404');

@@ -8,12 +8,10 @@ use Laravel\Fortify\Contracts\LoginResponse as LoginResponseContract;
 
 class LoginResponse implements LoginResponseContract
 {
-
     public function toResponse($request)
     {
         return $request->wantsJson()
             ? response()->json(['two_factor' => false])
-            : redirect()->intended(config('app.url'));
+            : redirect()->intended(route('main')); // Change this to redirect to main page or remove intended()
     }
-
 }
