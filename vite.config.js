@@ -8,4 +8,30 @@ export default defineConfig({
             refresh: true,
         }),
     ],
+    
+    // Build optimizations
+    build: {
+        // Optimize CSS
+        cssCodeSplit: true,
+        
+        // Reduce bundle size
+        chunkSizeWarningLimit: 1000,
+    },
+    
+    // Development optimizations
+    server: {
+        hmr: {
+            host: 'localhost',
+        },
+    },
+    
+    // Optimize dependencies
+    optimizeDeps: {
+        include: ['alpinejs'],
+    },
+    
+    // CSS optimizations
+    css: {
+        devSourcemap: false,
+    },
 });
