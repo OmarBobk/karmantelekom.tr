@@ -252,7 +252,7 @@ class OrdersManager extends Component
             $order->update(['status' => $newStatus]);
 
             // Dispatch OrderUpdated event
-            \App\Events\OrderUpdated::dispatch($order, $originalData);
+            \App\Events\OrderUpdated::dispatch($order, $originalData, auth()->id());
 
             // Refresh selectedOrder if it's currently being viewed
             if ($this->selectedOrder && $this->selectedOrder->id === $order->id) {

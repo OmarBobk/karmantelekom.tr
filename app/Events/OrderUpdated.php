@@ -24,7 +24,8 @@ class OrderUpdated
      */
     public function __construct(
         public readonly Order $order,
-        public readonly array $originalData
+        public readonly array $originalData,
+        public readonly ?int $userId = null
     ) {
     }
 }

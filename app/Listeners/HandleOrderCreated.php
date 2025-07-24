@@ -42,6 +42,8 @@ class HandleOrderCreated implements ShouldQueue
             // Log the order creation activity with meaningful fields
             $activityLogger = activity('order')
                 ->performedOn($order)
+                ->by($event->userId ?? User::find(1)->id) // Use passed user ID or fallback
+                ->causedBy($event->userId ?? User::find(1)->id) // Use passed user ID or fallback
                 ->withProperties([
                     'order_id' => $order->id,
                     'shop_id' => $order->shop_id,
@@ -62,7 +64,7 @@ class HandleOrderCreated implements ShouldQueue
                 'notes' => $order->notes,
             ]);
 
-            $activityLogger->log("Order #{$order->id} has been created with status '{$order->status->label()}' for " . number_format((float) $order->total_price, 2));
+            $activityLogger->log("Order #{$order->id} has been created with status '{$order->status->label()}' for " . number_format((float) $order->total_price, 2) . " TL");
 
             // Send notification to resolved recipients
             $recipients = $this->recipientsService->resolveNotificationRecipientsFor($order, excludeCauser: true);

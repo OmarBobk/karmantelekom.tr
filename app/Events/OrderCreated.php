@@ -23,7 +23,8 @@ class OrderCreated
      * Create a new event instance.
      */
     public function __construct(
-        public readonly Order $order
+        public readonly Order $order,
+        public readonly ?int $userId = null
     ) {
     }
-} 
+}

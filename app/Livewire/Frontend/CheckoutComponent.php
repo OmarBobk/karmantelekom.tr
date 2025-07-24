@@ -96,7 +96,7 @@ class CheckoutComponent extends Component
                 Cart::clearCart(Auth::id(), null);
 
                 // Dispatch OrderCreated event
-                \App\Events\OrderCreated::dispatch($order);
+                \App\Events\OrderCreated::dispatch($order, Auth::id());
             });
 
             // Reset form after successful transaction
