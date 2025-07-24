@@ -13,6 +13,7 @@
     <!-- Fonts - Load only what we need -->
     <link rel="preconnect" href="https://fonts.bunny.net" crossorigin>
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet">
+    <link rel="icon" type="image/png" href="{{ asset('assets/images/indirimgo_logo.png') }}">
 
     <!-- Critical CSS inline -->
     <style>
