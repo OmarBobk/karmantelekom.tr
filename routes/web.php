@@ -40,6 +40,8 @@ Route::fallback(function () {
     dd('fallback');
 });
 
+Route::post('invoice_pdf', [CheckoutComponent::class, 'exportOrderToPdf'])->name('invoice_pdf');
+
 // For testing PDF generation
 //Route::get('pdf', function() {
 //    $order = \App\Models\Order::find(1);

@@ -34,11 +34,7 @@
         - What to Do: Pull cart from DB and push it into localStorage.
 - **DONE** Update the analytics id.
 
-- **TODO** Create an announcement Manager.
-- **TODO** Place the announcement at the top of the main page.
-- **TODO** Create a marquee.
-- **TODO** Design the marquee using https://magicui.design/docs/tailwind-v4.
-- **TODO** Put this code in the footer : "<x-language-selector :currentLanguage="$currentLanguage" />"
+
 - **TODO** Dashboard:
     - **TODO** a page to view all notifications.
     - **TODO** Users Manager.
@@ -46,6 +42,55 @@
 - **TODO** new user registration process
 - **TODO** Users Manager.
 - **TODO** Implements the new font type to the frontend.
+- **TODO** Translate the website to Turkish.
 
 ###BUGS:
 - **DONE**: You can not clear the cart if user not logged in.
+
+
+
+
+###Customer_Trust_Features:
+- Live chat supported with ai or n8n maybe the idea is not clear yet but it sounds amazing to gain customer trust.
+- low-risk ordering: 
+  - don't limit the order quantity (for customers who have proven that they are shop owners or salespersons)
+  - if the quantity is higher than x, the customer can order it without registration.
+- add social proof early—photos of successful deliveries, real shop owners giving feedback, WhatsApp support, etc. (not clear yet how to implement this ask chatgpt).
+
+
+###Marketing via WhatsApp, Instagram, TikTok:
+-  just telling people “we launched” isn’t enough. You need to answer: Why should they care?
+
+### Payment Methods:
+- Start with COD + WhatsApp confirmation of order.
+
+### Plan for the next 2 weeks:
+- Define the offer: Write a simple pitch like this:
+  - "İndirimGo – Türkiye’nin en uygun toptan telefon aksesuar platformu. Kapıda ödeme, hızlı teslimat, dükkanına özel fiyatlar."
+  - You can use this everywhere—Facebook groups, WhatsApp, even ad captions
+
+
+
+
+### AI Agent
+- set up digitalocean ai agent and teach him how to negotiate with customers about the prices.
+
+
+### Test Group:
+- Pick 5–10 shop owners you know
+- Let them place orders manually through WhatsApp using your website. 
+- Deliver personally or via cargo to collect feedback.
+
+
+### Marketing Strategy:
+- Create 2–3 Strong Marketing Posts and Ask your friends to repost them. Share in 5–10 relevant Facebook groups.
+- “Kapıda Ödeme ile En Ucuz Toptan Aksesuarlar!”
+  “Kargo Bedava! İlk Siparişe %10 İndirim”
+  “Yeni Ürünler Eklendi – Hemen Göz At!”
+
+
+### List expected delivery time, return policy, and contact info clearly.
+
+
+
+##Our Job now is not to build a big company. It's to get 5-10 shops to order twice from you. If they do, you have a real business.
