@@ -294,7 +294,7 @@
             @foreach($invoice->buyer->invoice_records as $item)
                 @php
                     $quantity = $item->quantity ?? 1;
-                    $unitPrice = $item->unit_price ?? ($item->price / $quantity);
+                    $unitPrice = $item->price;
                     $subtotal = $quantity * $unitPrice;
                     $itemTotal = $subtotal;
 
