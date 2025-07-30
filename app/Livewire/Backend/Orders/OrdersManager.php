@@ -314,17 +314,6 @@ class OrdersManager extends Component
                     'Content-Disposition' => 'inline; filename="invoice.pdf"',
                 ]);
 
-//            return  $invoice->stream();
-
-//
-//            $this->dispatch('notify', [
-//                'type' => 'success',
-//                'message' => 'PDF download started. Please check your downloads folder.'
-//            ]);
-//
-//            // Dispatch browser event to trigger PDF download
-//            $this->dispatch('download-pdf', url: route('subdomain.orders.pdf', $order->id));
-
         } catch (Throwable $e) {
             $this->dispatch('notify', [
                 'type' => 'error',
