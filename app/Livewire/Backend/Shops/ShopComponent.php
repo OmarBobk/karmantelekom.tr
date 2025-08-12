@@ -213,20 +213,24 @@ class ShopComponent extends Component
                     $query->orderBy($this->sortField, $this->sortDirection);
                 });
 
-            // If user is a salesperson, only show their assigned shops
-            if (auth()->user()->hasRole('salesperson') && !auth()->user()->hasRole('admin')) {
-                $query->where('user_id', auth()->id());
+            $user = auth()->user();
+
+            // Role-based filtering
+            if (!$user->hasRole('admin')) {
+                $query->visibleTo($user);
             }
 
             $shops = $query->withCount('monthlyOrders')
-                ->with('user')
+                ->with(['owner', 'salesperson'])
                 ->paginate($this->perPage);
 
             $salespeople = \App\Models\User::role('salesperson')->get();
+            $shopOwners = \App\Models\User::role('shop_owner')->get();
 
             return view('livewire.backend.shops.shop-component', [
                 'shops' => $shops,
-                'salespeople' => $salespeople
+                'salespeople' => $salespeople,
+                'shopOwners' => $shopOwners
             ]);
 
         } catch (Throwable $e) {

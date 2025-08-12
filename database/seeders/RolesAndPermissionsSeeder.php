@@ -46,7 +46,6 @@ class RolesAndPermissionsSeeder extends Seeder
         ]);
 
         // Shop Owner: Restricted permissions
-//        Role::firstOrCreate(['name' => 'shop_owner']);
         $shopOwner = Role::firstOrCreate(['name' => 'shop_owner']);
         $shopOwner->givePermissionTo([
             'view_sales',
@@ -58,13 +57,14 @@ class RolesAndPermissionsSeeder extends Seeder
             'customer_profile',
         ]);
 
+        // Create Admin User
         $admin = User::factory()->create([
             'name' => 'Admin',
             'email' => 'admin@gmail.com',
         ]);
-
         $admin->assignRole('admin');
 
+        // Create Salesperson Users
         $ahmad = User::factory()->create([
             'name' => 'Ahmad',
             'email' => 'ahmad@gmail.com',
@@ -78,17 +78,48 @@ class RolesAndPermissionsSeeder extends Seeder
         ]);
         $zain->assignRole('salesperson');
 
+        // Create Shop Owner Users
         $karman_telekom = User::factory()->create([
             'name' => 'Karman Telekom',
             'email' => 'karmantelekom@gmail.com',
         ]);
         $karman_telekom->assignRole('shop_owner');
 
+        $cephane_owner = User::factory()->create([
+            'name' => 'Cephane Owner',
+            'email' => 'cephane@gmail.com',
+        ]);
+        $cephane_owner->assignRole('shop_owner');
+
+        $zore_owner = User::factory()->create([
+            'name' => 'Zore Owner',
+            'email' => 'zore@gmail.com',
+        ]);
+        $zore_owner->assignRole('shop_owner');
+
+        $simex_owner = User::factory()->create([
+            'name' => 'Simex Owner',
+            'email' => 'simex@gmail.com',
+        ]);
+        $simex_owner->assignRole('shop_owner');
+
+        // Create Customer User
         $customer_A = User::factory()->create([
             'name' => 'Customer A',
             'email' => 'customer@gmail.com',
         ]);
         $customer_A->assignRole('customer');
 
+        // Store user IDs in config for use in other seeders
+        config([
+            'seeder.users.admin_id' => $admin->id,
+            'seeder.users.ahmad_id' => $ahmad->id,
+            'seeder.users.zain_id' => $zain->id,
+            'seeder.users.karman_owner_id' => $karman_telekom->id,
+            'seeder.users.cephane_owner_id' => $cephane_owner->id,
+            'seeder.users.zore_owner_id' => $zore_owner->id,
+            'seeder.users.simex_owner_id' => $simex_owner->id,
+            'seeder.users.customer_id' => $customer_A->id,
+        ]);
     }
 }

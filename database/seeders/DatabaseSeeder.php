@@ -19,6 +19,7 @@ class DatabaseSeeder extends Seeder
             ProductPriceSeeder::class,
             SectionSeeder::class,
             ShopSeeder::class,
+            // SalespersonAssignmentSeeder::class, // Uncomment if you want to use it
             SettingSeeder::class,
         ]);
     }

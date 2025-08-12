@@ -37,12 +37,18 @@
 
 - **TODO** Dashboard:
     - **TODO** a page to view all notifications.
-    - **TODO** Users Manager.
-    - **TODO** when product is deleted, it should be removed from the analytics (Most Viewed Products).
-- **TODO** new user registration process
-- **TODO** Users Manager.
+    - **DONE** Users Manager.
+    - **TODO** when a product is deleted, it should be removed from the analytics (Most Viewed Products).
+- **DONE** new user registration process
 - **TODO** Implements the new font type to the frontend.
 - **TODO** Translate the website to Turkish.
+- **TODO** Checkout Process:
+    - Salesperson:
+      - 1- Select the shop they are ordering for.
+      - 2- Write the order note.
+    - Shop Owner:
+      - 1- Select the delivery address.
+      - 2- Write the order note.
 
 ###BUGS:
 - **DONE**: You can not clear the cart if user not logged in.
@@ -92,5 +98,7 @@
 ### List expected delivery time, return policy, and contact info clearly.
 
 
-
 ##Our Job now is not to build a big company. It's to get 5-10 shops to order twice from you. If they do, you have a real business.
+
+
+### SEO Coding and SEO Content:

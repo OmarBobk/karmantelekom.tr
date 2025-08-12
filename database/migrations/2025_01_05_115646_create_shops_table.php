@@ -19,7 +19,10 @@ return new class extends Migration
 
             $table->json('links')->nullable();
 
-            $table->foreignId('user_id')->nullable()->constrained('users');
+            $table->foreignId('owner_id')->nullable()->constrained('users');
+            $table->foreignId('salesperson_id')->nullable()->constrained('users');
+
+            $table->index(['owner_id', 'salesperson_id']);
 
             $table->timestamps();
         });

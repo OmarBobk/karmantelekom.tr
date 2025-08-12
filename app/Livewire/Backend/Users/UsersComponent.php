@@ -91,6 +91,15 @@ class UsersComponent extends Component
     /** @var string Bulk action to perform */
     public string $bulkAction = '';
 
+    protected array $queryString = [
+        'search' => ['except' => ''],
+        'sortField' => ['except' => 'created_at'],
+        'sortDirection' => ['except' => 'DESC'],
+        'roleFilter' => ['except' => ''],
+        'verificationFilter' => ['except' => ''],
+        'perPage' => ['except' => 10],
+    ];
+
     /**
      * Validation rules for user form
      */

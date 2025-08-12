@@ -15,7 +15,7 @@ class ShopPolicy
      */
     public function viewAny(User $user): bool
     {
-        return $user->hasRole(['salesperson', 'admin']);
+        return $user->hasRole(['admin', 'salesperson', 'shop_owner']);
     }
 
     /**
@@ -23,7 +23,19 @@ class ShopPolicy
      */
     public function view(User $user, Shop $shop): bool
     {
-        return $user->hasRole( 'admin') || $shop->user_id === $user->id;
+        if ($user->hasRole('admin')) {
+            return true;
+        }
+
+        if ($user->hasRole('shop_owner')) {
+            return $shop->owner_id === $user->id;
+        }
+
+        if ($user->hasRole('salesperson')) {
+            return $shop->salesperson_id === $user->id;
+        }
+
+        return false;
     }
 
     /**
@@ -31,7 +43,7 @@ class ShopPolicy
      */
     public function create(User $user): bool
     {
-        return $user->hasRole('admin');
+        return $user->hasRole(['admin', 'shop_owner']);
     }
 
     /**
@@ -43,7 +55,15 @@ class ShopPolicy
             return true;
         }
 
-        return $user->hasRole('salesperson') && $shop->salesperson === $user;
+        if ($user->hasRole('shop_owner')) {
+            return $shop->owner_id === $user->id;
+        }
+
+        if ($user->hasRole('salesperson')) {
+            return $shop->salesperson_id === $user->id;
+        }
+
+        return false;
     }
 
     /**
