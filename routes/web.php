@@ -5,6 +5,7 @@ use App\Livewire\Frontend\ContactusComponent;
 use App\Livewire\Frontend\Errors\NotFound;
 use App\Livewire\Frontend\MainComponent;
 use App\Livewire\Frontend\ProductsComponent;
+use App\Livewire\Frontend\ShopCreationComponent;
 use Illuminate\Support\Facades\Route;
 
 
@@ -12,15 +13,26 @@ Route::get('/404', NotFound::class)->name('404');
 
 Route::get('omar', function () { return 'test from main domain';})->name('omar');
 
-Route::get('/', MainComponent::class)->name('main');
+Route::get('/', MainComponent::class)
+    ->middleware('shop.creation')
+    ->name('main');
 
-Route::get('/products/{category}', ProductsComponent::class)->name('products');
+Route::get('/products/{category}', ProductsComponent::class)
+    ->middleware('shop.creation')
+    ->name('products');
 //Route::get('/products', ProductsComponent::class)->name('products');
-Route::get('/contactus', ContactusComponent::class)->name('contactus');
+Route::get('/contactus', ContactusComponent::class)
+    ->middleware('shop.creation')
+    ->name('contactus');
 
 Route::get('/checkout', CheckoutComponent::class)
-    ->middleware('auth')
+    ->middleware(['auth', 'shop.creation'])
     ->name('checkout');
+
+// Shop creation route - requires authentication
+Route::get('/shop/create', ShopCreationComponent::class)
+    ->middleware('auth')
+    ->name('shop.create');
 
 Route::middleware([
     'auth:sanctum',
@@ -67,4 +79,4 @@ Route::post('invoice_pdf', [CheckoutComponent::class, 'exportOrderToPdf'])->name
 //        ->addItem((new InvoiceItem())->pricePerUnit(2));
 //
 //    return view('vendor.invoices.templates.indirimgo', compact('invoice'));
-//})->name('pdf.invoice');
+//});

@@ -214,7 +214,7 @@ class UsersComponent extends Component
     public function openEditModal(int $userId): void
     {
         $user = User::findOrFail($userId);
-        
+
         $this->editingUserId = $userId;
         $this->name = $user->name;
         $this->email = $user->email;
@@ -222,7 +222,7 @@ class UsersComponent extends Component
         $this->emailVerified = $user->email_verified_at !== null;
         $this->password = '';
         $this->password_confirmation = '';
-        
+
         $this->editModalOpen = true;
     }
 
@@ -291,7 +291,7 @@ class UsersComponent extends Component
         $this->validate();
 
         $user = User::findOrFail($this->editingUserId);
-        
+
         $updateData = [
             'name' => $this->name,
             'email' => $this->email,
@@ -315,7 +315,7 @@ class UsersComponent extends Component
     public function deleteUser(): void
     {
         $user = User::findOrFail($this->deletingUserId);
-        
+
         // Prevent deleting current user
         if ($user->id === auth()->id()) {
             session()->flash('error', 'You cannot delete your own account.');
@@ -370,9 +370,9 @@ class UsersComponent extends Component
     {
         // Prevent deleting current user
         $userIds = array_filter($this->selectedUsers, fn($id) => $id !== auth()->id());
-        
+
         User::whereIn('id', $userIds)->delete();
-        
+
         session()->flash('message', count($userIds) . ' users deleted successfully.');
     }
 
@@ -384,7 +384,7 @@ class UsersComponent extends Component
         User::whereIn('id', $this->selectedUsers)->update([
             'email_verified_at' => now()
         ]);
-        
+
         session()->flash('message', count($this->selectedUsers) . ' users verified successfully.');
     }
 
@@ -396,7 +396,7 @@ class UsersComponent extends Component
         User::whereIn('id', $this->selectedUsers)->update([
             'email_verified_at' => null
         ]);
-        
+
         session()->flash('message', count($this->selectedUsers) . ' users unverified successfully.');
     }
 
@@ -406,11 +406,11 @@ class UsersComponent extends Component
     private function bulkChangeRole(string $role): void
     {
         $users = User::whereIn('id', $this->selectedUsers)->get();
-        
+
         foreach ($users as $user) {
             $user->syncRoles([$role]);
         }
-        
+
         session()->flash('message', count($this->selectedUsers) . ' users role changed to ' . $role . ' successfully.');
     }
 
