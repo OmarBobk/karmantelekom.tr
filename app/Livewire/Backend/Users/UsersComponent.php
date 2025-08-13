@@ -419,7 +419,7 @@ class UsersComponent extends Component
      */
     private function getUsersQuery(): Builder
     {
-        $query = User::with('roles');
+        $query = User::with(['roles', 'ownedShop', 'assignedShops']);
 
         // Apply search filter
         if ($this->search) {

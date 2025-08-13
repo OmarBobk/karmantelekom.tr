@@ -417,6 +417,12 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
                             Status
                         </th>
 
+                        <!-- Shop Assignments Column -->
+                        <th scope="col"
+                            class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Shop Assignments
+                        </th>
+
                         <!-- Created At Column -->
                         <th scope="col"
                             class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
@@ -508,29 +514,109 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
                                 @endif
                             </td>
 
-                            <!-- Status -->
+                                                        <!-- Status -->
                             <td class="px-6 py-4 whitespace-nowrap">
                                 @if($user->email_verified_at)
                                     <span
                                         class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">
-                                            <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fill-rule="evenodd"
-                                                      d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
-                                                      clip-rule="evenodd"/>
-                                            </svg>
-                                            Verified
-                                        </span>
+                                        <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd"
+                                                  d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z"
+                                                  clip-rule="evenodd"/>
+                                        </svg>
+                                        Verified
+                                    </span>
                                 @else
                                     <span
                                         class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-red-100 text-red-800">
-                                            <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                                <path fill-rule="evenodd"
-                                                      d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
-                                                      clip-rule="evenodd"/>
-                                            </svg>
-                                            Unverified
-                                        </span>
+                                        <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd"
+                                                  d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z"
+                                                  clip-rule="evenodd"/>
+                                        </svg>
+                                        Unverified
+                                    </span>
                                 @endif
+                            </td>
+
+                            <!-- Shop Assignments -->
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="space-y-1">
+                                    @if($user->hasRole('shop_owner') && $user->ownedShop)
+                                        <div class="flex items-center">
+                                            <svg class="w-4 h-4 text-green-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                                            </svg>
+                                            <span class="text-sm text-gray-900 font-medium">Owner: {{ $user->ownedShop->name }}</span>
+                                        </div>
+                                    @endif
+                                    
+                                    @if($user->hasRole('salesperson') && $user->assignedShops->isNotEmpty())
+                                        <div class="space-y-1" x-data="{ expanded: false }">
+                                            <div class="flex items-center">
+                                                <svg class="w-4 h-4 text-blue-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                                </svg>
+                                                <span class="text-sm text-gray-700 font-medium">Assigned to:</span>
+                                            </div>
+                                            
+                                            @if($user->assignedShops->count() == 1)
+                                                <!-- Show all shops if only 1 -->
+                                                @foreach($user->assignedShops as $shop)
+                                                    <div class="ml-6">
+                                                        <span class="text-sm text-gray-600">{{ $shop->name }}</span>
+                                                    </div>
+                                                @endforeach
+                                            @else
+                                                <!-- Show first shop and expandable list for 2 or more -->
+                                                @foreach($user->assignedShops->take(1) as $shop)
+                                                    <div class="ml-6">
+                                                        <span class="text-sm text-gray-600">{{ $shop->name }}</span>
+                                                    </div>
+                                                @endforeach
+                                                
+                                                <!-- Expandable section -->
+                                                <div x-show="!expanded" class="ml-6">
+                                                    <button 
+                                                        @click="expanded = true"
+                                                        class="text-sm text-blue-600 hover:text-blue-800 font-medium transition-colors duration-200"
+                                                    >
+                                                        +{{ $user->assignedShops->count() - 1 }} more shops
+                                                    </button>
+                                                </div>
+                                                
+                                                <div 
+                                                    x-show="expanded" 
+                                                    x-transition:enter="transition ease-out duration-200"
+                                                    x-transition:enter-start="opacity-0 transform -translate-y-2"
+                                                    x-transition:enter-end="opacity-100 transform translate-y-0"
+                                                    x-transition:leave="transition ease-in duration-150"
+                                                    x-transition:leave-start="opacity-100 transform translate-y-0"
+                                                    x-transition:leave-end="opacity-0 transform -translate-y-2"
+                                                    class="space-y-1"
+                                                >
+                                                    @foreach($user->assignedShops->slice(1) as $shop)
+                                                        <div class="ml-6">
+                                                            <span class="text-sm text-gray-600">{{ $shop->name }}</span>
+                                                        </div>
+                                                    @endforeach
+                                                    <div class="ml-6">
+                                                        <button 
+                                                            @click="expanded = false"
+                                                            class="text-sm text-gray-500 hover:text-gray-700 font-medium transition-colors duration-200"
+                                                        >
+                                                            Show less
+                                                        </button>
+                                                    </div>
+                                                </div>
+                                            @endif
+                                        </div>
+                                    @endif
+                                    
+                                    @if((!$user->hasRole('shop_owner') || !$user->ownedShop) && (!$user->hasRole('salesperson') || $user->assignedShops->isEmpty()))
+                                        <span class="text-sm text-gray-400 italic">No shop assignments</span>
+                                    @endif
+                                </div>
                             </td>
 
                             <!-- Created At -->
@@ -577,7 +663,7 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="7" class="px-6 py-12 text-center">
+                            <td colspan="8" class="px-6 py-12 text-center">
                                 <div class="flex flex-col items-center">
                                     <svg class="w-12 h-12 text-gray-400 mb-4" fill="none" stroke="currentColor"
                                          viewBox="0 0 24 24">
