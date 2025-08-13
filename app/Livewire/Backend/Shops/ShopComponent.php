@@ -29,7 +29,7 @@ class ShopComponent extends Component
     public string $address = '';
     public array $links = [];
     public array $newLink = ['type' => '', 'url' => ''];
-    public ?int $user_id = null;
+    public ?int $salesperson_id = null;
 
     protected array $queryString = [
         'search' => ['except' => ''],
@@ -46,7 +46,7 @@ class ShopComponent extends Component
             'address' => ['required', 'string'],
             'links' => ['array'],
             'links.*' => ['required', 'max:255'],
-            'user_id' => ['nullable', 'exists:users,id'],
+            'salesperson_id' => ['nullable', 'exists:users,id'],
         ];
     }
 
@@ -80,7 +80,7 @@ class ShopComponent extends Component
         try {
             $this->authorize('create', Shop::class);
             $this->resetValidation();
-            $this->reset(['name', 'phone', 'address', 'links', 'user_id', 'newLink']);
+            $this->reset(['name', 'phone', 'address', 'links', 'salesperson_id', 'newLink']);
             $this->showCreateModal = true;
 
         } catch (\Exception $e) {
@@ -101,7 +101,7 @@ class ShopComponent extends Component
                 'phone' => $this->phone,
                 'address' => $this->address,
                 'links' => $this->links,
-                'user_id' => $this->user_id,
+                'salesperson_id' => $this->salesperson_id,
             ]);
 
             $this->showCreateModal = false;
@@ -121,14 +121,14 @@ class ShopComponent extends Component
     {
         try {
             $this->authorize('update', $shop);
-            
+
             $this->editingShop = $shop;
             $this->name = $shop->name;
             $this->phone = $shop->phone;
             $this->address = $shop->address;
             $this->links = $shop->links ?? [];
-            $this->user_id = $shop->user_id;
-            
+            $this->salesperson_id = $shop->salesperson_id;
+
             $this->resetValidation();
             $this->showEditModal = true;
         } catch (\Exception $e) {
@@ -150,7 +150,7 @@ class ShopComponent extends Component
                 'phone' => $this->phone,
                 'address' => $this->address,
                 'links' => $this->links,
-                'user_id' => $this->user_id,
+                'salesperson_id' => $this->salesperson_id,
             ]);
 
             $this->showEditModal = false;

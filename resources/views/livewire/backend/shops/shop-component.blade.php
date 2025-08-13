@@ -691,12 +691,12 @@
                             </div>
 
                             <div>
-                     <label for="user_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                     <label for="salesperson_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                          Assign Salesperson
                      </label>
                      <select
-                         wire:model="user_id"
-                         id="user_id"
+                         wire:model="salesperson_id"
+                         id="salesperson_id"
                          class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
                      >
                                     <option value="">Select a salesperson</option>
@@ -704,7 +704,7 @@
                                         <option value="{{ $salesperson->id }}">{{ $salesperson->name }}</option>
                                     @endforeach
                      </select>
-                     @error('user_id')
+                     @error('salesperson_id')
                          <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                      @enderror
                             </div>
@@ -883,12 +883,12 @@
                             </div>
 
                             <div>
-                     <label for="edit_user_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
+                     <label for="edit_salesperson_id" class="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
                          Assign Salesperson
                      </label>
                      <select
-                         wire:model="user_id"
-                         id="edit_user_id"
+                         wire:model="salesperson_id"
+                         id="edit_salesperson_id"
                          class="w-full px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
                      >
                                     <option value="">Select a salesperson</option>
@@ -896,7 +896,7 @@
                                         <option value="{{ $salesperson->id }}">{{ $salesperson->name }}</option>
                                     @endforeach
                      </select>
-                     @error('user_id')
+                     @error('salesperson_id')
                          <p class="mt-2 text-sm text-red-600 dark:text-red-400">{{ $message }}</p>
                      @enderror
                             </div>
