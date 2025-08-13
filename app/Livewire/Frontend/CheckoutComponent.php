@@ -32,6 +32,20 @@ class CheckoutComponent extends Component
         'orderNotes' => 'nullable|string|max:1000',
     ];
 
+    protected function rules()
+    {
+        $rules = [
+            'orderNotes' => 'nullable|string|max:1000',
+        ];
+
+        // Only require shop selection for non-shop owners
+        if (!$this->isShopOwner) {
+            $rules['selectedShopId'] = 'required|exists:shops,id';
+        }
+
+        return $rules;
+    }
+
     protected array $messages = [
         'selectedShopId.required' => 'Please select a shop.',
         'selectedShopId.exists' => 'The selected shop is invalid.',
@@ -40,7 +54,28 @@ class CheckoutComponent extends Component
 
     public function mount()
     {
-        // Remove cart initialization from mount
+        // Auto-select shop for shop owners
+        if (auth()->user() && auth()->user()->hasRole('shop_owner')) {
+            $ownedShop = auth()->user()->ownedShop;
+            if ($ownedShop) {
+                $this->selectedShopId = $ownedShop->id;
+            }
+        }
+    }
+
+    // Check if current user is a shop owner
+    public function getIsShopOwnerProperty(): bool
+    {
+        return auth()->user() && auth()->user()->hasRole('shop_owner');
+    }
+
+    // Get the shop owner's shop
+    public function getOwnedShopProperty()
+    {
+        if ($this->isShopOwner) {
+            return auth()->user()->ownedShop;
+        }
+        return null;
     }
 
     // Use computed properties instead of private properties
@@ -63,7 +98,7 @@ class CheckoutComponent extends Component
     public function placeOrder(): void
     {
         Log::info('Starting order placement');
-        $this->validate();
+        $this->validate($this->rules());
 
         Log::info('Order Validation passed');
 
@@ -215,6 +250,8 @@ class CheckoutComponent extends Component
             'shops' => $shops,
             'cart' => $this->cart,
             'cartTotal' => $this->cartTotal,
+            'isShopOwner' => $this->isShopOwner,
+            'ownedShop' => $this->ownedShop,
         ]);
     }
 }

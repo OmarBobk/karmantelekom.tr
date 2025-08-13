@@ -106,159 +106,209 @@
                                 </svg>
                             </div>
                             <div>
-                                <h2 class="text-lg font-semibold text-gray-900">Select Shop</h2>
-                                <p class="text-sm text-gray-600">Choose where to place your order</p>
+                                <h2 class="text-lg font-semibold text-gray-900">
+                                    @if($isShopOwner)
+                                        Your Shop
+                                    @else
+                                        Select Shop
+                                    @endif
+                                </h2>
+                                <p class="text-sm text-gray-600">
+                                    @if($isShopOwner)
+                                        Your shop location for this order
+                                    @else
+                                        Choose where to place your order
+                                    @endif
+                                </p>
                             </div>
                         </div>
                     </div>
 
                     <div class="p-6 overflow-visible">
-                        <div x-data="{
-                            open: false,
-                            selectedShop: null,
-                            searchQuery: '',
-                            get filteredShops() {
-                                const query = this.searchQuery.toLowerCase();
-                                return [
-                                    @foreach($shops as $shop)
-                                        {
-                                            id: {{ $shop->id }},
-                                            name: '{{ $shop->name }}',
-                                            address: '{{ $shop->address }}',
-                                            phone: '{{ $shop->phone ?? '' }}',
-                                            visible: query === '' ||
-                                                '{{ strtolower($shop->name) }}'.includes(query) ||
-                                                '{{ strtolower($shop->address) }}'.includes(query) ||
-                                                '{{ strtolower($shop->phone ?? '') }}'.includes(query)
-                                        },
-                                    @endforeach
-                                ];
-                            },
-                            get visibleShops() {
-                                return this.filteredShops.filter(shop => shop.visible);
-                            }
-                        }" class="relative" style="z-index: 49;">
-                            <label class="block text-sm font-medium text-gray-700 mb-3">
-                                Shop Location <span class="text-red-500">*</span>
-                            </label>
-
+                        @if($isShopOwner && $ownedShop)
+                            <!-- Shop Owner View - Read Only -->
                             <div class="relative">
-                                <button
-                                    type="button"
-                                    @click="open = !open; if(open) { $nextTick(() => $refs.searchInput.focus()) }"
-                                    @click.away="open = false"
-                                    class="relative w-full bg-white border-2 border-gray-200 rounded-xl shadow-sm pl-4 pr-12 py-4 text-left cursor-pointer transition-all duration-200 hover:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                                    :class="{ 'border-indigo-500 ring-2 ring-indigo-500/20': open, 'border-gray-200': !open }"
-                                >
+                                <label class="block text-sm font-medium text-gray-700 mb-3">
+                                    Shop Location <span class="text-red-500">*</span>
+                                </label>
+
+                                <div class="w-full bg-gray-50 border-2 border-gray-200 rounded-xl shadow-sm pl-4 pr-12 py-4">
                                     <div class="flex items-center">
                                         <div class="flex-1">
-                                            <span x-text="selectedShop ? selectedShop.name : 'Choose a shop'" class="block text-base font-medium text-gray-900"></span>
-                                            <span x-text="selectedShop ? selectedShop.address : 'Select your preferred location'" class="block text-sm text-gray-500 mt-1"></span>
+                                            <span class="block text-base font-medium text-gray-900">{{ $ownedShop->name }}</span>
+                                            <span class="block text-sm text-gray-500 mt-1">{{ $ownedShop->address }}</span>
+                                            @if($ownedShop->phone)
+                                                <span class="block text-xs text-indigo-600 mt-1">{{ $ownedShop->phone }}</span>
+                                            @endif
                                         </div>
                                         <div class="flex items-center space-x-2">
-                                            <svg class="h-5 w-5 text-gray-400 transition-transform duration-200" :class="{ 'rotate-180': open }" viewBox="0 0 20 20" fill="currentColor">
-                                                <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
-                                            </svg>
-                                        </div>
-                                    </div>
-                                </button>
-
-                                <!-- Debug info -->
-                                <div class="mt-2 text-xs text-gray-500">
-                                    Available shops: {{ $shops->count() }}
-                                </div>
-
-                                <div
-                                    x-show="open"
-                                    x-transition:enter="transition ease-out duration-200"
-                                    x-transition:enter-start="transform opacity-0 scale-95"
-                                    x-transition:enter-end="transform opacity-100 scale-100"
-                                    x-transition:leave="transition ease-in duration-150"
-                                    x-transition:leave-start="transform opacity-100 scale-100"
-                                    x-transition:leave-end="transform opacity-0 scale-95"
-                                    class="absolute z-[9999] mt-2 w-full bg-white shadow-xl rounded-xl border border-gray-200 max-h-64 overflow-hidden"
-                                    style="display: none; position: absolute !important; z-index: 9999 !important;"
-                                >
-                                    <!-- Search Input -->
-                                    <div class="p-3 border-b border-gray-100 bg-gray-50">
-                                        <div class="relative">
-                                            <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-                                                <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                            <div class="w-6 h-6 bg-green-100 rounded-full flex items-center justify-center">
+                                                <svg class="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7" />
                                                 </svg>
                                             </div>
-                                            <input
-                                                x-ref="searchInput"
-                                                x-model="searchQuery"
-                                                type="text"
-                                                placeholder="Search shops..."
-                                                class="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
-                                                @keydown.escape="open = false"
-                                            >
-                                        </div>
-                                    </div>
-
-                                    <!-- Shops List -->
-                                    <div class="max-h-48 overflow-y-auto">
-                                        <template x-for="shop in filteredShops" :key="shop.id">
-                                            <button
-                                                type="button"
-                                                x-show="shop.visible"
-                                                @click="selectedShop = shop; $wire.selectedShopId = shop.id; open = false; searchQuery = ''"
-                                                class="w-full text-left px-4 py-3 hover:bg-indigo-50 transition-colors duration-150 border-b border-gray-100 last:border-b-0"
-                                            >
-                                                <div class="flex items-start space-x-3">
-                                                    <div class="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
-                                                        <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
-                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
-                                                        </svg>
-                                                    </div>
-                                                    <div class="flex-1 min-w-0">
-                                                        <p class="text-sm font-semibold text-gray-900" x-text="shop.name"></p>
-                                                        <p class="text-xs text-gray-500 mt-1" x-text="shop.address"></p>
-                                                        <p x-show="shop.phone" class="text-xs text-indigo-600 mt-1" x-text="shop.phone"></p>
-                                                    </div>
-                                                </div>
-                                            </button>
-                                        </template>
-
-                                        <!-- No search results -->
-                                        <div
-                                            x-show="searchQuery !== '' && visibleShops.length === 0"
-                                            class="px-4 py-6 text-center"
-                                        >
-                                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                                            </svg>
-                                            <h3 class="mt-2 text-sm font-medium text-gray-900">No shops found</h3>
-                                            <p class="mt-1 text-sm text-gray-500">Try adjusting your search terms.</p>
-                                        </div>
-
-                                        <!-- No shops available -->
-                                        <div
-                                            x-show="searchQuery === '' && filteredShops.length === 0"
-                                            class="px-4 py-6 text-center"
-                                        >
-                                            <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                                            </svg>
-                                            <h3 class="mt-2 text-sm font-medium text-gray-900">No shops available</h3>
-                                            <p class="mt-1 text-sm text-gray-500">Please contact your administrator to assign shops.</p>
                                         </div>
                                     </div>
                                 </div>
-                            </div>
 
-                            @error('selectedShopId')
-                                <p class="mt-2 text-sm text-red-600 flex items-center">
-                                    <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                                        <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
-                                    </svg>
-                                    {{ $message }}
-                                </p>
-                            @enderror
-                        </div>
+                                <div class="mt-2 text-xs text-gray-500">
+                                    <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
+                                        <svg class="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zm-1 9a1 1 0 01-1-1v-4a1 1 0 112 0v4a1 1 0 01-1 1z" clip-rule="evenodd" />
+                                        </svg>
+                                        Shop Owner - Auto-selected
+                                    </span>
+                                </div>
+                            </div>
+                        @else
+                            <!-- Regular User View - Shop Selection Dropdown -->
+                            <div x-data="{
+                                open: false,
+                                selectedShop: null,
+                                searchQuery: '',
+                                get filteredShops() {
+                                    const query = this.searchQuery.toLowerCase();
+                                    return [
+                                        @foreach($shops as $shop)
+                                            {
+                                                id: {{ $shop->id }},
+                                                name: '{{ $shop->name }}',
+                                                address: '{{ $shop->address }}',
+                                                phone: '{{ $shop->phone ?? '' }}',
+                                                visible: query === '' ||
+                                                    '{{ strtolower($shop->name) }}'.includes(query) ||
+                                                    '{{ strtolower($shop->address) }}'.includes(query) ||
+                                                    '{{ strtolower($shop->phone ?? '') }}'.includes(query)
+                                            },
+                                        @endforeach
+                                    ];
+                                },
+                                get visibleShops() {
+                                    return this.filteredShops.filter(shop => shop.visible);
+                                }
+                            }" class="relative" style="z-index: 49;">
+                                <label class="block text-sm font-medium text-gray-700 mb-3">
+                                    Shop Location <span class="text-red-500">*</span>
+                                </label>
+
+                                <div class="relative">
+                                    <button
+                                        type="button"
+                                        @click="open = !open; if(open) { $nextTick(() => $refs.searchInput.focus()) }"
+                                        @click.away="open = false"
+                                        class="relative w-full bg-white border-2 border-gray-200 rounded-xl shadow-sm pl-4 pr-12 py-4 text-left cursor-pointer transition-all duration-200 hover:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                                        :class="{ 'border-indigo-500 ring-2 ring-indigo-500/20': open, 'border-gray-200': !open }"
+                                    >
+                                        <div class="flex items-center">
+                                            <div class="flex-1">
+                                                <span x-text="selectedShop ? selectedShop.name : 'Choose a shop'" class="block text-base font-medium text-gray-900"></span>
+                                                <span x-text="selectedShop ? selectedShop.address : 'Select your preferred location'" class="block text-sm text-gray-500 mt-1"></span>
+                                            </div>
+                                            <div class="flex items-center space-x-2">
+                                                <svg class="h-5 w-5 text-gray-400 transition-transform duration-200" :class="{ 'rotate-180': open }" viewBox="0 0 20 20" fill="currentColor">
+                                                    <path fill-rule="evenodd" d="M5.293 7.293a1 1 0 011.414 0L10 10.586l3.293-3.293a1 1 0 111.414 1.414l-4 4a1 1 0 01-1.414 0l-4-4a1 1 0 010-1.414z" clip-rule="evenodd" />
+                                                </svg>
+                                            </div>
+                                        </div>
+                                    </button>
+
+                                    <!-- Debug info -->
+                                    <div class="mt-2 text-xs text-gray-500">
+                                        Available shops: {{ $shops->count() }}
+                                    </div>
+
+                                    <div
+                                        x-show="open"
+                                        x-transition:enter="transition ease-out duration-200"
+                                        x-transition:enter-start="transform opacity-0 scale-95"
+                                        x-transition:enter-end="transform opacity-100 scale-100"
+                                        x-transition:leave="transition ease-in duration-150"
+                                        x-transition:leave-start="transform opacity-100 scale-100"
+                                        x-transition:leave-end="transform opacity-0 scale-95"
+                                        class="absolute z-[9999] mt-2 w-full bg-white shadow-xl rounded-xl border border-gray-200 max-h-64 overflow-hidden"
+                                        style="display: none; position: absolute !important; z-index: 9999 !important;"
+                                    >
+                                        <!-- Search Input -->
+                                        <div class="p-3 border-b border-gray-100 bg-gray-50">
+                                            <div class="relative">
+                                                <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                                                    <svg class="h-4 w-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                                    </svg>
+                                                </div>
+                                                <input
+                                                    x-ref="searchInput"
+                                                    x-model="searchQuery"
+                                                    type="text"
+                                                    placeholder="Search shops..."
+                                                    class="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                                                    @keydown.escape="open = false"
+                                                >
+                                            </div>
+                                        </div>
+
+                                        <!-- Shops List -->
+                                        <div class="max-h-48 overflow-y-auto">
+                                            <template x-for="shop in filteredShops" :key="shop.id">
+                                                <button
+                                                    type="button"
+                                                    x-show="shop.visible"
+                                                    @click="selectedShop = shop; $wire.selectedShopId = shop.id; open = false; searchQuery = ''"
+                                                    class="w-full text-left px-4 py-3 hover:bg-indigo-50 transition-colors duration-150 border-b border-gray-100 last:border-b-0"
+                                                >
+                                                    <div class="flex items-start space-x-3">
+                                                        <div class="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                                                            <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
+                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
+                                                            </svg>
+                                                        </div>
+                                                        <div class="flex-1 min-w-0">
+                                                            <p class="text-sm font-semibold text-gray-900" x-text="shop.name"></p>
+                                                            <p class="text-xs text-gray-500 mt-1" x-text="shop.address"></p>
+                                                            <p x-show="shop.phone" class="text-xs text-indigo-600 mt-1" x-text="shop.phone"></p>
+                                                        </div>
+                                                    </div>
+                                                </button>
+                                            </template>
+
+                                            <!-- No search results -->
+                                            <div
+                                                x-show="searchQuery !== '' && visibleShops.length === 0"
+                                                class="px-4 py-6 text-center"
+                                            >
+                                                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                                                </svg>
+                                                <h3 class="mt-2 text-sm font-medium text-gray-900">No shops found</h3>
+                                                <p class="mt-1 text-sm text-gray-500">Try adjusting your search terms.</p>
+                                            </div>
+
+                                            <!-- No shops available -->
+                                            <div
+                                                x-show="searchQuery === '' && filteredShops.length === 0"
+                                                class="px-4 py-6 text-center"
+                                            >
+                                                <svg class="mx-auto h-12 w-12 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                                </svg>
+                                                <h3 class="mt-2 text-sm font-medium text-gray-900">No shops available</h3>
+                                                <p class="mt-1 text-sm text-gray-500">Please contact your administrator to assign shops.</p>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                @error('selectedShopId')
+                                    <p class="mt-2 text-sm text-red-600 flex items-center">
+                                        <svg class="w-4 h-4 mr-1" fill="currentColor" viewBox="0 0 20 20">
+                                            <path fill-rule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                        </svg>
+                                        {{ $message }}
+                                    </p>
+                                @enderror
+                            </div>
+                        @endif
                     </div>
                 </div>
 
