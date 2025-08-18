@@ -73,7 +73,7 @@ class ShopAssignmentNotification extends Notification implements ShouldQueue
             // Only add action button if shop ID exists
             if ($this->shop->id) {
                 try {
-                    $mailMessage->action('View Shop Details', route('subdomain.shop', $this->shop->id));
+                    $mailMessage->action('View Shop Details', route('subdomain.shop', ['shop' => $this->shop->id]));
                 } catch (\Exception $e) {
                     // If route fails, don't add the action button
                 }
@@ -124,7 +124,7 @@ class ShopAssignmentNotification extends Notification implements ShouldQueue
                 'priority' => 'high',
                 'action_required' => true,
                 'action_text' => 'View Shop Details',
-                'action_url' => route('subdomain.shop', $this->shop->id ?? 1),
+                'action_url' => route('subdomain.shop', ['shop' => $this->shop->id ?? 1]),
             ];
         } catch (\Exception $e) {
             return [
@@ -168,7 +168,7 @@ class ShopAssignmentNotification extends Notification implements ShouldQueue
                 'priority' => 'high',
                 'action_required' => true,
                 'action_text' => 'View Shop Details',
-                'action_url' => route('subdomain.shop', $this->shop->id ?? 1),
+                'action_url' => route('subdomain.shop', ['shop' => $this->shop->id ?? 1]),
                 'icon' => 'shop',
                 'color' => 'indigo',
             ]);

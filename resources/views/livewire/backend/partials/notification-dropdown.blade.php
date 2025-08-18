@@ -97,6 +97,12 @@
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L3.732 16.5c-.77.833.192 2.5 1.732 2.5z" />
                                 </svg>
                             </div>
+                        @elseif($notification['icon'] === 'shop')
+                            <div class="w-7 h-7 sm:w-8 sm:h-8 bg-indigo-100 rounded-full flex items-center justify-center group-hover:bg-indigo-200 transition-colors">
+                                <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                                </svg>
+                            </div>
                         @else
                             <div class="w-7 h-7 sm:w-8 sm:h-8 bg-blue-100 rounded-full flex items-center justify-center group-hover:bg-blue-200 transition-colors">
                                 <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -122,6 +128,18 @@
                                     </a>
                                 @else
                                     <span class="font-medium text-gray-700 group-hover:text-gray-800">#{{ $notification['summary']['order_id'] }}</span>
+                                @endif
+                            @endif
+                            @if($notification['summary']['shop_name'])
+                                @if($notification['order_link'])
+                                    <a href="{{ $notification['order_link'] }}"
+                                       class="font-medium text-indigo-600 hover:text-indigo-800 transition-colors hover:underline"
+                                       @click.stop="open = false"
+                                       onclick="event.stopPropagation();">
+                                        "{{ $notification['summary']['shop_name'] }}"
+                                    </a>
+                                @else
+                                    <span class="font-medium text-gray-700 group-hover:text-gray-800">"{{ $notification['summary']['shop_name'] }}"</span>
                                 @endif
                             @endif
                         </div>

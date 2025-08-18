@@ -144,6 +144,12 @@ class NotificationDropdown extends Component
     {
         $type = $this->getNotificationType($notification);
 
+        // Check if this is a shop assignment notification
+        $data = $notification->data;
+        if ($this->isShopAssignmentNotification($notification, $data)) {
+            return 'shop';
+        }
+
         return match($type) {
             'success' => 'check-circle',
             'error' => 'x-circle',
@@ -222,18 +228,52 @@ class NotificationDropdown extends Component
             return route('subdomain.orders') . '?search=' . $orderId;
         }
 
-        // Check if this is a shop creation notification
         $data = $notification->data;
+
+        // Check if this is a shop assignment notification (multiple ways to detect)
+        if ($this->isShopAssignmentNotification($notification, $data)) {
+            // First try to use the action_url if available
+            if (isset($data['action_url'])) {
+                return $data['action_url'];
+            }
+            
+            // Fallback to generating the route using model_id or shop_id
+            $shopId = $data['model_id'] ?? $data['shop_id'] ?? null;
+            if ($shopId) {
+                return route('subdomain.shop', ['shop' => $shopId]);
+            }
+        }
+
+        // Check if this is a shop creation notification
         if (isset($data['model_type']) && $data['model_type'] === 'App\\Models\\Shop') {
             return route('subdomain.shops');
         }
 
-        // Check if this is a shop assignment notification
-        if (isset($data['shop_id']) && isset($data['action_url'])) {
-            return $data['action_url'];
+        return null;
+    }
+
+    private function isShopAssignmentNotification($notification, $data): bool
+    {
+        // Check by notification type
+        if ($notification->type === 'App\\Notifications\\ShopAssignmentNotification') {
+            return true;
         }
 
-        return null;
+        // Check by description content
+        $description = $data['description'] ?? '';
+        if (str_contains($description, 'assigned to manage shop') || 
+            str_contains($description, 'reassigned') ||
+            str_contains($description, 'Shop Assignment') ||
+            str_contains($description, 'New Assignment')) {
+            return true;
+        }
+
+        // Check by data structure
+        if (isset($data['assignment_type']) || isset($data['assigned_by_id'])) {
+            return true;
+        }
+
+        return false;
     }
 
     public function render()

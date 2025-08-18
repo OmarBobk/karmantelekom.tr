@@ -176,7 +176,7 @@
             </div>
             <div class="info-row">
                 <span class="label">Salesperson:</span>
-                <span class="value">{{ $order->salesperson->name }}</span>
+                <span class="value">{{ $order->shopSalesperson->name }}</span>
             </div>
         </div>
     </div>

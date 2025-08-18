@@ -59,7 +59,7 @@ class HandleOrderUpdated implements ShouldQueue
                 $description = $this->buildChangeDescription($order, $changes);
 
                 // Log the order update activity with meaningful fields only
-                $activityLogger = activity('order')
+                $activityLogger = activity('order_updated')
                     ->performedOn($order)
                     ->by($event->userId ?? User::find(1)->id) // Use passed user ID or fallback
                     ->causedBy($event->userId ?? User::find(1)->id) // Use passed user ID or fallback

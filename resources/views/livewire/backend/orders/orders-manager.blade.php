@@ -9,7 +9,7 @@
                         <input
                             wire:model.live.debounce.300ms="search"
                             type="text"
-                            placeholder="Search by order ID, shop, or salesperson..."
+                            placeholder="Search by order ID, shop, or user..."
                             class="w-full pl-10 pr-8 py-2 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 text-gray-700 placeholder-gray-400 shadow-sm transition"
                         />
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -72,7 +72,7 @@
                                     wire:model.live="salespersonFilter"
                                     class="rounded-xl border-gray-200 bg-gray-50 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 pl-3 pr-10 py-2 text-gray-700 shadow-sm appearance-none w-full"
                                 >
-                                    <option value="">All Salespeople</option>
+                                    <option value="">All users</option>
                                     @foreach($salespeople as $salesperson)
                                         <option value="{{ $salesperson->id }}">{{ $salesperson->name }}</option>
                                     @endforeach
@@ -186,7 +186,7 @@
                                 @mouseenter="hover = true"
                                 @mouseleave="hover = false"
                             >
-                                <span>Salesperson</span>
+                                <span>Ordered By</span>
                                 <div class="flex flex-col">
                                     <svg class="w-2 h-2 {{ $sortBy === 'salesperson' && $sortDirection === 'asc' ? 'text-indigo-600' : 'text-gray-300' }}"
                                          :class="hover ? 'text-indigo-400' : ''"
@@ -325,10 +325,10 @@
                                 </td>
                                 <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900 hidden md:table-cell">
                                     <div class="flex items-center gap-3">
-                                        <img src="https://ui-avatars.com/api/?name={{ urlencode($order->salesperson->name) }}&background=4f46e5&color=fff&size=32" alt="{{ $order->salesperson->name }}" class="w-8 h-8 rounded-full shadow border border-white" />
+                                        <img src="https://ui-avatars.com/api/?name={{ urlencode($order->customer->name) }}&background=4f46e5&color=fff&size=32" alt="{{ $order->customer->name }}" class="w-8 h-8 rounded-full shadow border border-white" />
                                         <div>
-                                            <div class="font-semibold">{{ $order->salesperson->name }}</div>
-                                            <div class="text-xs text-gray-400">{{ $order->salesperson->email }}</div>
+                                            <div class="font-semibold">{{ $order->customer->name }}</div>
+                                            <div class="text-xs text-gray-400">{{ $order->customer->email }}</div>
                                         </div>
                                     </div>
                                 </td>
@@ -337,7 +337,7 @@
                                         <div>
                                             <a href="{{ route('subdomain.shop', ['shop' => $order->shop->id]) }}" target="_blank" class="text-indigo-600 hover:underline font-semibold">{{ $order->shop->name }}</a>
                                             <!-- Show salesperson info on mobile when hidden column is not visible -->
-                                            <div class="text-xs text-gray-400 md:hidden">by {{ $order->salesperson->name }}</div>
+                                            <div class="text-xs text-gray-400 md:hidden">by {{ $order->customer->name }}</div>
                                         </div>
                                     </div>
                                 </td>
@@ -543,8 +543,8 @@
                                                 </svg>
                                             </div>
                                             <div class="flex-1 min-w-0">
-                                                <p class="text-xs font-medium text-green-600 uppercase tracking-wide">Salesperson</p>
-                                                <p class="text-sm font-bold text-green-900 truncate">{{ $selectedOrder->salesperson->name }}</p>
+                                                <p class="text-xs font-medium text-green-600 uppercase tracking-wide">Ordered By</p>
+                                                <p class="text-sm font-bold text-green-900 truncate">{{ $selectedOrder->customer->name }}</p>
                                             </div>
                                         </div>
                                     </div>

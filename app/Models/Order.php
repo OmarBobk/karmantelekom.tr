@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property OrderStatus $status Status of the order
  * @property string $notes Additional notes for the order
  * @property float $total_price Total price of the order
- * @property-read User $salesperson Salesperson who handled the order
+ * @property-read User $customer Customer who placed the order
 * @property-read Shop $shop Shop where the order was placed
  */
 
@@ -48,9 +48,29 @@ class Order extends Model
         return $this->belongsTo(Shop::class);
     }
 
-    public function salesperson(): BelongsTo
+    /**
+     * Get the customer who placed the order
+     */
+    public function customer(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /**
+     * Get the shop's assigned salesperson
+     */
+    public function shopSalesperson(): BelongsTo
+    {
+        return $this->shop->salesperson();
+    }
+
+    // Keep the old relationship for backward compatibility but mark as deprecated
+    /**
+     * @deprecated Use customer() instead. This returns the customer, not a salesperson.
+     */
+    public function salesperson(): BelongsTo
+    {
+        return $this->customer();
     }
 
     public function items()

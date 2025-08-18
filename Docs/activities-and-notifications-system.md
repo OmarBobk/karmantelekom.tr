@@ -66,7 +66,7 @@ The activity log table (`activity_log`) contains:
 **Listener**: `app/Listeners/HandleOrderCreated.php`
 
 **Activities Logged**:
-- Log Name: `order`
+- Log Name: `order_created`
 - Description: "Order #X has been created with status 'Y' for Z TL"
 - Properties: order_id, shop_id, total_price, status, notes
 
@@ -88,7 +88,7 @@ The activity log table (`activity_log`) contains:
 **Listener**: `app/Listeners/HandleOrderUpdated.php`
 
 **Activities Logged**:
-- Log Name: `order`
+- Log Name: `order_updated`
 - Description: Change-specific descriptions (status, price, notes changes)
 - Properties: order_id, status, shop_id, total_price, notes, changes
 

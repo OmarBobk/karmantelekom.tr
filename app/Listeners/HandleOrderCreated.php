@@ -40,7 +40,7 @@ class HandleOrderCreated implements ShouldQueue
             $order = $event->order;
 
             // Log the order creation activity with meaningful fields
-            $activityLogger = activity('order')
+            $activityLogger = activity('order_created')
                 ->performedOn($order)
                 ->by($event->userId ?? User::find(1)->id) // Use passed user ID or fallback
                 ->causedBy($event->userId ?? User::find(1)->id) // Use passed user ID or fallback

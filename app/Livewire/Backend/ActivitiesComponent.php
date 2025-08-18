@@ -201,17 +201,21 @@ class ActivitiesComponent extends Component
     private function getActivities()
     {
         $activities = $this->getActivitiesQuery()->paginate($this->perPage);
-        
-        // Enhance descriptions for shop activities
+
+        // Enhance descriptions for shop and order activities
         $activities->getCollection()->transform(function ($activity) {
             if ($activity->log_name === 'shop_assignment') {
                 $activity->description = $this->buildDetailedShopAssignmentDescription($activity);
             } elseif ($activity->log_name === 'shop_created') {
                 $activity->description = $this->buildDetailedShopCreationDescription($activity);
+            } elseif ($activity->log_name === 'order_created') {
+                $activity->description = $this->buildDetailedOrderCreationDescription($activity);
+            } elseif ($activity->log_name === 'order_updated') {
+                $activity->description = $this->buildDetailedOrderUpdateDescription($activity);
             }
             return $activity;
         });
-        
+
         return $activities;
     }
 
@@ -221,7 +225,7 @@ class ActivitiesComponent extends Component
     private function buildDetailedShopAssignmentDescription($activity): string
     {
         $properties = json_decode($activity->properties, true);
-        
+
         if (!$properties) {
             return $activity->description ?? 'Shop assignment activity';
         }
@@ -256,7 +260,7 @@ class ActivitiesComponent extends Component
     private function buildDetailedShopCreationDescription($activity): string
     {
         $properties = json_decode($activity->properties, true);
-        
+
         if (!$properties) {
             return $activity->description ?? 'Shop creation activity';
         }
@@ -275,6 +279,36 @@ class ActivitiesComponent extends Component
         }
 
         return "🏪 New Shop Created{$timestampText}: Shop '{$shopName}' has been created by {$createdByName}. This new shop is now available in the system and can be assigned to salespersons for management. Shop Details: 📞 {$shopPhone} | 📍 {$shopAddress}";
+    }
+
+    /**
+     * Build detailed description for order creation activities
+     */
+    private function buildDetailedOrderCreationDescription($activity): string
+    {
+        $properties = json_decode($activity->properties, true);
+        $userName = $activity->user_name ?? 'Unknown User';
+        $orderId = $properties['order_id'] ?? $activity->subject_id ?? 'Unknown';
+
+        // Extract the original description and add the prefix
+        $originalDescription = $activity->description ?? "Order #{$orderId} has been created";
+
+        return "👤 {$userName} - {$originalDescription}";
+    }
+
+    /**
+     * Build detailed description for order update activities
+     */
+    private function buildDetailedOrderUpdateDescription($activity): string
+    {
+        $properties = json_decode($activity->properties, true);
+        $userName = $activity->user_name ?? 'Unknown User';
+        $orderId = $properties['order_id'] ?? $activity->subject_id ?? 'Unknown';
+
+        // Extract the original description and add the prefix
+        $originalDescription = $activity->description ?? "Order #{$orderId} has been updated";
+
+        return "👤 {$userName} - {$originalDescription}";
     }
 
     /**

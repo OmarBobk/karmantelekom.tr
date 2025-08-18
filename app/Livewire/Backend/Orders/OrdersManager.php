@@ -82,13 +82,13 @@ class OrdersManager extends Component
         try {
             $user_id = auth()->id();
             $query = Order::query()
-                ->with(['salesperson', 'items', 'shop'])
+                ->with(['customer', 'items', 'shop']) // Changed from 'salesperson' to 'customer'
                 ->when($this->search, function ($query) {
                     $search = $this->search;
                     $query->where(function ($q) use ($search) {
                         $q->where('id', $search)
                             ->orWhereHas('shop', fn($q2) => $q2->where('name', 'like', "%$search%"))
-                            ->orWhereHas('salesperson', fn($q3) => $q3->where('name', 'like', "%$search%"));
+                            ->orWhereHas('customer', fn($q3) => $q3->where('name', 'like', "%$search%")); // Changed from 'salesperson' to 'customer'
                     });
                 })
                 ->whereHas('shop', function ($query) {
@@ -212,7 +212,7 @@ class OrdersManager extends Component
 
     public function showOrderDetails($orderId): void
     {
-        $this->selectedOrder = Order::with(['items.product', 'shop', 'salesperson'])
+        $this->selectedOrder = Order::with(['items.product', 'shop', 'customer']) // Changed from 'salesperson' to 'customer'
             ->findOrFail($orderId);
         $this->showOrderDetailsModal = true;
     }
@@ -256,7 +256,7 @@ class OrdersManager extends Component
 
             // Refresh selectedOrder if it's currently being viewed
             if ($this->selectedOrder && $this->selectedOrder->id === $order->id) {
-                $this->selectedOrder = $order->fresh(['items.product', 'shop', 'salesperson']);
+                $this->selectedOrder = $order->fresh(['items.product', 'shop', 'customer']); // Changed from 'salesperson' to 'customer'
             }
 
             $this->dispatch('notify', [
@@ -281,7 +281,7 @@ class OrdersManager extends Component
     {
         try {
 
-            $order = Order::with(['items.product', 'shop', 'salesperson'])
+            $order = Order::with(['items.product', 'shop', 'customer']) // Changed from 'salesperson' to 'customer'
                 ->findOrFail($orderId);
 
             $customer = new Buyer([

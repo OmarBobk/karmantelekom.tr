@@ -182,8 +182,7 @@ class CheckoutComponent extends Component
     {
         $orderId = $request->invoiceOrderId;
         try {
-
-            $order = Order::with(['items.product', 'shop', 'salesperson'])
+            $order = Order::with(['items.product', 'shop', 'customer'])
                 ->findOrFail($orderId);
 
             $customer = new Buyer([

@@ -42,13 +42,13 @@ class NotificationRecipientsService
             $adminUsers = $this->getAdminUsers();
             $recipients = $recipients->merge($adminUsers);
 
-            // Get users linked to the order's shop
+            // Get users linked to the order's shop (including assigned salesperson)
             $shopUsers = $this->getShopRelatedUsers($order);
             $recipients = $recipients->merge($shopUsers);
 
-            // Get the order's salesperson
-            if ($order->salesperson) {
-                $recipients->push($order->salesperson);
+            // Get the customer who placed the order (if you want to notify them)
+            if ($order->customer) {
+                $recipients->push($order->customer);
             }
 
             // Remove duplicates by user ID
@@ -119,8 +119,8 @@ class NotificationRecipientsService
         $users = collect();
 
         // Get the shop's assigned salesperson/user
-        if ($order->shop && $order->shop->user) {
-            $users->push($order->shop->user);
+        if ($order->shop && $order->shop->salesperson) {
+            $users->push($order->shop->salesperson);
         }
 
         // You can extend this method to include other shop-related users
