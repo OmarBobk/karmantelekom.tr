@@ -39,6 +39,7 @@ class NotificationDropdown extends Component
                     'time' => $notification->created_at->diffForHumans(),
                     'time_exact' => $notification->created_at->format('M j, Y \a\t g:i A'),
                     'order_id' => $this->getOrderId($notification),
+                    'shop_id' => $this->getShopId($notification),
                     'order_link' => $this->getOrderLink($notification),
                     'read_at' => $notification->read_at,
                 ];
@@ -166,23 +167,35 @@ class NotificationDropdown extends Component
         preg_match('/Order #(\d+)/', $description, $matches);
         $orderId = $matches[1] ?? null;
 
+        // Extract shop name if present
+        $shopName = $data['shop_name'] ?? null;
+
         return [
             'who' => $performedBy,
             'what' => $this->extractAction($description),
             'order_id' => $orderId,
+            'shop_name' => $shopName,
         ];
     }
 
     private function extractAction(string $description): string
     {
-        if (str_contains($description, 'has been created')) {
+        if (str_contains($description, 'New shop') && str_contains($description, 'has been created')) {
+            return 'created a new shop';
+        } elseif (str_contains($description, 'Order #') && str_contains($description, 'has been created')) {
             return 'created an order';
+        } elseif (str_contains($description, 'has been created')) {
+            return 'created an item';
         } elseif (str_contains($description, 'status changed')) {
             return 'updated order status';
         } elseif (str_contains($description, 'total changed')) {
             return 'updated order total';
         } elseif (str_contains($description, 'has been updated')) {
             return 'updated an order';
+        } elseif (str_contains($description, 'assigned to manage shop')) {
+            return 'assigned you to a shop';
+        } elseif (str_contains($description, 'reassigned')) {
+            return 'reassigned you to a shop';
         }
 
         return 'performed an action';
@@ -195,12 +208,29 @@ class NotificationDropdown extends Component
         return $matches[1] ?? null;
     }
 
+    private function getShopId($notification): ?string
+    {
+        $modelId = $notification->data['model_id'] ?? null;
+        return $modelId ? (string) $modelId : null;
+    }
+
     private function getOrderLink($notification): ?string
     {
         $orderId = $this->getOrderId($notification);
 
         if ($orderId) {
             return route('subdomain.orders') . '?search=' . $orderId;
+        }
+
+        // Check if this is a shop creation notification
+        $data = $notification->data;
+        if (isset($data['model_type']) && $data['model_type'] === 'App\\Models\\Shop') {
+            return route('subdomain.shops');
+        }
+
+        // Check if this is a shop assignment notification
+        if (isset($data['shop_id']) && isset($data['action_url'])) {
+            return $data['action_url'];
         }
 
         return null;

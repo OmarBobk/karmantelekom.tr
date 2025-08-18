@@ -2,7 +2,10 @@
 
 namespace App\Livewire\Backend\Shops;
 
+use App\Events\ShopAssigned;
+use App\Events\ShopCreated;
 use App\Models\Shop;
+use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Livewire\Attributes\Layout;
@@ -96,6 +99,13 @@ class ShopComponent extends Component
         try {
             $this->authorize('create', Shop::class);
             $this->validate();
+
+            $previousSalespersonId = null;
+
+            // Check if a salesperson is being assigned
+            $isSalespersonAssignment = !empty($this->salesperson_id);
+
+            // Create shop
             $shop = Shop::create([
                 'name' => $this->name,
                 'phone' => $this->phone,
@@ -103,6 +113,17 @@ class ShopComponent extends Component
                 'links' => $this->links,
                 'salesperson_id' => $this->salesperson_id,
             ]);
+
+            // Dispatch ShopCreated event
+            ShopCreated::dispatch($shop, auth()->id());
+
+            // Fire ShopAssigned event if a salesperson is assigned
+            if ($isSalespersonAssignment) {
+                $salesperson = User::find($this->salesperson_id);
+                if ($salesperson) {
+                    event(new ShopAssigned($shop, $salesperson, auth()->user(), null));
+                }
+            }
 
             $this->showCreateModal = false;
             $this->dispatch('notify', [
@@ -145,13 +166,42 @@ class ShopComponent extends Component
             $this->authorize('update', $this->editingShop);
             $this->validate();
 
-            $this->editingShop->update([
-                'name' => $this->name,
-                'phone' => $this->phone,
-                'address' => $this->address,
-                'links' => $this->links,
-                'salesperson_id' => $this->salesperson_id,
-            ]);
+            // Store the previous salesperson for comparison
+            $previousSalespersonId = $this->editingShop->salesperson_id;
+            $previousSalesperson = $previousSalespersonId ? User::find($previousSalespersonId) : null;
+
+            // Check if this is a salesperson assignment change
+            $isSalespersonChange = $this->salesperson_id && $this->salesperson_id !== $previousSalespersonId;
+
+            // Update shop with or without activity logging based on salesperson change
+            if ($isSalespersonChange) {
+                // Update shop without activity logging when salesperson is being assigned
+//                $this->editingShop->disableLogging();
+                $this->editingShop->update([
+                    'name' => $this->name,
+                    'phone' => $this->phone,
+                    'address' => $this->address,
+                    'links' => $this->links,
+                    'salesperson_id' => $this->salesperson_id,
+                ]);
+            } else {
+                // Update shop with normal activity logging
+                $this->editingShop->update([
+                    'name' => $this->name,
+                    'phone' => $this->phone,
+                    'address' => $this->address,
+                    'links' => $this->links,
+                    'salesperson_id' => $this->salesperson_id,
+                ]);
+            }
+
+            // Fire ShopAssigned event if salesperson assignment changed
+            if ($isSalespersonChange) {
+                $salesperson = User::find($this->salesperson_id);
+                if ($salesperson) {
+                    event(new ShopAssigned($this->editingShop, $salesperson, auth()->user(), $previousSalesperson));
+                }
+            }
 
             $this->showEditModal = false;
             $this->dispatch('notify', [

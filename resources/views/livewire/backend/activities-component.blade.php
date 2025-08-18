@@ -246,7 +246,7 @@
                     </thead>
                     <tbody class="bg-white dark:bg-gray-800 divide-y divide-gray-200 dark:divide-gray-700">
                         @forelse($activities as $activity)
-                            <tr class="hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 dark:hover:from-gray-700 dark:hover:to-gray-600 transition-all duration-200 ease-in-out group">
+                            <tr class="hover:bg-gradient-to-r hover:from-blue-50 hover:to-indigo-50 dark:hover:from-gray-700/50 dark:hover:to-gray-600/50 transition-all duration-300 ease-in-out group border-l-4 border-l-transparent hover:border-l-indigo-500">
                                 <td class="px-6 py-6 whitespace-nowrap">
                                     <div class="flex items-center">
                                         <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-indigo-500 rounded-lg flex items-center justify-center text-white text-sm font-semibold">
@@ -256,23 +256,23 @@
                                 </td>
                                 <td class="px-6 py-6 whitespace-nowrap">
                                     @if($activity->user_name)
-                                        <div class="flex items-center">
+                                        <div class="flex items-center group">
                                             <div class="flex-shrink-0 h-10 w-10">
                                                 @if($activity->profile_photo_path)
-                                                    <img class="h-10 w-10 rounded-full" src="{{ asset('storage/' . $activity->profile_photo_path) }}" alt="{{ $activity->user_name }}">
+                                                    <img class="h-10 w-10 rounded-full ring-2 ring-gray-200 dark:ring-gray-700 group-hover:ring-indigo-500 transition-all duration-200 shadow-sm" src="{{ asset('storage/' . $activity->profile_photo_path) }}" alt="{{ $activity->user_name }}">
                                                 @else
-                                                    <div class="h-10 w-10 bg-gradient-to-r from-blue-100 to-indigo-100 dark:from-blue-900 dark:to-indigo-900 rounded-full flex items-center justify-center">
-                                                        <svg class="h-5 w-5 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <div class="h-10 w-10 bg-gradient-to-br from-indigo-100 to-blue-100 dark:from-indigo-900 dark:to-blue-900 rounded-full flex items-center justify-center ring-2 ring-gray-200 dark:ring-gray-700 group-hover:ring-indigo-500 transition-all duration-200 shadow-sm">
+                                                        <svg class="h-5 w-5 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
                                                         </svg>
                                                     </div>
                                                 @endif
                                             </div>
-                                            <div class="ml-4">
-                                                <div class="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-200">
+                                            <div class="ml-3">
+                                                <div class="text-sm font-semibold text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors duration-200">
                                                     {{ $activity->user_name }}
                                                 </div>
-                                                <div class="text-sm text-gray-500 dark:text-gray-400">
+                                                <div class="text-sm text-gray-500 dark:text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors duration-200">
                                                     {{ $activity->user_email }}
                                                 </div>
                                             </div>
@@ -282,28 +282,34 @@
                                     @endif
                                 </td>
                                 <td class="px-6 py-6 whitespace-nowrap">
-                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium
-                                                                             @if(str_contains($activity->log_name, 'created')) bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-200
-                                     @elseif(str_contains($activity->log_name, 'updated')) bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200
-                                     @elseif(str_contains($activity->log_name, 'deleted')) bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-200
-                                     @elseif(str_contains($activity->log_name, 'login')) bg-purple-100 text-purple-800 dark:bg-purple-900 dark:text-purple-200
-                                     @elseif(str_contains($activity->log_name, 'logout')) bg-gray-100 text-gray-800 dark:bg-gray-700 dark:text-gray-200
-                                        @else bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-200
+                                    <span class="inline-flex items-center px-3 py-1.5 rounded-full text-xs font-semibold shadow-sm transition-all duration-200 hover:scale-105
+                                                                             @if(str_contains($activity->log_name, 'created')) bg-gradient-to-r from-green-100 to-emerald-100 text-green-800 dark:from-green-900/30 dark:to-emerald-900/30 dark:text-green-200 border border-green-200 dark:border-green-800
+                                     @elseif(str_contains($activity->log_name, 'updated')) bg-gradient-to-r from-blue-100 to-cyan-100 text-blue-800 dark:from-blue-900/30 dark:to-cyan-900/30 dark:text-blue-200 border border-blue-200 dark:border-blue-800
+                                     @elseif(str_contains($activity->log_name, 'deleted')) bg-gradient-to-r from-red-100 to-pink-100 text-red-800 dark:from-red-900/30 dark:to-pink-900/30 dark:text-red-200 border border-red-200 dark:border-red-800
+                                     @elseif(str_contains($activity->log_name, 'login')) bg-gradient-to-r from-purple-100 to-violet-100 text-purple-800 dark:from-purple-900/30 dark:to-violet-900/30 dark:text-purple-200 border border-purple-200 dark:border-purple-800
+                                     @elseif(str_contains($activity->log_name, 'logout')) bg-gradient-to-r from-gray-100 to-slate-100 text-gray-800 dark:from-gray-700/30 dark:to-slate-700/30 dark:text-gray-200 border border-gray-200 dark:border-gray-700
+                                     @elseif($activity->log_name === 'shop_assignment') bg-gradient-to-r from-indigo-100 to-blue-100 text-indigo-800 dark:from-indigo-900/30 dark:to-blue-900/30 dark:text-indigo-200 border border-indigo-200 dark:border-indigo-800
+                                        @else bg-gradient-to-r from-yellow-100 to-amber-100 text-yellow-800 dark:from-yellow-900/30 dark:to-amber-900/30 dark:text-yellow-200 border border-yellow-200 dark:border-yellow-800
                                         @endif
                                     ">
                                         @switch($activity->log_name)
                                             @case('user_login')
-                                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <svg class="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1"/>
                                                 </svg>
                                                 @break
                                             @case('user_logout')
-                                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <svg class="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1"/>
                                                 </svg>
                                                 @break
+                                            @case('shop_assignment')
+                                                <svg class="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H7m10 0v-2c0-.656-.126-1.283-.356-1.857M7 20H2v-2a3 3 0 015.356-1.857M7 20v-2c0-.656.126-1.283.356-1.857m0 0a5.002 5.002 0 019.288 0M15 7a3 3 0 11-6 0 3 3 0 016 0zm6 3a2 2 0 11-4 0 2 2 0 014 0zM7 10a2 2 0 11-4 0 2 2 0 014 0z"/>
+                                                </svg>
+                                                @break
                                             @default
-                                                <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                <svg class="w-3 h-3 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                                                 </svg>
                                         @endswitch
@@ -311,8 +317,137 @@
                                     </span>
                                 </td>
                                 <td class="px-6 py-6">
-                                    <div class="text-sm text-gray-900 dark:text-white max-w-xs">
+                                    <div class="text-sm text-gray-900 dark:text-white max-w-md">
+                                        @if($activity->log_name === 'shop_assignment')
+                                            @php
+                                                $properties = json_decode($activity->properties, true);
+                                                $assignmentType = $properties['assignment_type'] ?? 'new_assignment';
+                                            @endphp
+                                            <div class="relative">
+                                                <!-- Main Activity Card -->
+                                                <div class="bg-gradient-to-r from-indigo-50 to-blue-50 dark:from-indigo-900/20 dark:to-blue-900/20 rounded-xl border border-indigo-200 dark:border-indigo-800 p-4 shadow-sm hover:shadow-md transition-all duration-300">
+                                                    <!-- Header with Icon and Type -->
+                                                    <div class="flex items-center mb-3">
+                                                        <div class="flex-shrink-0 w-10 h-10 bg-gradient-to-br from-indigo-500 to-blue-600 rounded-lg flex items-center justify-center shadow-lg">
+                                                            @if($assignmentType === 'reassignment')
+                                                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/>
+                                                                </svg>
+                                                            @else
+                                                                <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
+                                                                </svg>
+                                                            @endif
+                                                        </div>
+                                                        <div class="ml-3">
+                                                            <h4 class="text-sm font-semibold text-gray-900 dark:text-white">
+                                                                @if($assignmentType === 'reassignment')
+                                                                    🔄 Shop Reassignment
+                                                                @else
+                                                                    ✅ New Shop Assignment
+                                                                @endif
+                                                            </h4>
+                                                            <p class="text-xs text-gray-500 dark:text-gray-400">
+                                                                {{ \Carbon\Carbon::parse($properties['assignment_timestamp'] ?? now())->format('M j, Y \a\t H:i') }}
+                                                            </p>
+                                                        </div>
+                                                    </div>
+
+                                                    <!-- Assignment Details -->
+                                                    <div class="space-y-3">
+                                                        <!-- Shop Information -->
+                                                        <div class="bg-white dark:bg-gray-800 rounded-lg p-3 border border-gray-200 dark:border-gray-700">
+                                                            <div class="flex items-center mb-2">
+                                                                <svg class="w-4 h-4 text-indigo-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4"/>
+                                                                </svg>
+                                                                <span class="text-sm font-medium text-gray-900 dark:text-white">{{ $properties['shop_details']['name'] ?? 'N/A' }}</span>
+                                                            </div>
+                                                            <div class="grid grid-cols-2 gap-2 text-xs text-gray-600 dark:text-gray-400">
+                                                                <div class="flex items-center">
+                                                                    <svg class="w-3 h-3 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/>
+                                                                    </svg>
+                                                                    {{ $properties['shop_details']['phone'] ?? 'N/A' }}
+                                                                </div>
+                                                                <div class="flex items-center">
+                                                                    <svg class="w-3 h-3 mr-1 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/>
+                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                                    </svg>
+                                                                    {{ Str::limit($properties['shop_details']['address'] ?? 'N/A', 25) }}
+                                                                </div>
+                                                            </div>
+                                                        </div>
+
+                                                        <!-- Assignment Flow -->
+                                                        <div class="relative">
+                                                            @if($assignmentType === 'reassignment')
+                                                                <!-- Reassignment Flow -->
+                                                                <div class="flex items-center justify-between">
+                                                                    <div class="flex items-center">
+                                                                        <div class="w-8 h-8 bg-red-100 dark:bg-red-900/30 rounded-full flex items-center justify-center">
+                                                                            <svg class="w-4 h-4 text-red-600 dark:text-red-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                                                            </svg>
+                                                                        </div>
+                                                                        <div class="ml-2">
+                                                                            <p class="text-xs font-medium text-gray-900 dark:text-white">{{ $properties['previous_salesperson_name'] ?? 'N/A' }}</p>
+                                                                            <p class="text-xs text-red-600 dark:text-red-400">Previous</p>
+                                                                        </div>
+                                                                    </div>
+                                                                    
+                                                                    <div class="flex-1 mx-4">
+                                                                        <div class="h-0.5 bg-gradient-to-r from-red-400 via-gray-300 to-green-400 rounded-full"></div>
+                                                                    </div>
+                                                                    
+                                                                    <div class="flex items-center">
+                                                                        <div class="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+                                                                            <svg class="w-4 h-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                                                            </svg>
+                                                                        </div>
+                                                                        <div class="ml-2">
+                                                                            <p class="text-xs font-medium text-gray-900 dark:text-white">{{ $properties['salesperson_name'] ?? 'N/A' }}</p>
+                                                                            <p class="text-xs text-green-600 dark:text-green-400">New</p>
+                                                                        </div>
+                                                                    </div>
+                                                                </div>
+                                                            @else
+                                                                <!-- New Assignment -->
+                                                                <div class="flex items-center">
+                                                                    <div class="w-8 h-8 bg-green-100 dark:bg-green-900/30 rounded-full flex items-center justify-center">
+                                                                        <svg class="w-4 h-4 text-green-600 dark:text-green-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                                                        </svg>
+                                                                    </div>
+                                                                    <div class="ml-3">
+                                                                        <p class="text-sm font-medium text-gray-900 dark:text-white">{{ $properties['salesperson_name'] ?? 'N/A' }}</p>
+                                                                        <p class="text-xs text-gray-500 dark:text-gray-400">{{ $properties['salesperson_email'] ?? 'N/A' }}</p>
+                                                                    </div>
+                                                                </div>
+                                                            @endif
+                                                        </div>
+
+                                                        <!-- Admin Info -->
+                                                        <div class="flex items-center justify-between pt-2 border-t border-gray-200 dark:border-gray-700">
+                                                            <div class="flex items-center">
+                                                                <div class="w-6 h-6 bg-purple-100 dark:bg-purple-900/30 rounded-full flex items-center justify-center">
+                                                                    <svg class="w-3 h-3 text-purple-600 dark:text-purple-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                                                                    </svg>
+                                                                </div>
+                                                                <span class="ml-2 text-xs text-gray-600 dark:text-gray-400">
+                                                                    Assigned by <span class="font-medium text-gray-900 dark:text-white">{{ $properties['assigned_by_name'] ?? 'N/A' }}</span>
+                                                                </span>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        @else
                                         {{ $activity->description ?? 'No description available' }}
+                                        @endif
                                     </div>
                                 </td>
                                 <td class="px-6 py-6 whitespace-nowrap">
@@ -326,9 +461,15 @@
                                         @endif
                                     </div>
                                 </td>
-                                <td class="px-6 py-6 whitespace-nowrap text-sm text-gray-500 dark:text-gray-400">
-                                    <div>{{ \Carbon\Carbon::parse($activity->created_at)->format('M j, Y') }}</div>
-                                    <div class="text-xs text-gray-400 dark:text-gray-500">{{ \Carbon\Carbon::parse($activity->created_at)->format('H:i:s') }}</div>
+                                <td class="px-6 py-6 whitespace-nowrap">
+                                    <div class="text-right">
+                                        <div class="text-sm font-medium text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors duration-200">
+                                            {{ \Carbon\Carbon::parse($activity->created_at)->format('M j, Y') }}
+                                        </div>
+                                        <div class="text-xs text-gray-500 dark:text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors duration-200">
+                                            {{ \Carbon\Carbon::parse($activity->created_at)->format('H:i:s') }}
+                                        </div>
+                                    </div>
                                 </td>
                             </tr>
                         @empty

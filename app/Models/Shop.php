@@ -22,6 +22,7 @@ class Shop extends Model
 
     public array $return_from_search = [];
 
+
     /**
      * Get the attributes that should be cast.
      *
@@ -42,7 +43,7 @@ class Shop extends Model
 
     /**
      * Get all orders for this shop
-     * 
+     *
      * How to use:
      * $shop = Shop::find(1);
      * $orders = $shop->orders; // Returns collection of orders
@@ -57,7 +58,7 @@ class Shop extends Model
 
     /**
      * Get the user associated with this shop (owner or salesperson)
-     * 
+     *
      * How to use:
      * $shop = Shop::find(1);
      * $user = $shop->user; // Returns associated User model
@@ -70,7 +71,7 @@ class Shop extends Model
 
     /**
      * Get the shop owner (if user is a shop owner)
-     * 
+     *
      * How to use:
      * $shop = Shop::find(1);
      * $owner = $shop->owner; // Returns User model if owner exists
@@ -85,7 +86,7 @@ class Shop extends Model
 
     /**
      * Get the assigned salesperson (if user is a salesperson)
-     * 
+     *
      * How to use:
      * $shop = Shop::find(1);
      * $salesperson = $shop->salesperson; // Returns User model if salesperson exists
@@ -100,7 +101,7 @@ class Shop extends Model
 
     /**
      * Scope to get shops by user role
-     * 
+     *
      * How to use:
      * $user = User::find(1);
      * $shops = Shop::byUserRole($user)->get();
@@ -115,13 +116,13 @@ class Shop extends Model
         } elseif ($user->hasRole('salesperson')) {
             return $query->where('salesperson_id', $user->id);
         }
-        
+
         return $query->where('owner_id', 0); // No results for other roles
     }
 
     /**
      * Scope to get shops visible to a user based on their role
-     * 
+     *
      * How to use:
      * $user = Auth::user();
      * $shops = Shop::visibleTo($user)->get();
@@ -151,7 +152,7 @@ class Shop extends Model
 
     /**
      * Get orders for current month
-     * 
+     *
      * How to use:
      * $shop = Shop::find(1);
      * $monthlyOrders = $shop->monthlyOrders;
@@ -168,7 +169,7 @@ class Shop extends Model
 
     /**
      * Get count of orders for current month
-     * 
+     *
      * How to use:
      * $shop = Shop::find(1);
      * $count = $shop->monthly_orders_count;

@@ -2,6 +2,7 @@
 
 namespace App\Livewire\Frontend;
 
+use App\Events\ShopCreated;
 use App\Models\Shop;
 use Illuminate\Support\Facades\Auth;
 use Livewire\Attributes\Layout;
@@ -78,6 +79,9 @@ class ShopCreationComponent extends Component
                 'links' => $this->links,
                 'owner_id' => Auth::id(), // Set the current user as the owner
             ]);
+
+            // Dispatch ShopCreated event
+            ShopCreated::dispatch($shop, Auth::id());
 
             $this->showModal = false;
 

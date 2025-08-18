@@ -68,7 +68,7 @@ class ShopProfileComponent extends Component
             'active_orders' => $active_orders->whereNot("status", OrderStatus::DELIVERED)->count(),
             'rating' => 15, // $this->shop->rating,
             'delivery_success' => 32, // $this->shop->delivery_success_rate,
-            'avg' => number_format(($sum_total_price / $orders_count), 2, '.', ','), // $this->shop->delivery_success_rate,
+            'avg' => $orders_count > 0 ? number_format(($sum_total_price / $orders_count), 2, '.', ',') : '0.00',
         ];
 
         $statusCounts = $this->shop->orders()

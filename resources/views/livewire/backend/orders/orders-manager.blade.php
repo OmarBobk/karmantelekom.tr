@@ -129,7 +129,7 @@
             </div>
         </div>
 
-        <div class="overflow-auto">
+        <div class="">
             <!-- Sorting Loading Indicator -->
             <div wire:loading.delay wire:target="sortByColumn" class="flex items-center justify-center py-2 bg-indigo-50 border-b border-indigo-200">
                 <div class="flex items-center space-x-2 text-indigo-600">

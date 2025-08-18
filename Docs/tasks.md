@@ -36,19 +36,44 @@
 
 
 - **TODO** Dashboard:
-    - **TODO** a page to view all notifications.
     - **DONE** Users Manager.
+    - **DONE** Activities Manager: a page to view all notifications.
     - **TODO** when a product is deleted, it should be removed from the analytics (Most Viewed Products).
-- **DONE** new user registration process
+    - **TODO** User Manager: 
+      - **DONE** if a user is a shop owner or salesperson, we should know which shop they are managing.
+      - **DONE** ##BUG## you can't mark a user as verified from the edit form.
+      - **DONE** new user registration process
+    - **DONE** ##BUG## shop manager: you can't assign a salesperson to a shop.
+    - **TODO** Notifications:
+      - **TODO** New notification should be created when a new user is registered and the status of the shop (created or not yet).
+      - **TODO** New notification should be sent to a salesperson when we assign him to a shop.
 - **TODO** Implements the new font type to the frontend.
 - **TODO** Translate the website to Turkish.
-- **TODO** Checkout Process:
+- **TODO** Profile page for shop owners.
+  - **TODO** Basic Information:
+    - Shop Name
+    - Shop Address & Map location.
+    - Shop Phone Number, Email, Social Media Links.
+    - Uploaded documents (e.g., tax ID, business license).
+  - **TODO** Business Details:
+    - Registration date on a platform.
+    - Salesperson assigned with contact info.
+    - Total orders placed.
+  - **TODO** Order History:
+    - List of past orders with details (date, products, total amount) with an option to reorder previous orders, invoice button
+  - **TODO** Products & preferences:
+    - List of products they frequently order.
+  - **TODO** Notifications:
+    - List of notifications related to their shop (new products, order updates, new promootions, etc.).
+- **DONE** Checkout Process:
     - Salesperson:
       - 1- Select the shop they are ordering for.
       - 2- Write the order note.
     - Shop Owner:
       - 1- Select the delivery address.
       - 2- Write the order note.
+
+
 
 ###BUGS:
 - **DONE**: You can not clear the cart if user not logged in.

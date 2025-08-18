@@ -32,6 +32,7 @@ class ActivitiesComponent extends Component
         'shop_created' => 'Shop Created',
         'shop_updated' => 'Shop Updated',
         'shop_deleted' => 'Shop Deleted',
+        'shop_assignment' => 'Shop Assignment',
         'order_created' => 'Order Created',
         'order_updated' => 'Order Updated',
         'order_deleted' => 'Order Deleted',
@@ -199,7 +200,81 @@ class ActivitiesComponent extends Component
      */
     private function getActivities()
     {
-        return $this->getActivitiesQuery()->paginate($this->perPage);
+        $activities = $this->getActivitiesQuery()->paginate($this->perPage);
+        
+        // Enhance descriptions for shop activities
+        $activities->getCollection()->transform(function ($activity) {
+            if ($activity->log_name === 'shop_assignment') {
+                $activity->description = $this->buildDetailedShopAssignmentDescription($activity);
+            } elseif ($activity->log_name === 'shop_created') {
+                $activity->description = $this->buildDetailedShopCreationDescription($activity);
+            }
+            return $activity;
+        });
+        
+        return $activities;
+    }
+
+    /**
+     * Build detailed description for shop assignment activities
+     */
+    private function buildDetailedShopAssignmentDescription($activity): string
+    {
+        $properties = json_decode($activity->properties, true);
+        
+        if (!$properties) {
+            return $activity->description ?? 'Shop assignment activity';
+        }
+
+        $shopName = $properties['shop_name'] ?? 'Unknown Shop';
+        $shopPhone = $properties['shop_phone'] ?? 'N/A';
+        $shopAddress = $properties['shop_address'] ?? 'N/A';
+        $salespersonName = $properties['salesperson_name'] ?? 'Unknown Salesperson';
+        $salespersonEmail = $properties['salesperson_email'] ?? 'N/A';
+        $assignedByName = $properties['assigned_by_name'] ?? 'System';
+        $assignmentType = $properties['assignment_type'] ?? 'new_assignment';
+        $previousSalespersonName = $properties['previous_salesperson_name'] ?? null;
+        $assignmentTimestamp = $properties['assignment_timestamp'] ?? null;
+
+        // Format timestamp for display
+        $timestampText = '';
+        if ($assignmentTimestamp) {
+            $timestamp = \Carbon\Carbon::parse($assignmentTimestamp);
+            $timestampText = " at {$timestamp->format('M j, Y \a\t H:i')}";
+        }
+
+        if ($assignmentType === 'reassignment' && $previousSalespersonName) {
+            return "🔄 Shop Reassignment{$timestampText}: Shop '{$shopName}' has been reassigned from {$previousSalespersonName} to {$salespersonName} ({$salespersonEmail}) by {$assignedByName}. This change affects the shop's management responsibilities and all future orders will be handled by the new salesperson. Shop Details: 📞 {$shopPhone} | 📍 {$shopAddress}";
+        }
+
+        return "✅ New Shop Assignment{$timestampText}: Shop '{$shopName}' has been assigned to {$salespersonName} ({$salespersonEmail}) by {$assignedByName}. The salesperson is now responsible for managing this shop's operations, orders, and customer relationships. Shop Details: 📞 {$shopPhone} | 📍 {$shopAddress}";
+    }
+
+    /**
+     * Build detailed description for shop creation activities
+     */
+    private function buildDetailedShopCreationDescription($activity): string
+    {
+        $properties = json_decode($activity->properties, true);
+        
+        if (!$properties) {
+            return $activity->description ?? 'Shop creation activity';
+        }
+
+        $shopName = $properties['shop_name'] ?? 'Unknown Shop';
+        $createdByName = $properties['created_by_name'] ?? 'System';
+        $shopPhone = $properties['shop_phone'] ?? 'N/A';
+        $shopAddress = $properties['shop_address'] ?? 'N/A';
+        $creationTimestamp = $properties['creation_timestamp'] ?? null;
+
+        // Format timestamp for display
+        $timestampText = '';
+        if ($creationTimestamp) {
+            $timestamp = \Carbon\Carbon::parse($creationTimestamp);
+            $timestampText = " at {$timestamp->format('M j, Y \a\t H:i')}";
+        }
+
+        return "🏪 New Shop Created{$timestampText}: Shop '{$shopName}' has been created by {$createdByName}. This new shop is now available in the system and can be assigned to salespersons for management. Shop Details: 📞 {$shopPhone} | 📍 {$shopAddress}";
     }
 
     /**
