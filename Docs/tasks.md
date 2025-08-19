@@ -41,7 +41,7 @@
     - **TODO** Activities Manager: 
       - **TODO** a page to view all notifications.
       - **DONE** make different between the order created and the order updated activities.
-      - **TODO** include the "simex owner created an order" to the detailed order message.
+      - **DONE** include the "simex owner created an order" to the detailed order message.
       - **TODO** a salesperson is not allowed to see all the activities, only the activities related to his shop.
     - **TODO** when a product is deleted, it should be removed from the analytics (Most Viewed Products).
     - **TODO** User Manager: 
@@ -54,7 +54,7 @@
       - **DONE** New notification should be sent to admin when a new shop is created.
       - **DONE** New notification should be sent to a salesperson when we assign him to a shop.
       - **DONE** if a salesperson clicks on the "admin assigned you to a shop" notification, it should redirect him to the shop page.
-      - **TODO** when shop owner create a new order, a notification should be sent to the assigned salesperson.
+      - **DONE** when a shop owner creates a new order, a notification should be sent to the assigned salesperson.
       - **TODO** when a salesperson creates a new order, a notification should be sent to the shop owner.
 - **TODO** Implements the new font type to the frontend.
 - **TODO** Translate the website to Turkish.
