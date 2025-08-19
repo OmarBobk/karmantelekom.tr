@@ -38,7 +38,7 @@
 - **TODO** Dashboard:
     - **TODO** Main Page:
     - **TODO** Shop Manager:
-      - **TODO** add created at filter.
+      - **DONE** add created at filter.
       - **TODO**
     - **TODO** Activities Manager: 
       - **TODO** a page to view all notifications.

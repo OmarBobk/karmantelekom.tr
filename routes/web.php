@@ -34,6 +34,10 @@ Route::get('/shop/create', ShopCreationComponent::class)
     ->middleware('auth')
     ->name('shop.create');
 
+Route::get('/shop/profile', \App\Livewire\Frontend\ShopOwnerProfile::class)
+    ->middleware(['auth', 'shop.creation'])
+    ->name('shop.profile');
+
 Route::middleware([
     'auth:sanctum',
     config('jetstream.auth_session'),
