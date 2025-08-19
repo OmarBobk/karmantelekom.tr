@@ -26,6 +26,10 @@ class ShopComponent extends Component
     public bool $showEditModal = false;
     public ?Shop $editingShop = null;
 
+    // Filter properties
+    public string $createdAtFilter = '';
+    public ?string $salespersonFilter = null;
+
     // Form properties
     public string $name = '';
     public string $phone = '';
@@ -39,6 +43,8 @@ class ShopComponent extends Component
         'sortField' => ['except' => 'name'],
         'sortDirection' => ['except' => 'asc'],
         'perPage' => ['except' => 10],
+        'createdAtFilter' => ['except' => ''],
+        'salespersonFilter' => ['except' => ''],
     ];
 
     protected function rules(): array
@@ -51,6 +57,27 @@ class ShopComponent extends Component
             'links.*' => ['required', 'max:255'],
             'salesperson_id' => ['nullable', 'exists:users,id'],
         ];
+    }
+
+    public function updatingSearch(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatingCreatedAtFilter(): void
+    {
+        $this->resetPage();
+    }
+
+    public function updatingSalespersonFilter(): void
+    {
+        $this->resetPage();
+    }
+
+    public function clearAllFilters(): void
+    {
+        $this->reset(['search', 'createdAtFilter', 'salespersonFilter']);
+        $this->resetPage();
     }
 
     public function addLink(): void
@@ -195,11 +222,11 @@ class ShopComponent extends Component
                 ]);
             }
 
-            // Fire ShopAssigned event if salesperson assignment changed
+            // Fire ShopAssigned event if salesperson changed
             if ($isSalespersonChange) {
-                $salesperson = User::find($this->salesperson_id);
-                if ($salesperson) {
-                    event(new ShopAssigned($this->editingShop, $salesperson, auth()->user(), $previousSalesperson));
+                $newSalesperson = User::find($this->salesperson_id);
+                if ($newSalesperson) {
+                    event(new ShopAssigned($this->editingShop, $newSalesperson, auth()->user(), $previousSalesperson));
                 }
             }
 
@@ -211,14 +238,9 @@ class ShopComponent extends Component
         } catch (\Exception $e) {
             $this->dispatch('notify', [
                 'type' => 'error',
-                'message' => 'Failed to update shop. Please try again. Error: ' . $e->getMessage()
+                'message' => 'Failed to update shop. Please try again.'
             ]);
         }
-    }
-
-    public function updatingSearch(): void
-    {
-        $this->resetPage();
     }
 
     public function sortBy(string $field): void
@@ -261,6 +283,16 @@ class ShopComponent extends Component
                     $query->search($this->search, $this->sortField, $this->sortDirection);
                 }, function ($query) {
                     $query->orderBy($this->sortField, $this->sortDirection);
+                })
+                ->when($this->createdAtFilter, function ($query) {
+                    $this->applyCreatedAtFilter($query);
+                })
+                ->when($this->salespersonFilter, function ($query) {
+                    if ($this->salespersonFilter === 'unassigned') {
+                        $query->whereNull('salesperson_id');
+                    } else {
+                        $query->where('salesperson_id', (int) $this->salespersonFilter);
+                    }
                 });
 
             $user = auth()->user();
@@ -298,6 +330,40 @@ class ShopComponent extends Component
                 ),
                 'salespeople' => collect()
             ]);
+        }
+    }
+
+    private function applyCreatedAtFilter($query): void
+    {
+        $now = now();
+        
+        switch ($this->createdAtFilter) {
+            case 'today':
+                $query->whereDate('created_at', $now->toDateString());
+                break;
+            case 'yesterday':
+                $query->whereDate('created_at', $now->subDay()->toDateString());
+                break;
+            case 'this_week':
+                $query->whereBetween('created_at', [$now->startOfWeek(), $now->endOfWeek()]);
+                break;
+            case 'last_week':
+                $query->whereBetween('created_at', [$now->subWeek()->startOfWeek(), $now->subWeek()->endOfWeek()]);
+                break;
+            case 'this_month':
+                $query->whereMonth('created_at', $now->month)
+                      ->whereYear('created_at', $now->year);
+                break;
+            case 'last_month':
+                $query->whereMonth('created_at', $now->subMonth()->month)
+                      ->whereYear('created_at', $now->subMonth()->year);
+                break;
+            case 'this_year':
+                $query->whereYear('created_at', $now->year);
+                break;
+            case 'last_year':
+                $query->whereYear('created_at', $now->subYear()->year);
+                break;
         }
     }
 }

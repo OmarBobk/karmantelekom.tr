@@ -11,7 +11,7 @@
                         Manage your shops, view performance metrics, and track sales activities
                     </p>
                 </div>
-                
+
                 <div class="flex flex-col sm:flex-row gap-3">
                         @can('create', App\Models\Shop::class)
                             <button
@@ -96,39 +96,207 @@
         </div>
 
         <!-- Search and Filters -->
-        <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-200 dark:border-gray-700 p-6 mb-8">
-            <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between space-y-4 lg:space-y-0">
-                <div class="flex-1 max-w-lg">
-                    <div class="relative">
-                        <div class="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none">
-                                <svg class="h-5 w-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
-                                </svg>
-                            </div>
-                        <input 
-                            type="text"
-                                   wire:model.live.debounce.300ms="search"
-                            placeholder="Search shops by name, phone, or address..."
-                            class="block w-full pl-12 pr-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-                        >
+        <div class="bg-gradient-to-br from-white via-blue-50/30 to-indigo-50/30 dark:from-gray-800 dark:via-blue-900/20 dark:to-indigo-900/20 rounded-3xl shadow-xl border border-white/50 dark:border-gray-700/50 backdrop-blur-sm p-8 mb-8 relative overflow-hidden">
+            <!-- Background Pattern -->
+            <div class="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-transparent to-indigo-500/5 dark:from-blue-400/10 dark:via-transparent dark:to-indigo-400/10"></div>
+            <div class="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-400/10 to-indigo-400/10 rounded-full blur-3xl"></div>
+            <div class="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-purple-400/10 to-pink-400/10 rounded-full blur-2xl"></div>
+
+            <div class="relative z-10 space-y-8">
+                <!-- Header -->
+                <div class="flex items-center space-x-3">
+                    <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-lg">
+                        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z"/>
+                        </svg>
                     </div>
-                        </div>
-                
-                <div class="flex items-center space-x-4">
-                    <select 
-                        wire:model.live="perPage" 
-                        class="px-4 py-3 border border-gray-300 dark:border-gray-600 rounded-xl bg-white dark:bg-gray-700 text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500 focus:border-transparent transition duration-200"
-                    >
-                            <option value="10">10 per page</option>
-                            <option value="25">25 per page</option>
-                            <option value="50">50 per page</option>
-                            <option value="100">100 per page</option>
-                        </select>
-                </div>
+                    <div>
+                        <h3 class="text-lg font-bold text-gray-900 dark:text-white">Search & Filters</h3>
+                        <p class="text-sm text-gray-600 dark:text-gray-400">Find and filter your shops</p>
                     </div>
                 </div>
 
-                <!-- Flash Messages -->
+                <!-- Search Bar -->
+                <div class="relative group">
+                    <div class="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
+                        <svg class="h-5 w-5 text-gray-400 group-focus-within:text-blue-500 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                        </svg>
+                    </div>
+                    <input
+                        type="text"
+                        wire:model.live.debounce.300ms="search"
+                        placeholder="Search shops by name, phone, or address..."
+                        class="block w-full pl-14 pr-4 py-4 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border border-gray-200/50 dark:border-gray-600/50 rounded-2xl text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 hover:bg-white/90 dark:hover:bg-gray-800/90"
+                    >
+                </div>
+
+                <!-- Filters Grid -->
+                <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    <!-- Created At Filter -->
+                    <div class="group">
+                        <label for="createdAtFilter" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center">
+                            <svg class="w-4 h-4 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                            </svg>
+                            Created At
+                        </label>
+                        <div class="relative">
+                            <select
+                                wire:model.live="createdAtFilter"
+                                id="createdAtFilter"
+                                class="w-full px-4 py-3 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border border-gray-200/50 dark:border-gray-600/50 rounded-2xl text-gray-900 dark:text-white focus:ring-2 focus:ring-blue-500/50 focus:border-blue-500/50 transition-all duration-300 hover:bg-white/90 dark:hover:bg-gray-800/90 appearance-none cursor-pointer"
+                            >
+                                <option value="">All Time</option>
+                                <option value="today">Today</option>
+                                <option value="yesterday">Yesterday</option>
+                                <option value="this_week">This Week</option>
+                                <option value="last_week">Last Week</option>
+                                <option value="this_month">This Month</option>
+                                <option value="last_month">Last Month</option>
+                                <option value="this_year">This Year</option>
+                                <option value="last_year">Last Year</option>
+                            </select>
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Salesperson Filter -->
+                    <div class="group">
+                        <label for="salespersonFilter" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center">
+                            <svg class="w-4 h-4 mr-2 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                            </svg>
+                            Salesperson
+                        </label>
+                        <div class="relative">
+                            <select
+                                wire:model.live="salespersonFilter"
+                                id="salespersonFilter"
+                                class="w-full px-4 py-3 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border border-gray-200/50 dark:border-gray-600/50 rounded-2xl text-gray-900 dark:text-white focus:ring-2 focus:ring-purple-500/50 focus:border-purple-500/50 transition-all duration-300 hover:bg-white/90 dark:hover:bg-gray-800/90 appearance-none cursor-pointer"
+                            >
+                                <option value="">All Salespeople</option>
+                                <option value="unassigned">Unassigned</option>
+                                @foreach($salespeople as $salesperson)
+                                    <option value="{{ $salesperson->id }}">{{ $salesperson->name }}</option>
+                                @endforeach
+                            </select>
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Per Page Selector -->
+                    <div class="group">
+                        <label for="perPage" class="block text-sm font-semibold text-gray-700 dark:text-gray-300 mb-3 flex items-center">
+                            <svg class="w-4 h-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                            </svg>
+                            Per Page
+                        </label>
+                        <div class="relative">
+                            <select
+                                wire:model.live="perPage"
+                                id="perPage"
+                                class="w-full px-4 py-3 bg-white/70 dark:bg-gray-800/70 backdrop-blur-sm border border-gray-200/50 dark:border-gray-600/50 rounded-2xl text-gray-900 dark:text-white focus:ring-2 focus:ring-green-500/50 focus:border-green-500/50 transition-all duration-300 hover:bg-white/90 dark:hover:bg-gray-800/90 appearance-none cursor-pointer"
+                            >
+                                <option value="10">10 per page</option>
+                                <option value="25">25 per page</option>
+                                <option value="50">50 per page</option>
+                                <option value="100">100 per page</option>
+                            </select>
+                            <div class="absolute inset-y-0 right-0 flex items-center pr-4 pointer-events-none">
+                                <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Active Filters Indicator -->
+        @if($search || $createdAtFilter || $salespersonFilter)
+            <div class="mb-6 bg-gradient-to-r from-blue-50 via-indigo-50 to-purple-50 dark:from-blue-900/20 dark:via-indigo-900/20 dark:to-purple-900/20 border border-blue-200/50 dark:border-blue-700/50 rounded-2xl p-6 backdrop-blur-sm relative overflow-hidden">
+                <!-- Background Pattern -->
+                <div class="absolute inset-0 bg-gradient-to-r from-blue-500/5 via-indigo-500/5 to-purple-500/5"></div>
+                <div class="absolute top-0 right-0 w-20 h-20 bg-gradient-to-br from-blue-400/10 to-indigo-400/10 rounded-full blur-xl"></div>
+
+                <div class="relative z-10">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="flex items-center space-x-3">
+                            <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-lg flex items-center justify-center shadow-md">
+                                <svg class="h-4 w-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.207A1 1 0 013 6.5V4z"/>
+                                </svg>
+                            </div>
+                            <div>
+                                <h4 class="text-sm font-bold text-gray-900 dark:text-white">Active Filters</h4>
+                                <p class="text-xs text-gray-600 dark:text-gray-400">Applied filters are shown below</p>
+                            </div>
+                        </div>
+                        <button
+                            wire:click="clearAllFilters"
+                            class="inline-flex items-center px-4 py-2 bg-gradient-to-r from-red-500 to-pink-500 hover:from-red-600 hover:to-pink-600 text-white text-sm font-medium rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-0.5 transition-all duration-200"
+                        >
+                            <svg class="h-4 w-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
+                            </svg>
+                            Clear All
+                        </button>
+                    </div>
+
+                    <div class="flex flex-wrap gap-3">
+                        @if($search)
+                            <div class="inline-flex items-center px-4 py-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-blue-200/50 dark:border-blue-600/50 rounded-xl shadow-sm">
+                                <svg class="w-4 h-4 mr-2 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"/>
+                                </svg>
+                                <span class="text-sm font-medium text-blue-800 dark:text-blue-200">Search: "{{ $search }}"</span>
+                            </div>
+                        @endif
+                        @if($createdAtFilter)
+                            <div class="inline-flex items-center px-4 py-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-green-200/50 dark:border-green-600/50 rounded-xl shadow-sm">
+                                <svg class="w-4 h-4 mr-2 text-green-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                </svg>
+                                <span class="text-sm font-medium text-green-800 dark:text-green-200">Created: {{ ucfirst(str_replace('_', ' ', $createdAtFilter)) }}</span>
+                            </div>
+                        @endif
+                        @if($salespersonFilter)
+                            @if($salespersonFilter === 'unassigned')
+                                <div class="inline-flex items-center px-4 py-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-purple-200/50 dark:border-purple-600/50 rounded-xl shadow-sm">
+                                    <svg class="w-4 h-4 mr-2 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                    </svg>
+                                    <span class="text-sm font-medium text-purple-800 dark:text-purple-200">Salesperson: Unassigned</span>
+                                </div>
+                            @else
+                                @php
+                                    $selectedSalesperson = $salespeople->firstWhere('id', $salespersonFilter);
+                                @endphp
+                                <div class="inline-flex items-center px-4 py-2 bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm border border-purple-200/50 dark:border-purple-600/50 rounded-xl shadow-sm">
+                                    <svg class="w-4 h-4 mr-2 text-purple-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"/>
+                                    </svg>
+                                    <span class="text-sm font-medium text-purple-800 dark:text-purple-200">Salesperson: {{ $selectedSalesperson ? $selectedSalesperson->name : 'Unknown' }}</span>
+                                </div>
+                            @endif
+                        @endif
+                    </div>
+                </div>
+            </div>
+        @endif
+
+        <!-- Flash Messages -->
                 @if (session()->has('success'))
             <div class="mb-6 p-4 rounded-xl bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800">
                 <div class="flex items-center">
@@ -188,6 +356,20 @@
                              <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider">
                                  Salesperson
                              </th>
+                             <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200" wire:click="sortBy('created_at')">
+                                 <div class="flex items-center space-x-2">
+                                     <span>Created At</span>
+                                     @if($sortField === 'created_at')
+                                         <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" transform="{{ $sortDirection === 'asc' ? 'rotate(180 12 12)' : '' }}"/>
+                                         </svg>
+                                     @else
+                                         <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4"/>
+                                         </svg>
+                                     @endif
+                                 </div>
+                             </th>
                              <th scope="col" class="px-6 py-4 text-left text-xs font-semibold text-gray-600 dark:text-gray-300 uppercase tracking-wider cursor-pointer hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors duration-200" wire:click="sortBy('monthly_orders_count')">
                                  <div class="flex items-center space-x-2">
                                      <span>Monthly Orders</span>
@@ -231,10 +413,10 @@
                                              {{ $shop->name }}
                                          </div>
                                          <div class="text-sm text-gray-500 dark:text-gray-400">
-                                             Owner: 
+                                             Owner:
                                              @if($shop->owner)
-                                                 <a 
-                                                     href="{{ route('subdomain.users') }}?search={{ $shop->owner->name }}" 
+                                                 <a
+                                                     href="{{ route('subdomain.users') }}?search={{ $shop->owner->name }}"
                                                      class="text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 font-medium hover:underline transition-colors duration-200"
                                                      title="View {{ $shop->owner->name }}'s profile"
                                                  >
@@ -430,6 +612,21 @@
                                  </div>
                              </td>
                              <td class="px-6 py-6 whitespace-nowrap">
+                                 <div class="flex items-center">
+                                     <div class="flex-shrink-0 h-8 w-8 mr-3">
+                                         <div class="h-8 w-8 bg-indigo-100 dark:bg-indigo-900 rounded-lg flex items-center justify-center">
+                                             <svg class="h-4 w-4 text-indigo-600 dark:text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z"/>
+                                             </svg>
+                                         </div>
+                                     </div>
+                                     <div class="text-sm text-gray-900 dark:text-white">
+                                         <div class="font-medium">{{ $shop->created_at->format('M d, Y') }}</div>
+                                         <div class="text-gray-500 dark:text-gray-400">{{ $shop->created_at->format('g:i A') }}</div>
+                                     </div>
+                                 </div>
+                             </td>
+                             <td class="px-6 py-6 whitespace-nowrap">
                                  @if($shop->monthly_orders_count > 0)
                                      <div class="flex items-center">
                                          <div class="flex-shrink-0 h-8 w-8 mr-3">
@@ -499,7 +696,7 @@
                         </tr>
                                          @empty
                          <tr>
-                             <td colspan="8" class="px-6 py-12 whitespace-nowrap text-center">
+                             <td colspan="9" class="px-6 py-12 whitespace-nowrap text-center">
                                  <div class="flex flex-col items-center justify-center">
                                      <div class="w-24 h-24 bg-gradient-to-br from-blue-100 to-indigo-100 dark:from-blue-900 dark:to-indigo-900 rounded-full flex items-center justify-center mb-6">
                                          <svg class="h-12 w-12 text-blue-600 dark:text-blue-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">

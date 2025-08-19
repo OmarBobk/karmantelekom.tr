@@ -13,36 +13,38 @@
 - **DONE** Analytics.
 - **DONE** Add products to the cart
 - **DONE** Shopping Cart:
- - **DONE** When to Sync Cart Data.
-    - ###DONE### User Logs In:
-        - Why: To merge guest cart (from localStorage) into the user’s stored cart.
-        - What to Do:
-            - If local cart has items → sync them to DB.
-            - Merge with DB cart if exists (handle duplicates or quantity summing).
-            - Remove retail items if user is shop_owner or salesperson.
-    - ###DONE User Proceeds to Checkout:
-        - Why: To ensure the cart is stored in DB and validated (e.g., stock check).
-        - What to Do: Push latest cart from localStorage to DB before checkout begins.
-    - ###DONE  User Navigates Away (Optional)
-        - Why: A safety net to persist cart data before the tab closes or navigates.
-        - How: Use window.addEventListener('beforeunload').
-    - ###DONE When User Logs Out
-        - Why: To clear or reset sync flags (syncedUserId) to avoid stale data on next login.
-        - What to Do: Clear sync flags and optionally clear cart (based on use case).
-    - ###DONE When Logged-In User Changes Device
-        - Why: User opens site on a new device; need to load their cart from DB.
-        - What to Do: Pull cart from DB and push it into localStorage.
+- **DONE** When to Sync Cart Data.
+   - **DONE** User Logs In:
+       - Why: To merge guest cart (from localStorage) into the user’s stored cart.
+       - What to Do:
+           - If local cart has items → sync them to DB.
+           - Merge with DB cart if exists (handle duplicates or quantity summing).
+           - Remove retail items if user is shop_owner or salesperson.
+   - **DONE** User Proceeds to Checkout:
+       - Why: To ensure the cart is stored in DB and validated (e.g., stock check).
+       - What to Do: Push latest cart from localStorage to DB before checkout begins.
+   - **DONE**  User Navigates Away (Optional)
+       - Why: A safety net to persist cart data before the tab closes or navigates.
+       - How: Use window.addEventListener('beforeunload').
+   - **DONE** When User Logs Out
+       - Why: To clear or reset sync flags (syncedUserId) to avoid stale data on next login.
+       - What to Do: Clear sync flags and optionally clear cart (based on use case).
+   - **DONE** When Logged-In User Changes Device
+       - Why: User opens site on a new device; need to load their cart from DB.
+       - What to Do: Pull cart from DB and push it into localStorage.
 - **DONE** Update the analytics id.
 
 
 - **TODO** Dashboard:
+    - **TODO** Main Page:
     - **TODO** Shop Manager:
       - **TODO** add created at filter.
+      - **TODO**
     - **TODO** Activities Manager: 
       - **TODO** a page to view all notifications.
       - **DONE** make different between the order created and the order updated activities.
       - **DONE** include the "simex owner created an order" to the detailed order message.
-      - **TODO** a salesperson is not allowed to see all the activities, only the activities related to his shop.
+      - **DONE** a salesperson is not allowed to see all the activities, only the activities related to his shop.
     - **TODO** when a product is deleted, it should be removed from the analytics (Most Viewed Products).
     - **TODO** User Manager: 
       - **DONE** if a user is a shop owner or salesperson, we should know which shop they are managing.
@@ -56,8 +58,6 @@
       - **DONE** if a salesperson clicks on the "admin assigned you to a shop" notification, it should redirect him to the shop page.
       - **DONE** when a shop owner creates a new order, a notification should be sent to the assigned salesperson.
       - **TODO** when a salesperson creates a new order, a notification should be sent to the shop owner.
-- **TODO** Implements the new font type to the frontend.
-- **TODO** Translate the website to Turkish.
 - **TODO** Profile page for shop owners.
   - **TODO** Basic Information:
     - Shop Name
@@ -81,6 +81,9 @@
     - Shop Owner:
       - 1- Select the delivery address.
       - 2- Write the order note.
+- **TODO** Redesign the invoice page to include the shop information.
+- **TODO** Implements the new font type to the frontend.
+- **TODO** Translate the website to Turkish.
 
 
 
