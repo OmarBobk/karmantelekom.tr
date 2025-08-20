@@ -60,14 +60,13 @@
       - **TODO** when a salesperson creates a new order, a notification should be sent to the shop owner.
 - **TODO** Profile page for shop owners.
   - **TODO** Basic Information:
-    - Shop Name
+    - Owner Email (this field is not editable), Owner Name, Shop Name, Phone Number, Tax Number
     - Shop Address & Map location.
     - Shop Phone Number, Email, Social Media Links.
     - Uploaded documents (e.g., tax ID, business license).
   - **TODO** Business Details:
     - Registration date on a platform.
-    - Salesperson assigned with contact info.
-    - Total orders placed.
+    - Salesperson assigned with contact info (if there is any).
   - **TODO** Order History:
     - List of past orders with details (date, products, total amount) with an option to reorder previous orders, invoice button
   - **TODO** Products & preferences:

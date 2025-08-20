@@ -8,6 +8,7 @@ use App\Models\Order;
 use App\Models\Product;
 use App\Models\Shop;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\Hash;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
@@ -22,15 +23,17 @@ class ShopOwnerProfile extends Component
     
     // Modal and form properties
     public bool $showEditModal = false;
+    public bool $showPasswordModal = false;
     public string $shopName = '';
     public string $shopAddress = '';
     public string $shopPhone = '';
-    public string $shopEmail = '';
-    public array $socialLinks = [];
-    public $taxDocument;
-    public $businessLicense;
-    public string $taxDocumentPath = '';
-    public string $businessLicensePath = '';
+    public string $shopTaxNumber = '';
+    public string $ownerName = '';
+    
+    // Password change properties
+    public string $currentPassword = '';
+    public string $newPassword = '';
+    public string $confirmPassword = '';
 
     public function mount(): void
     {
@@ -101,10 +104,8 @@ class ShopOwnerProfile extends Component
         $this->shopName = $this->shop->name;
         $this->shopAddress = $this->shop->address;
         $this->shopPhone = $this->shop->phone ?? '';
-        $this->shopEmail = $this->shop->email ?? '';
-        $this->socialLinks = $this->shop->links ?? [];
-        $this->taxDocumentPath = $this->shop->tax_document_path ?? '';
-        $this->businessLicensePath = $this->shop->business_license_path ?? '';
+        $this->shopTaxNumber = $this->shop->tax_number ?? '';
+        $this->ownerName = Auth::user()->name;
     }
 
     public function openEditModal(): void
@@ -119,15 +120,34 @@ class ShopOwnerProfile extends Component
         $this->resetValidation();
     }
 
+    public function openPasswordModal(): void
+    {
+        $this->showPasswordModal = true;
+        $this->resetPasswordFields();
+    }
+
+    public function closePasswordModal(): void
+    {
+        $this->showPasswordModal = false;
+        $this->resetPasswordFields();
+        $this->resetValidation();
+    }
+
+    private function resetPasswordFields(): void
+    {
+        $this->currentPassword = '';
+        $this->newPassword = '';
+        $this->confirmPassword = '';
+    }
+
     public function saveShopInfo(): void
     {
         $this->validate([
             'shopName' => 'required|string|max:255',
             'shopAddress' => 'required|string|max:500',
             'shopPhone' => 'nullable|string|max:20',
-            'shopEmail' => 'nullable|email|max:255',
-            'taxDocument' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
-            'businessLicense' => 'nullable|file|mimes:pdf,jpg,jpeg,png|max:2048',
+            'shopTaxNumber' => 'nullable|string|max:50',
+            'ownerName' => 'required|string|max:255',
         ]);
 
         try {
@@ -135,22 +155,14 @@ class ShopOwnerProfile extends Component
                 'name' => $this->shopName,
                 'address' => $this->shopAddress,
                 'phone' => $this->shopPhone,
-                'email' => $this->shopEmail,
-                'links' => $this->socialLinks,
+                'tax_number' => $this->shopTaxNumber,
             ];
 
-            // Handle file uploads
-            if ($this->taxDocument) {
-                $taxPath = $this->taxDocument->store('shop-documents', 'public');
-                $updateData['tax_document_path'] = $taxPath;
-            }
-
-            if ($this->businessLicense) {
-                $licensePath = $this->businessLicense->store('shop-documents', 'public');
-                $updateData['business_license_path'] = $licensePath;
-            }
-
+            // Update shop information
             $this->shop->update($updateData);
+
+            // Update user name
+            Auth::user()->update(['name' => $this->ownerName]);
 
             $this->closeEditModal();
             $this->dispatch('notify', [
@@ -169,15 +181,46 @@ class ShopOwnerProfile extends Component
         }
     }
 
-    public function addSocialLink(): void
+    public function changePassword(): void
     {
-        $this->socialLinks[] = ['platform' => '', 'url' => ''];
-    }
+        $this->validate([
+            'currentPassword' => 'required|string',
+            'newPassword' => 'required|string|min:8|confirmed:confirmPassword',
+            'confirmPassword' => 'required|string|min:8',
+        ], [
+            'newPassword.confirmed' => 'The new password confirmation does not match.',
+            'newPassword.min' => 'The new password must be at least 8 characters.',
+        ]);
 
-    public function removeSocialLink(int $index): void
-    {
-        unset($this->socialLinks[$index]);
-        $this->socialLinks = array_values($this->socialLinks);
+        try {
+            $user = Auth::user();
+            
+            // Verify current password
+            if (!Hash::check($this->currentPassword, $user->password)) {
+                $this->addError('currentPassword', 'The current password is incorrect.');
+                return;
+            }
+
+            // Update password
+            $user->update([
+                'password' => Hash::make($this->newPassword)
+            ]);
+
+            $this->closePasswordModal();
+            $this->dispatch('notify', [
+                'type' => 'success',
+                'message' => 'Password changed successfully!',
+                'sec' => 3000
+            ]);
+
+        } catch (\Exception $e) {
+            logger()->error('Error changing password: ' . $e->getMessage());
+            $this->dispatch('notify', [
+                'type' => 'error',
+                'message' => 'Failed to change password. Please try again.',
+                'sec' => 3000
+            ]);
+        }
     }
 
     public function setActiveTab(string $tab): void

@@ -20,11 +20,13 @@ The `ShopOwnerProfile` component is a comprehensive dashboard for shop owners to
 - Average Order Value
 
 ### 3. Enhanced Basic Information Section
-- **Shop Details**: Name, address, phone, email, owner information
+- **Shop Details**: Name, address, phone, owner information
+- **Account Information**: User email display with clickable mailto link (from user account)
 - **Google Maps Integration**: Interactive map showing shop location
 - **Social Media Links**: Display and management of social media profiles
 - **Document Management**: Upload and view tax ID documents and business licenses
 - **Edit Functionality**: Modal form for updating all shop information
+- **Password Management**: Secure password change functionality with validation
 
 ### 4. Responsive Design
 - Mobile-friendly layout
@@ -64,7 +66,8 @@ The component is accessible through the user menu in the frontend header:
 - **Total Products**: Distinct products from order items
 
 ### Shop Information
-- **Basic Details**: Name, address, phone, email from shops table
+- **Basic Details**: Name, address, phone from shops table
+- **Owner Email**: Email from user account (shop owner)
 - **Social Media**: JSON array of platform and URL pairs
 - **Documents**: File paths for tax documents and business licenses
 - **Google Maps**: Integration using shop address for location display
@@ -96,12 +99,20 @@ The component uses:
 ## Form Features
 
 ### Edit Modal
-- **Shop Information**: Name, address, phone, email fields
+- **Shop Information**: Name, address, phone fields
 - **Social Media Management**: Add/remove social media links dynamically
 - **Document Upload**: Tax ID and business license file uploads
 - **Validation**: Client-side and server-side validation
 - **File Handling**: Support for PDF, JPG, JPEG, PNG formats (max 2MB)
 - **Real-time Updates**: Livewire-powered form with instant feedback
+
+### Password Change Modal
+- **Current Password Verification**: Validates existing password before allowing changes
+- **New Password Requirements**: Minimum 8 characters with confirmation
+- **Password Confirmation**: Ensures new password is entered correctly twice
+- **Security Best Practices**: Uses Laravel's Hash facade for secure password hashing
+- **Validation**: Comprehensive validation with user-friendly error messages
+- **Success Feedback**: Clear success notifications after password change
 
 ## Future Enhancements
 

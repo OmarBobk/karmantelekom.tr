@@ -16,6 +16,9 @@ return new class extends Migration
             $table->string('name')->unique();
             $table->string('phone')->nullable();
             $table->string('address');
+            $table->string('tax_document_path')->nullable();
+            $table->string('business_license_path')->nullable();
+            $table->string('tax_number')->nullable();
 
             $table->json('links')->nullable();
 
