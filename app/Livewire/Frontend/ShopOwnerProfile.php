@@ -34,6 +34,23 @@ class ShopOwnerProfile extends Component
     public string $currentPassword = '';
     public string $newPassword = '';
     public string $confirmPassword = '';
+    
+    // Address management properties
+    public bool $showAddressModal = false;
+    public bool $isEditingAddress = false;
+    public ?int $editingAddressId = null;
+    public string $addressLabel = '';
+    public string $addressLine = '';
+    public string $addressCity = '';
+    public string $addressPostalCode = '';
+    public string $addressState = '';
+    public ?float $addressLatitude = null;
+    public ?float $addressLongitude = null;
+    public bool $addressIsPrimary = false;
+    
+    // Turkish cities and districts data
+    public array $turkishCities = [];
+    public array $cityDistricts = [];
 
     public function mount(): void
     {
@@ -54,6 +71,7 @@ class ShopOwnerProfile extends Component
             $this->loadRecentOrders();
             $this->loadTopProducts();
             $this->loadShopData();
+            $this->loadTurkishCities();
         } catch (\Exception $e) {
             logger()->error('Error loading shop owner profile data: ' . $e->getMessage());
             // Continue with empty data rather than crashing
@@ -226,6 +244,409 @@ class ShopOwnerProfile extends Component
     public function setActiveTab(string $tab): void
     {
         $this->activeTab = $tab;
+    }
+
+    // Address Management Methods
+    public function openAddressModal(): void
+    {
+        $this->resetAddressFields();
+        $this->isEditingAddress = false;
+        $this->editingAddressId = null;
+        $this->showAddressModal = true;
+        // Ensure cities are loaded when opening the modal
+        if (empty($this->turkishCities)) {
+            $this->loadTurkishCities();
+        }
+    }
+
+    public function closeAddressModal(): void
+    {
+        $this->showAddressModal = false;
+        $this->resetAddressFields();
+        $this->resetValidation();
+    }
+
+    public function editAddress(int $addressId): void
+    {
+        $address = $this->shop->addresses()->findOrFail($addressId);
+        
+        $this->editingAddressId = $address->id;
+        $this->addressLabel = $address->label;
+        $this->addressLine = $address->address_line;
+        $this->addressCity = $address->city;
+        $this->addressPostalCode = $address->postal_code ?? '';
+        $this->addressState = $address->state ?? '';
+        $this->addressLatitude = $address->latitude;
+        $this->addressLongitude = $address->longitude;
+        $this->addressIsPrimary = $address->is_primary;
+        
+        // Load districts for the selected city
+        $this->cityDistricts = $this->getDistrictsForCity($this->addressCity);
+        
+        $this->isEditingAddress = true;
+        $this->showAddressModal = true;
+    }
+
+    public function deleteAddress(int $addressId): void
+    {
+        try {
+            $address = $this->shop->addresses()->findOrFail($addressId);
+            
+            // Don't allow deletion if it's the only address
+            if ($this->shop->addresses()->count() <= 1) {
+                $this->dispatch('notify', [
+                    'type' => 'error',
+                    'message' => 'Cannot delete the only address. Please add another address first.',
+                    'sec' => 3000
+                ]);
+                return;
+            }
+            
+            $address->delete();
+            
+            $this->dispatch('notify', [
+                'type' => 'success',
+                'message' => 'Address deleted successfully!',
+                'sec' => 3000
+            ]);
+            
+        } catch (\Exception $e) {
+            logger()->error('Error deleting address: ' . $e->getMessage());
+            $this->dispatch('notify', [
+                'type' => 'error',
+                'message' => 'Failed to delete address. Please try again.',
+                'sec' => 3000
+            ]);
+        }
+    }
+
+    public function setPrimaryAddress(int $addressId): void
+    {
+        try {
+            $address = $this->shop->addresses()->findOrFail($addressId);
+            $address->setAsPrimary();
+            
+            $this->dispatch('notify', [
+                'type' => 'success',
+                'message' => 'Primary address updated successfully!',
+                'sec' => 3000
+            ]);
+            
+        } catch (\Exception $e) {
+            logger()->error('Error setting primary address: ' . $e->getMessage());
+            $this->dispatch('notify', [
+                'type' => 'error',
+                'message' => 'Failed to update primary address. Please try again.',
+                'sec' => 3000
+            ]);
+        }
+    }
+
+    public function saveAddress(): void
+    {
+        $this->validate([
+            'addressLabel' => 'required|string|max:255',
+            'addressLine' => 'required|string|max:500',
+            'addressCity' => 'required|string|max:255',
+            'addressPostalCode' => 'nullable|string|max:20',
+            'addressState' => 'required|string|max:255',
+            'addressLatitude' => 'nullable|numeric|between:-90,90',
+            'addressLongitude' => 'nullable|numeric|between:-180,180',
+        ]);
+
+        try {
+            $addressData = [
+                'label' => $this->addressLabel,
+                'address_line' => $this->addressLine,
+                'city' => $this->addressCity,
+                'postal_code' => $this->addressPostalCode ?: null,
+                'state' => $this->addressState ?: null,
+                'latitude' => $this->addressLatitude,
+                'longitude' => $this->addressLongitude,
+                'is_primary' => $this->addressIsPrimary,
+            ];
+
+            if ($this->isEditingAddress) {
+                $address = $this->shop->addresses()->findOrFail($this->editingAddressId);
+                $address->update($addressData);
+                $message = 'Address updated successfully!';
+            } else {
+                $this->shop->addAddress($addressData);
+                $message = 'Address added successfully!';
+            }
+
+            $this->closeAddressModal();
+            $this->dispatch('notify', [
+                'type' => 'success',
+                'message' => $message,
+                'sec' => 3000
+            ]);
+
+        } catch (\Exception $e) {
+            logger()->error('Error saving address: ' . $e->getMessage());
+            $this->dispatch('notify', [
+                'type' => 'error',
+                'message' => 'Failed to save address. Please try again.',
+                'sec' => 3000
+            ]);
+        }
+    }
+
+    private function resetAddressFields(): void
+    {
+        $this->addressLabel = '';
+        $this->addressLine = '';
+        $this->addressCity = '';
+        $this->addressPostalCode = '';
+        $this->addressState = '';
+        $this->addressLatitude = null;
+        $this->addressLongitude = null;
+        $this->addressIsPrimary = false;
+        $this->editingAddressId = null;
+        $this->isEditingAddress = false;
+        $this->cityDistricts = [];
+    }
+
+    private function loadTurkishCities(): void
+    {
+        $this->turkishCities = [
+            'Adana' => 'Adana',
+            'Adıyaman' => 'Adıyaman',
+            'Afyonkarahisar' => 'Afyonkarahisar',
+            'Ağrı' => 'Ağrı',
+            'Amasya' => 'Amasya',
+            'Ankara' => 'Ankara',
+            'Antalya' => 'Antalya',
+            'Artvin' => 'Artvin',
+            'Aydın' => 'Aydın',
+            'Balıkesir' => 'Balıkesir',
+            'Bilecik' => 'Bilecik',
+            'Bingöl' => 'Bingöl',
+            'Bitlis' => 'Bitlis',
+            'Bolu' => 'Bolu',
+            'Burdur' => 'Burdur',
+            'Bursa' => 'Bursa',
+            'Çanakkale' => 'Çanakkale',
+            'Çankırı' => 'Çankırı',
+            'Çorum' => 'Çorum',
+            'Denizli' => 'Denizli',
+            'Diyarbakır' => 'Diyarbakır',
+            'Edirne' => 'Edirne',
+            'Elazığ' => 'Elazığ',
+            'Erzincan' => 'Erzincan',
+            'Erzurum' => 'Erzurum',
+            'Eskişehir' => 'Eskişehir',
+            'Gaziantep' => 'Gaziantep',
+            'Giresun' => 'Giresun',
+            'Gümüşhane' => 'Gümüşhane',
+            'Hakkari' => 'Hakkari',
+            'Hatay' => 'Hatay',
+            'Isparta' => 'Isparta',
+            'Mersin' => 'Mersin',
+            'İstanbul' => 'İstanbul',
+            'İzmir' => 'İzmir',
+            'Kars' => 'Kars',
+            'Kastamonu' => 'Kastamonu',
+            'Kayseri' => 'Kayseri',
+            'Kırklareli' => 'Kırklareli',
+            'Kırşehir' => 'Kırşehir',
+            'Kocaeli' => 'Kocaeli',
+            'Konya' => 'Konya',
+            'Kütahya' => 'Kütahya',
+            'Malatya' => 'Malatya',
+            'Manisa' => 'Manisa',
+            'Kahramanmaraş' => 'Kahramanmaraş',
+            'Mardin' => 'Mardin',
+            'Muğla' => 'Muğla',
+            'Muş' => 'Muş',
+            'Nevşehir' => 'Nevşehir',
+            'Niğde' => 'Niğde',
+            'Ordu' => 'Ordu',
+            'Rize' => 'Rize',
+            'Sakarya' => 'Sakarya',
+            'Samsun' => 'Samsun',
+            'Siirt' => 'Siirt',
+            'Sinop' => 'Sinop',
+            'Sivas' => 'Sivas',
+            'Tekirdağ' => 'Tekirdağ',
+            'Tokat' => 'Tokat',
+            'Trabzon' => 'Trabzon',
+            'Tunceli' => 'Tunceli',
+            'Şanlıurfa' => 'Şanlıurfa',
+            'Uşak' => 'Uşak',
+            'Van' => 'Van',
+            'Yozgat' => 'Yozgat',
+            'Zonguldak' => 'Zonguldak',
+            'Aksaray' => 'Aksaray',
+            'Bayburt' => 'Bayburt',
+            'Karaman' => 'Karaman',
+            'Kırıkkale' => 'Kırıkkale',
+            'Batman' => 'Batman',
+            'Şırnak' => 'Şırnak',
+            'Bartın' => 'Bartın',
+            'Ardahan' => 'Ardahan',
+            'Iğdır' => 'Iğdır',
+            'Yalova' => 'Yalova',
+            'Karabük' => 'Karabük',
+            'Kilis' => 'Kilis',
+            'Osmaniye' => 'Osmaniye',
+            'Düzce' => 'Düzce'
+        ];
+    }
+
+    public function updatedAddressCity(): void
+    {
+        $this->addressState = '';
+        $this->cityDistricts = $this->getDistrictsForCity($this->addressCity);
+    }
+
+    private function getDistrictsForCity(string $city): array
+    {
+        $districts = [
+            'İstanbul' => [
+                'Adalar', 'Arnavutköy', 'Ataşehir', 'Avcılar', 'Bağcılar', 'Bahçelievler', 'Bakırköy', 'Başakşehir', 'Bayrampaşa', 'Beşiktaş', 'Beykoz', 'Beylikdüzü', 'Beyoğlu', 'Büyükçekmece', 'Çatalca', 'Çekmeköy', 'Esenler', 'Esenyurt', 'Eyüpsultan', 'Fatih', 'Gaziosmanpaşa', 'Güngören', 'Kadıköy', 'Kağıthane', 'Kartal', 'Küçükçekmece', 'Maltepe', 'Pendik', 'Sancaktepe', 'Sarıyer', 'Silivri', 'Sultanbeyli', 'Sultangazi', 'Şile', 'Şişli', 'Tuzla', 'Ümraniye', 'Üsküdar', 'Zeytinburnu'
+            ],
+            'Ankara' => [
+                'Akyurt', 'Altındağ', 'Ayaş', 'Bala', 'Beypazarı', 'Çamlıdere', 'Çankaya', 'Çubuk', 'Elmadağ', 'Etimesgut', 'Evren', 'Gölbaşı', 'Güdül', 'Haymana', 'Kalecik', 'Kazan', 'Keçiören', 'Kızılcahamam', 'Mamak', 'Nallıhan', 'Polatlı', 'Pursaklar', 'Sincan', 'Şereflikoçhisar', 'Yenimahalle'
+            ],
+            'İzmir' => [
+                'Aliağa', 'Balçova', 'Bayındır', 'Bayraklı', 'Bergama', 'Beydağ', 'Bornova', 'Buca', 'Çeşme', 'Çiğli', 'Dikili', 'Foça', 'Gaziemir', 'Güzelbahçe', 'Karabağlar', 'Karaburun', 'Karşıyaka', 'Kemalpaşa', 'Kınık', 'Kiraz', 'Konak', 'Menderes', 'Menemen', 'Narlıdere', 'Ödemiş', 'Seferihisar', 'Selçuk', 'Tire', 'Torbalı', 'Urla'
+            ],
+            'Bursa' => [
+                'Büyükorhan', 'Gemlik', 'Gürsu', 'Harmancık', 'İnegöl', 'İznik', 'Karacabey', 'Keles', 'Kestel', 'Mudanya', 'Mustafakemalpaşa', 'Nilüfer', 'Orhaneli', 'Orhangazi', 'Osmangazi', 'Yenişehir', 'Yıldırım'
+            ],
+            'Antalya' => [
+                'Akseki', 'Aksu', 'Alanya', 'Demre', 'Döşemealtı', 'Elmalı', 'Finike', 'Gazipaşa', 'Gündoğmuş', 'İbradı', 'Kaş', 'Kemer', 'Kepez', 'Konyaaltı', 'Korkuteli', 'Kumluca', 'Manavgat', 'Muratpaşa', 'Serik'
+            ],
+            'Adana' => [
+                'Aladağ', 'Ceyhan', 'Çukurova', 'Feke', 'İmamoğlu', 'Karaisalı', 'Karataş', 'Kozan', 'Pozantı', 'Saimbeyli', 'Sarıçam', 'Seyhan', 'Tufanbeyli', 'Yumurtalık', 'Yüreğir'
+            ],
+            'Konya' => [
+                'Ahırlı', 'Akören', 'Akşehir', 'Altınekin', 'Beyşehir', 'Bozkır', 'Cihanbeyli', 'Çeltik', 'Çumra', 'Derbent', 'Derebucak', 'Doğanhisar', 'Emirgazi', 'Ereğli', 'Güneysınır', 'Hadim', 'Halkapınar', 'Hüyük', 'Ilgın', 'Kadınhanı', 'Karapınar', 'Karatay', 'Kulu', 'Meram', 'Sarayönü', 'Selçuklu', 'Seydişehir', 'Taşkent', 'Tuzlukçu', 'Yalıhüyük', 'Yunak'
+            ],
+            'Gaziantep' => [
+                'Araban', 'İslahiye', 'Karkamış', 'Nizip', 'Nurdağı', 'Oğuzeli', 'Şahinbey', 'Şehitkamil', 'Yavuzeli'
+            ],
+            'Mersin' => [
+                'Akdeniz', 'Anamur', 'Aydıncık', 'Bozyazı', 'Çamlıyayla', 'Erdemli', 'Gülnar', 'Mezitli', 'Mut', 'Silifke', 'Tarsus', 'Toroslar', 'Yenişehir'
+            ],
+            'Diyarbakır' => [
+                'Bağlar', 'Bismil', 'Çermik', 'Çınar', 'Çüngüş', 'Dicle', 'Eğil', 'Ergani', 'Hani', 'Hazro', 'Kayapınar', 'Kocaköy', 'Kulp', 'Lice', 'Silvan', 'Sur', 'Yenişehir'
+            ],
+            'Samsun' => [
+                '19 Mayıs', 'Alaçam', 'Asarcık', 'Atakum', 'Ayvacık', 'Bafra', 'Canik', 'Çarşamba', 'Havza', 'İlkadım', 'Kavak', 'Ladik', 'Salıpazarı', 'Tekkeköy', 'Terme', 'Vezirköprü', 'Yakakent'
+            ],
+            'Denizli' => [
+                'Acıpayam', 'Babadağ', 'Baklan', 'Bekilli', 'Beyağaç', 'Bozkurt', 'Buldan', 'Çal', 'Çameli', 'Çardak', 'Çivril', 'Güney', 'Honaz', 'Kale', 'Merkezefendi', 'Pamukkale', 'Sarayköy', 'Serinhisar', 'Tavas'
+            ],
+            'Eskişehir' => [
+                'Alpu', 'Beylikova', 'Çifteler', 'Günyüzü', 'Han', 'İnönü', 'Mahmudiye', 'Mihalgazi', 'Mihalıççık', 'Odunpazarı', 'Sarıcakaya', 'Seyitgazi', 'Sivrihisar', 'Tepebaşı'
+            ],
+            'Trabzon' => [
+                'Akçaabat', 'Araklı', 'Arsin', 'Beşikdüzü', 'Çarşıbaşı', 'Çaykara', 'Dernekpazarı', 'Düzköy', 'Hayrat', 'Köprübaşı', 'Maçka', 'Of', 'Ortahisar', 'Sürmene', 'Şalpazarı', 'Tonya', 'Vakfıkebir', 'Yomra'
+            ],
+            'Erzurum' => [
+                'Aşkale', 'Aziziye', 'Çat', 'Hınıs', 'Horasan', 'İspir', 'Karaçoban', 'Karayazı', 'Köprüköy', 'Narman', 'Oltu', 'Olur', 'Palandöken', 'Pasinler', 'Pazaryolu', 'Şenkaya', 'Tekman', 'Tortum', 'Uzundere', 'Yakutiye'
+            ],
+            'Van' => [
+                'Bahçesaray', 'Başkale', 'Çaldıran', 'Çatak', 'Edremit', 'Erciş', 'Gevaş', 'Gürpınar', 'İpekyolu', 'Muradiye', 'Özalp', 'Saray', 'Tuşba'
+            ],
+            'Kayseri' => [
+                'Akkışla', 'Bünyan', 'Develi', 'Felahiye', 'Hacılar', 'İncesu', 'Kocasinan', 'Melikgazi', 'Özvatan', 'Pınarbaşı', 'Sarıoğlan', 'Sarız', 'Talas', 'Tomarza', 'Yahyalı', 'Yeşilhisar'
+            ],
+            'Manisa' => [
+                'Ahmetli', 'Akhisar', 'Alaşehir', 'Demirci', 'Gölmarmara', 'Gördes', 'Kırkağaç', 'Köprübaşı', 'Kula', 'Salihli', 'Sarıgöl', 'Saruhanlı', 'Selendi', 'Soma', 'Şehzadeler', 'Turgutlu', 'Yunusemre'
+            ],
+            'Sivas' => [
+                'Akıncılar', 'Altınyayla', 'Divriği', 'Doğanşar', 'Gemerek', 'Gölova', 'Hafik', 'İmranlı', 'Kangal', 'Koyulhisar', 'Merkez', 'Şarkışla', 'Suşehri', 'Ulaş', 'Yıldızeli', 'Zara'
+            ],
+            'Balıkesir' => [
+                'Altıeylül', 'Ayvalık', 'Balya', 'Bandırma', 'Bigadiç', 'Burhaniye', 'Dursunbey', 'Edremit', 'Erdek', 'Gönen', 'Havran', 'İvrindi', 'Karesi', 'Kepsut', 'Manyas', 'Savaştepe', 'Sındırgı', 'Gömeç', 'Susurluk', 'Marmara'
+            ],
+            'Kahramanmaraş' => [
+                'Afşin', 'Andırın', 'Çağlayancerit', 'Dulkadiroğlu', 'Ekinözü', 'Elbistan', 'Göksun', 'Nurhak', 'Onikişubat', 'Pazarcık', 'Türkoğlu'
+            ],
+            'Aydın' => [
+                'Bozdoğan', 'Çine', 'Germencik', 'Karacasu', 'Karpuzlu', 'Koçarlı', 'Köşk', 'Kuşadası', 'Kuyucak', 'Nazilli', 'Söke', 'Sultanhisar', 'Yenipazar', 'Buharkent', 'İncirliova', 'Kuyucak', 'Didim'
+            ],
+            'Tekirdağ' => [
+                'Çerkezköy', 'Çorlu', 'Ergene', 'Hayrabolu', 'Kapaklı', 'Malkara', 'Marmaraereğlisi', 'Muratlı', 'Saray', 'Süleymanpaşa', 'Şarköy'
+            ],
+            'Muğla' => [
+                'Bodrum', 'Dalaman', 'Datça', 'Fethiye', 'Kavaklıdere', 'Köyceğiz', 'Marmaris', 'Menteşe', 'Milas', 'Ortaca', 'Seydikemer', 'Ula', 'Yatağan'
+            ],
+            'Kocaeli' => [
+                'Başiskele', 'Çayırova', 'Darıca', 'Derince', 'Dilovası', 'Gebze', 'Gölcük', 'İzmit', 'Kandıra', 'Karamürsel', 'Kartepe', 'Körfez'
+            ],
+            'Sakarya' => [
+                'Adapazarı', 'Akyazı', 'Arifiye', 'Erenler', 'Ferizli', 'Geyve', 'Hendek', 'Karapürçek', 'Karasu', 'Kaynarca', 'Kocaali', 'Pamukova', 'Sapanca', 'Serdivan', 'Söğütlü', 'Taraklı'
+            ],
+            'Hatay' => [
+                'Altınözü', 'Antakya', 'Belen', 'Defne', 'Dörtyol', 'Erzin', 'Hassa', 'İskenderun', 'Kırıkhan', 'Kumlu', 'Payas', 'Reyhanlı', 'Samandağ', 'Yayladağı'
+            ],
+            'Kırıkkale' => [
+                'Bahşılı', 'Balışeyh', 'Çelebi', 'Delice', 'Karakeçili', 'Keskin', 'Sulakyurt', 'Yahşihan'
+            ],
+            'Aksaray' => [
+                'Ağaçören', 'Eskil', 'Gülağaç', 'Güzelyurt', 'Merkez', 'Ortaköy', 'Sarıyahşi'
+            ],
+            'Afyonkarahisar' => [
+                'Başmakçı', 'Bayat', 'Bolvadin', 'Çay', 'Çobanlar', 'Dazkırı', 'Dinar', 'Emirdağ', 'Evciler', 'Hocalar', 'İhsaniye', 'İscehisar', 'Kızılören', 'Merkez', 'Sandıklı', 'Sinanpaşa', 'Sultandağı', 'Şuhut'
+            ],
+            'Isparta' => [
+                'Aksu', 'Atabey', 'Eğirdir', 'Gelendost', 'Gönen', 'Keçiborlu', 'Merkez', 'Senirkent', 'Sütçüler', 'Şarkikaraağaç', 'Uluborlu', 'Yalvaç', 'Yenişarbademli'
+            ],
+            'Malatya' => [
+                'Akçadağ', 'Arapgir', 'Arguvan', 'Battalgazi', 'Darende', 'Doğanşehir', 'Doğanyol', 'Hekimhan', 'Kale', 'Kuluncak', 'Pütürge', 'Yazıhan', 'Yeşilyurt'
+            ],
+            'Elazığ' => [
+                'Ağın', 'Alacakaya', 'Arıcak', 'Baskil', 'Karakoçan', 'Keban', 'Kovancılar', 'Maden', 'Merkez', 'Palu', 'Sivrice'
+            ],
+            'Tunceli' => [
+                'Çemişgezek', 'Hozat', 'Mazgirt', 'Merkez', 'Nazımiye', 'Ovacık', 'Pertek', 'Pülümür'
+            ],
+            'Bingöl' => [
+                'Genç', 'Karlıova', 'Kiğı', 'Merkez', 'Solhan', 'Yayladere', 'Yedisu'
+            ],
+            'Bitlis' => [
+                'Adilcevaz', 'Ahlat', 'Güroymak', 'Hizan', 'Merkez', 'Mutki', 'Tatvan'
+            ],
+            'Muş' => [
+                'Bulanık', 'Hasköy', 'Korkut', 'Malazgirt', 'Merkez', 'Varto'
+            ],
+            'Hakkari' => [
+                'Çukurca', 'Derecik', 'Merkez', 'Şemdinli', 'Yüksekova'
+            ],
+            'Şırnak' => [
+                'Beytüşşebap', 'Cizre', 'Güçlükonak', 'İdil', 'Merkez', 'Silopi', 'Uludere'
+            ],
+            'Batman' => [
+                'Beşiri', 'Gercüş', 'Hasankeyf', 'Kozluk', 'Merkez', 'Sason'
+            ],
+            'Siirt' => [
+                'Baykan', 'Eruh', 'Kurtalan', 'Merkez', 'Pervari', 'Şirvan', 'Tillo'
+            ],
+            'Mardin' => [
+                'Artuklu', 'Dargeçit', 'Derik', 'Kızıltepe', 'Mazıdağı', 'Midyat', 'Nusaybin', 'Ömerli', 'Savur', 'Yeşilli'
+            ],
+            'Şanlıurfa' => [
+                'Akçakale', 'Birecik', 'Bozova', 'Ceylanpınar', 'Eyyübiye', 'Halfeti', 'Haliliye', 'Harran', 'Hilvan', 'Karaköprü', 'Siverek', 'Suruç', 'Viranşehir'
+            ],
+            'Adıyaman' => [
+                'Besni', 'Çelikhan', 'Gerger', 'Gölbaşı', 'Kahta', 'Merkez', 'Samsat', 'Sincik', 'Tut'
+            ],
+            'Kilis' => [
+                'Elbeyli', 'Merkez', 'Musabeyli', 'Polateli'
+            ],
+            'Osmaniye' => [
+                'Bahçe', 'Düziçi', 'Hasanbeyli', 'Kadirli', 'Merkez', 'Sumbas', 'Toprakkale'
+            ],
+            'K.Maraş' => [
+                'Afşin', 'Andırın', 'Çağlayancerit', 'Dulkadiroğlu', 'Ekinözü', 'Elbistan', 'Göksun', 'Nurhak', 'Onikişubat', 'Pazarcık', 'Türkoğlu'
+            ]
+        ];
+
+        return $districts[$city] ?? [];
     }
 
     #[Layout('layouts.frontend')]

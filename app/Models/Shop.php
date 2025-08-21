@@ -100,6 +100,86 @@ class Shop extends Model
     }
 
     /**
+     * Get all addresses for this shop
+     *
+     * How to use:
+     * $shop = Shop::find(1);
+     * $addresses = $shop->addresses; // Returns collection of addresses
+     * foreach($shop->addresses as $address) {
+     *     echo $address->full_address;
+     * }
+     */
+    public function addresses(): HasMany
+    {
+        return $this->hasMany(Address::class);
+    }
+
+    /**
+     * Get the primary address for this shop
+     *
+     * How to use:
+     * $shop = Shop::find(1);
+     * $primaryAddress = $shop->primaryAddress; // Returns Address model or null
+     * if($primaryAddress) {
+     *     echo $primaryAddress->full_address;
+     * }
+     */
+    public function primaryAddress()
+    {
+        return $this->hasOne(Address::class)->where('is_primary', true);
+    }
+
+    /**
+     * Get non-primary addresses for this shop
+     *
+     * How to use:
+     * $shop = Shop::find(1);
+     * $otherAddresses = $shop->otherAddresses; // Returns collection of non-primary addresses
+     * foreach($shop->otherAddresses as $address) {
+     *     echo $address->label . ': ' . $address->full_address;
+     * }
+     */
+    public function otherAddresses(): HasMany
+    {
+        return $this->hasMany(Address::class)->where('is_primary', false);
+    }
+
+    /**
+     * Add a new address to this shop
+     *
+     * How to use:
+     * $shop = Shop::find(1);
+     * $address = $shop->addAddress([
+     *     'label' => 'Branch',
+     *     'address_line' => '123 Main St',
+     *     'city' => 'New York',
+     *     'is_primary' => false
+     * ]);
+     */
+    public function addAddress(array $data): Address
+    {
+        return $this->addresses()->create($data);
+    }
+
+    /**
+     * Set a specific address as primary
+     *
+     * How to use:
+     * $shop = Shop::find(1);
+     * $address = $shop->addresses()->find(5);
+     * $shop->setPrimaryAddress($address);
+     */
+    public function setPrimaryAddress(Address $address): void
+    {
+        // Ensure the address belongs to this shop
+        if ($address->shop_id !== $this->id) {
+            throw new \InvalidArgumentException('Address does not belong to this shop');
+        }
+
+        $address->setAsPrimary();
+    }
+
+    /**
      * Scope to get shops by user role
      *
      * How to use:
