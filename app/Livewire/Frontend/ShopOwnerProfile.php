@@ -270,14 +270,19 @@ class ShopOwnerProfile extends Component
     {
         $address = $this->shop->addresses()->findOrFail($addressId);
         
+        // Ensure cities are loaded when editing
+        if (empty($this->turkishCities)) {
+            $this->loadTurkishCities();
+        }
+        
         $this->editingAddressId = $address->id;
         $this->addressLabel = $address->label;
         $this->addressLine = $address->address_line;
         $this->addressCity = $address->city;
         $this->addressPostalCode = $address->postal_code ?? '';
         $this->addressState = $address->state ?? '';
-        $this->addressLatitude = $address->latitude;
-        $this->addressLongitude = $address->longitude;
+        $this->addressLatitude = $address->latitude ? (float) $address->latitude : null;
+        $this->addressLongitude = $address->longitude ? (float) $address->longitude : null;
         $this->addressIsPrimary = $address->is_primary;
         
         // Load districts for the selected city
@@ -405,6 +410,11 @@ class ShopOwnerProfile extends Component
         $this->editingAddressId = null;
         $this->isEditingAddress = false;
         $this->cityDistricts = [];
+        
+        // Ensure cities are always loaded
+        if (empty($this->turkishCities)) {
+            $this->loadTurkishCities();
+        }
     }
 
     private function loadTurkishCities(): void
@@ -492,12 +502,26 @@ class ShopOwnerProfile extends Component
             'Osmaniye' => 'Osmaniye',
             'Düzce' => 'Düzce'
         ];
+        
+        // Log for debugging
+        logger()->info('Turkish cities loaded: ' . count($this->turkishCities) . ' cities');
     }
 
     public function updatedAddressCity(): void
     {
         $this->addressState = '';
         $this->cityDistricts = $this->getDistrictsForCity($this->addressCity);
+    }
+    
+    // Debug method to manually load cities
+    public function debugLoadCities(): void
+    {
+        $this->loadTurkishCities();
+        $this->dispatch('notify', [
+            'type' => 'success',
+            'message' => 'Cities loaded: ' . count($this->turkishCities) . ' cities available',
+            'sec' => 3000
+        ]);
     }
 
     private function getDistrictsForCity(string $city): array
