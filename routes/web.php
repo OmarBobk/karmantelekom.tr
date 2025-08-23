@@ -58,6 +58,9 @@ Route::fallback(function () {
 
 Route::post('invoice_pdf', [CheckoutComponent::class, 'exportOrderToPdf'])->name('invoice_pdf');
 
+// Shop owner PDF export route
+Route::post('shop/invoice_pdf/{orderId}/{shopId}', [\App\Livewire\Frontend\ShopOwnerProfile::class, 'exportOrderToPdf'])->name('shop.invoice_pdf');
+
 // For testing PDF generation
 //Route::get('pdf', function() {
 //    $order = \App\Models\Order::find(1);

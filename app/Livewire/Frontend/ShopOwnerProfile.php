@@ -18,7 +18,7 @@ class ShopOwnerProfile extends Component
     public string $activeTab = 'basic';
     public ?Shop $shop = null;
     public array $metrics = [];
-    public array $recentOrders = [];
+    public \Illuminate\Database\Eloquent\Collection $recentOrders;
     public array $topProducts = [];
 
     // Modal and form properties
@@ -52,6 +52,10 @@ class ShopOwnerProfile extends Component
     public array $turkishCities = [];
     public array $cityDistricts = [];
 
+    // Order management properties
+    public ?\App\Models\Order $selectedOrder = null;
+    public bool $showOrderDetailsModal = false;
+
     public function mount(): void
     {
         $user = Auth::user();
@@ -74,7 +78,8 @@ class ShopOwnerProfile extends Component
             $this->loadTurkishCities();
         } catch (\Exception $e) {
             logger()->error('Error loading shop owner profile data: ' . $e->getMessage());
-            // Continue with empty data rather than crashing
+            // Initialize with empty collection if loading fails
+            $this->recentOrders = new \Illuminate\Database\Eloquent\Collection();
         }
     }
 
@@ -96,8 +101,7 @@ class ShopOwnerProfile extends Component
             ->with(['customer', 'items.product'])
             ->latest()
             ->take(5)
-            ->get()
-            ->toArray();
+            ->get();
     }
 
     private function loadTopProducts(): void
@@ -111,7 +115,7 @@ class ShopOwnerProfile extends Component
             })
             ->groupBy('product_id')
             ->orderByDesc('total_quantity')
-            ->with('product:id,name,price')
+            ->with('product:id,name')
             ->limit(5)
             ->get()
             ->toArray();
@@ -661,6 +665,66 @@ class ShopOwnerProfile extends Component
         ];
 
         return $districts[$city] ?? [];
+    }
+
+    // Order Management Methods
+    public function showOrderDetails(int $orderId): void
+    {
+        $this->selectedOrder = \App\Models\Order::with(['items.product', 'shop', 'customer'])
+            ->where('shop_id', $this->shop->id)
+            ->findOrFail($orderId);
+        $this->showOrderDetailsModal = true;
+    }
+
+    public function closeOrderDetailsModal(): void
+    {
+        $this->showOrderDetailsModal = false;
+        $this->selectedOrder = null;
+    }
+
+    public function exportOrderToPdf(int $orderId, int $shopId)
+    {
+        try {
+            $order = \App\Models\Order::with(['items.product', 'shop', 'customer'])
+                ->where('shop_id', $shopId)
+                ->findOrFail($orderId);
+
+            $customer = new \LaravelDaily\Invoices\Classes\Buyer([
+                'serial' => $order->id,
+                'date' => $order->updated_at->format('d M Y'),
+                'invoice_records' => $order->items,
+                'total' => $order->total_price
+            ]);
+
+            $invoice = \LaravelDaily\Invoices\Invoice::make()
+                ->template('indirimgo')
+                ->buyer($customer)
+                ->discountByPercent(10)
+                ->taxRate(18)
+                ->addItem((new \LaravelDaily\Invoices\Classes\InvoiceItem())->pricePerUnit(2));
+
+            $html = view('vendor.invoices.templates.indirimgo', compact('invoice'))->render();
+
+            return response()->stream(function () use ($html) {
+                print \Spatie\Browsershot\Browsershot::html($html)
+                    ->format('A4')
+                    ->noSandbox()
+                    ->waitUntilNetworkIdle()
+                    ->showBackground()
+                    ->pdf();
+            }, 200, [
+                'Content-Type' => 'application/pdf',
+                'Content-Disposition' => 'inline; filename="order-' . $orderId . '.pdf"',
+            ]);
+
+        } catch (\Exception $e) {
+            $this->dispatch('notify', [
+                'type' => 'error',
+                'message' => 'Failed to export order: ' . $e->getMessage()
+            ]);
+
+            dd($e->getMessage());
+        }
     }
 
     #[Layout('layouts.frontend')]
