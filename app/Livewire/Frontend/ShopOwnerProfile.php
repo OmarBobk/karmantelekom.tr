@@ -20,7 +20,7 @@ class ShopOwnerProfile extends Component
     public array $metrics = [];
     public array $recentOrders = [];
     public array $topProducts = [];
-    
+
     // Modal and form properties
     public bool $showEditModal = false;
     public bool $showPasswordModal = false;
@@ -29,12 +29,12 @@ class ShopOwnerProfile extends Component
     public string $shopPhone = '';
     public string $shopTaxNumber = '';
     public string $ownerName = '';
-    
+
     // Password change properties
     public string $currentPassword = '';
     public string $newPassword = '';
     public string $confirmPassword = '';
-    
+
     // Address management properties
     public bool $showAddressModal = false;
     public bool $isEditingAddress = false;
@@ -47,7 +47,7 @@ class ShopOwnerProfile extends Component
     public ?float $addressLatitude = null;
     public ?float $addressLongitude = null;
     public bool $addressIsPrimary = false;
-    
+
     // Turkish cities and districts data
     public array $turkishCities = [];
     public array $cityDistricts = [];
@@ -55,13 +55,13 @@ class ShopOwnerProfile extends Component
     public function mount(): void
     {
         $user = Auth::user();
-        
+
         if (!$user || !$user->isShopOwner()) {
             abort(403, 'Access denied. Only shop owners can view this page.');
         }
 
         $this->shop = $user->ownedShop;
-        
+
         if (!$this->shop) {
             abort(404, 'Shop not found.');
         }
@@ -212,7 +212,7 @@ class ShopOwnerProfile extends Component
 
         try {
             $user = Auth::user();
-            
+
             // Verify current password
             if (!Hash::check($this->currentPassword, $user->password)) {
                 $this->addError('currentPassword', 'The current password is incorrect.');
@@ -269,12 +269,12 @@ class ShopOwnerProfile extends Component
     public function editAddress(int $addressId): void
     {
         $address = $this->shop->addresses()->findOrFail($addressId);
-        
+
         // Ensure cities are loaded when editing
         if (empty($this->turkishCities)) {
             $this->loadTurkishCities();
         }
-        
+
         $this->editingAddressId = $address->id;
         $this->addressLabel = $address->label;
         $this->addressLine = $address->address_line;
@@ -284,10 +284,10 @@ class ShopOwnerProfile extends Component
         $this->addressLatitude = $address->latitude ? (float) $address->latitude : null;
         $this->addressLongitude = $address->longitude ? (float) $address->longitude : null;
         $this->addressIsPrimary = $address->is_primary;
-        
+
         // Load districts for the selected city
         $this->cityDistricts = $this->getDistrictsForCity($this->addressCity);
-        
+
         $this->isEditingAddress = true;
         $this->showAddressModal = true;
     }
@@ -296,7 +296,7 @@ class ShopOwnerProfile extends Component
     {
         try {
             $address = $this->shop->addresses()->findOrFail($addressId);
-            
+
             // Don't allow deletion if it's the only address
             if ($this->shop->addresses()->count() <= 1) {
                 $this->dispatch('notify', [
@@ -306,15 +306,15 @@ class ShopOwnerProfile extends Component
                 ]);
                 return;
             }
-            
+
             $address->delete();
-            
+
             $this->dispatch('notify', [
                 'type' => 'success',
                 'message' => 'Address deleted successfully!',
                 'sec' => 3000
             ]);
-            
+
         } catch (\Exception $e) {
             logger()->error('Error deleting address: ' . $e->getMessage());
             $this->dispatch('notify', [
@@ -330,13 +330,13 @@ class ShopOwnerProfile extends Component
         try {
             $address = $this->shop->addresses()->findOrFail($addressId);
             $address->setAsPrimary();
-            
+
             $this->dispatch('notify', [
                 'type' => 'success',
                 'message' => 'Primary address updated successfully!',
                 'sec' => 3000
             ]);
-            
+
         } catch (\Exception $e) {
             logger()->error('Error setting primary address: ' . $e->getMessage());
             $this->dispatch('notify', [
@@ -410,7 +410,7 @@ class ShopOwnerProfile extends Component
         $this->editingAddressId = null;
         $this->isEditingAddress = false;
         $this->cityDistricts = [];
-        
+
         // Ensure cities are always loaded
         if (empty($this->turkishCities)) {
             $this->loadTurkishCities();
@@ -502,9 +502,6 @@ class ShopOwnerProfile extends Component
             'Osmaniye' => 'Osmaniye',
             'Düzce' => 'Düzce'
         ];
-        
-        // Log for debugging
-        logger()->info('Turkish cities loaded: ' . count($this->turkishCities) . ' cities');
     }
 
     public function updatedAddressCity(): void
@@ -512,17 +509,10 @@ class ShopOwnerProfile extends Component
         $this->addressState = '';
         $this->cityDistricts = $this->getDistrictsForCity($this->addressCity);
     }
-    
-    // Debug method to manually load cities
-    public function debugLoadCities(): void
-    {
-        $this->loadTurkishCities();
-        $this->dispatch('notify', [
-            'type' => 'success',
-            'message' => 'Cities loaded: ' . count($this->turkishCities) . ' cities available',
-            'sec' => 3000
-        ]);
-    }
+
+
+
+
 
     private function getDistrictsForCity(string $city): array
     {

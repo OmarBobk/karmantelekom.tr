@@ -1,3 +1,4 @@
+<div>
 <div class="min-h-screen bg-gray-50">
     <!-- Header Section -->
     <div class="bg-gradient-to-r from-blue-600 to-indigo-600 shadow-lg">
@@ -89,143 +90,144 @@
             <!-- Main Content Area -->
             <div class="flex-1">
                 <!-- Metrics Cards -->
-                                 @if($activeTab === 'basic')
+                @if($activeTab === 'basic')
                      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
                          <div class="flex bg-white rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6">
-                             <div class="flex items-center">
-                                 <div class="flex-shrink-0">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
                                      <div class="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-xl flex items-center justify-center">
                                          <svg class="w-5 h-5 sm:w-6 sm:h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
-                                         </svg>
-                                     </div>
-                                 </div>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1"></path>
+                                        </svg>
+                                    </div>
+                                </div>
                                  <div class="ml-3 sm:ml-4">
                                      <p class="text-xs sm:text-sm font-medium text-gray-600">Total Revenue</p>
                                      <p class="text-sm sm:text-lg font-bold text-gray-900">{{ number_format($metrics['total_revenue'], 2) }} ₺</p>
-                                 </div>
-                             </div>
-                         </div>
+                                </div>
+                            </div>
+                        </div>
 
                          <div class="flex bg-white rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6">
-                             <div class="flex items-center">
-                                 <div class="flex-shrink-0">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
                                      <div class="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-xl flex items-center justify-center">
                                          <svg class="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                                         </svg>
-                                     </div>
-                                 </div>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                                        </svg>
+                                    </div>
+                                </div>
                                  <div class="ml-3 sm:ml-4">
                                      <p class="text-xs sm:text-sm font-medium text-gray-600">Pending Orders</p>
                                      <p class="text-lg sm:text-2xl font-bold text-gray-900">{{ $metrics['pending_orders'] }}</p>
-                                 </div>
-                             </div>
-                         </div>
+                                </div>
+                            </div>
+                        </div>
 
                          <div class="flex bg-white rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6">
-                             <div class="flex items-center">
-                                 <div class="flex-shrink-0">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
                                      <div class="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-xl flex items-center justify-center">
                                          <svg class="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
-                                         </svg>
-                                     </div>
-                                 </div>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"></path>
+                                        </svg>
+                                    </div>
+                                </div>
                                  <div class="ml-3 sm:ml-4">
                                      <p class="text-xs sm:text-sm font-medium text-gray-600">Total Products</p>
                                      <p class="text-lg sm:text-2xl font-bold text-gray-900">{{ $metrics['total_products'] }}</p>
-                                 </div>
-                             </div>
-                         </div>
+                                </div>
+                            </div>
+                        </div>
 
                          <div class="flex bg-white rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6">
-                             <div class="flex items-center">
-                                 <div class="flex-shrink-0">
+                            <div class="flex items-center">
+                                <div class="flex-shrink-0">
                                      <div class="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 rounded-xl flex items-center justify-center">
                                          <svg class="w-5 h-5 sm:w-6 sm:h-6 text-orange-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
-                                         </svg>
-                                     </div>
-                                 </div>
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                                        </svg>
+                                    </div>
+                                </div>
                                  <div class="ml-3 sm:ml-4">
                                      <p class="text-xs sm:text-sm font-medium text-gray-600">Avg Order</p>
                                      <p class="text-sm sm:text-lg font-bold text-gray-900">{{ number_format($metrics['avg_order_value'], 2) }} ₺</p>
-                                 </div>
-                             </div>
-                         </div>
-                     </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-                                          <!-- Basic Information Card -->
+                                         <!-- Basic Information Card -->
                       <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6 lg:p-8">
                           <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4 sm:mb-6">
                               <h2 class="text-xl sm:text-2xl font-bold text-gray-900">Basic Information</h2>
                               <div class="flex flex-col sm:flex-row gap-2 sm:gap-3">
-                                  <button
-                                      wire:click="openPasswordModal"
+                                 <button
+                                     wire:click="openPasswordModal"
                                       class="inline-flex items-center justify-center px-3 sm:px-4 py-2 bg-gray-600 text-white text-xs sm:text-sm font-medium rounded-xl hover:bg-gray-700 transition-colors duration-200 w-full sm:w-auto"
-                                  >
+                                 >
                                       <svg class="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
-                                      </svg>
-                                      Change Password
-                                  </button>
-                                  <button
-                                      wire:click="openEditModal"
+                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z"></path>
+                                     </svg>
+                                     Change Password
+                                 </button>
+                                 <button
+                                     wire:click="openEditModal"
                                       class="inline-flex items-center justify-center px-3 sm:px-4 py-2 bg-blue-600 text-white text-xs sm:text-sm font-medium rounded-xl hover:bg-blue-700 transition-colors duration-200 w-full sm:w-auto"
-                                  >
+                                 >
                                       <svg class="w-3 h-3 sm:w-4 sm:h-4 mr-1 sm:mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
-                                      </svg>
-                                      Edit Information
-                                  </button>
-                              </div>
-                          </div>
+                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"></path>
+                                     </svg>
+                                     Edit Information
+                                 </button>
+
+                                 </div>
+                                 </div>
 
                                                                                                         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
                                 <!-- Left Column -->
                                 <div class="space-y-4 sm:space-y-6">
-                                    <div>
+                                     <div>
                                         <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Owner Email</label>
                                         <div class="bg-gray-50 rounded-xl px-3 sm:px-4 py-2 sm:py-3 text-gray-900 flex items-center">
                                             <svg class="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
-                                            </svg>
+                                              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                                          </svg>
                                             <span class="text-xs sm:text-sm text-gray-600 break-all">{{ Auth::user()->email }}</span>
-                                        </div>
-                                    </div>
+                                  </div>
+                             </div>
 
-                                    <div>
+                                 <div>
                                         <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Owner Name</label>
                                         <div class="bg-gray-50 rounded-xl px-3 sm:px-4 py-2 sm:py-3 text-gray-900 text-xs sm:text-sm">{{ Auth::user()->name }}</div>
-                                    </div>
+                                 </div>
 
-                                    <div>
+                                     <div>
                                         <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Shop Name</label>
                                         <div class="bg-gray-50 rounded-xl px-3 sm:px-4 py-2 sm:py-3 text-gray-900 font-medium text-xs sm:text-sm">{{ $shop->name }}</div>
-                                    </div>
-                                </div>
+                             </div>
+                         </div>
 
                                 <!-- Right Column -->
                                 <div class="space-y-4 sm:space-y-6">
                                     @if($shop->phone)
-                                        <div>
+                                     <div>
                                             <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Phone Number</label>
                                             <div class="bg-gray-50 rounded-xl px-3 sm:px-4 py-2 sm:py-3 text-gray-900 flex items-center">
                                                 <svg class="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"></path>
-                                                </svg>
+                                                 </svg>
                                                 <a href="tel:{{ $shop->phone }}" class="text-blue-600 hover:text-blue-800 text-xs sm:text-sm">{{ $shop->phone }}</a>
-                                            </div>
-                                        </div>
-                                    @endif
+                                         </div>
+                                     </div>
+                                 @endif
 
-                                    <div>
+                                     <div>
                                         <label class="block text-xs sm:text-sm font-medium text-gray-700 mb-2">Tax Number</label>
                                         <div class="bg-gray-50 rounded-xl px-3 sm:px-4 py-2 sm:py-3 text-gray-900 flex items-center">
                                             <svg class="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 mr-2 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
-                                            </svg>
+                                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                                                 </svg>
                                             <span class="text-xs sm:text-sm">
                                                 @if($shop->tax_number)
                                                     {{ $shop->tax_number }}
@@ -233,16 +235,16 @@
                                                     <span class="text-gray-400 italic">Not provided</span>
                                                 @endif
                                             </span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
+                                             </div>
+                                         </div>
+                                     </div>
+                             </div>
 
 
-                          </div>
+                                 </div>
 
 
-                      </div>
+                     </div>
                 @endif
 
                 @if($activeTab === 'business')
@@ -388,7 +390,7 @@
                                                      <h3 class="text-base sm:text-lg font-semibold text-gray-900">{{ $address->label }}</h3>
                                                  </div>
                                              </div>
-                                             
+
                                              <div class="space-y-2">
                                                  <div class="flex items-start gap-2 text-gray-600">
                                                      <svg class="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -397,7 +399,7 @@
                                                      </svg>
                                                      <span class="text-sm sm:text-base break-words">{{ $address->full_address }}</span>
                                                  </div>
-                                                 
+
                                                  @if($address->coordinates)
                                                      <div class="flex items-start gap-2 text-gray-600">
                                                          <svg class="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -408,7 +410,7 @@
                                                  @endif
                                              </div>
                                          </div>
-                                         
+
                                          <div class="flex flex-wrap items-center gap-2 lg:ml-4">
                                              @if(!$address->is_primary)
                                                  <button
@@ -423,7 +425,7 @@
                                                      <span class="sm:hidden">Primary</span>
                                                  </button>
                                              @endif
-                                             
+
                                              <button
                                                  wire:click="editAddress({{ $address->id }})"
                                                  class="inline-flex items-center px-2 sm:px-3 py-1.5 bg-blue-100 text-blue-700 text-xs font-medium rounded-lg hover:bg-blue-200 transition-colors duration-200"
@@ -434,7 +436,7 @@
                                                  </svg>
                                                  Edit
                                              </button>
-                                             
+
                                              @if($shop->addresses->count() > 1)
                                                  <button
                                                      wire:click="deleteAddress({{ $address->id }})"
@@ -468,7 +470,7 @@
                                          </svg>
                                          Add First Address
                                      </button>
-                                 </div>
+                                </div>
                             @endforelse
                         </div>
                     </div>
@@ -534,11 +536,10 @@
     </div>
 
     <!-- Edit Shop Information Modal -->
-    @if($showEditModal)
-        <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+    <div class="fixed inset-0 z-50 overflow-y-auto {{ $showEditModal ? '' : 'hidden' }}" aria-labelledby="modal-title" role="dialog" aria-modal="true">
             <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
                 <!-- Background overlay -->
-                <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+                <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" wire:click="closeEditModal"></div>
 
                 <!-- Modal panel -->
                 <div class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full">
@@ -557,7 +558,7 @@
                             </button>
                         </div>
 
-                                                 <form wire:submit.prevent="saveShopInfo" class="space-y-6">
+                        <form wire:submit.prevent="saveShopInfo" class="space-y-6">
                              <!-- Owner Name -->
                              <div>
                                  <label for="ownerName" class="block text-sm font-medium text-gray-700 mb-2">Owner Name *</label>
@@ -571,18 +572,18 @@
                                  @error('ownerName') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                              </div>
 
-                             <!-- Shop Name -->
-                             <div>
-                                 <label for="shopName" class="block text-sm font-medium text-gray-700 mb-2">Shop Name *</label>
-                                 <input
-                                     type="text"
-                                     id="shopName"
-                                     wire:model="shopName"
-                                     class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                                     placeholder="Enter shop name"
-                                 >
-                                 @error('shopName') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
-                             </div>
+                            <!-- Shop Name -->
+                            <div>
+                                <label for="shopName" class="block text-sm font-medium text-gray-700 mb-2">Shop Name *</label>
+                                <input
+                                    type="text"
+                                    id="shopName"
+                                    wire:model="shopName"
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                                    placeholder="Enter shop name"
+                                >
+                                @error('shopName') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                            </div>
 
                             <!-- Shop Address -->
                             <div>
@@ -613,15 +614,15 @@
                             <!-- Tax Number -->
                             <div>
                                 <label for="shopTaxNumber" class="block text-sm font-medium text-gray-700 mb-2">Tax Number</label>
-                                <input
-                                    type="text"
+                                            <input
+                                                type="text"
                                     id="shopTaxNumber"
                                     wire:model="shopTaxNumber"
-                                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                                        class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
                                     placeholder="Enter tax number"
-                                >
+                                    >
                                 @error('shopTaxNumber') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
-                            </div>
+                                </div>
 
 
 
@@ -648,128 +649,124 @@
                     </div>
                 </div>
             </div>
-        </div>
-    @endif
+</div>
 
-    <!-- Change Password Modal -->
-    @if($showPasswordModal)
-        <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="password-modal-title" role="dialog" aria-modal="true">
-            <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-                <!-- Background overlay -->
-                <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+<!-- Change Password Modal -->
+    <div class="fixed inset-0 z-50 overflow-y-auto {{ $showPasswordModal ? '' : 'hidden' }}" aria-labelledby="password-modal-title" role="dialog" aria-modal="true">
+        <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <!-- Background overlay -->
+                <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" wire:click="closePasswordModal"></div>
 
-                <!-- Modal panel -->
-                <div class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-                    <div class="bg-white px-6 py-6">
-                        <div class="flex items-center justify-between mb-6">
-                            <h3 class="text-2xl font-bold text-gray-900" id="password-modal-title">
-                                Change Password
-                            </h3>
-                            <button
-                                wire:click="closePasswordModal"
-                                class="text-gray-400 hover:text-gray-600 transition-colors duration-200"
+            <!-- Modal panel -->
+            <div class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <div class="bg-white px-6 py-6">
+                    <div class="flex items-center justify-between mb-6">
+                        <h3 class="text-2xl font-bold text-gray-900" id="password-modal-title">
+                            Change Password
+                        </h3>
+                        <button
+                            wire:click="closePasswordModal"
+                            class="text-gray-400 hover:text-gray-600 transition-colors duration-200"
+                        >
+                            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
+                            </svg>
+                        </button>
+                    </div>
+
+                    <form wire:submit.prevent="changePassword" class="space-y-6">
+                        <!-- Current Password -->
+                        <div>
+                            <label for="currentPassword" class="block text-sm font-medium text-gray-700 mb-2">Current Password *</label>
+                            <input
+                                type="password"
+                                id="currentPassword"
+                                wire:model="currentPassword"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                                placeholder="Enter your current password"
+                                required
                             >
-                                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path>
-                                </svg>
-                            </button>
+                            @error('currentPassword') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                         </div>
 
-                        <form wire:submit.prevent="changePassword" class="space-y-6">
-                            <!-- Current Password -->
-                            <div>
-                                <label for="currentPassword" class="block text-sm font-medium text-gray-700 mb-2">Current Password *</label>
-                                <input
-                                    type="password"
-                                    id="currentPassword"
-                                    wire:model="currentPassword"
-                                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                                    placeholder="Enter your current password"
-                                    required
-                                >
-                                @error('currentPassword') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
-                            </div>
+                        <!-- New Password -->
+                        <div>
+                            <label for="newPassword" class="block text-sm font-medium text-gray-700 mb-2">New Password *</label>
+                            <input
+                                type="password"
+                                id="newPassword"
+                                wire:model="newPassword"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                                placeholder="Enter new password (min 8 characters)"
+                                required
+                            >
+                            @error('newPassword') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                        </div>
 
-                            <!-- New Password -->
-                            <div>
-                                <label for="newPassword" class="block text-sm font-medium text-gray-700 mb-2">New Password *</label>
-                                <input
-                                    type="password"
-                                    id="newPassword"
-                                    wire:model="newPassword"
-                                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                                    placeholder="Enter new password (min 8 characters)"
-                                    required
-                                >
-                                @error('newPassword') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
-                            </div>
+                        <!-- Confirm New Password -->
+                        <div>
+                            <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-2">Confirm New Password *</label>
+                            <input
+                                type="password"
+                                id="confirmPassword"
+                                wire:model="confirmPassword"
+                                class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
+                                placeholder="Confirm new password"
+                                required
+                            >
+                            @error('confirmPassword') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
+                        </div>
 
-                            <!-- Confirm New Password -->
-                            <div>
-                                <label for="confirmPassword" class="block text-sm font-medium text-gray-700 mb-2">Confirm New Password *</label>
-                                <input
-                                    type="password"
-                                    id="confirmPassword"
-                                    wire:model="confirmPassword"
-                                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200"
-                                    placeholder="Confirm new password"
-                                    required
-                                >
-                                @error('confirmPassword') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
-                            </div>
+                        <!-- Password Requirements -->
+                        <div class="bg-blue-50 rounded-xl p-4">
+                            <h4 class="text-sm font-medium text-blue-900 mb-2">Password Requirements:</h4>
+                            <ul class="text-sm text-blue-800 space-y-1">
+                                <li class="flex items-center">
+                                    <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    Minimum 8 characters
+                                </li>
+                                <li class="flex items-center">
+                                    <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
+                                        <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
+                                    </svg>
+                                    Passwords must match
+                                </li>
+                            </ul>
+                        </div>
 
-                            <!-- Password Requirements -->
-                            <div class="bg-blue-50 rounded-xl p-4">
-                                <h4 class="text-sm font-medium text-blue-900 mb-2">Password Requirements:</h4>
-                                <ul class="text-sm text-blue-800 space-y-1">
-                                    <li class="flex items-center">
-                                        <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                                        </svg>
-                                        Minimum 8 characters
-                                    </li>
-                                    <li class="flex items-center">
-                                        <svg class="w-4 h-4 mr-2" fill="currentColor" viewBox="0 0 20 20">
-                                            <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"></path>
-                                        </svg>
-                                        Passwords must match
-                                    </li>
-                                </ul>
-                            </div>
-
-                            <!-- Modal Actions -->
-                            <div class="flex items-center justify-end space-x-3 pt-6 border-t border-gray-200">
-                                <button
-                                    type="button"
-                                    wire:click="closePasswordModal"
-                                    class="px-6 py-2 text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors duration-200"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    class="px-6 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors duration-200"
-                                    wire:loading.attr="disabled"
-                                    wire:loading.class="opacity-50 cursor-not-allowed"
-                                >
-                                    <span wire:loading.remove>Change Password</span>
-                                    <span wire:loading>Changing...</span>
-                                </button>
-                            </div>
-                        </form>
-                    </div>
+                        <!-- Modal Actions -->
+                        <div class="flex items-center justify-end space-x-3 pt-6 border-t border-gray-200">
+                            <button
+                                type="button"
+                                wire:click="closePasswordModal"
+                                class="px-6 py-2 text-gray-700 bg-gray-100 rounded-xl hover:bg-gray-200 transition-colors duration-200"
+                            >
+                                Cancel
+                            </button>
+                            <button
+                                type="submit"
+                                class="px-6 py-2 bg-blue-600 text-white rounded-xl hover:bg-blue-700 transition-colors duration-200"
+                                wire:loading.attr="disabled"
+                                wire:loading.class="opacity-50 cursor-not-allowed"
+                            >
+                                <span wire:loading.remove>Change Password</span>
+                                <span wire:loading>Changing...</span>
+                            </button>
+                        </div>
+                    </form>
                 </div>
             </div>
         </div>
-    @endif
+    </div>
 
-         <!-- Address Modal -->
-     @if($showAddressModal)
-         <div class="fixed inset-0 z-50 overflow-y-auto" aria-labelledby="address-modal-title" role="dialog" aria-modal="true">
-             <div class="flex items-end justify-center min-h-screen pt-4 px-2 pb-20 text-center sm:block sm:p-0">
-                 <!-- Background overlay -->
-                 <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
- 
+                          <!-- Address Modal -->
+     <div class="fixed inset-0 z-50 overflow-y-auto {{ $showAddressModal ? '' : 'hidden' }}" aria-labelledby="address-modal-title" role="dialog" aria-modal="true">
+              <div class="flex items-end justify-center min-h-screen pt-4 px-2 pb-20 text-center sm:block sm:p-0">
+                  <!-- Background overlay -->
+                  <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true" wire:click="closeAddressModal"></div>
+
                  <!-- Modal panel -->
                  <div class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-2xl sm:w-full w-full">
                      <div class="bg-white px-4 sm:px-6 py-4 sm:py-6">
@@ -828,12 +825,12 @@
                                      >
                                          <option value="">Select a city</option>
                                          @foreach($turkishCities as $cityKey => $cityName)
-                                             <option value="{{ $cityKey }}">{{ $cityName }}</option>
+                                             <option value="{{ $cityKey }}" {{$cityName == $addressCity ? 'selected' :''}}>{{ $cityName }}</option>
                                          @endforeach
                                      </select>
                                      @error('addressCity') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                                  </div>
- 
+
                                  <div>
                                      <label for="addressState" class="block text-sm font-medium text-gray-700 mb-2">District *</label>
                                      <select
@@ -845,7 +842,7 @@
                                      >
                                          <option value="">Select a district</option>
                                          @foreach($cityDistricts as $district)
-                                             <option value="{{ $district }}">{{ $district }}</option>
+                                             <option value="{{ $district }}" {{$district == $addressState ? 'selected' :''}}>{{ $district }}</option>
                                          @endforeach
                                      </select>
                                      @error('addressState') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
@@ -879,7 +876,7 @@
                                      >
                                      @error('addressLatitude') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                                  </div>
- 
+
                                  <div>
                                      <label for="addressLongitude" class="block text-sm font-medium text-gray-700 mb-2">Longitude (Optional)</label>
                                      <input
@@ -931,6 +928,6 @@
                 </div>
             </div>
         </div>
-    @endif
+    </div>
 </div>
 
