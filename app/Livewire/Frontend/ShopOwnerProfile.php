@@ -134,18 +134,27 @@ class ShopOwnerProfile extends Component
     {
         $this->loadShopData();
         $this->showEditModal = true;
+        
+        // Prevent background scrolling when modal is open
+        $this->dispatch('modal-opened');
     }
 
     public function closeEditModal(): void
     {
         $this->showEditModal = false;
         $this->resetValidation();
+        
+        // Re-enable background scrolling when modal is closed
+        $this->dispatch('modal-closed');
     }
 
     public function openPasswordModal(): void
     {
         $this->showPasswordModal = true;
         $this->resetPasswordFields();
+        
+        // Prevent background scrolling when modal is open
+        $this->dispatch('modal-opened');
     }
 
     public function closePasswordModal(): void
@@ -153,6 +162,9 @@ class ShopOwnerProfile extends Component
         $this->showPasswordModal = false;
         $this->resetPasswordFields();
         $this->resetValidation();
+        
+        // Re-enable background scrolling when modal is closed
+        $this->dispatch('modal-closed');
     }
 
     private function resetPasswordFields(): void
@@ -261,6 +273,9 @@ class ShopOwnerProfile extends Component
         if (empty($this->turkishCities)) {
             $this->loadTurkishCities();
         }
+        
+        // Prevent background scrolling when modal is open
+        $this->dispatch('modal-opened');
     }
 
     public function closeAddressModal(): void
@@ -268,6 +283,9 @@ class ShopOwnerProfile extends Component
         $this->showAddressModal = false;
         $this->resetAddressFields();
         $this->resetValidation();
+        
+        // Re-enable background scrolling when modal is closed
+        $this->dispatch('modal-closed');
     }
 
     public function editAddress(int $addressId): void
@@ -294,6 +312,9 @@ class ShopOwnerProfile extends Component
 
         $this->isEditingAddress = true;
         $this->showAddressModal = true;
+        
+        // Prevent background scrolling when modal is open
+        $this->dispatch('modal-opened');
     }
 
     public function deleteAddress(int $addressId): void
@@ -674,12 +695,18 @@ class ShopOwnerProfile extends Component
             ->where('shop_id', $this->shop->id)
             ->findOrFail($orderId);
         $this->showOrderDetailsModal = true;
+        
+        // Prevent background scrolling when modal is open
+        $this->dispatch('modal-opened');
     }
 
     public function closeOrderDetailsModal(): void
     {
         $this->showOrderDetailsModal = false;
         $this->selectedOrder = null;
+        
+        // Re-enable background scrolling when modal is closed
+        $this->dispatch('modal-closed');
     }
 
     public function exportOrderToPdf(int $orderId, int $shopId)

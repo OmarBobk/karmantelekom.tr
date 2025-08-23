@@ -1436,3 +1436,26 @@
     </div>
 
 </div>
+
+<script>
+    // Handle modal scroll prevention
+    document.addEventListener('livewire:init', () => {
+        Livewire.on('modal-opened', () => {
+            // Prevent background scrolling
+            document.body.style.overflow = 'hidden';
+        });
+        
+        Livewire.on('modal-closed', () => {
+            // Re-enable background scrolling
+            document.body.style.overflow = '';
+        });
+    });
+    
+    // Also handle when user clicks outside modal to close
+    document.addEventListener('click', (e) => {
+        if (e.target.classList.contains('modal-backdrop')) {
+            // Re-enable scrolling when modal is closed by clicking outside
+            document.body.style.overflow = '';
+        }
+    });
+</script>
