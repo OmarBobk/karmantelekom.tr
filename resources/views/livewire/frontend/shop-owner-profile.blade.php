@@ -346,54 +346,59 @@
                         <h2 class="text-xl sm:text-2xl font-bold text-gray-900 mb-6">Recent Orders</h2>
                         <div class="space-y-3">
                             @forelse($recentOrders as $order)
-                                <div class="bg-white border border-gray-200 rounded-2xl p-4 sm:p-6 hover:shadow-lg transition-all duration-300 hover:border-gray-300">
-                                    <div class="flex items-center justify-between">
-                                        <!-- Left Section: Order Info -->
-                                        <div class="flex items-center space-x-4">
-                                            <!-- Order Icon -->
-                                            <div class="w-10 h-10 sm:w-12 sm:h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-sm">
-                                                <svg class="w-5 h-5 sm:w-6 sm:h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                                                </svg>
+                                <div class="bg-white border border-gray-200 rounded-2xl p-3 sm:p-4 lg:p-6 hover:shadow-lg transition-all duration-300 hover:border-gray-300">
+                                    <!-- Mobile Layout -->
+                                    <div class="block sm:hidden">
+                                        <!-- Mobile Header -->
+                                        <div class="flex items-start justify-between mb-3">
+                                            <div class="flex items-center space-x-3">
+                                                <!-- Order Icon -->
+                                                <div class="w-10 h-10 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-sm flex-shrink-0">
+                                                    <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                                                    </svg>
+                                                </div>
+                                                
+                                                <!-- Order Info -->
+                                                <div class="flex-1 min-w-0">
+                                                    <div class="flex items-center space-x-2 mb-1">
+                                                        <h3 class="text-sm font-semibold text-gray-900 truncate">
+                                                            Order #{{ $order->id }}
+                                                        </h3>
+                                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium {{ $order->status->colorClasses() }} shadow-sm">
+                                                            {!! $order->status->icon() !!}
+                                                            <span class="ml-1">{{ $order->status->label() }}</span>
+                                                        </span>
+                                                    </div>
+                                                    <div class="text-xs text-gray-500">
+                                                        {{ $order->customer->name ?? 'Guest' }}
+                                                    </div>
+                                                    <div class="text-xs text-gray-400">
+                                                        {{ $order->created_at->format('M d, Y H:i') }}
+                                                    </div>
+                                                </div>
                                             </div>
-
-                                            <!-- Order Details -->
-                                            <div class="flex-1 min-w-0">
-                                                <div class="flex items-center space-x-3 mb-1">
-                                                    <h3 class="text-sm sm:text-base font-semibold text-gray-900 truncate">
-                                                        Order #{{ $order->id }}
-                                                    </h3>
-                                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $order->status->colorClasses() }} shadow-sm">
-                                                        {!! $order->status->icon() !!}
-                                                        <span class="ml-1">{{ $order->status->label() }}</span>
-                                                    </span>
-                                            </div>
-                                                <div class="text-xs sm:text-sm text-gray-500">
-                                                    {{ $order->customer->name ?? 'Guest' }} • {{ $order->created_at->format('M d, Y H:i') }}
                                         </div>
-                                            </div>
-                                        </div>
 
-                                        <!-- Right Section: Price, Items & Actions -->
-                                        <div class="flex items-center space-x-6">
-                                            <!-- Price and Items - Enhanced Design -->
-                                            <div class="text-left hidden sm:block">
-                                                <div class="text-lg sm:text-xl font-bold text-gray-900 leading-tight">
+                                        <!-- Mobile Price and Actions -->
+                                        <div class="flex items-center justify-between pt-3 border-t border-gray-100">
+                                            <div class="text-left">
+                                                <div class="text-lg font-bold text-gray-900 leading-tight">
                                                     {{ number_format($order->total_price, 2) }} ₺
                                                 </div>
-                                                <div class="text-xs sm:text-sm text-gray-500 font-medium mt-0.5">
+                                                <div class="text-sm text-gray-500 font-medium mt-0.5">
                                                     {{ $order->items->count() }} {{ Str::plural('item', $order->items->count()) }}
                                                 </div>
                                             </div>
-
-                                            <!-- Action Buttons -->
+                                            
+                                            <!-- Mobile Action Buttons -->
                                             <div class="flex items-center space-x-2">
                                                 <button
                                                     wire:click="showOrderDetails({{ $order->id }})"
-                                                    class="inline-flex items-center px-3 py-2 bg-blue-600 text-white text-xs sm:text-sm font-medium rounded-xl hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-sm"
+                                                    class="inline-flex items-center px-2.5 py-2 bg-blue-600 text-white text-xs font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-sm"
                                                     title="View Order Details"
                                                 >
-                                                    <svg class="w-3 h-3 sm:w-4 sm:h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
                                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                                                     </svg>
@@ -404,10 +409,10 @@
                                                     @csrf
                                                     <button
                                                         type="submit"
-                                                        class="inline-flex items-center px-3 py-2 bg-green-600 text-white text-xs sm:text-sm font-medium rounded-xl hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 shadow-sm"
+                                                        class="inline-flex items-center px-2.5 py-2 bg-green-600 text-white text-xs font-medium rounded-lg hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 shadow-sm"
                                                         title="Export as PDF"
                                                     >
-                                                        <svg class="w-3 h-3 sm:w-4 sm:h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <svg class="w-3 h-3 mr-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                                         </svg>
                                                         <span>PDF</span>
@@ -417,16 +422,73 @@
                                         </div>
                                     </div>
 
-                                    <!-- Mobile Price Display - Enhanced -->
-                                    <div class="sm:hidden mt-3 pt-3 border-t border-gray-100">
-                                        <div class="flex items-center justify-between">
+                                    <!-- Desktop Layout -->
+                                    <div class="hidden sm:flex items-center justify-between">
+                                        <!-- Left Section: Order Info -->
+                                        <div class="flex items-center space-x-4">
+                                            <!-- Order Icon -->
+                                            <div class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-sm">
+                                                <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                                                </svg>
+                                            </div>
+
+                                            <!-- Order Details -->
+                                            <div class="flex-1 min-w-0">
+                                                <div class="flex items-center space-x-3 mb-1">
+                                                    <h3 class="text-base font-semibold text-gray-900 truncate">
+                                                        Order #{{ $order->id }}
+                                                    </h3>
+                                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium {{ $order->status->colorClasses() }} shadow-sm">
+                                                        {!! $order->status->icon() !!}
+                                                        <span class="ml-1">{{ $order->status->label() }}</span>
+                                                    </span>
+                                                </div>
+                                                <div class="text-sm text-gray-500">
+                                                    {{ $order->customer->name ?? 'Guest' }} • {{ $order->created_at->format('M d, Y H:i') }}
+                                                </div>
+                                            </div>
+                                        </div>
+
+                                        <!-- Right Section: Price, Items & Actions -->
+                                        <div class="flex items-center space-x-6">
+                                            <!-- Price and Items - Enhanced Design -->
                                             <div class="text-left">
-                                                <div class="text-lg font-bold text-gray-900 leading-tight">
+                                                <div class="text-xl font-bold text-gray-900 leading-tight">
                                                     {{ number_format($order->total_price, 2) }} ₺
                                                 </div>
                                                 <div class="text-sm text-gray-500 font-medium mt-0.5">
                                                     {{ $order->items->count() }} {{ Str::plural('item', $order->items->count()) }}
                                                 </div>
+                                            </div>
+
+                                            <!-- Action Buttons -->
+                                            <div class="flex items-center space-x-2">
+                                                <button
+                                                    wire:click="showOrderDetails({{ $order->id }})"
+                                                    class="inline-flex items-center px-3 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-sm"
+                                                    title="View Order Details"
+                                                >
+                                                    <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                                                    </svg>
+                                                    <span>View</span>
+                                                </button>
+
+                                                <form target="_blank" action="{{ route('shop.invoice_pdf', [$order->id, $shop->id]) }}" method="POST" class="inline">
+                                                    @csrf
+                                                    <button
+                                                        type="submit"
+                                                        class="inline-flex items-center px-3 py-2 bg-green-600 text-white text-sm font-medium rounded-xl hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 shadow-sm"
+                                                        title="Export as PDF"
+                                                    >
+                                                        <svg class="w-4 h-4 mr-1.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
+                                                        </svg>
+                                                        <span>PDF</span>
+                                                    </button>
+                                                </form>
                                             </div>
                                         </div>
                                     </div>
