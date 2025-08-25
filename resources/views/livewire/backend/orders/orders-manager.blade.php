@@ -141,171 +141,172 @@
                 </div>
             </div>
 
-            <table class="min-w-full divide-y divide-gray-100">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-3 sm:px-6 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider w-12">
-                            <input
-                                type="checkbox"
-                                wire:model="selectAll"
-                                class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-400 focus:ring-indigo-200"
-                            />
-                        </th>
+            <div class="overflow-x-auto">
+                <table class="min-w-full divide-y divide-gray-100">
+                    <thead class="bg-gray-50">
+                        <tr>
+                            <th class="px-3 sm:px-6 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider w-12">
+                                <input
+                                    type="checkbox"
+                                    wire:model="selectAll"
+                                    class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-400 focus:ring-indigo-200"
+                                />
+                            </th>
 
-                        <!-- Sortable Order Column -->
-                        <th class="px-3 sm:px-6 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider min-w-20 {{ $sortBy === 'id' ? 'bg-indigo-50' : '' }}">
-                            <button
-                                wire:click="sortByColumn('id')"
-                                class="flex items-center space-x-1 group hover:text-indigo-600 transition-colors duration-150"
-                                x-data="{ hover: false }"
-                                @mouseenter="hover = true"
-                                @mouseleave="hover = false"
-                            >
-                                <span>Order</span>
-                                <div class="flex flex-col">
-                                    <svg class="w-2 h-2 {{ $sortBy === 'id' && $sortDirection === 'asc' ? 'text-indigo-600' : 'text-gray-300' }}"
-                                         :class="hover ? 'text-indigo-400' : ''"
-                                         fill="currentColor" viewBox="0 0 8 8">
-                                        <path d="M4 0l4 4H0z"/>
-                                    </svg>
-                                    <svg class="w-2 h-2 {{ $sortBy === 'id' && $sortDirection === 'desc' ? 'text-indigo-600' : 'text-gray-300' }}"
-                                         :class="hover ? 'text-indigo-400' : ''"
-                                         fill="currentColor" viewBox="0 0 8 8">
-                                        <path d="M4 8L0 4h8z"/>
-                                    </svg>
-                                </div>
-                            </button>
-                        </th>
+                            <!-- Sortable Order Column -->
+                            <th class="px-3 sm:px-6 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider min-w-20 {{ $sortBy === 'id' ? 'bg-indigo-50' : '' }}">
+                                <button
+                                    wire:click="sortByColumn('id')"
+                                    class="flex items-center space-x-1 group hover:text-indigo-600 transition-colors duration-150"
+                                    x-data="{ hover: false }"
+                                    @mouseenter="hover = true"
+                                    @mouseleave="hover = false"
+                                >
+                                    <span>Order</span>
+                                    <div class="flex flex-col">
+                                        <svg class="w-2 h-2 {{ $sortBy === 'id' && $sortDirection === 'asc' ? 'text-indigo-600' : 'text-gray-300' }}"
+                                             :class="hover ? 'text-indigo-400' : ''"
+                                             fill="currentColor" viewBox="0 0 8 8">
+                                            <path d="M4 0l4 4H0z"/>
+                                        </svg>
+                                        <svg class="w-2 h-2 {{ $sortBy === 'id' && $sortDirection === 'desc' ? 'text-indigo-600' : 'text-gray-300' }}"
+                                             :class="hover ? 'text-indigo-400' : ''"
+                                             fill="currentColor" viewBox="0 0 8 8">
+                                            <path d="M4 8L0 4h8z"/>
+                                        </svg>
+                                    </div>
+                                </button>
+                            </th>
 
-                        <!-- Sortable Salesperson Column -->
-                        <th class="px-3 sm:px-6 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider min-w-32 hidden md:table-cell {{ $sortBy === 'salesperson' ? 'bg-indigo-50' : '' }}">
-                            <button
-                                wire:click="sortByColumn('salesperson')"
-                                class="flex items-center space-x-1 group hover:text-indigo-600 transition-colors duration-150"
-                                x-data="{ hover: false }"
-                                @mouseenter="hover = true"
-                                @mouseleave="hover = false"
-                            >
-                                <span>Ordered By</span>
-                                <div class="flex flex-col">
-                                    <svg class="w-2 h-2 {{ $sortBy === 'salesperson' && $sortDirection === 'asc' ? 'text-indigo-600' : 'text-gray-300' }}"
-                                         :class="hover ? 'text-indigo-400' : ''"
-                                         fill="currentColor" viewBox="0 0 8 8">
-                                        <path d="M4 0l4 4H0z"/>
-                                    </svg>
-                                    <svg class="w-2 h-2 {{ $sortBy === 'salesperson' && $sortDirection === 'desc' ? 'text-indigo-600' : 'text-gray-300' }}"
-                                         :class="hover ? 'text-indigo-400' : ''"
-                                         fill="currentColor" viewBox="0 0 8 8">
-                                        <path d="M4 8L0 4h8z"/>
-                                    </svg>
-                                </div>
-                            </button>
-                        </th>
+                            <!-- Sortable Salesperson Column -->
+                            <th class="px-3 sm:px-6 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider min-w-32 hidden md:table-cell {{ $sortBy === 'salesperson' ? 'bg-indigo-50' : '' }}">
+                                <button
+                                    wire:click="sortByColumn('salesperson')"
+                                    class="flex items-center space-x-1 group hover:text-indigo-600 transition-colors duration-150"
+                                    x-data="{ hover: false }"
+                                    @mouseenter="hover = true"
+                                    @mouseleave="hover = false"
+                                >
+                                    <span>Ordered By</span>
+                                    <div class="flex flex-col">
+                                        <svg class="w-2 h-2 {{ $sortBy === 'salesperson' && $sortDirection === 'asc' ? 'text-indigo-600' : 'text-gray-300' }}"
+                                             :class="hover ? 'text-indigo-400' : ''"
+                                             fill="currentColor" viewBox="0 0 8 8">
+                                            <path d="M4 0l4 4H0z"/>
+                                        </svg>
+                                        <svg class="w-2 h-2 {{ $sortBy === 'salesperson' && $sortDirection === 'desc' ? 'text-indigo-600' : 'text-gray-300' }}"
+                                             :class="hover ? 'text-indigo-400' : ''"
+                                             fill="currentColor" viewBox="0 0 8 8">
+                                            <path d="M4 8L0 4h8z"/>
+                                        </svg>
+                                    </div>
+                                </button>
+                            </th>
 
-                        <!-- Sortable Shop Column -->
-                        <th class="px-3 sm:px-6 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider min-w-32 {{ $sortBy === 'shop' ? 'bg-indigo-50' : '' }}">
-                            <button
-                                wire:click="sortByColumn('shop')"
-                                class="flex items-center space-x-1 group hover:text-indigo-600 transition-colors duration-150"
-                                x-data="{ hover: false }"
-                                @mouseenter="hover = true"
-                                @mouseleave="hover = false"
-                            >
-                                <span>Shop</span>
-                                <div class="flex flex-col">
-                                    <svg class="w-2 h-2 {{ $sortBy === 'shop' && $sortDirection === 'asc' ? 'text-indigo-600' : 'text-gray-300' }}"
-                                         :class="hover ? 'text-indigo-400' : ''"
-                                         fill="currentColor" viewBox="0 0 8 8">
-                                        <path d="M4 0l4 4H0z"/>
-                                    </svg>
-                                    <svg class="w-2 h-2 {{ $sortBy === 'shop' && $sortDirection === 'desc' ? 'text-indigo-600' : 'text-gray-300' }}"
-                                         :class="hover ? 'text-indigo-400' : ''"
-                                         fill="currentColor" viewBox="0 0 8 8">
-                                        <path d="M4 8L0 4h8z"/>
-                                    </svg>
-                                </div>
-                            </button>
-                        </th>
+                            <!-- Sortable Shop Column -->
+                            <th class="px-3 sm:px-6 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider min-w-32 {{ $sortBy === 'shop' ? 'bg-indigo-50' : '' }}">
+                                <button
+                                    wire:click="sortByColumn('shop')"
+                                    class="flex items-center space-x-1 group hover:text-indigo-600 transition-colors duration-150"
+                                    x-data="{ hover: false }"
+                                    @mouseenter="hover = true"
+                                    @mouseleave="hover = false"
+                                >
+                                    <span>Shop</span>
+                                    <div class="flex flex-col">
+                                        <svg class="w-2 h-2 {{ $sortBy === 'shop' && $sortDirection === 'asc' ? 'text-indigo-600' : 'text-gray-300' }}"
+                                             :class="hover ? 'text-indigo-400' : ''"
+                                             fill="currentColor" viewBox="0 0 8 8">
+                                            <path d="M4 0l4 4H0z"/>
+                                        </svg>
+                                        <svg class="w-2 h-2 {{ $sortBy === 'shop' && $sortDirection === 'desc' ? 'text-indigo-600' : 'text-gray-300' }}"
+                                             :class="hover ? 'text-indigo-400' : ''"
+                                             fill="currentColor" viewBox="0 0 8 8">
+                                            <path d="M4 8L0 4h8z"/>
+                                        </svg>
+                                    </div>
+                                </button>
+                            </th>
 
-                        <!-- Sortable Total Column -->
-                        <th class="px-3 sm:px-6 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider min-w-24 {{ $sortBy === 'total' ? 'bg-indigo-50' : '' }}">
-                            <button
-                                wire:click="sortByColumn('total')"
-                                class="flex items-center space-x-1 group hover:text-indigo-600 transition-colors duration-150"
-                                x-data="{ hover: false }"
-                                @mouseenter="hover = true"
-                                @mouseleave="hover = false"
-                            >
-                                <span>Total</span>
-                                <div class="flex flex-col">
-                                    <svg class="w-2 h-2 {{ $sortBy === 'total' && $sortDirection === 'asc' ? 'text-indigo-600' : 'text-gray-300' }}"
-                                         :class="hover ? 'text-indigo-400' : ''"
-                                         fill="currentColor" viewBox="0 0 8 8">
-                                        <path d="M4 0l4 4H0z"/>
-                                    </svg>
-                                    <svg class="w-2 h-2 {{ $sortBy === 'total' && $sortDirection === 'desc' ? 'text-indigo-600' : 'text-gray-300' }}"
-                                         :class="hover ? 'text-indigo-400' : ''"
-                                         fill="currentColor" viewBox="0 0 8 8">
-                                        <path d="M4 8L0 4h8z"/>
-                                    </svg>
-                                </div>
-                            </button>
-                        </th>
+                            <!-- Sortable Total Column -->
+                            <th class="px-3 sm:px-6 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider min-w-24 {{ $sortBy === 'total' ? 'bg-indigo-50' : '' }}">
+                                <button
+                                    wire:click="sortByColumn('total')"
+                                    class="flex items-center space-x-1 group hover:text-indigo-600 transition-colors duration-150"
+                                    x-data="{ hover: false }"
+                                    @mouseenter="hover = true"
+                                    @mouseleave="hover = false"
+                                >
+                                    <span>Total</span>
+                                    <div class="flex flex-col">
+                                        <svg class="w-2 h-2 {{ $sortBy === 'total' && $sortDirection === 'asc' ? 'text-indigo-600' : 'text-gray-300' }}"
+                                             :class="hover ? 'text-indigo-400' : ''"
+                                             fill="currentColor" viewBox="0 0 8 8">
+                                            <path d="M4 0l4 4H0z"/>
+                                        </svg>
+                                        <svg class="w-2 h-2 {{ $sortBy === 'total' && $sortDirection === 'desc' ? 'text-indigo-600' : 'text-gray-300' }}"
+                                             :class="hover ? 'text-indigo-400' : ''"
+                                             fill="currentColor" viewBox="0 0 8 8">
+                                            <path d="M4 8L0 4h8z"/>
+                                        </svg>
+                                    </div>
+                                </button>
+                            </th>
 
-                        <!-- Sortable Status Column -->
-                        <th class="px-3 sm:px-6 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider min-w-40 {{ $sortBy === 'status' ? 'bg-indigo-50' : '' }}">
-                            <button
-                                wire:click="sortByColumn('status')"
-                                class="flex items-center space-x-1 group hover:text-indigo-600 transition-colors duration-150"
-                                x-data="{ hover: false }"
-                                @mouseenter="hover = true"
-                                @mouseleave="hover = false"
-                            >
-                                <span>Status</span>
-                                <div class="flex flex-col">
-                                    <svg class="w-2 h-2 {{ $sortBy === 'status' && $sortDirection === 'asc' ? 'text-indigo-600' : 'text-gray-300' }}"
-                                         :class="hover ? 'text-indigo-400' : ''"
-                                         fill="currentColor" viewBox="0 0 8 8">
-                                        <path d="M4 0l4 4H0z"/>
-                                    </svg>
-                                    <svg class="w-2 h-2 {{ $sortBy === 'status' && $sortDirection === 'desc' ? 'text-indigo-600' : 'text-gray-300' }}"
-                                         :class="hover ? 'text-indigo-400' : ''"
-                                         fill="currentColor" viewBox="0 0 8 8">
-                                        <path d="M4 8L0 4h8z"/>
-                                    </svg>
-                                </div>
-                            </button>
-                        </th>
+                            <!-- Sortable Status Column -->
+                            <th class="px-3 sm:px-6 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider min-w-40 {{ $sortBy === 'status' ? 'bg-indigo-50' : '' }}">
+                                <button
+                                    wire:click="sortByColumn('status')"
+                                    class="flex items-center space-x-1 group hover:text-indigo-600 transition-colors duration-150"
+                                    x-data="{ hover: false }"
+                                    @mouseenter="hover = true"
+                                    @mouseleave="hover = false"
+                                >
+                                    <span>Status</span>
+                                    <div class="flex flex-col">
+                                        <svg class="w-2 h-2 {{ $sortBy === 'status' && $sortDirection === 'asc' ? 'text-indigo-600' : 'text-gray-300' }}"
+                                             :class="hover ? 'text-indigo-400' : ''"
+                                             fill="currentColor" viewBox="0 0 8 8">
+                                            <path d="M4 0l4 4H0z"/>
+                                        </svg>
+                                        <svg class="w-2 h-2 {{ $sortBy === 'status' && $sortDirection === 'desc' ? 'text-indigo-600' : 'text-gray-300' }}"
+                                             :class="hover ? 'text-indigo-400' : ''"
+                                             fill="currentColor" viewBox="0 0 8 8">
+                                            <path d="M4 8L0 4h8z"/>
+                                        </svg>
+                                    </div>
+                                </button>
+                            </th>
 
-                        <!-- Sortable Date Column -->
-                        <th class="px-3 sm:px-6 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider min-w-24 hidden sm:table-cell {{ $sortBy === 'created_at' ? 'bg-indigo-50' : '' }}">
-                            <button
-                                wire:click="sortByColumn('created_at')"
-                                class="flex items-center space-x-1 group hover:text-indigo-600 transition-colors duration-150"
-                                x-data="{ hover: false }"
-                                @mouseenter="hover = true"
-                                @mouseleave="hover = false"
-                            >
-                                <span>Date</span>
-                                <div class="flex flex-col">
-                                    <svg class="w-2 h-2 {{ $sortBy === 'created_at' && $sortDirection === 'asc' ? 'text-indigo-600' : 'text-gray-300' }}"
-                                         :class="hover ? 'text-indigo-400' : ''"
-                                         fill="currentColor" viewBox="0 0 8 8">
-                                        <path d="M4 0l4 4H0z"/>
-                                    </svg>
-                                    <svg class="w-2 h-2 {{ $sortBy === 'created_at' && $sortDirection === 'desc' ? 'text-indigo-600' : 'text-gray-300' }}"
-                                         :class="hover ? 'text-indigo-400' : ''"
-                                         fill="currentColor" viewBox="0 0 8 8">
-                                        <path d="M4 8L0 4h8z"/>
-                                    </svg>
-                                </div>
-                            </button>
-                        </th>
+                            <!-- Sortable Date Column -->
+                            <th class="px-3 sm:px-6 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider min-w-24 hidden sm:table-cell {{ $sortBy === 'created_at' ? 'bg-indigo-50' : '' }}">
+                                <button
+                                    wire:click="sortByColumn('created_at')"
+                                    class="flex items-center space-x-1 group hover:text-indigo-600 transition-colors duration-150"
+                                    x-data="{ hover: false }"
+                                    @mouseenter="hover = true"
+                                    @mouseleave="hover = false"
+                                >
+                                    <span>Date</span>
+                                    <div class="flex flex-col">
+                                        <svg class="w-2 h-2 {{ $sortBy === 'created_at' && $sortDirection === 'asc' ? 'text-indigo-600' : 'text-gray-300' }}"
+                                             :class="hover ? 'text-indigo-400' : ''"
+                                             fill="currentColor" viewBox="0 0 8 8">
+                                            <path d="M4 0l4 4H0z"/>
+                                        </svg>
+                                        <svg class="w-2 h-2 {{ $sortBy === 'created_at' && $sortDirection === 'desc' ? 'text-indigo-600' : 'text-gray-300' }}"
+                                             :class="hover ? 'text-indigo-400' : ''"
+                                             fill="currentColor" viewBox="0 0 8 8">
+                                            <path d="M4 8L0 4h8z"/>
+                                        </svg>
+                                    </div>
+                                </button>
+                            </th>
 
-                        <!-- Non-sortable Actions Column -->
-                        <th class="px-3 sm:px-6 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider min-w-20">Actions</th>
-                    </tr>
-                </thead>
+                            <!-- Non-sortable Actions Column -->
+                            <th class="px-3 sm:px-6 py-3 text-left text-xs font-bold text-gray-400 uppercase tracking-wider min-w-20">Actions</th>
+                        </tr>
+                    </thead>
                 <tbody class="bg-white divide-y divide-gray-100">
                     @forelse ($orders as $order)
                         @can('view', $order->shop)
@@ -425,6 +426,7 @@
                     @endforelse
                 </tbody>
             </table>
+        </div>
         </div>
         <div class="px-6 py-4 bg-gray-50 border-t border-gray-100 rounded-b-3xl">
             {{ $orders->links() }}
