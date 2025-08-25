@@ -96,4 +96,30 @@ enum OrderStatus: string
             self::CANCELED => 'bg-red-50 text-red-700 ring-red-200',
         };
     }
+
+    public function getProgressStep(): int
+    {
+        return match($this) {
+            self::PENDING => 1,
+            self::CONFIRMED => 2,
+            self::PROCESSING => 3,
+            self::READY => 4,
+            self::DELIVERING => 5,
+            self::DELIVERED => 6,
+            self::CANCELED => 0, // Canceled orders don't follow the normal flow
+        };
+    }
+
+    public function getProgressPercentage(): int
+    {
+        return match($this) {
+            self::PENDING => 16,
+            self::CONFIRMED => 33,
+            self::PROCESSING => 50,
+            self::READY => 66,
+            self::DELIVERING => 83,
+            self::DELIVERED => 100,
+            self::CANCELED => 0,
+        };
+    }
 }

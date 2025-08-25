@@ -21,6 +21,11 @@ class ShopOwnerProfile extends Component
     public \Illuminate\Database\Eloquent\Collection $recentOrders;
     public array $topProducts = [];
 
+    // Search properties for Order History
+    public string $orderSearch = '';
+    public string $orderStatusFilter = '';
+    public string $orderDateFilter = '';
+
     // Modal and form properties
     public bool $showEditModal = false;
     public bool $showPasswordModal = false;
@@ -97,11 +102,140 @@ class ShopOwnerProfile extends Component
 
     private function loadRecentOrders(): void
     {
-        $this->recentOrders = $this->shop->orders()
-            ->with(['customer', 'items.product'])
-            ->latest()
-            ->take(5)
-            ->get();
+        $query = $this->shop->orders()
+            ->with(['customer', 'items.product']);
+
+        // Apply search filter if search term is provided
+        if (!empty($this->orderSearch)) {
+            $searchTerm = $this->orderSearch;
+            $query->where(function ($q) use ($searchTerm) {
+                $q->where('id', 'like', "%{$searchTerm}%")
+                  ->orWhereHas('customer', function ($customerQuery) use ($searchTerm) {
+                      $customerQuery->where('name', 'like', "%{$searchTerm}%");
+                  });
+            });
+        }
+
+        // Apply status filter
+        if (!empty($this->orderStatusFilter)) {
+            $query->where('status', $this->orderStatusFilter);
+        }
+
+        // Apply date filter
+        if (!empty($this->orderDateFilter)) {
+            switch ($this->orderDateFilter) {
+                case 'today':
+                    $query->whereDate('created_at', now()->toDateString());
+                    break;
+                case 'yesterday':
+                    $query->whereDate('created_at', now()->subDay()->toDateString());
+                    break;
+                case 'this_week':
+                    $startOfWeek = now()->startOfWeek();
+                    $endOfWeek = now()->endOfWeek();
+                    $query->whereBetween('created_at', [$startOfWeek, $endOfWeek]);
+                    break;
+                case 'this_month':
+                    $startOfMonth = now()->startOfMonth();
+                    $endOfMonth = now()->endOfMonth();
+                    $query->whereBetween('created_at', [$startOfMonth, $endOfMonth]);
+                    break;
+                case 'last_month':
+                    $lastMonth = now()->subMonth();
+                    $startOfLastMonth = $lastMonth->copy()->startOfMonth();
+                    $endOfLastMonth = $lastMonth->copy()->endOfMonth();
+                    $query->whereBetween('created_at', [$startOfLastMonth, $endOfLastMonth]);
+                    break;
+                case 'last_30_days':
+                    $thirtyDaysAgo = now()->subDays(30);
+                    $query->where('created_at', '>=', $thirtyDaysAgo);
+                    break;
+                case 'last_90_days':
+                    $ninetyDaysAgo = now()->subDays(90);
+                    $query->where('created_at', '>=', $ninetyDaysAgo);
+                    break;
+            }
+        }
+
+        $this->recentOrders = $query->latest()->get();
+    }
+
+    // Search method for Order History
+    public function updatedOrderSearch(): void
+    {
+        $this->loadRecentOrders();
+    }
+
+    // Clear search method
+    public function clearOrderSearch(): void
+    {
+        $this->orderSearch = '';
+        $this->loadRecentOrders();
+    }
+
+    // Filter methods for Order History
+    public function updatedOrderStatusFilter(): void
+    {
+        $this->loadRecentOrders();
+    }
+
+    public function updatedOrderDateFilter(): void
+    {
+        $this->loadRecentOrders();
+    }
+
+    // Clear all filters method
+    public function clearAllFilters(): void
+    {
+        $this->orderSearch = '';
+        $this->orderStatusFilter = '';
+        $this->orderDateFilter = '';
+        $this->loadRecentOrders();
+    }
+
+    // Debug method to show date ranges (temporary)
+    public function getDateRangeInfo(): array
+    {
+        $ranges = [];
+        $now = now();
+        
+        $ranges['today'] = [
+            'start' => $now->toDateString(),
+            'end' => $now->toDateString()
+        ];
+        
+        $ranges['yesterday'] = [
+            'start' => $now->subDay()->toDateString(),
+            'end' => $now->subDay()->toDateString()
+        ];
+        
+        $ranges['this_week'] = [
+            'start' => $now->startOfWeek()->toDateTimeString(),
+            'end' => $now->endOfWeek()->toDateTimeString()
+        ];
+        
+        $ranges['this_month'] = [
+            'start' => $now->startOfMonth()->toDateTimeString(),
+            'end' => $now->endOfMonth()->toDateTimeString()
+        ];
+        
+        $lastMonth = $now->subMonth();
+        $ranges['last_month'] = [
+            'start' => $lastMonth->startOfMonth()->toDateTimeString(),
+            'end' => $lastMonth->endOfMonth()->toDateTimeString()
+        ];
+        
+        $ranges['last_30_days'] = [
+            'start' => $now->subDays(30)->toDateTimeString(),
+            'end' => $now->toDateTimeString()
+        ];
+        
+        $ranges['last_90_days'] = [
+            'start' => $now->subDays(90)->toDateTimeString(),
+            'end' => $now->toDateTimeString()
+        ];
+        
+        return $ranges;
     }
 
     private function loadTopProducts(): void
@@ -134,7 +268,7 @@ class ShopOwnerProfile extends Component
     {
         $this->loadShopData();
         $this->showEditModal = true;
-        
+
         // Prevent background scrolling when modal is open
         $this->dispatch('modal-opened');
     }
@@ -143,7 +277,7 @@ class ShopOwnerProfile extends Component
     {
         $this->showEditModal = false;
         $this->resetValidation();
-        
+
         // Re-enable background scrolling when modal is closed
         $this->dispatch('modal-closed');
     }
@@ -152,7 +286,7 @@ class ShopOwnerProfile extends Component
     {
         $this->showPasswordModal = true;
         $this->resetPasswordFields();
-        
+
         // Prevent background scrolling when modal is open
         $this->dispatch('modal-opened');
     }
@@ -162,7 +296,7 @@ class ShopOwnerProfile extends Component
         $this->showPasswordModal = false;
         $this->resetPasswordFields();
         $this->resetValidation();
-        
+
         // Re-enable background scrolling when modal is closed
         $this->dispatch('modal-closed');
     }
@@ -273,7 +407,7 @@ class ShopOwnerProfile extends Component
         if (empty($this->turkishCities)) {
             $this->loadTurkishCities();
         }
-        
+
         // Prevent background scrolling when modal is open
         $this->dispatch('modal-opened');
     }
@@ -283,7 +417,7 @@ class ShopOwnerProfile extends Component
         $this->showAddressModal = false;
         $this->resetAddressFields();
         $this->resetValidation();
-        
+
         // Re-enable background scrolling when modal is closed
         $this->dispatch('modal-closed');
     }
@@ -312,7 +446,7 @@ class ShopOwnerProfile extends Component
 
         $this->isEditingAddress = true;
         $this->showAddressModal = true;
-        
+
         // Prevent background scrolling when modal is open
         $this->dispatch('modal-opened');
     }
@@ -546,7 +680,7 @@ class ShopOwnerProfile extends Component
                 'Adalar', 'Arnavutköy', 'Ataşehir', 'Avcılar', 'Bağcılar', 'Bahçelievler', 'Bakırköy', 'Başakşehir', 'Bayrampaşa', 'Beşiktaş', 'Beykoz', 'Beylikdüzü', 'Beyoğlu', 'Büyükçekmece', 'Çatalca', 'Çekmeköy', 'Esenler', 'Esenyurt', 'Eyüpsultan', 'Fatih', 'Gaziosmanpaşa', 'Güngören', 'Kadıköy', 'Kağıthane', 'Kartal', 'Küçükçekmece', 'Maltepe', 'Pendik', 'Sancaktepe', 'Sarıyer', 'Silivri', 'Sultanbeyli', 'Sultangazi', 'Şile', 'Şişli', 'Tuzla', 'Ümraniye', 'Üsküdar', 'Zeytinburnu'
             ],
             'Ankara' => [
-                'Akyurt', 'Altındağ', 'Ayaş', 'Bala', 'Beypazarı', 'Çamlıdere', 'Çankaya', 'Çubuk', 'Elmadağ', 'Etimesgut', 'Evren', 'Gölbaşı', 'Güdül', 'Haymana', 'Kalecik', 'Kazan', 'Keçiören', 'Kızılcahamam', 'Mamak', 'Nallıhan', 'Polatlı', 'Pursaklar', 'Sincan', 'Şereflikoçhisar', 'Yenimahalle'
+                'Akyurt', 'Altındağ', 'Ayaş', 'Bala', 'Beypazarı', 'Çamlıdere', 'Çubuk', 'Elmadağ', 'Etimesgut', 'Evren', 'Gölbaşı', 'Güdül', 'Haymana', 'Kalecik', 'Kazan', 'Keçiören', 'Kızılcahamam', 'Mamak', 'Nallıhan', 'Polatlı', 'Pursaklar', 'Sincan', 'Şereflikoçhisar', 'Yenimahalle'
             ],
             'İzmir' => [
                 'Aliağa', 'Balçova', 'Bayındır', 'Bayraklı', 'Bergama', 'Beydağ', 'Bornova', 'Buca', 'Çeşme', 'Çiğli', 'Dikili', 'Foça', 'Gaziemir', 'Güzelbahçe', 'Karabağlar', 'Karaburun', 'Karşıyaka', 'Kemalpaşa', 'Kınık', 'Kiraz', 'Konak', 'Menderes', 'Menemen', 'Narlıdere', 'Ödemiş', 'Seferihisar', 'Selçuk', 'Tire', 'Torbalı', 'Urla'
@@ -695,7 +829,7 @@ class ShopOwnerProfile extends Component
             ->where('shop_id', $this->shop->id)
             ->findOrFail($orderId);
         $this->showOrderDetailsModal = true;
-        
+
         // Prevent background scrolling when modal is open
         $this->dispatch('modal-opened');
     }
@@ -704,7 +838,7 @@ class ShopOwnerProfile extends Component
     {
         $this->showOrderDetailsModal = false;
         $this->selectedOrder = null;
-        
+
         // Re-enable background scrolling when modal is closed
         $this->dispatch('modal-closed');
     }
