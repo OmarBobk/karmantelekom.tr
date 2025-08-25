@@ -27,7 +27,7 @@
         x-transition:leave="transition ease-in duration-75"
         x-transition:leave-start="transform opacity-100 scale-100"
         x-transition:leave-end="transform opacity-0 scale-95"
-        class="absolute right-[-130%] z-50 mt-2 w-screen sm:w-96 max-w-[calc(100vw-2rem)] origin-top-right rounded-lg bg-white
+        class="absolute right-[-240%] z-50 mt-2 w-screen sm:w-96 max-w-[calc(100vw-2rem)] origin-top-right rounded-lg bg-white
         shadow-xl ring-1 ring-black ring-opacity-5 focus:outline-none
                sm:right-0
                "
