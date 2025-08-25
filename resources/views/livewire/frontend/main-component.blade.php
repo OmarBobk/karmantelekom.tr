@@ -796,7 +796,4 @@
         </script>
     @endscript
 
-    <!-- Product Modal -->
-    <livewire:frontend.product-modal-component />
-
 </div>

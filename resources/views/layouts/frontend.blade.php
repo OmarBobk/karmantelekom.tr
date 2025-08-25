@@ -264,6 +264,9 @@
         <!-- Notification Component -->
         <x-notification />
 
+        <!-- Product Modal Component - Global -->
+        <livewire:frontend.product-modal-component />
+
         @stack('scripts')
 
         <script>
