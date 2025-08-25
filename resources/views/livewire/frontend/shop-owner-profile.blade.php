@@ -539,7 +539,7 @@
                                                      style="width: {{ $order->status->getProgressPercentage() }}%"></div>
 
                                                 <!-- Progress Steps -->
-                                                <div class="relative flex justify-between px-2 sm:px-0">
+                                                <div class="relative flex justify-between sm:gap-0 gap-6">
                                                     @php
                                                         $steps = [
                                                             ['status' => \App\Enums\OrderStatus::PENDING, 'label' => 'Pending', 'icon' => 'M12 6v6l4 2'],
@@ -578,7 +578,7 @@
 
                                                             <!-- Step Label -->
                                                             <div class="mt-2 text-center px-1">
-                                                                <span class="text-xs sm:text-sm font-medium {{ $isActive ? 'text-gray-900' : 'text-gray-500' }} break-words leading-tight">{{ $step['label'] }}</span>
+                                                                <span class="text-[.5rem] sm:text-sm font-medium {{ $isActive ? 'text-gray-900' : 'text-gray-500' }} break-words leading-tight">{{ $step['label'] }}</span>
                                                             </div>
                                                         </div>
                                                     @endforeach
