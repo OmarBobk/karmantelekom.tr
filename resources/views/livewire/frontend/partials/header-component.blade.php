@@ -39,9 +39,9 @@ class="relative">
 {{--                </div>--}}
 
                 <!-- Notifications Bell (for authenticated users with admin/salesperson roles) -->
-                @hasanyrole('admin|salesperson')
+                @auth
                     <livewire:frontend.partials.notification-bell />
-                @endhasanyrole
+                @endauth
 
                 <!-- Cart Component -->
                 @livewire('frontend.cart.cart-component')
