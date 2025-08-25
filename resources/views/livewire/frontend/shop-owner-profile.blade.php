@@ -454,7 +454,7 @@
                                     class="bg-white border border-gray-200 rounded-2xl p-4 sm:p-6 lg:p-8 hover:shadow-lg transition-all duration-300 hover:border-gray-300">
 
                                     <!-- Order Header -->
-                                    <div class="flex flex-col lg:flex-row lg:items-start lg:justify-between gap-4 mb-6">
+                                    <div class="flex justify-between lg:flex-row lg:items-start lg:justify-between gap-4 mb-6">
                                         <!-- Left Section: Order Info -->
                                         <div class="flex items-center space-x-4">
                                             <!-- Order Icon -->
@@ -482,7 +482,7 @@
                                         <div class="flex flex-col sm:flex-row items-start sm:items-center gap-4">
 
                                             <!-- Action Buttons -->
-                                            <div class="flex items-center space-x-2">
+                                            <div class="flex flex-col gap-1 sm:gap-0 items-end sm:flex-row sm:items-center space-x-2">
                                                 <button
                                                     wire:click="showOrderDetails({{ $order->id }})"
                                                     class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-sm"
@@ -496,16 +496,18 @@
                                                               stroke-width="2"
                                                               d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
                                                     </svg>
-                                                    <span>View Details</span>
+                                                    <span>Details</span>
                                                 </button>
 
                                                 <form target="_blank"
                                                       action="{{ route('shop.invoice_pdf', [$order->id, $shop->id]) }}"
-                                                      method="POST" class="inline">
+                                                      method="POST" class="inline w-full sm:w-auto"
+
+                                                      >
                                                     @csrf
                                                     <button
                                                         type="submit"
-                                                        class="inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-xl hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 shadow-sm"
+                                                        class="justify-center sm:justify-start w-full sm:w-auto inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-xl hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 shadow-sm"
                                                         title="Export as PDF"
                                                     >
                                                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor"
@@ -633,10 +635,10 @@
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
                                             </svg>
                                         @else
-                                            <svg class="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
-                                                      d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
-                                            </svg>
+                                        <svg class="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
+                                                  d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"></path>
+                                        </svg>
                                         @endif
                                     </div>
                                     @if($orderSearch || $orderStatusFilter || $orderDateFilter)
@@ -658,14 +660,14 @@
                                             Clear All Filters
                                         </button>
                                     @else
-                                        <h3 class="text-lg font-semibold text-gray-900 mb-2">No orders found</h3>
-                                        <p class="text-gray-500 mb-6">Your shop hasn't received any orders yet.</p>
-                                        <div class="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-700 rounded-xl text-sm font-medium">
-                                            <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
-                                            </svg>
-                                            Orders will appear here once customers start shopping
-                                        </div>
+                                    <h3 class="text-lg font-semibold text-gray-900 mb-2">No orders found</h3>
+                                    <p class="text-gray-500 mb-6">Your shop hasn't received any orders yet.</p>
+                                    <div class="inline-flex items-center px-4 py-2 bg-blue-100 text-blue-700 rounded-xl text-sm font-medium">
+                                        <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
+                                        </svg>
+                                        Orders will appear here once customers start shopping
+                                    </div>
                                     @endif
                                 </div>
                             @endforelse
