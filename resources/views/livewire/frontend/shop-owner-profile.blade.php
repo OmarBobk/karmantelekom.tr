@@ -524,7 +524,7 @@
                                     <!-- Order Progress Bar -->
                                     @if($order->status !== \App\Enums\OrderStatus::CANCELED)
                                         <div class="mb-6">
-                                            <div class="flex items-center justify-between mb-4">
+                                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-4">
                                                 <h4 class="text-sm font-semibold text-gray-700">Order Progress</h4>
                                                 <span class="text-sm font-medium text-gray-500">{{ $order->status->getProgressPercentage() }}% Complete</span>
                                             </div>
@@ -539,7 +539,7 @@
                                                      style="width: {{ $order->status->getProgressPercentage() }}%"></div>
 
                                                 <!-- Progress Steps -->
-                                                <div class="relative flex justify-between">
+                                                <div class="relative flex justify-between px-2 sm:px-0">
                                                     @php
                                                         $steps = [
                                                             ['status' => \App\Enums\OrderStatus::PENDING, 'label' => 'Pending', 'icon' => 'M12 6v6l4 2'],
@@ -558,7 +558,7 @@
                                                             $isActive = $isCompleted || $isCurrent;
                                                         @endphp
 
-                                                        <div class="flex flex-col items-center">
+                                                        <div class="flex flex-col items-center min-w-0 flex-1">
                                                             <!-- Step Circle -->
                                                             <div class="relative z-10 flex items-center justify-center w-8 h-8 rounded-full border-2 transition-all duration-300 {{ $isActive ? 'bg-gradient-to-r from-blue-500 to-green-500 border-transparent shadow-lg' : 'bg-white border-gray-300' }}">
                                                                 @if($isCompleted)
@@ -577,8 +577,8 @@
                                                             </div>
 
                                                             <!-- Step Label -->
-                                                            <div class="mt-2 text-center">
-                                                                <span class="text-xs font-medium {{ $isActive ? 'text-gray-900' : 'text-gray-500' }}">{{ $step['label'] }}</span>
+                                                            <div class="mt-2 text-center px-1">
+                                                                <span class="text-xs sm:text-sm font-medium {{ $isActive ? 'text-gray-900' : 'text-gray-500' }} break-words leading-tight">{{ $step['label'] }}</span>
                                                             </div>
                                                         </div>
                                                     @endforeach
