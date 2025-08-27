@@ -45,6 +45,34 @@ enum OrderStatus: string
         };
     }
 
+    public function getProgressColor(): string
+    {
+        return match($this) {
+            self::PENDING => 'bg-yellow-500',
+            self::CONFIRMED => 'bg-blue-500',
+            self::PROCESSING => 'bg-orange-500',
+            self::READY => 'bg-purple-500',
+            self::DELIVERING => 'bg-teal-500',
+            self::DELIVERED => 'bg-green-500',
+            self::CANCELED => 'bg-red-500',
+            default => 'bg-gray-500'
+        };
+    }
+
+    public function getProgressIconColor(): string
+    {
+        return match($this) {
+            self::PENDING => 'text-white',
+            self::CONFIRMED => 'text-white',
+            self::PROCESSING => 'text-white',
+            self::READY => 'text-white',
+            self::DELIVERING => 'text-white',
+            self::DELIVERED => 'text-white',
+            self::CANCELED => 'text-white',
+            default => 'text-white'
+        };
+    }
+
     public function label(): string
     {
         return match($this) {

@@ -87,3 +87,8 @@ Route::post('shop/invoice_pdf/{orderId}/{shopId}', [\App\Livewire\Frontend\ShopO
 //
 //    return view('vendor.invoices.templates.indirimgo', compact('invoice'));
 //});
+
+// Demo route for progress tracker
+Route::get('/demo/progress-tracker', function () {
+    return view('demo.progress-tracker');
+})->name('demo.progress-tracker');

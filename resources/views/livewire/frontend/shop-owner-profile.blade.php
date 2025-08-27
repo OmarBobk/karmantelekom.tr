@@ -525,68 +525,7 @@
 
                                     <!-- Order Progress Bar -->
                                     @if($order->status !== \App\Enums\OrderStatus::CANCELED)
-                                        <div class="mb-6">
-                                            <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2 sm:gap-0 mb-4">
-                                                <h4 class="text-sm font-semibold text-gray-700">Order Progress</h4>
-                                                <span class="text-sm font-medium text-gray-500">{{ $order->status->getProgressPercentage() }}% Complete</span>
-                                            </div>
-
-                                            <!-- Progress Steps -->
-                                            <div class="relative">
-                                                <!-- Progress Line -->
-                                                <div class="absolute top-4 left-0 right-0 h-1 bg-gray-200 rounded-full"></div>
-
-                                                <!-- Progress Fill -->
-                                                <div class="absolute top-4 left-0 h-1 bg-gradient-to-r from-blue-500 to-green-500 rounded-full transition-all duration-1000 ease-out"
-                                                     style="width: {{ $order->status->getProgressPercentage() }}%"></div>
-
-                                                <!-- Progress Steps -->
-                                                <div class="relative flex justify-between sm:gap-0 gap-6">
-                                                    @php
-                                                        $steps = [
-                                                            ['status' => \App\Enums\OrderStatus::PENDING, 'label' => 'Pending', 'icon' => 'M12 6v6l4 2'],
-                                                            ['status' => \App\Enums\OrderStatus::CONFIRMED, 'label' => 'Confirmed', 'icon' => 'M5 13l4 4L19 7'],
-                                                            ['status' => \App\Enums\OrderStatus::PROCESSING, 'label' => 'Processing', 'icon' => 'M12 6v6l4 2'],
-                                                            ['status' => \App\Enums\OrderStatus::READY, 'label' => 'Ready', 'icon' => 'M5 13l4 4L19 7'],
-                                                            ['status' => \App\Enums\OrderStatus::DELIVERING, 'label' => 'Delivering', 'icon' => 'M3 10h1l2 7h13l2-7h1'],
-                                                            ['status' => \App\Enums\OrderStatus::DELIVERED, 'label' => 'Delivered', 'icon' => 'M5 13l4 4L19 7']
-                                                        ];
-                                                    @endphp
-
-                                                    @foreach($steps as $index => $step)
-                                                        @php
-                                                            $isCompleted = $order->status->getProgressStep() >= $step['status']->getProgressStep();
-                                                            $isCurrent = $order->status === $step['status'];
-                                                            $isActive = $isCompleted || $isCurrent;
-                                                        @endphp
-
-                                                        <div class="flex flex-col items-center min-w-0 flex-1">
-                                                            <!-- Step Circle -->
-                                                            <div class="relative z-10 flex items-center justify-center w-8 h-8 rounded-full border-2 transition-all duration-300 {{ $isActive ? 'bg-gradient-to-r from-blue-500 to-green-500 border-transparent shadow-lg' : 'bg-white border-gray-300' }}">
-                                                                @if($isCompleted)
-                                                                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
-                                                                    </svg>
-                                                                @elseif($isCurrent)
-                                                                    <svg class="w-4 h-4 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $step['icon'] }}"></path>
-                                                                    </svg>
-                                                                @else
-                                                                    <svg class="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="{{ $step['icon'] }}"></path>
-                                                                    </svg>
-                                                                @endif
-                                                            </div>
-
-                                                            <!-- Step Label -->
-                                                            <div class="mt-2 text-center px-1">
-                                                                <span class="text-[.5rem] sm:text-sm font-medium {{ $isActive ? 'text-gray-900' : 'text-gray-500' }} break-words leading-tight">{{ $step['label'] }}</span>
-                                                            </div>
-                                                        </div>
-                                                    @endforeach
-                                                </div>
-                                            </div>
-                                        </div>
+                                    <x-order-progress-tracker :currentStatus="$order->status" />
                                     @else
                                         <!-- Canceled Order Notice -->
                                         <div class="mb-6 p-4 bg-red-50 border border-red-200 rounded-xl">

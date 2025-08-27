@@ -30,6 +30,9 @@
 
         <!-- Alpine Cart Store -->
         <script>
+            setInterval(() => {
+                fetch('/keep-alive');
+            }, 5 * 60 * 1000);
             document.addEventListener('alpine:init', () => {
                 Alpine.store('cart', {
                     items: Alpine.$persist([]).as('cart_items'),
