@@ -27,7 +27,7 @@
         <meta name="csrf-token" content="{{ csrf_token() }}">
         <!-- Add user info to layout -->
         <meta name="user-id" content="{{ auth()->id() }}">
-        <meta name="user-role" content="{{ auth()->user()->roles->first()?->name ?? 'user' }}">
+        <meta name="user-role" content="{{ auth()->check() ? (auth()->user()->roles->first()?->name ?? 'user') : 'user' }}">
         <title>{{ $title ?? config('app.name') }}</title>
         @vite(['resources/css/app.css', 'resources/js/app.js'])
 
