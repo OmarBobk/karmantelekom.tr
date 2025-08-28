@@ -25,6 +25,9 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
+        <!-- Add user info to layout -->
+        <meta name="user-id" content="{{ auth()->id() }}">
+        <meta name="user-role" content="{{ auth()->user()->roles->first()?->name ?? 'user' }}">
         <title>{{ $title ?? config('app.name') }}</title>
         @vite(['resources/css/app.css', 'resources/js/app.js'])
 

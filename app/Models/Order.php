@@ -50,6 +50,8 @@ class Order extends Model
 
     /**
      * Get the customer who placed the order
+     *
+     * the user who created the order
      */
     public function customer(): BelongsTo
     {

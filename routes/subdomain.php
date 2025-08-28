@@ -10,6 +10,8 @@ use App\Livewire\Backend\Settings\SettingsComponent;
 use App\Livewire\Backend\Tags\TagComponent;
 use App\Livewire\Backend\Users\UsersComponent;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Broadcast;
 
 Route::get('login', function () {
     abort(404); // Return a 404 error
@@ -44,4 +46,9 @@ Route::get('/dashboard', function () {
 
 
 Route::get('/404', NotFound::class)->name('404');
+
+// Add this route for broadcasting authentication
+Route::post('/broadcasting/auth', function (Request $request) {
+    return Broadcast::auth($request);
+})->middleware(['web', 'auth']);
 

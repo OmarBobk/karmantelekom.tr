@@ -14,7 +14,14 @@ use Livewire\Component;
 class NotificationBell extends Component
 {
     public bool $isOpen = false;
-    public $listeners = ['notificationReceived' => 'refreshNotifications'];
+    public $listeners = [
+        'notificationReceived' => 'refreshNotifications',
+        'shop-created' => 'handleShopCreated',
+        'shop-assigned' => 'handleShopAssigned',
+        'order-created' => 'handleOrderCreated',
+        'order-updated' => 'handleOrderUpdated',
+        'notification-received' => 'handleBroadcastNotification',
+    ];
 
     public function mount(): void
     {
@@ -114,6 +121,88 @@ class NotificationBell extends Component
     {
         // This method will be called when new notifications arrive
         $this->render();
+    }
+
+    /**
+     * Handle broadcast notification from Echo
+     */
+    public function handleBroadcastNotification($event): void
+    {
+        // Refresh notifications to show the new one
+        $this->refreshNotifications();
+        
+        // Show toast notification
+        $this->dispatch('notify', [
+            'type' => 'info',
+            'message' => $event['description'] ?? 'New notification received',
+            'sec' => 3000
+        ]);
+    }
+
+    /**
+     * Handle shop created event
+     */
+    public function handleShopCreated($data): void
+    {
+        // Refresh notifications
+        $this->refreshNotifications();
+        
+        // Show toast notification
+        $this->dispatch('notify', [
+            'type' => 'success',
+            'message' => "Shop \"{$data['shop']['name']}\" has been created",
+            'sec' => 3000
+        ]);
+    }
+
+    /**
+     * Handle shop assigned event
+     */
+    public function handleShopAssigned($data): void
+    {
+        // Refresh notifications
+        $this->refreshNotifications();
+        
+        $assignmentType = $data['assignment_type'] === 'reassignment' ? 'reassigned' : 'assigned';
+        
+        // Show toast notification
+        $this->dispatch('notify', [
+            'type' => 'info',
+            'message' => "Shop \"{$data['shop']['name']}\" has been {$assignmentType} to {$data['salesperson']['name']}",
+            'sec' => 3000
+        ]);
+    }
+
+    /**
+     * Handle order created event
+     */
+    public function handleOrderCreated($data): void
+    {
+        // Refresh notifications
+        $this->refreshNotifications();
+        
+        // Show toast notification
+        $this->dispatch('notify', [
+            'type' => 'success',
+            'message' => "Order #{$data['order']['id']} created with status: {$data['order']['status_label']}",
+            'sec' => 3000
+        ]);
+    }
+
+    /**
+     * Handle order updated event
+     */
+    public function handleOrderUpdated($data): void
+    {
+        // Refresh notifications
+        $this->refreshNotifications();
+        
+        // Show toast notification
+        $this->dispatch('notify', [
+            'type' => 'info',
+            'message' => "Order #{$data['order']['id']} has been updated",
+            'sec' => 3000
+        ]);
     }
 
     private function getNotificationType($notification): string

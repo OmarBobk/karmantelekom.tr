@@ -7,6 +7,8 @@ use App\Livewire\Frontend\MainComponent;
 use App\Livewire\Frontend\ProductsComponent;
 use App\Livewire\Frontend\ShopCreationComponent;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Broadcast;
 
 
 Route::get('/404', NotFound::class)->name('404');
@@ -92,3 +94,12 @@ Route::post('shop/invoice_pdf/{orderId}/{shopId}', [\App\Livewire\Frontend\ShopO
 Route::get('/demo/progress-tracker', function () {
     return view('demo.progress-tracker');
 })->name('demo.progress-tracker');
+
+Route::post('/broadcasting/auth', function (Request $request) {
+    return Broadcast::auth($request);
+})->middleware(['web', 'auth']);
+
+// Broadcasting demo route
+Route::get('/broadcasting-demo', function () {
+    return view('broadcasting-demo');
+})->middleware(['auth'])->name('broadcasting.demo');

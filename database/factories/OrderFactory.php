@@ -16,10 +16,11 @@ class OrderFactory extends Factory
     public function definition(): array
     {
         return [
-            'customer_id' => Customer::factory(),
-            'salesperson_id' => 1, // Replace with User::factory() if using dynamic users
-            'status' => 'Pending',
+            'shop_id' => \App\Models\Shop::factory(),
+            'user_id' => \App\Models\User::factory(),
+            'status' => 'pending',
             'total_price' => $this->faker->randomFloat(2, 100, 10000),
+            'notes' => $this->faker->sentence(),
         ];
     }
 }

@@ -235,5 +235,52 @@
         window.addEventListener('notification-updated', function(e) {
         @this.refreshNotifications();
         });
+
+        // Listen for real-time broadcasting events
+        document.addEventListener('shop-created', function(e) {
+            console.log('Frontend: Shop created event received', e.detail);
+            @this.call('handleShopCreated', e.detail);
+        });
+
+        document.addEventListener('shop-assigned', function(e) {
+            console.log('Frontend: Shop assigned event received', e.detail);
+            @this.call('handleShopAssigned', e.detail);
+        });
+
+        document.addEventListener('order-created', function(e) {
+            console.log('Frontend: Order created event received', e.detail);
+            @this.call('handleOrderCreated', e.detail);
+        });
+
+        document.addEventListener('order-updated', function(e) {
+            console.log('Frontend: Order updated event received', e.detail);
+            @this.call('handleOrderUpdated', e.detail);
+        });
+
+                 document.addEventListener('notification-received', function(e) {
+             console.log('Frontend: Notification received', e.detail);
+             @this.call('handleBroadcastNotification', e.detail);
+         });
+
+         // Also listen for the specific Echo notification event
+         document.addEventListener('echo-private:App.Models.User.{{ auth()->id() }},.Illuminate\\Notifications\\Events\\BroadcastNotificationCreated', function(e) {
+             console.log('Frontend: Echo notification received', e.detail);
+             @this.call('handleBroadcastNotification', e.detail);
+         });
+
+        // Connection status monitoring
+        if (window.Echo) {
+            window.Echo.connector.pusher.connection.bind('connected', () => {
+                console.log('Frontend: Connected to Reverb broadcasting server');
+            });
+
+            window.Echo.connector.pusher.connection.bind('disconnected', () => {
+                console.log('Frontend: Disconnected from Reverb broadcasting server');
+            });
+
+            window.Echo.connector.pusher.connection.bind('error', (error) => {
+                console.error('Frontend: Reverb connection error:', error);
+            });
+        }
     </script>
 </div>

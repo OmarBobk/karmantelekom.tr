@@ -11,6 +11,9 @@
         </style>
 
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+        <script>
+            window.Laravel = { userId: {{ auth()->id() ?? 'null' }} }
+        </script>
     </head>
     <body class="min-h-screen bg-gray-100">
 
@@ -332,6 +335,17 @@
             </div>
         </div>
 
+        <script>
+            document.addEventListener('DOMContentLoaded', () => {
+                if (window.Echo && window.Laravel?.userId) {
+                    window.Echo.private(`App.Models.User.${window.Laravel.userId}`)
+                        .notification(() => {
+                            // Notify Livewire components to refresh
+                            window.Livewire?.dispatch('notificationReceived')
+                        })
+                }
+            })
+        </script>
         @stack('scripts')
     </body>
 </html>
