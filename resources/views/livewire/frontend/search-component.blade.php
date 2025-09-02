@@ -1,5 +1,6 @@
 <!-- Desktop Search -->
-<div class="lg:block relative w-full" x-data="{ isOpen: false }" @click.away="isOpen = false; $wire.resetSearch()">
+{{--<div class="lg:block relative w-full" x-data="{ isOpen: false }" @click.away="isOpen = false; $wire.resetSearch()">--}}
+<div class="lg:block relative w-full" x-data="{ isOpen: false }">
     <!-- Search Container -->
     <div class="relative flex items-center">
         <div class="relative w-full">
@@ -7,7 +8,7 @@
             <div class="relative flex items-center w-full h-11 bg-white border border-gray-300 rounded-lg">
                 <!-- Search Icon -->
                 <div class="absolute {{ app()->getLocale() == 'ar' ? 'right-0' : 'left-0' }} p-3 text-gray-500">
-                    
+
                     <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-search h-5 w-5 text-gray-400"><circle cx="11" cy="11" r="8"></circle><path d="m21 21-4.3-4.3"></path></svg>
                 </div>
 

@@ -25,14 +25,17 @@
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         <meta name="csrf-token" content="{{ csrf_token() }}">
+        <!-- Add user info to layout -->
+        <meta name="user-id" content="{{ auth()->id() }}">
+        <meta name="user-role" content="{{ auth()->check() ? (auth()->user()->roles->first()?->name ?? 'user') : 'user' }}">
         <title>{{ $title ?? config('app.name') }}</title>
         @vite(['resources/css/app.css', 'resources/js/app.js'])
 
         <!-- Alpine Cart Store -->
         <script>
-            setInterval(() => {
-                fetch('/keep-alive');
-            }, 5 * 60 * 1000);
+            // setInterval(() => {
+            //     fetch('/keep-alive');
+            // }, 5 * 60 * 1000);
             document.addEventListener('alpine:init', () => {
                 Alpine.store('cart', {
                     items: Alpine.$persist([]).as('cart_items'),
@@ -173,37 +176,37 @@
         <!-- Notification Component -->
         <div
         x-data="{
-                notifications: [],
+                alerts: [],
                 add(message) {
                     if (!message[0] || !message[0].type || !message[0].message) {
-                        console.error('Invalid notification format:', message);
-                        console.error('Invalid notification format:', message[0].type);
-                        console.error('Invalid notification format:', message[0].message);
+                        console.error('Invalid alert format:', message);
+                        console.error('Invalid alert format:', message[0].type);
+                        console.error('Invalid alert format:', message[0].message);
                         return;
                     }
 
-                    const notification = {
+                    const alert = {
                         id: Date.now(),
                         type: message[0].type,
                         message: message[0].message,
                         sec: message[0].sec || 3000
                     };
 
-                    this.notifications.push(notification);
+                    this.alerts.push(alert);
 
-                    // Auto-remove notification after 3 seconds
+                    // Auto-remove alert after 3 seconds
                     setTimeout(() => {
-                        this.remove(notification.id);
-                    }, notification.sec);
+                        this.remove(alert.id);
+                    }, alert.sec);
                 },
                 remove(id) {
-                    this.notifications = this.notifications.filter(notification => notification.id !== id);
+                    this.alerts = this.alerts.filter(alert => alert.id !== id);
                 }
             }"
         @notify.window="add($event.detail)"
         class="fixed top-4 right-4 z-[99999] space-y-2 w-full max-w-sm"
     >
-        <template x-for="notification in notifications" :key="notification.id">
+        <template x-for="alert in alerts" :key="alert.id">
             <div
                 x-show="true"
                 x-transition:enter="transition ease-out duration-300"
@@ -212,22 +215,17 @@
                 x-transition:leave="transition ease-in duration-100"
                 x-transition:leave-start="opacity-100"
                 x-transition:leave-end="opacity-0"
-                :class="{
-                        'alert-success': notification.type === 'success',
-                        'alert-danger': notification.type === 'error',
-                        'alert-info': notification.type === 'info',
-                        'alert-warning': notification.type === 'warning'
-                    }"
+                :class="alert.type"
                 class="ml-8 shadow-lg rounded-lg pointer-events-auto alert"
             >
                 <div class="p-4">
                     <div class="flex items-center justify-between">
                         <div class="flex-1 mr-3">
-                            <p class="text-sm font-medium text-white" x-text="notification.message"></p>
+                            <p class="text-sm font-medium text-white [&>*]:text-white" x-html="alert.message"></p>
                         </div>
                         <div class="flex flex-shrink-0">
                             <button
-                                @click="remove(notification.id)"
+                                @click="remove(alert.id)"
                                 class="inline-flex text-white hover:text-gray-200 focus:outline-none focus:ring-2 focus:ring-white rounded-md"
                             >
                                 <span class="sr-only">Close</span>
@@ -265,7 +263,7 @@
         </footer>
 
         <!-- Notification Component -->
-        <x-notification />
+{{--        <x-notification />--}}
 
         <!-- Product Modal Component - Global -->
         <livewire:frontend.product-modal-component />

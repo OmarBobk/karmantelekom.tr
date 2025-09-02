@@ -502,7 +502,7 @@
                              </td>
                                                          <td class="px-6 py-6 whitespace-nowrap">
                                  <div x-data="{ showAll: false }" class="text-sm">
-                                     @if(count($shop->links) > 0)
+                                     @if(count($shop->links ?? []) > 0)
                                          <div class="flex flex-wrap gap-2">
                                              @foreach($shop->links as $title => $value)
                                                  <div x-show="showAll || {{ $loop->index }} < 3">

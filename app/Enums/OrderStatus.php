@@ -112,6 +112,19 @@ enum OrderStatus: string
         };
     }
 
+    public function getAlertClass(): string
+    {
+        return match($this) {
+            self::PENDING => 'alert-pending',
+            self::CONFIRMED => 'alert-confirmed',
+            self::PROCESSING => 'alert-processing',
+            self::READY => 'alert-ready',
+            self::DELIVERING => 'alert-delivering',
+            self::DELIVERED => 'alert-delivered',
+            self::CANCELED => 'alert-canceled',
+        };
+    }
+
     public function colorClasses(): string
     {
         return match($this) {

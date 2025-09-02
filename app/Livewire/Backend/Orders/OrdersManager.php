@@ -6,6 +6,8 @@ use App\Models\Order;
 use App\Enums\OrderStatus;
 use App\Models\Shop;
 use App\Models\User;
+use App\Services\NotificationRecipientsService;
+use App\Services\OrderService;
 use Illuminate\Pagination\LengthAwarePaginator;
 use LaravelDaily\Invoices\Classes\Buyer;
 use LaravelDaily\Invoices\Classes\InvoiceItem;
@@ -251,8 +253,13 @@ class OrdersManager extends Component
 
             $order->update(['status' => $newStatus]);
 
+            app(OrderService::class)->update($order, [
+                'causer' => auth()->id(),
+                'originalData' => $originalData,
+            ]);
+
             // Dispatch OrderUpdated event
-            \App\Events\OrderUpdated::dispatch($order, $originalData, auth()->id());
+//            \App\Events\OrderUpdated::dispatch($order, $originalData, auth()->id());
 
             // Refresh selectedOrder if it's currently being viewed
             if ($this->selectedOrder && $this->selectedOrder->id === $order->id) {
