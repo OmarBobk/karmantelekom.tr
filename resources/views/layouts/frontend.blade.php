@@ -96,7 +96,7 @@
                             });
                         }
                         window.Livewire.dispatch('notify', [{
-                            type: 'success',
+                            type: 'alert-success',
                             message: `Added ${product.name} to cart`,
                             sec: 1000
                         }]);

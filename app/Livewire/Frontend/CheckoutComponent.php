@@ -159,7 +159,7 @@ class CheckoutComponent extends Component
             $this->dispatch('checkout');
 
             $this->dispatch('notify', [
-                'type' => 'success',
+                'type' => 'alert-success',
                 'message' => 'Order placed successfully!'
             ]);
 
@@ -217,7 +217,7 @@ class CheckoutComponent extends Component
 
         } catch (Throwable $e) {
             $this->dispatch('notify', [
-                'type' => 'error',
+                'type' => 'alert-error',
                 'message' => 'Failed to export order: ' . $e->getMessage()
             ]);
 
@@ -229,7 +229,7 @@ class CheckoutComponent extends Component
     {
         // Set a flag to indicate PDF was requested
         $this->showInvoiceModal = false;
-        
+
         // Redirect after a short delay
         $this->redirect(route('main'));
     }

@@ -39,7 +39,7 @@ class NotificationBell extends Component
             $this->dispatch('notification-updated');
 
             $this->dispatch('notify', [
-                'type' => 'success',
+                'type' => 'alert-success',
                 'message' => 'Notification marked as read',
                 'sec' => 1500
             ]);
@@ -61,7 +61,7 @@ class NotificationBell extends Component
             $this->dispatch('notification-updated');
 
             $this->dispatch('notify', [
-                'type' => 'success',
+                'type' => 'alert-success',
                 'message' => "All {$count} notifications marked as read",
                 'sec' => 2000
             ]);
