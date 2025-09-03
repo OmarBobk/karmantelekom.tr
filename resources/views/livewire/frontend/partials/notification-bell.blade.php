@@ -28,7 +28,7 @@
                 window.Livewire?.dispatch('notify', [{
                     type: notification.action ?? 'alert-info',
                     message: notification.description ?? 'You have a new notification',
-                    sec: 1500000
+                    sec: 1500
                 }]);
             })
             .error((error) => {

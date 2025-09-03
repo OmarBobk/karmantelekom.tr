@@ -216,7 +216,7 @@
                 x-transition:leave-start="opacity-100"
                 x-transition:leave-end="opacity-0"
                 :class="alert.type"
-                class="ml-8 shadow-lg rounded-lg pointer-events-auto alert"
+                class="shadow-lg rounded-lg pointer-events-auto alert"
             >
                 <div class="p-4">
                     <div class="flex items-center justify-between">
