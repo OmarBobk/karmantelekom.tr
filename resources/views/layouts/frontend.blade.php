@@ -90,15 +90,15 @@
                                 subtotal: this.subtotal,
                                 product_id: product.id,
 
-                                name: product.name,
-                                description: product.description,
+                                name: product.translated_name,
+                                description: product.translated_description,
                                 image: product.images[0].image_url
                             });
                         }
                         window.Livewire.dispatch('notify', [{
                             type: 'alert-success',
-                            message: `Added ${product.name} to cart`,
-                            sec: 1000
+                            message: `${product.translated_name} {{__('alert.added_to_cart')}}`,
+                            sec: 2000
                         }]);
 
                         this.updateTotals();

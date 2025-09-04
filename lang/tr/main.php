@@ -66,4 +66,16 @@ return [
     'back_to_home'  => 'Anasayfaya Dön',
     'contact_support'  => 'Destek ile İletişime Geç',
 
+    'all' => 'Tümü',
+    'add_to_cart' => 'Sepete Ekle',
+
+
+    // Product Modal
+    'quantity' => 'Adet',
+
+
+    'searching' => 'Aranıyor',
+    'no_result_found_for' => 'Sonuç bulunamadı',
+    'try_adjusting_your_search_or_filter_to_find_what_you\'re looking for.' => 'Aradığınızı bulmak için aramanızı veya filtrelemenizi ayarlamayı deneyin.',
+
 ];

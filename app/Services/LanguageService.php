@@ -41,12 +41,12 @@ class LanguageService
     private function refreshLocale(): void
     {
         // Force the application to reload the locale
-        App::setLocale(Session::get('locale', 'en'));
+        App::setLocale(Session::get('locale', 'tr'));
     }
 
     public function getCurrentLanguage(): string
     {
-        return Session::get('locale', 'en');
+        return Session::get('locale', 'tr');
     }
 
     public function getCurrentDirection(): string

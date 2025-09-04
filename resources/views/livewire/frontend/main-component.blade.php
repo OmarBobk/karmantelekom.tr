@@ -322,14 +322,14 @@
                                                         <button
                                                             @click="$store.cart.addItem({{ json_encode($product) }}, 1);"
                                                             class="mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-px transition-all duration-300 focus:outline-none "
-                                                            aria-label="{{ __('Add to cart') }}"
+                                                            aria-label="{{ __('main.add_to_cart') }}"
                                                         >
                                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                                                 <path d="M3 3h2l.4 2M7 13h10l4-8H5.4" stroke-linecap="round" stroke-linejoin="round"/>
                                                                 <circle cx="7" cy="21" r="1" />
                                                                 <circle cx="17" cy="21" r="1" />
                                                             </svg>
-                                                            {{ __('Add to Cart') }}
+                                                            {{ __('main.add_to_cart') }}
                                                         </button>
                                                     </div>
                                                 </div>
@@ -627,14 +627,14 @@
                                                         <button
                                                             @click="$store.cart.addItem({{ json_encode($product) }}, 1);"
                                                             class="w-full flex items-center justify-center gap-2 py-1 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-px transition-all duration-300 focus:outline-none"
-                                                            aria-label="{{ __('Add to cart') }}"
+                                                            aria-label="{{ __('main.add_to_cart') }}"
                                                         >
                                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                                                                 <path d="M3 3h2l.4 2M7 13h10l4-8H5.4" stroke-linecap="round" stroke-linejoin="round"/>
                                                                 <circle cx="7" cy="21" r="1" />
                                                                 <circle cx="17" cy="21" r="1" />
                                                             </svg>
-                                                            {{ __('Add to Cart') }}
+                                                            {{ __('main.add_to_cart') }}
                                                         </button>
                                                     </div>
                                                 </div>

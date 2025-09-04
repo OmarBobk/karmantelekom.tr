@@ -45,7 +45,7 @@
                             <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
                             <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                         </svg>
-                        <span>Searching...</span>
+                        <span>{{__('main.searching')}}...</span>
                     </div>
                 </div>
 
@@ -109,8 +109,8 @@
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.172 16.172a4 4 0 015.656 0M12 14a3 3 0 100-6 3 3 0 000 6z"/>
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/>
                         </svg>
-                        <p>No results found for "<span class="font-medium">{{ $searchQuery }}</span>"</p>
-                        <p class="mt-1 text-xs text-gray-400">Try adjusting your search or filter to find what you're looking for.</p>
+                        <p>{{__('main.no_result_found_for')}} " <span class="font-medium">{{ $searchQuery }}</span>"</p>
+                        <p class="mt-1 text-xs text-gray-400">{{__('main.try_adjusting_your_search_or_filter_to_find_what_you\'re looking for.')}}</p>
                     </div>
                 </div>
             </div>
