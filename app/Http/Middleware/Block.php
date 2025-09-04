@@ -16,11 +16,11 @@ class Block
     public function handle(Request $request, Closure $next): Response
     {
         // block condition
-        if ($request->is('login') or $request->is('register') or $request->is('checkout')) {
-            abort(403, 'This page is temporarily disabled.');
-            // OR redirect
-            // return redirect('/');
-        }
+        // if ($request->is('login') or $request->is('register') or $request->is('checkout')) {
+        //     abort(403, 'This page is temporarily disabled.');
+        //     // OR redirect
+        //     // return redirect('/');
+        // }
 
         return $next($request);
     }
