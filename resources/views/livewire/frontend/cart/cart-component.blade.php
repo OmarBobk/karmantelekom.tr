@@ -3,6 +3,7 @@
         showCart: false,
         loading: false,
         whatsappNumber: @js(App\Facades\Settings::get('whatsapp_number', '905353402539')),
+        minOrderAmount: 1000,
         toggleCart() {
             this.showCart = !this.showCart;
             this.updateBodyScroll();
@@ -19,16 +20,26 @@
                 const lineTotal = (Number(item.price) * Number(item.quantity));
                 console.log(item);
                 lines.push(`${index + 1}. *${item.name}*: `);
-                lines.push(`       Fiyat: ${item.quantity} * ${Number(Math.trunc(item.price))}  = ${Math.trunc(lineTotal)} TL`);
+                lines.push(`       Fiyat: ${item.quantity} * ${Number(Math.trunc(item.price))} TL  = ${Math.trunc(lineTotal)} TL`);
                 lines.push('');
             });
             lines.push('----------------');
             lines.push(`*Ara Toplam:* ${Math.trunc(this.$store.cart.subtotal)} TL`);
-            lines.push(`*Tarih:* ${new Date().toLocaleString()}`);
             return lines.join(CRLF);
         },
         async orderViaWhatsApp() {
             if (this.$store.cart.items.length === 0) return;
+
+            // Check minimum order amount
+            if (this.$store.cart.subtotal < this.minOrderAmount) {
+                        window.Livewire.dispatch('notify', [{
+                            type: 'alert-danger',
+                            message: `Minimum sipariş tutarı ${this.minOrderAmount} TL'dir. Lütfen sepetinizi ${(this.minOrderAmount - this.$store.cart.subtotal).toFixed(2)} TL daha ekleyin.`,
+                            sec: 4000
+                        }]);
+                return;
+            }
+
             try {
                 this.loading = true;
                 await this.$store.cart.syncWithServer();
@@ -162,12 +173,32 @@
                             <p x-text="`${$store.cart.subtotal.toFixed(2)} TL`"></p>
                         </div>
                         <p class="mt-0.5 text-sm text-gray-500">{{__('cart.shipping_and_taxes_calculated_at_checkout')}}</p>
+
+                        <!-- Minimum Order Warning -->
+                        <div x-show="$store.cart.subtotal < minOrderAmount" class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                    </svg>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm text-yellow-800">
+                                        Minimum sipariş tutarı <span class="font-semibold">1000 TL</span>'dir.
+                                        <span x-text="`${(minOrderAmount - $store.cart.subtotal).toFixed(2)} TL`"></span> daha ekleyin.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="mt-6">
                             <button
-                                :disabled="loading"
+                                :disabled="loading || $store.cart.subtotal < minOrderAmount"
                                 @click.prevent="orderViaWhatsApp()"
-                                class="flex justify-center items-center w-full px-6 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-indigo-600 hover:bg-indigo-700">
-                                <span x-show="!loading">{{__('cart.order_now')}}</span>
+                                class="flex justify-center items-center w-full px-6 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white transition-colors duration-200"
+                                :class="$store.cart.subtotal < minOrderAmount ? 'bg-gray-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'">
+                                <span x-show="!loading && $store.cart.subtotal >= minOrderAmount">{{__('cart.order_now')}}</span>
+                                <span x-show="!loading && $store.cart.subtotal < minOrderAmount">Minimum 1000 TL gerekli</span>
                                 <span x-show="loading">{{__('cart.preparing')}}...</span>
                             </button>
                         </div>

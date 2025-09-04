@@ -6,8 +6,11 @@ Legend: [ ] = todo, [x] = done. Use priorities P0 (blocker), P1 (high), P2 (norm
 - [x] P1 Block routes like `/login`, `/register`, `/checkout` in production using BlockedRoutes Middleware.
 - [x] P1 Hides the user icon that leads to signup/login.
 - [x] P1 replaces the checkout button with the order now button that redirects to WhatsApp.
-- [ ] P1 if the order total is less than X, don't let the user complete the order.
-- [ ] P0 Translates the App into Turkish.
+- [x] P1 if the order total is less than X, don't let the user complete the order.
+- [x] P0 Translates the App into Turkish.
+- [ ] P0 Pick 50–100 Products with collecting data.
+- [ ] P0 Design Products Images.
+- [ ] P0 Adds Products to the app.
 
 
 ---
