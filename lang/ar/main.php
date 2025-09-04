@@ -70,4 +70,16 @@ return [
     'back_to_home'  => 'العودة إلى الرئيسية',
     'contact_support'  => 'اتصل بالدعم الفني',
 
+    'all' => 'الكل',
+    'add_to_cart' => 'أضف إلى السلة',
+
+
+    // Product Modal
+    'quantity' => 'الكمية',
+
+
+    'searching' => 'جار البحث',
+    'no_result_found_for' => 'لم يتم العثور على نتائج ',
+    'try_adjusting_your_search_or_filter_to_find_what_you\'re looking for.' => 'حاول تعديل بحثك أو التصفية للعثور على ما تبحث عنه.',
+
 ];

@@ -28,7 +28,7 @@
     x-transition:leave="ease-in duration-200"
     @click="closeAndReset()"></div>
 
-    <div class="relative bg-white rounded-xl shadow-2xl w-[90%] sm:w-full max-w-6xl h-auto max-h-[90vh] mx-auto flex flex-col md:flex-row overflow-y-auto" 
+    <div class="relative bg-white rounded-xl shadow-2xl w-[90%] sm:w-full max-w-6xl h-auto max-h-[90vh] mx-auto flex flex-col md:flex-row overflow-y-auto"
          x-transition:enter="ease-out duration-300"
          x-transition:leave="ease-in duration-200">
 
@@ -158,7 +158,7 @@
                 </div>
                 <!-- Quantity -->
                 <div class="mt-4 sm:mt-2">
-                    <label for="quantity" class=" font-medium text-gray-700 mb-2 block flex items-center gap-2">Quantity:
+                    <label for="quantity" class=" font-medium text-gray-700 mb-2 block flex items-center gap-2">{{__('main.quantity')}}:
                     <div class="inline-flex items-center rounded-lg border border-gray-300">
                         <button @click="quantity = Math.max(1, quantity - 1)" class="p-2 pl-3 hover:bg-gray-100 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" /></svg>
@@ -178,13 +178,13 @@
                     <button
                         @click="$store.cart.addItem({{ json_encode($product) }}, quantity); closeAndReset();"
                         class="flex-1 w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-px transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
-                        aria-label="{{ __('Add to cart') }}">
+                        aria-label="{{ __('main.add_to_cart') }}">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path d="M3 3h2l.4 2M7 13h10l4-8H5.4" stroke-linecap="round" stroke-linejoin="round"/>
                             <circle cx="7" cy="21" r="1" />
                             <circle cx="17" cy="21" r="1" />
                         </svg>
-                        <span>{{ __('Add to cart') }}</span>
+                        <span>{{ __('main.add_to_cart') }}</span>
                     </button>
                     <a href="{{$requestQuoteUrl}}"
                        target="_blank"

@@ -10,7 +10,6 @@
         },
         init() {
             Livewire.on('cart-updated', () => {
-{{--                this.$refresh;--}}
             });
         }
     }"
@@ -65,7 +64,7 @@
                 <div class="h-full flex flex-col bg-white shadow-xl">
                     <div class="flex-1 py-6 overflow-y-auto px-4 sm:px-6">
                         <div class="flex items-start justify-between">
-                            <h2 class="text-lg font-medium text-gray-900">Shopping Cart</h2>
+                            <h2 class="text-lg font-medium text-gray-900">{{__('cart.shopping_cart')}}</h2>
                             <button @click="toggleCart()" class="text-gray-400 hover:text-gray-500">
                                 <span class="sr-only">Close panel</span>
                                 <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -110,13 +109,13 @@
                                                             </svg>
                                                         </button>
                                                     </div>
-                                                    <button @click="$store.cart.removeItem(item.product_id)" class="font-medium text-indigo-600 hover:text-indigo-500">Remove</button>
+                                                    <button @click="$store.cart.removeItem(item.product_id)" class="font-medium text-indigo-600 hover:text-indigo-500">{{__('cart.remove')}}</button>
                                                 </div>
                                             </div>
                                         </li>
                                     </template>
                                     <li x-show="$store.cart.items.length === 0" class="py-6">
-                                        <p class="text-gray-500 text-center">Your cart is empty</p>
+                                        <p class="text-gray-500 text-center">{{__('cart.your_cart_is_empty')}}</p>
                                     </li>
                                 </ul>
 
@@ -127,24 +126,24 @@
 
                     <div x-show="$store.cart.items.length > 0" class="border-t border-gray-200 py-6 px-4 sm:px-6">
                         <div class="flex justify-between text-base font-medium text-gray-900">
-                            <p>Subtotal</p>
+                            <p>{{__('cart.subtotal')}}</p>
                             <p x-text="`${$store.cart.subtotal.toFixed(2)} TL`"></p>
                         </div>
-                        <p class="mt-0.5 text-sm text-gray-500">Shipping and taxes calculated at checkout.</p>
+                        <p class="mt-0.5 text-sm text-gray-500">{{__('cart.shipping_and_taxes_calculated_at_checkout')}}</p>
                         <div class="mt-6">
                             <button
                                 x-data="{loading: false}"
                                 :disabled="loading"
                                 @click.prevent="loading = true; $store.cart.syncWithServer().then(() => window.location.href = '/checkout')"
                                 class="flex justify-center items-center w-full px-6 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-indigo-600 hover:bg-indigo-700">
-                                <span x-show="!loading">Checkout</span>
-                                <span x-show="loading">Syncing...</span>
+                                <span x-show="!loading">{{__('cart.order_now')}}</span>
+                                <span x-show="loading">{{__('cart.preparing')}}...</span>
                             </button>
                         </div>
                         <div class="mt-6 flex justify-center text-sm text-center text-gray-500">
                             <button @click="$store.cart.clear()"
                                     class="text-indigo-600 font-medium hover:text-indigo-500">
-                                Clear Cart<span aria-hidden="true"> &rarr;</span>
+                                {{__('cart.clear_cart')}}<span aria-hidden="true"> &rarr;</span>
                             </button>
                         </div>
                     </div>

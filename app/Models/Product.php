@@ -55,6 +55,8 @@ class Product extends Model
 
     protected $guarded = [];
 
+    protected $appends = ['translated_name', 'translated_description', 'translated_slug'];
+
     /**
      * The attributes that should be cast.
      *

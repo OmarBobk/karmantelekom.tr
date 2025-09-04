@@ -33,6 +33,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        \Carbon\Carbon::setLocale(app()->getLocale());
 //        if (Str::startsWith(request()->uri()->host(), 'sub.') && !Auth::check()) {
 //            abort(Response::redirectTo(config('app.url') . '/404'));
 //        }

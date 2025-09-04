@@ -7,6 +7,7 @@ namespace App\Livewire\Frontend\Partials;
 use App\Facades\Cart as CartFacade;
 use App\Services\CartService;
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Session;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Attributes\On;
 use Livewire\Component;
@@ -44,6 +45,7 @@ class HeaderComponent extends Component
 
     public function render()
     {
+
         return view('livewire.frontend.partials.header-component');
     }
 

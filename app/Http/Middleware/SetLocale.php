@@ -22,15 +22,15 @@ class SetLocale
     public function handle(Request $request, Closure $next): Response
     {
         // Get the current language from the session
-        $locale = strtolower($this->languageService->getCurrentLanguage());
-        
+//        $locale = strtolower($this->languageService->getCurrentLanguage());
+
         // Set the application locale
-        App::setLocale($locale);
-        
+        App::setLocale(config('app.locale'));;
+
         // Set the direction
         $direction = $this->languageService->getCurrentDirection();
         view()->share('direction', $direction);
-        
+
         return $next($request);
     }
-} 
+}
