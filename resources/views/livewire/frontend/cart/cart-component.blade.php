@@ -1,12 +1,42 @@
 <div
     x-data="{
         showCart: false,
+        loading: false,
+        whatsappNumber: @js(App\Facades\Settings::get('whatsapp_number', '905353402539')),
         toggleCart() {
             this.showCart = !this.showCart;
             this.updateBodyScroll();
         },
         updateBodyScroll() {
             document.body.classList.toggle('overflow-hidden', this.showCart);
+        },
+        composeWhatsAppMessage() {
+            const CRLF = '\r\n';
+            const lines = [];
+            lines.push('*New Order*');
+            lines.push('----------------');
+            this.$store.cart.items.forEach((item, index) => {
+                const lineTotal = (Number(item.price) * Number(item.quantity));
+                lines.push(`${index + 1}. *${item.tr_name}*: `);
+                lines.push(`       Price: ${item.quantity} * ${Number(item.price)}  = ${lineTotal} TL`);
+                lines.push('');
+            });
+            lines.push('----------------');
+            lines.push(`*Subtotal:* ${this.$store.cart.subtotal} TL`);
+            lines.push(`*Date:* ${new Date().toLocaleString()}`);
+            return lines.join(CRLF);
+        },
+        async orderViaWhatsApp() {
+            if (this.$store.cart.items.length === 0) return;
+            try {
+                this.loading = true;
+                await this.$store.cart.syncWithServer();
+                const msg = this.composeWhatsAppMessage();
+                const url = 'https://wa.me/' + this.whatsappNumber + '?text=' + encodeURIComponent(msg);
+                window.open(url, '_blank');
+            } finally {
+                setTimeout(() => { this.loading = false; }, 800);
+            }
         },
         init() {
             Livewire.on('cart-updated', () => {
@@ -132,9 +162,8 @@
                         <p class="mt-0.5 text-sm text-gray-500">{{__('cart.shipping_and_taxes_calculated_at_checkout')}}</p>
                         <div class="mt-6">
                             <button
-                                x-data="{loading: false}"
                                 :disabled="loading"
-                                @click.prevent="loading = true; $store.cart.syncWithServer().then(() => window.location.href = '/checkout')"
+                                @click.prevent="orderViaWhatsApp()"
                                 class="flex justify-center items-center w-full px-6 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-indigo-600 hover:bg-indigo-700">
                                 <span x-show="!loading">{{__('cart.order_now')}}</span>
                                 <span x-show="loading">{{__('cart.preparing')}}...</span>

@@ -39,19 +39,19 @@ class="relative">
 {{--                </div>--}}
 
                 <!-- Notifications Bell (for authenticated users with admin/salesperson roles) -->
-                @auth
-                    <livewire:frontend.partials.notification-bell />
-                @endauth
+{{--                @auth--}}
+{{--                    <livewire:frontend.partials.notification-bell />--}}
+{{--                @endauth--}}
 
                 <!-- Cart Component -->
                 @livewire('frontend.cart.cart-component')
 
                 <!-- Profile/Auth Section -->
-                @guest
-                    @include('livewire.frontend.partials.guest-menu')
-                @else
-                    @include('livewire.frontend.partials.auth-menu')
-                @endguest
+{{--                @guest--}}
+{{--                    @include('livewire.frontend.partials.guest-menu')--}}
+{{--                @else--}}
+{{--                    @include('livewire.frontend.partials.auth-menu')--}}
+{{--                @endguest--}}
 
 
             </div>
@@ -68,7 +68,7 @@ class="relative">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
             <div class="flex h-12 items-center justify-start space-x-8">
                 <a href="{{ route('products', ['category' => 'all']) }}" class="flex items-center text-md font-medium text-gray-700 hover:text-blue-600 transition-colors duration-200">
-                    All
+                    {{__('main.all')}}
                 </a>
                 @foreach($categories as $category)
                     <div x-data="{ open: false }" class="relative py-4">
@@ -200,7 +200,7 @@ class="relative">
                                             <div class="w-4 h-4 {{ app()->getLocale() == 'ar' ? 'ml-2' : 'mr-2' }} flex items-center justify-center">
                                                 <div class="w-0.5 h-4 bg-gray-300 group-hover:bg-blue-400 transition-colors duration-200"></div>
                                             </div>
-                                            <span>All</span>
+                                            <span>{{__('main.all')}}</span>
                                         </div>
                                     </a>
                                 </div>
@@ -268,12 +268,12 @@ class="relative">
                 </div>
 
                 <!-- Language Selector -->
-                <div class="mt-auto border-t border-gray-100 pt-6">
-                    <div class="px-4">
-                        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">{{__('main.language')}}</h3>
-                        <x-language-selector :currentLanguage="$currentLanguage" position="bottom" variant="sidebar" />
-                    </div>
-                </div>
+{{--                <div class="mt-auto border-t border-gray-100 pt-6">--}}
+{{--                    <div class="px-4">--}}
+{{--                        <h3 class="text-xs font-semibold text-gray-500 uppercase tracking-wider mb-3">{{__('main.language')}}</h3>--}}
+{{--                        <x-language-selector :currentLanguage="$currentLanguage" position="bottom" variant="sidebar" />--}}
+{{--                    </div>--}}
+{{--                </div>--}}
             </nav>
         </div>
     </div>

@@ -26,6 +26,7 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
         $middleware->web([
             \App\Http\Middleware\SetLocale::class,
+            \App\Http\Middleware\Block::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
