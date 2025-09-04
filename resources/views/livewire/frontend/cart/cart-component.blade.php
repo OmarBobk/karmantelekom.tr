@@ -13,17 +13,17 @@
         composeWhatsAppMessage() {
             const CRLF = '\r\n';
             const lines = [];
-            lines.push('*New Order*');
+            lines.push('*Yeni Sipariş*');
             lines.push('----------------');
             this.$store.cart.items.forEach((item, index) => {
                 const lineTotal = (Number(item.price) * Number(item.quantity));
-                lines.push(`${index + 1}. *${item.tr_name}*: `);
+                lines.push(`${index + 1}. *${item.translated_name}*: `);
                 lines.push(`       Price: ${item.quantity} * ${Number(item.price)}  = ${lineTotal} TL`);
                 lines.push('');
             });
             lines.push('----------------');
-            lines.push(`*Subtotal:* ${this.$store.cart.subtotal} TL`);
-            lines.push(`*Date:* ${new Date().toLocaleString()}`);
+            lines.push(`*Ara Toplam:* ${this.$store.cart.subtotal} TL`);
+            lines.push(`*Tarih:* ${new Date().toLocaleString()}`);
             return lines.join(CRLF);
         },
         async orderViaWhatsApp() {
