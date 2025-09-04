@@ -17,12 +17,13 @@
             lines.push('----------------');
             this.$store.cart.items.forEach((item, index) => {
                 const lineTotal = (Number(item.price) * Number(item.quantity));
-                lines.push(`${index + 1}. *${item.translated_name}*: `);
-                lines.push(`       Price: ${item.quantity} * ${Number(item.price)}  = ${lineTotal} TL`);
+                console.log(item);
+                lines.push(`${index + 1}. *${item.name}*: `);
+                lines.push(`       Fiyat: ${item.quantity} * ${Number(Math.trunc(item.price))}  = ${Math.trunc(lineTotal)} TL`);
                 lines.push('');
             });
             lines.push('----------------');
-            lines.push(`*Ara Toplam:* ${this.$store.cart.subtotal} TL`);
+            lines.push(`*Ara Toplam:* ${Math.trunc(this.$store.cart.subtotal)} TL`);
             lines.push(`*Tarih:* ${new Date().toLocaleString()}`);
             return lines.join(CRLF);
         },
@@ -34,6 +35,7 @@
                 const msg = this.composeWhatsAppMessage();
                 const url = 'https://wa.me/' + this.whatsappNumber + '?text=' + encodeURIComponent(msg);
                 window.open(url, '_blank');
+                this.$store.cart.clear();
             } finally {
                 setTimeout(() => { this.loading = false; }, 800);
             }
