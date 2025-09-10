@@ -137,7 +137,7 @@
 
                 <div class="flex flex-col">
                     <h4 class="text-lg font-semibold text-gray-900 mb-2">{{__('main.description')}}: </h4>
-                    <p class="text-gray-600 mb-6 text-sm">{{ $product->translated_description }}</p>
+                    <p class="text-gray-600 mb-6 text-sm whitespace-pre-line">{{ $product->translated_description }}</p>
                 </div>
 
                 <!-- Stock Info -->

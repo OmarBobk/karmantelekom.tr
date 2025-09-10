@@ -2,6 +2,7 @@
 
 Legend: [ ] = todo, [x] = done. Use priorities P0 (blocker), P1 (high), P2 (normal). Add Owner and Due where relevant.
 
+# v1.1.1
 ## 0) Security
 - [x] P1 Block routes like `/login`, `/register`, `/checkout` in production using BlockedRoutes Middleware.
 - [x] P1 Hides the user icon that leads to signup/login.
@@ -23,8 +24,10 @@ Legend: [ ] = todo, [x] = done. Use priorities P0 (blocker), P1 (high), P2 (norm
 - [ ] P0 Adds Products to the app.
 
 
-## 3) Homepage Design
-- [ ] P2
+# v1.2.1
+
+## 1) Redesign The homepage
+- [ ] 
 
 
 ---

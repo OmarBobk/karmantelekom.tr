@@ -1,124 +1,23 @@
 {
+    "comment": "Bluetooth Earphones",
     "1": {
         "id": 1,
-        "name": "Chargers",
-        "tr_name": "Şarj Aletleri",
-        "ar_name": "شواحن",
-        "parent_id": null
-    },
-    "2": {
-        "id": 2,
-        "name": "Cables",
-        "tr_name": "Kablolar",
-        "ar_name": "وصلات شحن",
-        "parent_id": null
-    },
-    "3": {
-        "id": 3,
-        "name": "Earphones",
-        "tr_name": "Kulaklıklar",
-        "ar_name": "سماعات",
-        "parent_id": null
-    },
-    "4": {
-        "id": 4,
-        "name": "SD & Flash Memory",
-        "tr_name": "Bellekler",
-        "ar_name": "ئواكر",
-        "parent_id": null
-    },
-    "5": {
-        "id": 5,
-        "name": "Car Accessories",
-        "tr_name": "Araba Aksesuarları",
-        "ar_name": "اكسسوارات السيارات",
-        "parent_id": null
-    },
-    "6": {
-        "id": 6,
-        "name": "Powerbank",
-        "tr_name": "Powerbank",
-        "ar_name": "بور بنك",
-        "parent_id": null
-    },
-    "7": {
-        "id": 7,
-        "name": "Micro Chargers",
-        "tr_name": "Mikro Şarj aletleri",
-        "ar_name": "شاحن مايكرو",
-        "parent_id": 1
-    },
-    "8": {
-        "id": 8,
-        "name": "Type-C Chargers",
-        "tr_name": "Type-C Şarj aletleri",
-        "ar_name": "شاحن تايب سي",
-        "parent_id": 1
-    },
-    "9": {
-        "id": 9,
-        "name": "IPhone Chargers",
-        "tr_name": "İphone Şarj aletleri",
-        "ar_name": "شاحن ايفون",
-        "parent_id": 1
-    },
-    "10": {
-        "id": 10,
-        "name": "IPhone USB Cable",
-        "tr_name": "Iphone Şarj Kablo",
-        "ar_name": "وصلت شحن ايفون",
-        "parent_id": 2
-    },
-    "11": {
-        "id": 11,
-        "name": "Type-c USB Cable",
-        "tr_name": "Type-C Şarj Kablosu",
-        "ar_name": "وصللات تايب سي",
-        "parent_id": 2
-    },
-    "12": {
-        "id": 12,
-        "name": "Micro USB Cable",
-        "tr_name": "Micro Şarj Kablosu",
-        "ar_name": "وصلات مايكرو",
-        "parent_id": 2
-    },
-    "13": {
-        "id": 13,
-        "name": "Type-c USB-C Cable",
-        "tr_name": "Type-C USB-C Kablo",
-        "ar_name": "وصلات تايب سي  تايب سي",
-        "parent_id": 2
-    },
-    "14": {
-        "id": 14,
-        "name": "Wired Earphones",
-        "tr_name": "Kablolu Kulaklıklar",
-        "ar_name": "سماعات سلكية",
-        "parent_id": 3
-    },
-    "15": {
-        "id": 15,
-        "name": "Bluetooth Earphones",
-        "tr_name": "Bluetooth Kulaklıklar",
-        "ar_name": "سماعات بلوتوث",
-        "parent_id": 3
-    },
-    "16": {
-        "id": 16,
-        "name": "Headphones",
-        "tr_name": "Headphones",
-        "ar_name": "سماعات راس",
-        "parent_id": 3
-    },
-    "17": {
-        "id": 17,
-        "name": "Gaming Headphones",
-        "tr_name": "Gaming Headphones",
-        "ar_name": "سماعات العاب",
-        "parent_id": 3
+        "name": "K55 Wireless Gaming Earbuds – Low Latency, With Mic, Compatible with iOS & Android",
+        "tr_name": "K55 Kablosuz Oyuncu Kulaklığı Android, IOS Uyumlu Düşük Gecikme Gaming Bluetooth Kulaklık Kulak İçi",
+        "ar_name": "سماعات K55 اللاسلكية للألعاب – كمون منخفض، مزودة بميكروفون، متوافقة مع iOS و Android",
+        "code": "K-55",
+        "serial": "8580642512",
+        "is_active": 1,
+        "description": "\"High-performance wireless earbuds, always with you.\"\n\n✅ Importer Warranty – Use with confidence\n\n\uD83D\uDD07 Active Noise Cancellation (ANC) – Forget outside noise\n\n\uD83C\uDFA4 Microphone – Clear and seamless communication\n\n\uD83D\uDCF1 iOS & Android Compatible – Works with all your devices",
+        "tr_description": "\"Her an yanınızda, yüksek performanslı kablosuz kulaklık.\"\n\n✅ İthalatçı Garantisi – Güvenle kullanın\n\n\uD83D\uDD07 ANC (Aktif Gürültü Önleme) – Dış sesleri unutun\n\n\uD83C\uDFA4 Mikrofon – Net ve kesintisiz iletişim\n\n\uD83D\uDCF1 iOS & Android Uyumlu – Tüm cihazlarınızla sorunsuz",
+        "ar_description": "\"سماعات لاسلكية عالية الأداء، دائمًا معك.\"\n\n✅ ضمان المستورد – استخدمها بثقة\n\n\uD83D\uDD07 إلغاء الضوضاء النشط (ANC) – انسَ الضجيج الخارجي\n\n\uD83C\uDFA4 ميكروفون – تواصل واضح وسلس\n\n\uD83D\uDCF1 متوافقة مع iOS و Android – تعمل مع جميع أجهزتك",
+        "category_id": 15,
+        "slug": "k55-wireless-gaming-earbuds-low-latency",
+        "slug_tr": "k55-kablosuz-gaming-kulaklik-dusuk-gecikme",
+        "slug_ar": "k55-sam3at-alaab-lasilkiya-low-latency"
     }
 }
+
 
 
 
