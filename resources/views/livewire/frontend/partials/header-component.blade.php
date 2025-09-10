@@ -10,17 +10,18 @@ class="relative">
     <!-- Top bar -->
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="flex h-16 items-center justify-between">
-            <div class="flex items-center">
+            <div class="flex items-center pb-3">
                  <!-- Mobile menu button -->
-                 <div class="flex items-center lg:hidden">
-                    <button @click="sidebarOpen = true" type="button" class="-m-2 inline-flex items-center justify-center rounded-md p-2 text-gray-400">
+                 <div class="flex flex-col items-center lg:hidden">
+                    <button @click="sidebarOpen = true" type="button" class="-m-2 inline-flex flex-col items-center justify-center rounded-md p-1 text-gray-400">
                         <span class="sr-only">Open menu</span>
-                        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-menu-icon lucide-menu"><path d="M4 12h16"/><path d="M4 18h16"/><path d="M4 6h16"/></svg>
+                        <svg xmlns="http://www.w3.org/2000/svg" class="text-[#101720]" width="40" height="32" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.75" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-menu-icon lucide-menu"><path d="M2 6h20"/><path d="M2 12h12"/><path d="M2 18h20"/></svg>
+                        <span class="text-xs text-[#101720] font-medium -mt-1">Menü</span>
                     </button>
                 </div>
                 <!-- Logo -->
-                <a href="{{ route('main') }}" class="text-2xl font-bold tracking-tight ml-4 lg:ml-0">
-                    <img src="{{ asset('assets/images/indirimgo.png') }}" class="w-24 lg:w-32" alt="Logo">
+                <a href="{{ route('main') }}" class="text-2xl font-bold tracking-tight ml-2 lg:ml-0">
+                    <img src="{{ asset('assets/images/indirimgo.png') }}" class="w-32" alt="Logo">
                 </a>
             </div>
 

@@ -15,18 +15,44 @@
     }"
 >
     <!-- Cart Icon -->
-    <div class="relative flex items-center gap-x-2">
+    <div class="relative flex items-center gap-x-2 hover:bg-gray-100 p-1 rounded-lg">
         <button
             @click="toggleCart()"
-            class="p-2 text-gray-700 hover:text-blue-600 hover:bg-gray-100 rounded-xl transition-all duration-200 relative group h-11 w-11 flex items-center justify-center">
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.25" stroke-linecap="round" stroke-linejoin="round" class="lucide lucide-shopping-cart-icon lucide-shopping-cart"><circle cx="8" cy="21" r="1"/><circle cx="19" cy="21" r="1"/><path d="M2.05 2.05h2l2.66 12.42a2 2 0 0 0 2 1.58h9.78a2 2 0 0 0 1.95-1.57l1.65-7.43H5.12"/></svg>
+            class="pt-1 text-gray-700 hover:text-blue-600 rounded-xl transition-all duration-200 relative group h-11 w-11 flex items-center justify-center">
+            <svg version="1.1" id="Layer_1" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" x="0px" y="0px"
+                 viewBox="0 0 1312.4 637.2" style="enable-background:new 0 0 1312.4 637.2;height:100%;width: 100%;" xml:space="preserve">
+<style type="text/css">
+    .st0{fill:#282828;}
+    .st1{fill:none;stroke:#2563EB;stroke-width:42.46;stroke-linecap:round;stroke-miterlimit:10;}
+    .st2{fill:none;stroke:#282828;stroke-width:64;stroke-linecap:round;stroke-linejoin:bevel;}
+</style>
+                <path class="st0" d="M173.9,16.8l0.3,0.2c0,0,0.1,0.2,0.2,0.3l0.3,0.3l1.2,1.6l2.9,3.6c2,2.5,4.1,5.1,6.2,7.7
+	c4.3,5.2,8.7,10.4,13.2,15.6c9,10.4,18.4,20.5,27.9,30.5c19.1,19.9,39,38.9,59.6,56.9c41.2,35.9,85.2,67.7,131.4,93.8
+	c45.5,26,94.1,46.2,144.6,60.1c49.9,13.5,101.3,20.3,153,20.2c51.6-0.1,102.9-7,152.7-20.6c12.4-3.5,24.8-7.2,37-11.5
+	s24.4-8.9,36.4-13.9c6-2.6,12-5.1,17.9-7.9c6-2.6,11.9-5.5,17.8-8.4c11.8-5.8,23.4-12,34.9-18.5c46.1-26.1,89.9-57.8,131-93.7
+	c20.6-17.9,40.5-36.9,59.7-56.8c4.8-5,9.5-10,14.2-15s9.3-10.2,13.8-15.4s9-10.4,13.3-15.5c2.2-2.6,4.3-5.2,6.3-7.7l2.9-3.6l1.3-1.6
+	l0.3-0.3c0.1-0.1,0.2-0.3,0.2-0.3l0.3-0.2l12.6-8.7c13-9,30.9-5.7,39.8,7.4c5.3,7.7,6.5,17.5,3.2,26.2l-1.5,4l-1.2,3.3
+	c-0.8,2-1.6,4-2.4,5.8c-1.6,3.8-3.2,7.4-4.9,11c-3.3,7.1-6.8,14-10.3,20.9c-7.2,13.6-14.9,27-23,40s-16.8,25.7-25.8,38.2
+	c-4.5,6.2-9.2,12.4-13.9,18.4c-4.8,6.1-9.6,12.1-14.5,18c-39.9,48.1-86,90.7-137.1,126.6c-52.3,36.8-110,65.5-170.9,85
+	c-7.7,2.3-15.4,4.8-23.2,6.8c-7.8,2.2-15.6,4.1-23.4,6c-3.9,0.9-7.9,1.7-11.8,2.6l-5.9,1.3l-6,1.1l-11.9,2.1l-12,1.9
+	c-2,0.3-4,0.6-6,0.9l-6,0.8c-4,0.5-8,1.1-12,1.5l-12,1.2c-2,0.2-4,0.4-6,0.5l-6,0.4c-16.1,1.3-32.2,1.6-48.2,1.7
+	c-16.1-0.2-32.1-0.7-48.2-2.1c-8-0.5-16-1.5-24-2.3c-4-0.5-8-1.1-12-1.6l-6-0.8c-2-0.3-4-0.6-6-1l-11.9-2c-4-0.7-7.9-1.5-11.9-2.3
+	l-5.9-1.2l-5.9-1.3c-3.9-0.9-7.9-1.7-11.8-2.7c-7.8-2-15.6-3.9-23.4-6.1c-7.8-2.1-15.4-4.6-23.1-6.9
+	c-60.7-19.8-118.1-48.5-170.3-85.2c-12.9-9-25.5-18.5-37.6-28.3c-12.2-9.8-24-20-35.5-30.6c-22.8-21-44.2-43.4-64.1-67.2
+	c-19.8-23.5-38-48.3-54.6-74.2c-8.3-12.9-16.1-26.2-23.4-39.7c-3.6-6.8-7.2-13.7-10.6-20.8c-1.7-3.6-3.3-7.2-5-10.9l-1.2-2.8l-1.2-3
+	l-1.3-3.2l-1.5-4c-5.7-14.8,1.7-31.5,16.5-37.2c9-3.5,19.2-2.2,27.1,3.5L173.9,16.8z"/>
+                <circle class="st1" cx="523.4" cy="549.9" r="66"/>
+                <circle class="st1" cx="909.7" cy="549.9" r="66"/>
+                <line class="st2" x1="146.1" y1="29.3" x2="29.3" y2="29.3"/>
+</svg>
+
             <div
                 x-show="$store.cart.itemsCount > 0"
                 x-text="$store.cart.itemsCount"
                 x-transition:enter="transition ease-out duration-300"
                 x-transition:enter-start="opacity-0 scale-50"
                 x-transition:enter-end="opacity-100 scale-100"
-                class="absolute -top-1 -right-1 bg-blue-500 text-white text-xs font-bold rounded-full h-5 min-w-[1.25rem] px-1 flex items-center justify-center group-hover:bg-blue-600 transition-colors duration-200 z-50"
+                class="absolute top-[-7%] right-[21%] bg-blue-500 text-white text-xs font-bold rounded-full h-5 min-w-[1.25rem] px-1 flex items-center justify-center group-hover:bg-blue-600 transition-colors duration-200 z-50"
             ></div>
         </button>
     </div>

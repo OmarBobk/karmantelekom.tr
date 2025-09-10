@@ -14,7 +14,7 @@
 
                 <!-- Search Input -->
                 <input type="text"
-                       placeholder="{{__('main.search_for_products')}}..."
+                       placeholder="{{__('main.category_product_or_brand')}}..."
                        wire:model.live.debounce.300ms="searchQuery"
                        wire:loading.class="opacity-50"
                        @click="isOpen = true"

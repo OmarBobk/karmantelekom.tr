@@ -2,7 +2,7 @@
 
 return [
     'app_name' => 'eStore',
-    'search_for_products' => 'Ürün arayın',
+    'category_product_or_brand' => 'Kategori, Ürün veya Marka',
     'hey' => 'Merhaba',
     'in_stock' => 'Stokta',
     'stock_info' => 'Stok Bilgisi',
