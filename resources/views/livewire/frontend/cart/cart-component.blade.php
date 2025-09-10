@@ -95,7 +95,7 @@
                 x-transition:enter="transition ease-out duration-300"
                 x-transition:enter-start="opacity-0 scale-50"
                 x-transition:enter-end="opacity-100 scale-100"
-                class="absolute top-[-7%] right-[21%] bg-blue-500 text-white text-xs font-bold rounded-full h-5 min-w-[1.25rem] px-1 flex items-center justify-center group-hover:bg-blue-600 transition-colors duration-200 z-50"
+                class="absolute top-[-7%] right-[21%] bg-blue-600 text-white text-xs font-bold rounded-full h-5 min-w-[1.25rem] px-1 flex items-center justify-center group-hover:bg-blue-700 transition-colors duration-200 z-50"
             ></div>
         </button>
     </div>
