@@ -3,7 +3,7 @@
 return [
     'app_name' => 'eStore',
     'products' => 'Products',
-    'search_for_products' => 'Search for products',
+    'category_product_or_brand' => 'Category, Product or Brand',
     'hey' => 'hey',
     'in_stock' => 'In Stock',
     'stock_info' => 'Stock Info',

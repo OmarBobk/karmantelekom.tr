@@ -293,7 +293,7 @@
 
                                                         <p class="text-xs font-semibold text-blue-600 uppercase tracking-wide">{{ $section->translated_name }}</p>
                                                         <button wire:click="$dispatch('openProductModal', { productId: {{ $product->id }} })" class="text-left">
-                                                            <h3 class="text-lg font-extrabold text-gray-900 group-hover:text-blue-700 transition-colors duration-200 line-clamp-1">
+                                                            <h3 class="text-lg font-extrabold text-[#101720] group-hover:text-blue-700 transition-colors duration-200 line-clamp-1">
                                                                 {{ $product->translated_name }}
                                                             </h3>
                                                             <p class="text-sm text-gray-500 line-clamp-2">{{ $product->translated_description }}</p>
