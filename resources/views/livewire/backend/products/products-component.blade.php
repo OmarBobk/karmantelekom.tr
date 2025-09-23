@@ -569,7 +569,21 @@
                             </div>
 
                             <!-- Prices -->
-                            <div>
+                            <div x-data="{
+                                tryPrice: @entangle('editForm.prices.0.price').live,
+                                usdPrice: @entangle('editForm.prices.1.price').live,
+                                exchangeRate: @entangle('exchangeRate').live,
+                                calculateUSD() {
+                                    if (this.tryPrice && this.exchangeRate) {
+                                        this.usdPrice = (parseFloat(this.tryPrice) * this.exchangeRate).toFixed(2);
+                                    }
+                                },
+                                calculateTRY() {
+                                    if (this.usdPrice && this.exchangeRate) {
+                                        this.tryPrice = (parseFloat(this.usdPrice) / this.exchangeRate).toFixed(2);
+                                    }
+                                }
+                            }">
                                 <div class="flex items-center justify-between mb-2">
                                     <label class="block text-sm font-medium text-gray-700">Prices</label>
                                 </div>
@@ -580,6 +594,7 @@
                                         <div class="flex items-center gap-2">
                                             <input type="number"
                                                 wire:model="editForm.prices.0.price"
+                                                @input="calculateUSD()"
                                                 step="0.01"
                                                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                                                 placeholder="Optional (defaults to 0)">
@@ -598,6 +613,7 @@
                                         <div class="flex items-center gap-2">
                                             <input type="number"
                                                 wire:model="editForm.prices.1.price"
+                                                @input="calculateTRY()"
                                                 step="0.01"
                                                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                                                 placeholder="Optional (defaults to 0)">
@@ -1282,6 +1298,7 @@
                                         <div class="flex items-center gap-2">
                                             <input type="number"
                                                 wire:model="addForm.prices.0.price"
+                                                @input="calculateUSD()"
                                                 step="0.01"
                                                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                                                 placeholder="Optional (defaults to 0)">
@@ -1300,6 +1317,7 @@
                                         <div class="flex items-center gap-2">
                                             <input type="number"
                                                 wire:model="addForm.prices.1.price"
+                                                @input="calculateTRY()"
                                                 step="0.01"
                                                 class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                                                 placeholder="Optional (defaults to 0)">

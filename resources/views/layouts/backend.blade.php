@@ -285,6 +285,9 @@
 
                             <!-- Profile Dropdown -->
                             <div class="flex items-center gap-4">
+                                <!-- Currency Rate Display -->
+                                <livewire:backend.partials.currency-rate-display />
+                                
                                 <!-- Notification Bell Dropdown -->
                                 <livewire:backend.partials.notification-dropdown />
                                 <div x-data="{ open: false }" class="relative">
