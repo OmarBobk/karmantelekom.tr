@@ -235,10 +235,8 @@ class Product extends Model
     public function getTranslatedDescriptionAttribute(): string
     {
         return match (app()->getLocale()) {
-            'TR' => $this->tr_description ?: $this->description,
-            'tr' => $this->tr_description ?: $this->description,
-            'AR' => $this->ar_description ?: $this->description,
-            'ar' => $this->ar_description ?: $this->description,
+            'TR', 'tr' => $this->tr_description ?: $this->description,
+            'AR', 'ar' => $this->ar_description ?: $this->description,
             default => $this->description,
         };
     }

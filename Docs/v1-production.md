@@ -51,7 +51,3 @@ php artisan cache:clear && php artisan config:cache && php artisan route:cache &
 php artisan queue:work --queue=default,emails --max-time=3600 --stop-when-empty
 # Cron: * * * * * php /path/to/artisan schedule:run >> /dev/null 2>&1
 ```
-
-
-
-
