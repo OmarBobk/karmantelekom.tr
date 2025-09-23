@@ -21,18 +21,33 @@ class CurrencyService
             if ($response->successful()) {
                 $rates = $response->json()['rates'];
 
+                // Apply configurable markup to approximate selling price
+                $markupPercent = (float) env('FX_SELL_MARKUP_PERCENT', 0);
+                $factor = 1 + ($markupPercent / 100.0);
+
+                $adjustedRates = [];
+                foreach ($rates as $code => $rate) {
+                    if ($code === 'TRY') {
+                        // Keep base currency at 1.0
+                        $adjustedRates[$code] = 1.0;
+                        continue;
+                    }
+
+                    $adjustedRates[$code] = round((float) $rate * $factor, 8);
+                }
+
                 Currency::query()
                     ->where('is_default', false)
                     ->where('is_active', true)
-                    ->each(function (Currency $currency) use ($rates) {
-                        if (isset($rates[$currency->code])) {
+                    ->each(function (Currency $currency) use ($adjustedRates) {
+                        if (isset($adjustedRates[$currency->code])) {
                             $currency->update([
-                                'exchange_rate' => $rates[$currency->code]
+                                'exchange_rate' => $adjustedRates[$currency->code]
                             ]);
                         }
                     });
 
-                Cache::put(self::CACHE_KEY, $rates, self::CACHE_TTL);
+                Cache::put(self::CACHE_KEY, $adjustedRates, self::CACHE_TTL);
             }
         } catch (\Exception $e) {
             Log::error('Failed to update exchange rates: ' . $e->getMessage());
