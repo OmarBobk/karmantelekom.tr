@@ -29,6 +29,8 @@ Legend: [ ] = todo, [x] = done. Use priorities P0 (blocker), P1 (high), P2 (norm
 ## 1) Redesign The homepage
 - [ ] 
 
+## 2) AI Bot (Talk With Yusuf)
+- [ ] 
 
 ---
 
@@ -49,3 +51,7 @@ php artisan cache:clear && php artisan config:cache && php artisan route:cache &
 php artisan queue:work --queue=default,emails --max-time=3600 --stop-when-empty
 # Cron: * * * * * php /path/to/artisan schedule:run >> /dev/null 2>&1
 ```
+
+
+
+
