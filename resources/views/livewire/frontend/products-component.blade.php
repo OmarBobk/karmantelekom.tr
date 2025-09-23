@@ -130,9 +130,6 @@
         </div>
     </div>
 
-    <!-- Product Modal -->
-    <livewire:frontend.product-modal-component />
-
     <style>
         .line-clamp-3 {
             display: -webkit-box;
