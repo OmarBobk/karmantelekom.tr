@@ -1,13 +1,18 @@
 SET FOREIGN_KEY_CHECKS = 0;
 
 -- Drop all tables in reverse order of creation to handle foreign key constraints
--- Note: Some tables have duplicate migrations (2024_12_26 vs 2025_07_07 dates for Jetstream tables)
+-- Based on migrations from 2024-2025, ordered by dependencies
 
--- Latest migrations first
+-- Latest migrations first (2025-08-21 to 2025-06-27)
 DROP TABLE IF EXISTS activity_log;
 DROP TABLE IF EXISTS notifications;
 DROP TABLE IF EXISTS settings;
+
+-- Product prices (depends on products and currencies)
 DROP TABLE IF EXISTS product_prices;
+
+-- Addresses (depends on shops) - Added 2025-08-21
+DROP TABLE IF EXISTS addresses;
 
 -- Permission/Role tables (Spatie Laravel Permission)
 DROP TABLE IF EXISTS role_has_permissions;
@@ -16,22 +21,22 @@ DROP TABLE IF EXISTS model_has_permissions;
 DROP TABLE IF EXISTS roles;
 DROP TABLE IF EXISTS permissions;
 
--- Product and e-commerce related tables
+-- Product and e-commerce related tables (in dependency order)
 DROP TABLE IF EXISTS product_tags;
 DROP TABLE IF EXISTS section_products;
 DROP TABLE IF EXISTS cart_items;
+DROP TABLE IF EXISTS order_items;
 DROP TABLE IF EXISTS carts;
+DROP TABLE IF EXISTS orders;
 DROP TABLE IF EXISTS tags;
 DROP TABLE IF EXISTS sections;
-DROP TABLE IF EXISTS order_items;
-DROP TABLE IF EXISTS orders;
 DROP TABLE IF EXISTS customers;
 DROP TABLE IF EXISTS shops;
 DROP TABLE IF EXISTS product_images;
 DROP TABLE IF EXISTS products;
 DROP TABLE IF EXISTS categories;
 
--- Jetstream tables
+-- Jetstream tables (2024-12-26)
 DROP TABLE IF EXISTS team_invitations;
 DROP TABLE IF EXISTS team_user;
 DROP TABLE IF EXISTS teams;
