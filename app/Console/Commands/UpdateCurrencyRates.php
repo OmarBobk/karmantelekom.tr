@@ -24,4 +24,4 @@ class UpdateCurrencyRates extends Command
             return Command::FAILURE;
         }
     }
-} 
+}

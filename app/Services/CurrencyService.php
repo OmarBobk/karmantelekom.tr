@@ -4,6 +4,7 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Models\Currency;
+use App\Models\ProductPrice;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -48,6 +49,11 @@ class CurrencyService
                     });
 
                 Cache::put(self::CACHE_KEY, $adjustedRates, self::CACHE_TTL);
+
+                // Update product prices based on new exchange rates
+                $this->updateProductPrices($adjustedRates);
+
+
             }
         } catch (\Exception $e) {
             Log::error('Failed to update exchange rates: ' . $e->getMessage());
@@ -87,5 +93,64 @@ class CurrencyService
 
         $tryRate = 1 / ($rates[$fromCurrency] ?? 1.0);
         return $tryRate * ($rates[$toCurrency] ?? 1.0);
+    }
+
+    /**
+     * Update product prices based on new exchange rates.
+     * Only updates TRY prices while keeping USD prices unchanged.
+     *
+     * @param array $adjustedRates The new exchange rates
+     * @return void
+     */
+    private function updateProductPrices(array $adjustedRates): void
+    {
+        try {
+            // Get USD to TRY exchange rate
+            $usdToTryRate = $adjustedRates['USD'] ?? null;
+            
+            if (!$usdToTryRate) {
+                Log::warning('USD to TRY exchange rate not found, skipping price updates');
+                return;
+            }
+
+            // Get TRY currency model
+            $tryCurrency = Currency::where('code', 'TRY')->first();
+            if (!$tryCurrency) {
+                Log::warning('TRY currency not found, skipping price updates');
+                return;
+            }
+
+            // Update all TRY prices based on the new exchange rate
+            ProductPrice::whereHas('currency', function ($query) {
+                $query->where('code', 'TRY');
+            })->chunk(100, function ($prices) use ($usdToTryRate) {
+                foreach ($prices as $price) {
+                    // Only update if this price has a corresponding USD price
+                    $usdPrice = ProductPrice::where('product_id', $price->product_id)
+                        ->whereHas('currency', function ($query) {
+                            $query->where('code', 'USD');
+                        })
+                        ->first();
+
+                    if ($usdPrice) {
+                        // Calculate new TRY price: USD price * new exchange rate
+                        $newTryPrice = round($usdPrice->base_price * $usdToTryRate, 2);
+                        
+                        // Update the TRY price
+                        $price->update([
+                            'base_price' => $newTryPrice,
+                            'converted_price' => $newTryPrice
+                        ]);
+
+                        Log::info("Updated product {$price->product_id} TRY price from {$price->base_price} to {$newTryPrice} (USD: {$usdPrice->base_price}, Rate: {$usdToTryRate})");
+                    }
+                }
+            });
+
+            Log::info('Product prices updated successfully based on new exchange rates');
+
+        } catch (\Exception $e) {
+            Log::error('Failed to update product prices: ' . $e->getMessage());
+        }
     }
 }
