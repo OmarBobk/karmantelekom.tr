@@ -106,8 +106,8 @@ class CurrencyService
     {
         try {
             // Get USD to TRY exchange rate
-            $usdToTryRate = $adjustedRates['USD'] ?? null;
-            
+            $usdToTryRate = number_format((float) (1 / $adjustedRates['USD']), 2, '.', '');
+
             if (!$usdToTryRate) {
                 Log::warning('USD to TRY exchange rate not found, skipping price updates');
                 return;
@@ -135,7 +135,7 @@ class CurrencyService
                     if ($usdPrice) {
                         // Calculate new TRY price: USD price * new exchange rate
                         $newTryPrice = round($usdPrice->base_price * $usdToTryRate, 2);
-                        
+
                         // Update the TRY price
                         $price->update([
                             'base_price' => $newTryPrice,
