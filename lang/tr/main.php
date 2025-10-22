@@ -77,5 +77,5 @@ return [
     'searching' => 'Aranıyor',
     'no_result_found_for' => 'Sonuç bulunamadı',
     'try_adjusting_your_search_or_filter_to_find_what_you\'re looking for.' => 'Aradığınızı bulmak için aramanızı veya filtrelemenizi ayarlamayı deneyin.',
-
+    'close' => 'Kapat',
 ];

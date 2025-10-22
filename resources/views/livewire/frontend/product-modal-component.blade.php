@@ -186,11 +186,10 @@
                         </svg>
                         <span>{{ __('main.add_to_cart') }}</span>
                     </button>
-                    <a href="{{$requestQuoteUrl}}"
-                       target="_blank"
-                       class="flex-1 flex items-center justify-center px-4 py-3 bg-white text-blue-600 font-semibold rounded-xl shadow-md border border-blue-600 hover:bg-blue-50 transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
-                        <span>{{__('main.request_quote')}}</span>
-                    </a>
+                    <button @click="closeAndReset()"
+                            class="flex-1 flex items-center justify-center px-4 py-3 bg-white text-gray-600 font-semibold rounded-xl shadow-md border border-gray-300 hover:bg-gray-50 transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+                        <span>{{__('main.close')}}</span>
+                    </button>
                 </div>
             </div>
         </div>

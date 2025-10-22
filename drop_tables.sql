@@ -30,6 +30,7 @@ DROP TABLE IF EXISTS shops;
 DROP TABLE IF EXISTS product_images;
 DROP TABLE IF EXISTS products;
 DROP TABLE IF EXISTS categories;
+DROP TABLE IF EXISTS addresses;
 
 -- Jetstream tables
 DROP TABLE IF EXISTS team_invitations;

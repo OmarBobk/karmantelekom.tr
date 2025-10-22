@@ -45,8 +45,9 @@ class FooterComponent extends Component
         ];
 
         $this->socialLinks = [
-            ['name' => 'Facebook', 'url' => $this->settings['facebook_url'] , 'icon' => 'facebook'],
             ['name' => 'Instagram', 'url' => $this->settings['instagram_url'], 'icon' => 'instagram'],
+            ['name' => 'Facebook', 'url' => $this->settings['facebook_url'] , 'icon' => 'facebook'],
+            ['name' => 'Tiktok', 'url' => $this->settings['tiktok_url'] , 'icon' => 'tiktok'],
             ['name' => 'WhatsApp', 'url' => 'https://wa.me/' . $this->settings['whatsapp_number'], 'icon' => 'whatsapp'],
         ];
 

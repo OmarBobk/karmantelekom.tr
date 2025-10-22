@@ -1,12 +1,55 @@
 <div
     x-data="{
         showCart: false,
+        loading: false,
+        whatsappNumber: @js(App\Facades\Settings::get('whatsapp_number', '905353402539')),
+        minOrderAmount: 1000,
         toggleCart() {
             this.showCart = !this.showCart;
             this.updateBodyScroll();
         },
         updateBodyScroll() {
             document.body.classList.toggle('overflow-hidden', this.showCart);
+        },
+        composeWhatsAppMessage() {
+            const CRLF = '\r\n';
+            const lines = [];
+            lines.push('*Yeni Sipariş*');
+            lines.push('----------------');
+            this.$store.cart.items.forEach((item, index) => {
+                const lineTotal = (Number(item.price) * Number(item.quantity));
+                console.log(item);
+                lines.push(`${index + 1}. *${item.name}*: `);
+                lines.push(`       Fiyat: ${item.quantity} * ${Number(Math.trunc(item.price))} TL  = ${Math.trunc(lineTotal)} TL`);
+                lines.push('');
+            });
+            lines.push('----------------');
+            lines.push(`*Ara Toplam:* ${Math.trunc(this.$store.cart.subtotal)} TL`);
+            return lines.join(CRLF);
+        },
+        async orderViaWhatsApp() {
+            if (this.$store.cart.items.length === 0) return;
+
+            // Check minimum order amount
+            if (this.$store.cart.subtotal < this.minOrderAmount) {
+                        window.Livewire.dispatch('notify', [{
+                            type: 'alert-danger',
+                            message: `Minimum sipariş tutarı ${this.minOrderAmount} TL'dir. Lütfen sepetinizi ${(this.minOrderAmount - this.$store.cart.subtotal).toFixed(2)} TL daha ekleyin.`,
+                            sec: 4000
+                        }]);
+                return;
+            }
+
+            try {
+                this.loading = true;
+                await this.$store.cart.syncWithServer();
+                const msg = this.composeWhatsAppMessage();
+                const url = 'https://wa.me/' + this.whatsappNumber + '?text=' + encodeURIComponent(msg);
+                window.open(url, '_blank');
+                this.$store.cart.clear();
+            } finally {
+                setTimeout(() => { this.loading = false; }, 800);
+            }
         },
         init() {
             Livewire.on('cart-updated', () => {
@@ -64,27 +107,27 @@
 
         <!-- Backdrop -->
         <div
-             x-show="showCart"
-             x-transition:enter="transition-opacity ease-linear duration-300"
-             x-transition:enter-start="opacity-0"
-             x-transition:enter-end="opacity-100"
-             x-transition:leave="transition-opacity ease-linear duration-300"
-             x-transition:leave-start="opacity-100"
-             x-transition:leave-end="opacity-0"
-             class="fixed inset-0 bg-gray-900/80"
-             @click="toggleCart()"
-             aria-hidden="true">
+            x-show="showCart"
+            x-transition:enter="transition-opacity ease-linear duration-300"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="transition-opacity ease-linear duration-300"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            class="fixed inset-0 bg-gray-900/80"
+            @click="toggleCart()"
+            aria-hidden="true">
         </div>
 
         <div
-             x-show="showCart"
-             class="fixed inset-y-0 right-0 max-w-full flex bg-white shadow-lg"
-             x-transition:enter="transition ease-in-out duration-300 transform"
-             x-transition:enter-start="translate-x-full"
-             x-transition:enter-end="translate-x-0"
-             x-transition:leave="transition ease-in-out duration-300 transform"
-             x-transition:leave-start="translate-x-0"
-             x-transition:leave-end="translate-x-full"
+            x-show="showCart"
+            class="fixed inset-y-0 right-0 max-w-full flex bg-white shadow-lg"
+            x-transition:enter="transition ease-in-out duration-300 transform"
+            x-transition:enter-start="translate-x-full"
+            x-transition:enter-end="translate-x-0"
+            x-transition:leave="transition ease-in-out duration-300 transform"
+            x-transition:leave-start="translate-x-0"
+            x-transition:leave-end="translate-x-full"
         >
             <div class="w-screen max-w-md">
                 <div class="h-full flex flex-col bg-white shadow-xl">
@@ -156,13 +199,32 @@
                             <p x-text="`${$store.cart.subtotal.toFixed(2)} TL`"></p>
                         </div>
                         <p class="mt-0.5 text-sm text-gray-500">{{__('cart.shipping_and_taxes_calculated_at_checkout')}}</p>
+
+                        <!-- Minimum Order Warning -->
+                        <div x-show="$store.cart.subtotal < minOrderAmount" class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
+                            <div class="flex">
+                                <div class="flex-shrink-0">
+                                    <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
+                                        <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
+                                    </svg>
+                                </div>
+                                <div class="ml-3">
+                                    <p class="text-sm text-yellow-800">
+                                        Minimum sipariş tutarı <span class="font-semibold">1000 TL</span>'dir.
+                                        <span x-text="`${(minOrderAmount - $store.cart.subtotal).toFixed(2)} TL`"></span> daha ekleyin.
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="mt-6">
                             <button
-                                x-data="{loading: false}"
-                                :disabled="loading"
-                                @click.prevent="loading = true; $store.cart.syncWithServer().then(() => window.location.href = '/checkout')"
-                                class="flex justify-center items-center w-full px-6 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white bg-indigo-600 hover:bg-indigo-700">
-                                <span x-show="!loading">{{__('cart.order_now')}}</span>
+                                :disabled="loading || $store.cart.subtotal < minOrderAmount"
+                                @click.prevent="orderViaWhatsApp()"
+                                class="flex justify-center items-center w-full px-6 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white transition-colors duration-200"
+                                :class="$store.cart.subtotal < minOrderAmount ? 'bg-gray-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'">
+                                <span x-show="!loading && $store.cart.subtotal >= minOrderAmount">{{__('cart.order_now')}}</span>
+                                <span x-show="!loading && $store.cart.subtotal < minOrderAmount">Minimum 1000 TL gerekli</span>
                                 <span x-show="loading">{{__('cart.preparing')}}...</span>
                             </button>
                         </div>

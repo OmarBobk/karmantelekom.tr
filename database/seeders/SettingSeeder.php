@@ -18,7 +18,7 @@ class SettingSeeder extends Seeder
                 'key' => 'site_name',
                 'type' => 'string',
                 'group' => 'general',
-                'value' => 'İndirimGo',
+                'value' => 'Karman Telekom',
                 'is_public' => false,
             ],
             [
@@ -57,6 +57,13 @@ class SettingSeeder extends Seeder
                 'is_public' => false,
             ],
             [
+                'key' => 'instagram_url',
+                'type' => 'string',
+                'group' => 'social',
+                'value' => 'https://instagram.com',
+                'is_public' => false,
+            ],
+            [
                 'key' => 'facebook_url',
                 'type' => 'string',
                 'group' => 'social',
@@ -64,17 +71,10 @@ class SettingSeeder extends Seeder
                 'is_public' => false,
             ],
             [
-                'key' => 'twitter_url',
+                'key' => 'tiktok_url',
                 'type' => 'string',
                 'group' => 'social',
-                'value' => 'https://twitter.com',
-                'is_public' => false,
-            ],
-            [
-                'key' => 'instagram_url',
-                'type' => 'string',
-                'group' => 'social',
-                'value' => 'https://instagram.com',
+                'value' => 'https://tiktok.com',
                 'is_public' => false,
             ],
             [

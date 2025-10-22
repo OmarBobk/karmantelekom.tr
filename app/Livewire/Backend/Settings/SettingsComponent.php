@@ -36,7 +36,7 @@ class SettingsComponent extends Component
             ],
             'social' => [
                 'facebook_url' => Settings::get('facebook_url', ''),
-                'twitter_url' => Settings::get('twitter_url', ''),
+                'tiktok_url' => Settings::get('tiktok_url', ''),
                 'instagram_url' => Settings::get('instagram_url', ''),
                 'whatsapp_number' => Settings::get('whatsapp_number', ''),
             ]

@@ -77,4 +77,7 @@ return [
     'searching' => 'Searching',
     'no_result_found_for' => 'No result found for',
     'try_adjusting_your_search_or_filter_to_find_what_you\'re looking for.' => 'Try adjusting your search or filter to find what you\'re looking for.',
+
+
+    'close' => "Close",
 ];

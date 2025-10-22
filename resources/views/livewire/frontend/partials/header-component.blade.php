@@ -10,7 +10,7 @@ class="relative">
     <!-- Top bar -->
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="flex h-16 items-center justify-between">
-            <div class="flex items-center pb-3">
+            <div class="flex items-center">
                  <!-- Mobile menu button -->
                  <div class="flex flex-col items-center lg:hidden">
                     <button @click="sidebarOpen = true" type="button" class="-m-2 inline-flex flex-col items-center justify-center rounded-md p-1 text-gray-400">
@@ -40,19 +40,19 @@ class="relative">
 {{--                </div>--}}
 
                 <!-- Notifications Bell (for authenticated users with admin/salesperson roles) -->
-                @auth
-                    <livewire:frontend.partials.notification-bell />
-                @endauth
+{{--                @auth--}}
+{{--                    <livewire:frontend.partials.notification-bell />--}}
+{{--                @endauth--}}
 
                 <!-- Cart Component -->
                 @livewire('frontend.cart.cart-component')
 
                 <!-- Profile/Auth Section -->
-                @guest
-                    @include('livewire.frontend.partials.guest-menu')
-                @else
-                    @include('livewire.frontend.partials.auth-menu')
-                @endguest
+{{--                @guest--}}
+{{--                    @include('livewire.frontend.partials.guest-menu')--}}
+{{--                @else--}}
+{{--                    @include('livewire.frontend.partials.auth-menu')--}}
+{{--                @endguest--}}
 
 
             </div>
