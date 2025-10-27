@@ -7,13 +7,13 @@
     <title>{{ __('Login') }} - {{ config('app.name') }}</title>
 
     <!-- Preload critical assets -->
-    <link rel="preload" href="{{ asset('assets/images/indirimgo_logo.png') }}" as="image">
+    <link rel="preload" href="{{ asset('assets/images/karmantelekom_logo.png') }}" as="image">
     <link rel="dns-prefetch" href="https://fonts.bunny.net">
 
     <!-- Fonts - Load only what we need -->
     <link rel="preconnect" href="https://fonts.bunny.net" crossorigin>
     <link href="https://fonts.bunny.net/css?family=figtree:400,500,600&display=swap" rel="stylesheet">
-    <link rel="icon" type="image/png" href="{{ asset('assets/images/indirimgo_logo.png') }}">
+    <link rel="icon" type="image/png" href="{{ asset('assets/images/karmantelekom_logo.png') }}">
 
     <!-- Critical CSS inline -->
     <style>
@@ -94,7 +94,7 @@
                     <!-- Logo Container with Gradient Border -->
                     <div class="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl blur-lg opacity-75"></div>
                     <div class="relative bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-2xl">
-                        <img src="{{ asset('assets/images/indirimgo_logo.png') }}"
+                        <img src="{{ asset('assets/images/karmantelekom_logo.png') }}"
                              alt="{{ config('app.name') }}"
                              class="w-24 h-24 mx-auto object-contain"
                              loading="eager">
