@@ -121,7 +121,7 @@
                 <div class="h-full px-3 py-4 overflow-y-auto">
                     <div class="flex items-center justify-center px-2">
                         <a href="#" class="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
-                            <img src="{{ Storage::url('title-logo.svg') }}" class="w-32" alt="">
+                            <img src="{{ asset('assets/images/karmantelekom_logo.png') }}" class="w-32" alt="">
                         </a>
                         <button @click="sidebarOpen = !sidebarOpen" class="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200">
                             <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -287,7 +287,7 @@
                             <div class="flex items-center gap-4">
                                 <!-- Currency Rate Display -->
                                 <livewire:backend.partials.currency-rate-display />
-                                
+
                                 <!-- Notification Bell Dropdown -->
                                 <livewire:backend.partials.notification-dropdown />
                                 <div x-data="{ open: false }" class="relative">
