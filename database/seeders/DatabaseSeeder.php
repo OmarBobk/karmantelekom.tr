@@ -13,13 +13,13 @@ class DatabaseSeeder extends Seeder
         $this->call([
             RolesAndPermissionsSeeder::class,
             CurrencySeeder::class,
-            CategorySeeder::class,
-            TagSeeder::class,
-            ProductSeeder::class,
+//            CategorySeeder::class,
+//            TagSeeder::class,
+//            ProductSeeder::class,
             ProductPriceSeeder::class,
             SectionSeeder::class,
-            ShopSeeder::class,
-            AddressSeeder::class,
+//            ShopSeeder::class,
+//            AddressSeeder::class,
             // SalespersonAssignmentSeeder::class, // Uncomment if you want to use it
             SettingSeeder::class,
         ]);
