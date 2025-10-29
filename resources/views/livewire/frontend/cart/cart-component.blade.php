@@ -3,7 +3,7 @@
         showCart: false,
         loading: false,
         whatsappNumber: @js(App\Facades\Settings::get('whatsapp_number', '905353402539')),
-        minOrderAmount: 1000,
+        minOrderAmount: 0,
         toggleCart() {
             this.showCart = !this.showCart;
             this.updateBodyScroll();
