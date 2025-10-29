@@ -11,17 +11,7 @@ class Kernel extends ConsoleKernel
 {
     protected function schedule(Schedule $schedule): void
     {
-        // Update currency exchange rates every hour
-        $schedule->call(function () {
-            app(CurrencyService::class)->updateExchangeRates();
-        })->hourly();
 
-        // Update product prices after exchange rates are updated
-        $schedule->command('products:update-prices')
-            ->hourly()
-            ->after(function () {
-                \Log::info('Product prices updated successfully');
-            });
     }
 
     protected function commands(): void
@@ -30,4 +20,4 @@ class Kernel extends ConsoleKernel
 
         require base_path('routes/console.php');
     }
-} 
+}

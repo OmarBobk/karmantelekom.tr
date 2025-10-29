@@ -302,7 +302,7 @@ class ProductsComponent extends Component
         $this->allTags = Tag::orderBy('display_order')->get();
         $this->initializeAddForm();
         $this->loadProductStatuses();
-        $this->loadExchangeRate();
+//        $this->loadExchangeRate();
     }
 
     /**
