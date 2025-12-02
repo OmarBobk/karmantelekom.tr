@@ -441,6 +441,8 @@ class ProductsComponent extends Component
         })->toArray();
 
         $this->editModalOpen = true;
+        // Tell the frontend that the edit modal is now open so rich text editors can be initialised
+        $this->dispatch('initEditDescriptionEditor');
     }
 
     /**

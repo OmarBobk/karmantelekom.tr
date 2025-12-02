@@ -76,7 +76,7 @@
                                 <button wire:click="$dispatch('openProductModal', { productId: {{ $product->id }} })" class="text-left">
                                     <div class="line-clamp-3">
                                         <span class="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors duration-200">{{ $product->translated_name }}</span>
-                                        <span class="text-sm text-gray-500">{{ $product->translated_description }}</span>
+                                        <span class="text-sm text-gray-500">{!! $product->translated_description !!}</span>
                                     </div>
                                 </button>
                             </div>

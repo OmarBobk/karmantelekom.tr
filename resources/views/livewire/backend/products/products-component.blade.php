@@ -1,5 +1,6 @@
 <div class="min-h-screen bg-gray-100 py-8">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+
         <!-- Header -->
         <div class="mb-8">
             <div class="flex flex-col md:flex-row md:items-center md:justify-between">
@@ -195,9 +196,9 @@
                                     </td>
                                     <td class="px-6 py-4">
                                         <div class="text-sm text-gray-900 text-left max-w-[10rem]">
-                                            <p class="line-clamp-2 cursor-pointer" x-data="{ expanded: false }" @click="expanded = !expanded" :class="{ 'line-clamp-none': expanded }" title="{{ $product->description }}">
-                                                {{ $product->description }}
-                                            </p>
+                                            <div class="line-clamp-3" x-data="{ expanded: false }" @click="expanded = !expanded" :class="{ 'line-clamp-none': expanded }">
+                                                <span class="text-sm text-gray-500">{!! $product->description !!}</span>
+                                            </div>
                                         </div>
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{{ $product->code }}</td>
@@ -473,11 +474,14 @@
 
                             <!-- Description -->
                             <div>
-                                <label for="description" class="block text-sm font-medium text-gray-700">Description (English)</label>
-                                <textarea wire:model="editForm.description"
-                                    id="description"
-                                    rows="3"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></textarea>
+                                <label for="edit-description" class="block text-sm font-medium text-gray-700">Description (English)</label>
+                                <div wire:ignore>
+                                    <textarea
+                                        id="edit-description"
+                                        rows="3"
+                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                    ></textarea>
+                                </div>
                                 @error('editForm.description')
                                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
@@ -485,11 +489,14 @@
 
                             <!-- Turkish Description -->
                             <div>
-                                <label for="tr-description" class="block text-sm font-medium text-gray-700">Description (Turkish)</label>
-                                <textarea wire:model="editForm.tr_description"
-                                    id="tr-description"
-                                    rows="3"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></textarea>
+                                <label for="edit-tr-description" class="block text-sm font-medium text-gray-700">Description (Turkish)</label>
+                                <div wire:ignore>
+                                    <textarea
+                                        id="edit-tr-description"
+                                        rows="3"
+                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                    ></textarea>
+                                </div>
                                 @error('editForm.tr_description')
                                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
@@ -497,11 +504,14 @@
 
                             <!-- Arabic Description -->
                             <div>
-                                <label for="ar-description" class="block text-sm font-medium text-gray-700">Description (Arabic)</label>
-                                <textarea wire:model="editForm.ar_description"
-                                    id="ar-description"
-                                    rows="3"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></textarea>
+                                <label for="edit-ar-description" class="block text-sm font-medium text-gray-700">Description (Arabic)</label>
+                                <div wire:ignore>
+                                    <textarea
+                                        id="edit-ar-description"
+                                        rows="3"
+                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                    ></textarea>
+                                </div>
                                 @error('editForm.ar_description')
                                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
@@ -1504,5 +1514,96 @@
         </div>
     </div>
 
+    @push('scripts')
+
+        <script>
+            document.addEventListener('livewire:init', () => {
+                const {
+                    ClassicEditor,
+                    Essentials,
+                    Bold,
+                    Italic,
+                    Font,
+                    Paragraph
+                } = CKEDITOR;
+
+                let enEditor = null;
+                let trEditor = null;
+                let arEditor = null;
+
+                const createEditor = (selector, initialValueGetter, valueSetter, existingInstanceRefSetter) => {
+                    const textarea = document.querySelector(selector);
+
+                    if (!textarea) {
+                        return null;
+                    }
+
+                    const existingInstance = existingInstanceRefSetter('get');
+                    if (existingInstance) {
+                        existingInstance.destroy().catch(() => {});
+                        existingInstanceRefSetter('set', null);
+                    }
+
+                    return ClassicEditor.create(textarea, {
+                        licenseKey: 'eyJhbGciOiJFUzI1NiJ9.eyJleHAiOjE3OTYxNjk1OTksImp0aSI6IjFiYjE0ZTNhLWYwNjYtNDJkZi04ZTk0LTU1MTBlMjRjYzI3YyIsInVzYWdlRW5kcG9pbnQiOiJodHRwczovL3Byb3h5LWV2ZW50LmNrZWRpdG9yLmNvbSIsImRpc3RyaWJ1dGlvbkNoYW5uZWwiOlsiY2xvdWQiLCJkcnVwYWwiXSwiZmVhdHVyZXMiOlsiRFJVUCIsIkUyUCIsIkUyVyJdLCJyZW1vdmVGZWF0dXJlcyI6WyJQQiIsIlJGIiwiU0NIIiwiVENQIiwiVEwiLCJUQ1IiLCJJUiIsIlNVQSIsIkI2NEEiLCJMUCIsIkhFIiwiUkVEIiwiUEZPIiwiV0MiLCJGQVIiLCJCS00iLCJGUEgiLCJNUkUiXSwidmMiOiIxNWE1MjQ4OCJ9.lkrgGKKiwWH94_jtv0BsO5pFm857YRhGEC_SSVFBwQYvbnE0D2-17qRSmArpwYaYQONiNNLgnBBi1k0X-Vqkzg',
+                        plugins: [Essentials, Bold, Italic, Font, Paragraph],
+                        toolbar: [
+                            'undo', 'redo', '|', 'bold', 'italic', '|',
+                            'fontSize', 'fontFamily', 'fontColor', 'fontBackgroundColor'
+                        ]
+                    })
+                        .then(editor => {
+                            existingInstanceRefSetter('set', editor);
+                            editor.setData(initialValueGetter() ?? '');
+
+                            editor.model.document.on('change:data', () => {
+                                valueSetter(editor.getData());
+                            });
+                        })
+                        .catch(error => {
+                            console.error(error);
+                        });
+                };
+
+                const initEditEditors = () => {
+                    createEditor(
+                        '#edit-description',
+                        () => @this.get('editForm.description'),
+                        value => @this.set('editForm.description', value),
+                        (action, value = null) => {
+                            if (action === 'get') return enEditor;
+                            if (action === 'set') enEditor = value;
+                        }
+                    );
+
+                    createEditor(
+                        '#edit-tr-description',
+                        () => @this.get('editForm.tr_description'),
+                        value => @this.set('editForm.tr_description', value),
+                        (action, value = null) => {
+                            if (action === 'get') return trEditor;
+                            if (action === 'set') trEditor = value;
+                        }
+                    );
+
+                    createEditor(
+                        '#edit-ar-description',
+                        () => @this.get('editForm.ar_description'),
+                        value => @this.set('editForm.ar_description', value),
+                        (action, value = null) => {
+                            if (action === 'get') return arEditor;
+                            if (action === 'set') arEditor = value;
+                        }
+                    );
+                };
+
+                // Initialize when Livewire asks for it (when edit modal opens)
+                Livewire.on('initEditDescriptionEditor', () => {
+                    // Small timeout to ensure the modal DOM is fully rendered and visible
+                    setTimeout(initEditEditors, 50);
+                });
+            });
+        </script>
+    @endpush
 
 </div>

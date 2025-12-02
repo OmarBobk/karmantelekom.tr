@@ -10,6 +10,7 @@
         <style>
             [x-cloak] { display: none !important; }
         </style>
+        <link rel="stylesheet" href="https://cdn.ckeditor.com/ckeditor5/47.2.0/ckeditor5.css" />
 
         <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     </head>
@@ -336,6 +337,7 @@
             </div>
         </div>
 
+        <script src="https://cdn.ckeditor.com/ckeditor5/47.2.0/ckeditor5.umd.js"></script>
         @stack('scripts')
     </body>
 </html>
