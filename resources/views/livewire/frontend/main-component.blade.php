@@ -595,7 +595,7 @@
                                                     <div class="flex-grow">
                                                         <div class="mb-3">
                                                             <button wire:click="$dispatch('openProductModal', { productId: {{ $product->id }} })" class="text-left">
-                                                                <div class="h-[4.5rem] {{ app()->getLocale() == 'ar' ? 'text-right' : '' }}">
+                                                                <div class="line-clamp-3 h-[4.5rem] {{ app()->getLocale() == 'ar' ? 'text-right' : '' }}">
                                                                     <h3 class="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors duration-200 line-clamp-1">{{ $product->translated_name }}</h3>
                                                                     <p class="text-sm text-gray-500 line-clamp-2">{!! $product->translated_description !!}</p>
                                                                 </div>
