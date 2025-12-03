@@ -1524,7 +1524,8 @@
                     Bold,
                     Italic,
                     Font,
-                    Paragraph
+                    Paragraph,
+                    List
                 } = CKEDITOR;
 
                 let enEditor = null;
@@ -1546,10 +1547,11 @@
 
                     return ClassicEditor.create(textarea, {
                         licenseKey: 'eyJhbGciOiJFUzI1NiJ9.eyJleHAiOjE3OTYxNjk1OTksImp0aSI6IjFiYjE0ZTNhLWYwNjYtNDJkZi04ZTk0LTU1MTBlMjRjYzI3YyIsInVzYWdlRW5kcG9pbnQiOiJodHRwczovL3Byb3h5LWV2ZW50LmNrZWRpdG9yLmNvbSIsImRpc3RyaWJ1dGlvbkNoYW5uZWwiOlsiY2xvdWQiLCJkcnVwYWwiXSwiZmVhdHVyZXMiOlsiRFJVUCIsIkUyUCIsIkUyVyJdLCJyZW1vdmVGZWF0dXJlcyI6WyJQQiIsIlJGIiwiU0NIIiwiVENQIiwiVEwiLCJUQ1IiLCJJUiIsIlNVQSIsIkI2NEEiLCJMUCIsIkhFIiwiUkVEIiwiUEZPIiwiV0MiLCJGQVIiLCJCS00iLCJGUEgiLCJNUkUiXSwidmMiOiIxNWE1MjQ4OCJ9.lkrgGKKiwWH94_jtv0BsO5pFm857YRhGEC_SSVFBwQYvbnE0D2-17qRSmArpwYaYQONiNNLgnBBi1k0X-Vqkzg',
-                        plugins: [Essentials, Bold, Italic, Font, Paragraph],
+                        plugins: [Essentials, Bold, Italic, Font, Paragraph, List],
                         toolbar: [
                             'undo', 'redo', '|', 'bold', 'italic', '|',
-                            'fontSize', 'fontFamily', 'fontColor', 'fontBackgroundColor'
+                            'fontSize', 'fontColor', 'fontBackgroundColor', '|',
+                            'bulletedList', 'numberedList'
                         ]
                     })
                         .then(editor => {
