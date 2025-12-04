@@ -297,6 +297,7 @@ class ProductsComponent extends Component
     {
         if (session('openAddProductModal')) {
             $this->addModalOpen = true;
+            $this->dispatch('initAddDescriptionEditor');
         }
         $this->categories = Category::with('children')->whereNull('parent_id')->get();
         $this->allTags = Tag::orderBy('display_order')->get();
@@ -340,6 +341,12 @@ class ProductsComponent extends Component
     public function updatingAddModalOpen(): void
     {
         $this->initializeAddForm();
+    }
+
+    public function openAddModal(): void
+    {
+        $this->addModalOpen = true;
+        $this->dispatch('initAddDescriptionEditor');
     }
 
     public function sortBy(string $field): void

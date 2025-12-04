@@ -10,7 +10,7 @@
                     </h2>
                 </div>
                 <div class="mt-4 flex md:mt-0 md:ml-4">
-                    <button wire:click="$set('addModalOpen', true)" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    <button wire:click="openAddModal" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                         </svg>
@@ -1188,11 +1188,13 @@
                             <!-- Description -->
                             <div>
                                 <label for="add-description" class="block text-sm font-medium text-gray-700">Description (English)</label>
-                                <textarea
-                                    wire:model="addForm.description"
-                                    id="add-description"
-                                    rows="3"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></textarea>
+                                <div wire:ignore>
+                                    <textarea
+                                        id="add-description"
+                                        rows="3"
+                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                    ></textarea>
+                                </div>
                                 @error('addForm.description')
                                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
@@ -1201,11 +1203,13 @@
                             <!-- Turkish Description -->
                             <div>
                                 <label for="add-tr-description" class="block text-sm font-medium text-gray-700">Description (Turkish)</label>
-                                <textarea
-                                    wire:model="addForm.tr_description"
-                                    id="add-tr-description"
-                                    rows="3"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></textarea>
+                                <div wire:ignore>
+                                    <textarea
+                                        id="add-tr-description"
+                                        rows="3"
+                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                    ></textarea>
+                                </div>
                                 @error('addForm.tr_description')
                                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
@@ -1214,11 +1218,13 @@
                             <!-- Arabic Description -->
                             <div>
                                 <label for="add-ar-description" class="block text-sm font-medium text-gray-700">Description (Arabic)</label>
-                                <textarea
-                                    wire:model="addForm.ar_description"
-                                    id="add-ar-description"
-                                    rows="3"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></textarea>
+                                <div wire:ignore>
+                                    <textarea
+                                        id="add-ar-description"
+                                        rows="3"
+                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                    ></textarea>
+                                </div>
                                 @error('addForm.ar_description')
                                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
@@ -1528,24 +1534,32 @@
                     List
                 } = CKEDITOR;
 
-                let enEditor = null;
-                let trEditor = null;
-                let arEditor = null;
+                const editorInstances = {
+                    edit_en: null,
+                    edit_tr: null,
+                    edit_ar: null,
+                    add_en: null,
+                    add_tr: null,
+                    add_ar: null
+                };
 
-                const createEditor = (selector, initialValueGetter, valueSetter, existingInstanceRefSetter) => {
+                const destroyEditor = (key) => {
+                    if (editorInstances[key]) {
+                        editorInstances[key].destroy().catch(() => {});
+                        editorInstances[key] = null;
+                    }
+                };
+
+                const createEditor = (selector, initialValueGetter, valueSetter, instanceKey) => {
                     const textarea = document.querySelector(selector);
 
                     if (!textarea) {
                         return null;
                     }
 
-                    const existingInstance = existingInstanceRefSetter('get');
-                    if (existingInstance) {
-                        existingInstance.destroy().catch(() => {});
-                        existingInstanceRefSetter('set', null);
-                    }
+                    destroyEditor(instanceKey);
 
-                    return ClassicEditor.create(textarea, {
+                    ClassicEditor.create(textarea, {
                         licenseKey: 'eyJhbGciOiJFUzI1NiJ9.eyJleHAiOjE3OTYxNjk1OTksImp0aSI6IjFiYjE0ZTNhLWYwNjYtNDJkZi04ZTk0LTU1MTBlMjRjYzI3YyIsInVzYWdlRW5kcG9pbnQiOiJodHRwczovL3Byb3h5LWV2ZW50LmNrZWRpdG9yLmNvbSIsImRpc3RyaWJ1dGlvbkNoYW5uZWwiOlsiY2xvdWQiLCJkcnVwYWwiXSwiZmVhdHVyZXMiOlsiRFJVUCIsIkUyUCIsIkUyVyJdLCJyZW1vdmVGZWF0dXJlcyI6WyJQQiIsIlJGIiwiU0NIIiwiVENQIiwiVEwiLCJUQ1IiLCJJUiIsIlNVQSIsIkI2NEEiLCJMUCIsIkhFIiwiUkVEIiwiUEZPIiwiV0MiLCJGQVIiLCJCS00iLCJGUEgiLCJNUkUiXSwidmMiOiIxNWE1MjQ4OCJ9.lkrgGKKiwWH94_jtv0BsO5pFm857YRhGEC_SSVFBwQYvbnE0D2-17qRSmArpwYaYQONiNNLgnBBi1k0X-Vqkzg',
                         plugins: [Essentials, Bold, Italic, Font, Paragraph, List],
                         toolbar: [
@@ -1555,7 +1569,7 @@
                         ]
                     })
                         .then(editor => {
-                            existingInstanceRefSetter('set', editor);
+                            editorInstances[instanceKey] = editor;
                             editor.setData(initialValueGetter() ?? '');
 
                             editor.model.document.on('change:data', () => {
@@ -1572,30 +1586,44 @@
                         '#edit-description',
                         () => @this.get('editForm.description'),
                         value => @this.set('editForm.description', value),
-                        (action, value = null) => {
-                            if (action === 'get') return enEditor;
-                            if (action === 'set') enEditor = value;
-                        }
+                        'edit_en'
                     );
 
                     createEditor(
                         '#edit-tr-description',
                         () => @this.get('editForm.tr_description'),
                         value => @this.set('editForm.tr_description', value),
-                        (action, value = null) => {
-                            if (action === 'get') return trEditor;
-                            if (action === 'set') trEditor = value;
-                        }
+                        'edit_tr'
                     );
 
                     createEditor(
                         '#edit-ar-description',
                         () => @this.get('editForm.ar_description'),
                         value => @this.set('editForm.ar_description', value),
-                        (action, value = null) => {
-                            if (action === 'get') return arEditor;
-                            if (action === 'set') arEditor = value;
-                        }
+                        'edit_ar'
+                    );
+                };
+
+                const initAddEditors = () => {
+                    createEditor(
+                        '#add-description',
+                        () => @this.get('addForm.description'),
+                        value => @this.set('addForm.description', value),
+                        'add_en'
+                    );
+
+                    createEditor(
+                        '#add-tr-description',
+                        () => @this.get('addForm.tr_description'),
+                        value => @this.set('addForm.tr_description', value),
+                        'add_tr'
+                    );
+
+                    createEditor(
+                        '#add-ar-description',
+                        () => @this.get('addForm.ar_description'),
+                        value => @this.set('addForm.ar_description', value),
+                        'add_ar'
                     );
                 };
 
@@ -1603,6 +1631,11 @@
                 Livewire.on('initEditDescriptionEditor', () => {
                     // Small timeout to ensure the modal DOM is fully rendered and visible
                     setTimeout(initEditEditors, 50);
+                });
+
+                // Initialize when Livewire asks for it (when add modal opens)
+                Livewire.on('initAddDescriptionEditor', () => {
+                    setTimeout(initAddEditors, 50);
                 });
             });
         </script>
