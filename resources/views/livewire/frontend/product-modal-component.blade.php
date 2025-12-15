@@ -87,7 +87,7 @@
         </div>
 
         <!-- Right: Details -->
-        <div class="md:w-1/2 flex flex-col justify-between p-8">
+        <div class="md:w-1/2 flex flex-col justify-between p-8 h-full">
             <div class="flex flex-col flex-1 justify-between">
                 {{-- Breadcrumbs --}}
                 @if($product->category)
