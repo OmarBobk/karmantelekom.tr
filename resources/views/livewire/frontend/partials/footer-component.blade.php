@@ -95,7 +95,9 @@
             <span class="text-lg font-semibold text-gray-900 block mb-4">{{__('main.legal')}}</span>
             <div class="flex flex-col space-y-3 mt-4">
                 @foreach($legalLinks as $link)
-                    <a href="{{ $link['url'] }}" class="text-gray-600 hover:text-blue-600 transition-colors duration-200">{{ __('main.'.strtolower(str_replace(' ', '_', $link['name']))) }}</a>
+                    <a href="{{ $link['url'] }}" class="text-gray-600 hover:text-blue-600 transition-colors duration-200">
+                        {{ __('main.' . $link['name']) }}
+                    </a>
                 @endforeach
             </div>
         </div>
@@ -119,6 +121,7 @@
                     <p>{{__('main.copyright')}} © {{ date('Y') }} {{config('app.name')}}. {{__('main.all_rights_reserved')}}.</p>
                 </div>
                 <div class="flex items-center gap-4">
+
 {{--                    @if($canSwitchCurrency)--}}
 {{--                        <div class="relative w-1/2 py-1 px-2 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"--}}
 {{--                            x-data="{ open: false }">--}}
@@ -157,6 +160,25 @@
 {{--                            </div>--}}
 {{--                        </div>--}}
 {{--                    @endif--}}
+                </div>
+                <div class="flex items-center gap-4">
+                    <span class="text-xs text-gray-500 uppercase tracking-wide">
+                        Secure payments
+                    </span>
+                    <div class="flex items-center gap-3">
+                        <img
+                            src="{{ asset('assets/images/visa_logo.png') }}"
+                            alt="Visa"
+                            class="h-7 w-auto object-contain filter grayscale hover:grayscale-0 transition duration-200 drop-shadow-sm"
+                        >
+                        @if(file_exists(public_path('assets/images/mastercard_logo.png')))
+                            <img
+                                src="{{ asset('assets/images/mastercard_logo.png') }}"
+                                alt="Mastercard"
+                                class="h-7 w-auto object-contain filter grayscale hover:grayscale-0 transition duration-200 drop-shadow-sm"
+                            >
+                        @endif
+                    </div>
                 </div>
             </div>
         </div>

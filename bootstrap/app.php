@@ -23,6 +23,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'role_or_permission' => \Spatie\Permission\Middleware\RoleOrPermissionMiddleware::class,
             'role.redirect' => \App\Http\Middleware\RoleRedirectMiddleware::class,
             'shop.creation' => \App\Http\Middleware\ShopCreationMiddleware::class,
+            'language.prefix' => \App\Http\Middleware\HandleLanguagePrefix::class,
         ]);
         $middleware->web([
             \App\Http\Middleware\SetLocale::class,

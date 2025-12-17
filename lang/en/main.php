@@ -35,6 +35,7 @@ return [
     'contact' => 'Contact',
     'blog' => 'Blog',
     'privacy_policy' => 'Privacy Policy',
+    'distance_sales_contract' => 'Distance Sales Contract',
     'terms_of_use' => 'Terms of Use',
     'cookie_policy' => 'Cookie Policy',
     'license' => 'License',

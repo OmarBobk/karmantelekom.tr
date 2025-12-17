@@ -3,6 +3,7 @@
 namespace App\Livewire\Frontend\Partials;
 
 use App\Models\Setting;
+use App\Services\LanguageService;
 use Livewire\Component;
 
 class FooterComponent extends Component
@@ -11,11 +12,9 @@ class FooterComponent extends Component
 
     public $companyLinks = [];
 
-    public $legalLinks = [
-        ['name' => 'Terms of use', 'url' => '#'],
-        ['name' => 'Privacy policy', 'url' => '#'],
-        ['name' => 'Cookie policy', 'url' => '#'],
-    ];
+    public $legalLinks = [];
+
+    private LanguageService $languageService;
 
     public $supportLinks = [
         ['name' => 'Help Center', 'url' => '#'],
@@ -28,6 +27,11 @@ class FooterComponent extends Component
 
     public array $settings = [];
 
+    public function boot(LanguageService $languageService): void
+    {
+        $this->languageService = $languageService;
+    }
+
     public function mount()
     {
         $this->settings = Setting::whereGroup('social')
@@ -38,10 +42,19 @@ class FooterComponent extends Component
         $this->currentCurrency = session('currency', config('app.currency', 'TRY'));
         $this->canSwitchCurrency = auth()->check() && auth()->user()->hasAnyRole(['admin', 'salesperson', 'shop_owner']);
 
+        $currentLang = $this->languageService->getCurrentLanguage();
+
         $this->companyLinks = [
             ['name' => 'About Us', 'url' => '#'],
             ['name' => 'Contact', 'url' => route('contactus')],
             ['name' => 'Blog', 'url' => '#'],
+        ];
+
+        // Use translation keys here; the Blade view will call __('main.' . $link['name'])
+        $this->legalLinks = [
+            ['name' => 'privacy_policy', 'url' => route('privacy-policy', ['locale' => $currentLang])],
+            ['name' => 'distance_sales_contract', 'url' => route('distance-sales-contract', ['locale' => $currentLang])],
+            ['name' => 'cookie_policy', 'url' => '#'],
         ];
 
         $this->socialLinks = [

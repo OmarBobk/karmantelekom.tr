@@ -36,6 +36,7 @@ return [
     'contact' => 'اتصل',
     'blog' => 'مدونة',
     'privacy_policy' => 'سياسة الخصوصية',
+    'distance_sales_contract' => 'عقد البيع عن بُعد',
     'terms_of_use' => 'شروط الاستخدام',
     'cookie_policy' => 'سياسة ملفات تعريف الارتباط',
     'license' => 'ترخيص',

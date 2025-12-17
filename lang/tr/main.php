@@ -35,6 +35,7 @@ return [
     'contact' => 'İletişim',
     'blog' => 'Blog',
     'privacy_policy' => 'Gizlilik Politikası',
+    'distance_sales_contract' => 'Mesafeli Satış Sözleşmesi',
     'terms_of_use' => 'Kullanım Şartları',
     'cookie_policy' => 'Çerez Politikası',
     'license' => 'Lisans',
