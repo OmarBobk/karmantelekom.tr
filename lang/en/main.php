@@ -81,4 +81,14 @@ return [
 
 
     'close' => "Close",
+
+    // Footer Features
+    'fast_shipping_title' => 'FAST SHIPPING',
+    'fast_shipping_description' => 'FAST SHIPPING FOR ORDERS PLACED ON WEEKDAYS WITHIN 24 HOURS!',
+    'free_shipping_title' => 'FREE SHIPPING',
+    'free_shipping_description' => 'FREE SHIPPING ON PRODUCTS OVER 300 TL',
+    'payment_options_title' => 'PAYMENT OPTIONS',
+    'payment_options_description' => 'CREDIT CARD AND DEBIT CARD',
+    'secure_shopping_title' => 'SECURE SHOPPING',
+    'secure_shopping_description' => 'YOUR CARD INFORMATION IS SAFE WITH 256 BIT SSL CERTIFICATE!',
 ];

@@ -79,4 +79,14 @@ return [
     'no_result_found_for' => 'Sonuç bulunamadı',
     'try_adjusting_your_search_or_filter_to_find_what_you\'re looking for.' => 'Aradığınızı bulmak için aramanızı veya filtrelemenizi ayarlamayı deneyin.',
     'close' => 'Kapat',
+
+    // Footer Features
+    'fast_shipping_title' => 'HIZLI KARGO',
+    'fast_shipping_description' => 'HAFTA İÇİ VERİLEN SİPARİŞLERDE 24 SAAT İÇİNDE HIZLI KARGO!',
+    'free_shipping_title' => 'ÜCRETSİZ KARGO',
+    'free_shipping_description' => '300 TL ÜZERİ ÜRÜNLERDE KARGO BEDAVA',
+    'payment_options_title' => 'ÖDEME SEÇENEKLERİ',
+    'payment_options_description' => 'KREDİ KARTI VE BANKA KARTI',
+    'secure_shopping_title' => 'GÜVENLİ ALIŞVERİŞ',
+    'secure_shopping_description' => '256 BIT SSL SERTİFİKASI İLE KART BİLGİLERİNİZ GÜVENDE!',
 ];

@@ -517,7 +517,7 @@
     <!-- End Slider Component -->
 
     <!-- Start Products Section Component -->
-    <div class="w-full bg-gray-50 pb-8" x-cloak>
+    <div class="w-full bg-gray-50 " x-cloak>
         @if(!empty($this->contentSections))
         @foreach($this->contentSections as $section)
             <div class="w-full bg-white py-8 {{ !$loop->last ? 'border-b border-gray-100' : '' }}">

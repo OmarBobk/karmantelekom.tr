@@ -83,4 +83,14 @@ return [
     'no_result_found_for' => 'لم يتم العثور على نتائج ',
     'try_adjusting_your_search_or_filter_to_find_what_you\'re looking for.' => 'حاول تعديل بحثك أو التصفية للعثور على ما تبحث عنه.',
     'close' => "إغلاق",
+
+    // Footer Features
+    'fast_shipping_title' => 'شحن سريع',
+    'fast_shipping_description' => 'شحن سريع للطلبات المقدمة في أيام الأسبوع خلال 24 ساعة!',
+    'free_shipping_title' => 'شحن مجاني',
+    'free_shipping_description' => 'شحن مجاني للمنتجات التي تزيد عن 300 ليرة تركية',
+    'payment_options_title' => 'خيارات الدفع',
+    'payment_options_description' => 'بطاقة الائتمان وبطاقة الخصم',
+    'secure_shopping_title' => 'تسوق آمن',
+    'secure_shopping_description' => 'معلومات بطاقتك آمنة مع شهادة SSL 256 بت!',
 ];

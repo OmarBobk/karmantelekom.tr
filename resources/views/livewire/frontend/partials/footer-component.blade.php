@@ -1,34 +1,89 @@
 <div class="bg-gray-100">
-    <!-- Newsletter Section -->
-    <div class="bg-gradient-to-r from-blue-600 to-purple-700">
+    <!-- Features Section -->
+    <div class=" bg-gray-100 border-b border-gray-200">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 items-center">
-                <div class="text-white">
-                    <h3 class="text-2xl font-bold mb-2">{{__('main.subscribe_to_our_newsletter')}}</h3>
-                    <p class="text-blue-100">{{__('main.stay_up_to_date_with_the_latest_news_announcements_and_articles')}}</p>
-                </div>
-                <form class="flex flex-col md:flex-col sm:flex-row gap-3">
-                    <input type="email" placeholder="{{__('main.enter_your_email')}}" class="w-full px-4 py-3 text-lg rounded-lg bg-white/10 text-white placeholder-blue-200 border border-white/20 focus:border-white focus:ring-2 focus:ring-white outline-none">
-                    <button class="inline-flex items-center justify-center px-6 py-3 text-lg font-medium bg-white text-blue-600 hover:bg-blue-50 rounded-lg border border-white transition-colors duration-200">
-                        {{__('main.subscribe')}}
-                        <svg xmlns="http://www.w3.org/2000/svg" class="h-5 w-5 ml-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6" />
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 ml-4">
+                <!-- Fast Shipping -->
+                <div class="flex items-center gap-4 group">
+                    <div class="flex-shrink-0 w-14 h-14 rounded-full bg-orange-500 flex items-center justify-center group-hover:scale-110 transition-transform duration-200 shadow-lg">
+                        <svg class="w-9 h-9 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
-                    </button>
-                </form>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-gray-900 mb-1 text-sm uppercase tracking-wide">
+                            {{ __('main.fast_shipping_title') }}
+                        </h3>
+                        <p class="text-xs text-gray-600 leading-relaxed">
+                            {{ __('main.fast_shipping_description') }}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Free Shipping -->
+                <div class="flex items-center gap-4 group">
+                    <div class="flex-shrink-0 w-14 h-14 rounded-full bg-blue-400 flex items-center justify-center group-hover:scale-110 transition-transform duration-200 shadow-lg">
+                        <svg class="w-9 h-9 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-gray-900 mb-1 text-sm uppercase tracking-wide">
+                            {{ __('main.free_shipping_title') }}
+                        </h3>
+                        <p class="text-xs text-gray-600 leading-relaxed">
+                            {{ __('main.free_shipping_description') }}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Payment Options -->
+                <div class="flex items-center gap-4 group">
+                    <div class="flex-shrink-0 w-14 h-14 rounded-full bg-pink-500 flex items-center justify-center group-hover:scale-110 transition-transform duration-200 shadow-lg relative">
+                        <svg class="w-9 h-9 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
+                        </svg>
+                    </div>
+
+                    <div class="flex-1">
+                        <h3 class="font-bold text-gray-900 mb-1 text-sm uppercase tracking-wide">
+                            {{ __('main.payment_options_title') }}
+                        </h3>
+                        <p class="text-xs text-gray-600 leading-relaxed">
+                            {{ __('main.payment_options_description') }}
+                        </p>
+                    </div>
+                </div>
+
+                <!-- Secure Shopping -->
+                <div class="flex items-center gap-4 group">
+                    <div class="flex-shrink-0 w-14 h-14 rounded-full bg-lime-500 flex items-center justify-center group-hover:scale-110 transition-transform duration-200 shadow-lg">
+                        <svg class="w-9 h-9 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
+                        </svg>
+                    </div>
+                    <div class="flex-1">
+                        <h3 class="font-bold text-gray-900 mb-1 text-sm uppercase tracking-wide">
+                            {{ __('main.secure_shopping_title') }}
+                        </h3>
+                        <p class="text-xs text-gray-600 leading-relaxed">
+                            {{ __('main.secure_shopping_description') }}
+                        </p>
+                    </div>
+                </div>
             </div>
         </div>
     </div>
 
     <!-- Main Footer -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12 items-center justify-center">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 sm:py-12 py-4 items-center justify-center">
         <!-- Company Info -->
-        <div class="flex flex-col justify-between items-center">
-            <div>
+        <div class="flex flex-col justify-between">
+            <div class="pr-3">
                 <div class="flex">
-                <span class="text-2xl font-semibold bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">
-                <img src="{{ asset('assets/images/karmantelekom_logo.png') }}" class="w-36" alt="">
-            </span>
+                    <span class="text-2xl font-semibold bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">
+                        <img src="{{ asset('assets/images/karmantelekom_logo.png') }}" class="" alt="">
+                    </span>
                 </div>
                 <!-- Social Links -->
                 <div class="flex justify-between gap-4 my-3">
@@ -114,7 +169,7 @@
     </div>
 
     <!-- Bottom Footer -->
-    <div class="bg-gray-200 py-10">
+    <div class="border-t border-gray-200 py-10">
         <div class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex flex-col md:flex-row justify-between items-center gap-4">
                 <div class="text-sm text-gray-600">
