@@ -93,4 +93,8 @@ return [
     'payment_options_description' => 'بطاقة الائتمان وبطاقة الخصم',
     'secure_shopping_title' => 'تسوق آمن',
     'secure_shopping_description' => 'معلومات بطاقتك آمنة مع شهادة SSL 256 بت!',
+
+
+
+    'welcome_to_karmantelekom' => 'اهلا وسهلا في متجر كرمان تيليكوم',
 ];

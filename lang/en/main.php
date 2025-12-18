@@ -91,4 +91,7 @@ return [
     'payment_options_description' => 'CREDIT CARD AND DEBIT CARD',
     'secure_shopping_title' => 'SECURE SHOPPING',
     'secure_shopping_description' => 'YOUR CARD INFORMATION IS SAFE WITH 256 BIT SSL CERTIFICATE!',
+
+
+    'welcome_to_karmantelekom' => 'Welcome to Karman Telekom',
 ];

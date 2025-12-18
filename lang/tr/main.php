@@ -89,4 +89,6 @@ return [
     'payment_options_description' => 'KREDİ KARTI VE BANKA KARTI',
     'secure_shopping_title' => 'GÜVENLİ ALIŞVERİŞ',
     'secure_shopping_description' => '256 BIT SSL SERTİFİKASI İLE KART BİLGİLERİNİZ GÜVENDE!',
+
+    'welcome_to_karmantelekom' => 'Mağazamıza Hoşgeldiniz',
 ];

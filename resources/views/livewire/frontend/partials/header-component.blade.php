@@ -7,6 +7,19 @@
 x-on:keydown.escape.window="sidebarOpen = false; profileDropdownOpen = false"
 class="relative">
 
+    {{-- Welcome to Karman Telekom--}}
+    <div class="bg-blue-600">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-2 flex justify-between text-md text-white font-semibold font-sans ">
+            <div>
+                {{__('main.welcome_to_karmantelekom')}}
+            </div>
+
+{{--            <div>--}}
+{{--                Login--}}
+{{--            </div>--}}
+        </div>
+    </div>
+
     <!-- Top bar -->
     <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
         <div class="flex h-16 items-center justify-between">
