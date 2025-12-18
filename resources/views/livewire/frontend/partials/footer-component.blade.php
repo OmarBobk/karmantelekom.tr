@@ -2,7 +2,7 @@
     <!-- Features Section -->
     <div class=" bg-gray-100 border-b border-gray-200">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 ml-4">
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:ml-4 ml-3">
                 <!-- Fast Shipping -->
                 <div class="flex items-center gap-4 group">
                     <div class="flex-shrink-0 w-14 h-14 rounded-full bg-orange-500 flex items-center justify-center group-hover:scale-110 transition-transform duration-200 shadow-lg">
@@ -76,10 +76,10 @@
     </div>
 
     <!-- Main Footer -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 sm:py-12 py-4 items-center justify-center">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8 max-w-7xl mx-auto pl-7 sm:pl-6 px-4 sm:px-6 lg:px-8 sm:py-12 py-4 items-center justify-center">
         <!-- Company Info -->
         <div class="flex flex-col justify-between">
-            <div class="pr-3">
+            <div class="sm:pr-3 pr-2">
                 <div class="flex">
                     <span class="text-2xl font-semibold bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">
                         <img src="{{ asset('assets/images/karmantelekom_logo.png') }}" class="" alt="">
@@ -170,52 +170,12 @@
 
     <!-- Bottom Footer -->
     <div class="border-t border-gray-200 py-10">
-        <div class="max-w-7xl w-full mx-auto px-4 sm:px-6 lg:px-8">
+        <div class="max-w-7xl w-full mx-auto px-7 sm:px-6 lg:px-8">
             <div class="flex flex-col md:flex-row justify-between items-center gap-4">
                 <div class="text-sm text-gray-600">
                     <p>{{__('main.copyright')}} © {{ date('Y') }} {{config('app.name')}}. {{__('main.all_rights_reserved')}}.</p>
                 </div>
-                <div class="flex items-center gap-4">
 
-{{--                    @if($canSwitchCurrency)--}}
-{{--                        <div class="relative w-1/2 py-1 px-2 text-sm border border-gray-300 rounded-lg bg-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"--}}
-{{--                            x-data="{ open: false }">--}}
-{{--                            <button--}}
-{{--                                @click="open = !open"--}}
-{{--                                @click.away="open = false"--}}
-{{--                                class="flex w-full justify-between items-center space-x-1 text-sm text-gray-500 hover:text-gray-700"--}}
-{{--                            >--}}
-{{--                                <span>{{ $currentCurrency }}</span>--}}
-{{--                                <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">--}}
-{{--                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />--}}
-{{--                                </svg>--}}
-{{--                            </button>--}}
-
-{{--                            <div--}}
-{{--                                x-show="open"--}}
-{{--                                x-transition--}}
-{{--                                class="absolute bottom-full mb-2 right-0 w-24 rounded-md shadow-lg bg-white ring-1 ring-black ring-opacity-5 z-50"--}}
-{{--                            >--}}
-{{--                                <div class="py-1">--}}
-{{--                                    <button--}}
-{{--                                        wire:click="switchCurrency('USD')"--}}
-{{--                                        class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100"--}}
-{{--                                        :class="{ 'bg-gray-50': '{{ $currentCurrency }}' === 'USD' }"--}}
-{{--                                    >--}}
-{{--                                        USD--}}
-{{--                                    </button>--}}
-{{--                                    <button--}}
-{{--                                        wire:click="switchCurrency('TRY')"--}}
-{{--                                        class="block w-full px-4 py-2 text-sm text-left text-gray-700 hover:bg-gray-100"--}}
-{{--                                        :class="{ 'bg-gray-50': '{{ $currentCurrency }}' === 'TRY' }"--}}
-{{--                                    >--}}
-{{--                                        TRY--}}
-{{--                                    </button>--}}
-{{--                                </div>--}}
-{{--                            </div>--}}
-{{--                        </div>--}}
-{{--                    @endif--}}
-                </div>
                 <div class="flex items-center gap-4">
                     <span class="text-xs text-gray-500 uppercase tracking-wide">
                         Secure payments
