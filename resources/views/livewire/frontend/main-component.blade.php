@@ -550,7 +550,7 @@
 
                             <button
                                 @click="swiper.slideNext()"
-                                class="absolute right-0 top-1/2 -translate-y-1/2 z-10 size-10 flex items-center justify-center rounded-full bg-white shadow-lg border border-gray-200 text-gray-600 hover:text-gray-900 transition-all duration-200 translate-x-1/2 opacity-0 group-hover:opacity-100"
+                                class="absolute right-1 top-1/2 -translate-y-1/2 z-10 size-10 flex items-center justify-center rounded-full bg-white shadow-lg border border-gray-200 text-gray-600 hover:text-gray-900 transition-all duration-200 translate-x-1/2 opacity-0 group-hover:opacity-100"
                                 :class="{ 'opacity-0 pointer-events-none': atEnd, 'opacity-100': !atEnd }"
                             >
                                 <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
