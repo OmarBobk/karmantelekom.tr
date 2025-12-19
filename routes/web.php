@@ -34,6 +34,10 @@ Route::prefix('{locale}')->where(['locale' => 'en|tr|ar'])->group(function () {
     Route::get('/mesafeli-satis-sozlesmesi', \App\Livewire\Frontend\DistanceSalesContractComponent::class)
         ->middleware(['shop.creation', \App\Http\Middleware\HandleLanguagePrefix::class])
         ->name('distance-sales-contract');
+
+    Route::get('/teslimat-ve-iade', \App\Livewire\Frontend\DeliveryAndReturnComponent::class)
+        ->middleware(['shop.creation', \App\Http\Middleware\HandleLanguagePrefix::class])
+        ->name('delivery-and-return');
 });
 
 Route::get('/checkout', CheckoutComponent::class)

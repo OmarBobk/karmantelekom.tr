@@ -91,4 +91,6 @@ return [
     'secure_shopping_description' => '256 BIT SSL SERTİFİKASI İLE KART BİLGİLERİNİZ GÜVENDE!',
 
     'welcome_to_karmantelekom' => 'Mağazamıza Hoşgeldiniz',
+
+    'delivery_and_return' => 'İade ve Teslimat',
 ];
