@@ -1,3 +1,4 @@
 *
 !private/
 !.gitignore
+/storage/app/analytics/*.json
