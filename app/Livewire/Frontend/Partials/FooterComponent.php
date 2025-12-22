@@ -52,7 +52,7 @@ class FooterComponent extends Component
 
         // Use translation keys here; the Blade view will call __('main.' . $link['name'])
         $this->legalLinks = [
-            ['name' => 'privacy_policy', 'url' => route('privacy-policy', ['locale' => $currentLang])],
+//            ['name' => 'privacy_policy', 'url' => route('privacy-policy', ['locale' => $currentLang])],
             ['name' => 'distance_sales_contract', 'url' => route('distance-sales-contract', ['locale' => $currentLang])],
             ['name' => 'delivery_and_return', 'url' => route('delivery-and-return', ['locale' => $currentLang])],
             ['name' => 'cookie_policy', 'url' => '#'],

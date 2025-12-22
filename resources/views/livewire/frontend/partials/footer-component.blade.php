@@ -149,8 +149,12 @@
         <div>
             <span class="text-lg font-semibold text-gray-900 block mb-4">{{__('main.legal')}}</span>
             <div class="flex flex-col space-y-3 mt-4">
+                <a href="{{route('privacy-policy', ['locale' => app()->getLocale()])}}"
+                   class="text-gray-600 hover:text-blue-600 transition-colors duration-200">
+                    {{__('main.privacy_policy')}}</a>
                 @foreach($legalLinks as $link)
-                    <a href="{{ $link['url'] }}" class="text-gray-600 hover:text-blue-600 transition-colors duration-200">
+                    <a href="{{ $link['url'] }}"
+                       class="text-gray-600 hover:text-blue-600 transition-colors duration-200">
                         {{ __('main.' . $link['name']) }}
                     </a>
                 @endforeach
