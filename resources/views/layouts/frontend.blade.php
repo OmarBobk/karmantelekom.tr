@@ -12,13 +12,13 @@
         <script type="text/javascript" src="//cdn.iubenda.com/cs/iubenda_cs.js" charset="UTF-8" async></script> -->
 
         <!-- Google tag (gtag.js) -->
-        <script async src="https://www.googletagmanager.com/gtag/js?id=G-K2NP60HHJL"></script>
+        <script async src="https://www.googletagmanager.com/gtag/js?id=G-YMHHC2JM4D"></script>
         <script>
             window.dataLayer = window.dataLayer || [];
             function gtag(){dataLayer.push(arguments);}
             gtag('js', new Date());
 
-            gtag('config', 'G-K2NP60HHJL');
+            gtag('config', 'G-YMHHC2JM4D');
         </script>
 
         <link rel="icon" type="image/png" href="{{ asset('assets/images/karmantelekom_logo.png') }}">
