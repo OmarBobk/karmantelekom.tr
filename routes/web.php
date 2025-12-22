@@ -25,11 +25,13 @@ Route::get('/contactus', ContactusComponent::class)
     ->middleware('shop.creation')
     ->name('contactus');
 
+Route::get('/privacy-policy', \App\Livewire\Frontend\PrivacyPolicyComponent::class)
+    ->middleware(['shop.creation', \App\Http\Middleware\HandleLanguagePrefix::class])
+    ->name('privacy-policy');
+
 // Legal pages with language prefixes
 Route::prefix('{locale}')->where(['locale' => 'en|tr|ar'])->group(function () {
-    Route::get('/privacy-policy', \App\Livewire\Frontend\PrivacyPolicyComponent::class)
-        ->middleware(['shop.creation', \App\Http\Middleware\HandleLanguagePrefix::class])
-        ->name('privacy-policy');
+
 
     Route::get('/mesafeli-satis-sozlesmesi', \App\Livewire\Frontend\DistanceSalesContractComponent::class)
         ->middleware(['shop.creation', \App\Http\Middleware\HandleLanguagePrefix::class])

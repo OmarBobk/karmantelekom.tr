@@ -20,9 +20,6 @@
 
             gtag('config', 'G-YMHHC2JM4D');
         </script>
-
-        <link rel="privacy-policy" href="https://karmantelekom.tr/en/privacy-policy">
-
         <link rel="icon" type="image/png" href="{{ asset('assets/images/karmantelekom_logo.png') }}">
         <meta charset="utf-8">
         <meta name="viewport" content="width=device-width, initial-scale=1">
