@@ -253,7 +253,7 @@
             <livewire:frontend.partials.header-component />
         </header>
 
-        <main class="pt-[10rem]">
+        <main class="pt-[10rem] sm:pt-[9.5rem]">
             {{ $slot }}
         </main>
 
