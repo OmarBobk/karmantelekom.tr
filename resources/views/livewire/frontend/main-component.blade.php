@@ -607,14 +607,7 @@
                                                                 <span class="text-2xl font-bold text-blue-600">
                                                                     {{ $product->prices->first()->getFormattedPrice() }}
                                                                 </span>
-                                                                @if($product->prices->first()->old_price && $product->prices->first()->old_price > $product->prices->first()->price)
-                                                                    <span class="text-base text-gray-400 line-through">
-                                                                        {{ number_format($product->prices->first()->old_price, 2) }} ₺
-                                                                    </span>
-                                                                    <span class="ml-2 px-2 py-0.5 rounded-full bg-rose-100 text-rose-600 text-xs font-bold">
-                                                                        -{{ round(100 - ($product->prices->first()->price / $product->prices->first()->old_price * 100)) }}%
-                                                                    </span>
-                                                                @endif
+
                                                             @else
                                                                 <span class="text-base text-gray-400">Price not available</span>
                                                             @endif

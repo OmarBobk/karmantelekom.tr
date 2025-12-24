@@ -77,16 +77,21 @@
                                                     <div class="p-2">
                                                         <div class="flex items-start gap-2">
                                                             <button wire:click="$dispatch('openProductModal', { productId: {{ $result['id'] }} })" class="">
-                                                                <div class="h-[4.5rem] {{ app()->getLocale() == 'ar' ? 'text-right' : '' }}">
+                                                                <div class="line-clamp-3 h-[4.5rem] {{ app()->getLocale() == 'ar' ? 'text-right' : 'text-left' }}">
                                                                     <h3 class="text-sm font-medium text-gray-900 hover:text-emerald-600 transition-colors duration-200 line-clamp-1">{{ $result['title'] }}</h3>
-                                                                    <p class="text-sm text-gray-500 line-clamp-2">{{ $result['description'] }}</p>
+                                                                    <p class="text-sm text-gray-500 line-clamp-2 {{ app()->getLocale() == 'ar' ? 'text-right' : 'text-left' }}">{!! $result['description'] !!}</p>
                                                                 </div>
                                                             </button>
                                                         </div>
 
-                                                        <div class="flex items-center justify-between mt-3">
-                                                            <div>
-                                                            </div>
+                                                        <div class="flex items-center gap-2 mt-2">
+                                                            @if($arePricesEnabled)
+                                                                <span class="text-2xl font-bold text-blue-600">
+                                                                    {{$result['price']}}
+                                                                </span>
+                                                            @else
+                                                                <span class="text-base text-gray-400">Price not available</span>
+                                                            @endif
                                                         </div>
                                                     </div>
                                                 </div>

@@ -6,6 +6,7 @@ namespace App\Livewire\Frontend;
 
 use App\Models\Product;
 use App\Models\Category;
+use App\Models\Setting;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
 use Illuminate\Support\Collection;
@@ -16,9 +17,21 @@ class SearchComponent extends Component
     public bool $isLoading = false;
     public array $searchResults = [];
 
+    public bool $arePricesEnabled = false;
+    private bool $arePricesEnabledLoaded = false;
+
     public function mount(): void
     {
         $this->searchResults = [];
+        $this->loadArePricesEnabled();
+    }
+
+    private function loadArePricesEnabled(): void
+    {
+        if (!$this->arePricesEnabledLoaded) {
+            $this->arePricesEnabled = Setting::where('key', 'product_prices')->first()->value === 'enabled';
+            $this->arePricesEnabledLoaded = true;
+        }
     }
 
     public function updatedSearchQuery(): void
@@ -44,7 +57,7 @@ class SearchComponent extends Component
 
         // Search in products
         $products = Product::where('is_active', true)
-            ->with('images')
+            ->with('images', 'prices')
             ->search(
                 $this->searchQuery,
                 'id',
@@ -58,6 +71,7 @@ class SearchComponent extends Component
                     'title' => $product->translated_name,
                     'description' => $product->translated_description,
                     'category' => 'Product',
+                    'price' => $this->arePricesEnabled ? $product->prices->first()->getFormattedPrice() : null,
                     'url' => '#',
                 ];
             });
