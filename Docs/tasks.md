@@ -1,4 +1,4 @@
-### TODO:
+[//]: # (### TODO:)
 - **DONE** Every Product should have two prices [Wholesale, Retail].
 - **DONE** add is_retail_active and is_wholesale_active to product table.
 - **DONE** if a user wrote the wholesale TRY Price automatically, USD Price will be calculated and the opposite is the same.

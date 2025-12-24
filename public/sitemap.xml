@@ -4,13 +4,10 @@
     <loc>https://karmantelekom.tr/</loc>
             </url>
     <url>
+    <loc>https://karmantelekom.tr/products/IPhone_USB_Cable</loc>
+            </url>
+    <url>
     <loc>https://karmantelekom.tr/products/Micro_Chargers</loc>
-            </url>
-    <url>
-    <loc>https://karmantelekom.tr/products/Micro_USB_Cable</loc>
-            </url>
-    <url>
-    <loc>https://karmantelekom.tr/products/Type-c_USB_Cable</loc>
             </url>
     <url>
     <loc>https://karmantelekom.tr/products/Type-c_USB-C_Cable</loc>
@@ -19,13 +16,16 @@
     <loc>https://karmantelekom.tr/products/all</loc>
             </url>
     <url>
+    <loc>https://karmantelekom.tr/products/Type-c_USB_Cable</loc>
+            </url>
+    <url>
     <loc>https://karmantelekom.tr/products/music-player</loc>
             </url>
     <url>
-    <loc>https://karmantelekom.tr/products/IPhone_USB_Cable</loc>
+    <loc>https://karmantelekom.tr/products/Micro_USB_Cable</loc>
             </url>
     <url>
-    <loc>https://karmantelekom.tr/products/Type-C_Chargers</loc>
+    <loc>https://karmantelekom.tr/products/Wired_Earphones</loc>
             </url>
     <url>
     <loc>https://karmantelekom.tr/products/Headphones</loc>
@@ -34,16 +34,19 @@
     <loc>https://karmantelekom.tr/products/IPhone_Chargers</loc>
             </url>
     <url>
-    <loc>https://karmantelekom.tr/products/car-chargers</loc>
-            </url>
-    <url>
     <loc>https://karmantelekom.tr/products/Gaming_Headphones</loc>
             </url>
     <url>
-    <loc>https://karmantelekom.tr/products/Wired_Earphones</loc>
+    <loc>https://karmantelekom.tr/products/Type-C_Chargers</loc>
             </url>
     <url>
     <loc>https://karmantelekom.tr/products/mini-bluetooth-speakers</loc>
+            </url>
+    <url>
+    <loc>https://karmantelekom.tr/products/car-chargers</loc>
+            </url>
+    <url>
+    <loc>https://karmantelekom.tr/products/bluetooth-speaker</loc>
             </url>
     <url>
     <loc>https://karmantelekom.tr/privacy-policy</loc>
@@ -52,18 +55,15 @@
     <loc>https://karmantelekom.tr/contactus</loc>
             </url>
     <url>
-    <loc>https://karmantelekom.tr</loc>
+    <loc>https://karmantelekom.tr/products/Bluetooth_Earphones</loc>
             </url>
     <url>
-    <loc>https://karmantelekom.tr/tr/mesafeli-satis-sozlesmesi</loc>
+    <loc>https://karmantelekom.tr</loc>
             </url>
     <url>
     <loc>https://karmantelekom.tr/tr/teslimat-ve-iade</loc>
             </url>
     <url>
-    <loc>https://karmantelekom.tr/products/bluetooth-speaker</loc>
-            </url>
-    <url>
-    <loc>https://karmantelekom.tr/products/Bluetooth_Earphones</loc>
+    <loc>https://karmantelekom.tr/tr/mesafeli-satis-sozlesmesi</loc>
             </url>
 </urlset>
