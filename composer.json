@@ -21,6 +21,7 @@
         "spatie/laravel-activitylog": "^4.10",
         "spatie/laravel-analytics": "^5.6",
         "spatie/laravel-permission": "^6.10",
+        "spatie/laravel-sitemap": "^7.3",
         "spatie/laravel-sluggable": "^3.7"
     },
     "require-dev": {
