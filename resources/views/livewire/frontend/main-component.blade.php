@@ -524,7 +524,7 @@
                 <!-- Section Header -->
                 <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
                     <div class="flex items-center justify-between mb-6">
-                        <div class="flex items-center gap-3">
+                        <div class="flex items-center gap-3 w-full justify-between">
                             <h2 class="text-2xl font-bold text-gray-900">{{ $section->translated_name }}</h2>
                             <span class="px-3 py-1 text-sm font-medium text-blue-700 bg-blue-50 rounded-full">
                                 {{ count($section->products) }} {{ __('main.products') }}
