@@ -218,7 +218,6 @@ class DashboardComponent extends Component
             // Fetch top 5 most visited product pages in the last 30 days
             $analyticsData = Analytics::fetchMostVisitedPages(Period::days(30), 10);
 
-
             // Filter for product URLs (adjust the pattern to match your routes)
             $productPages = collect($analyticsData)
                 ->filter(function ($page) {
@@ -231,7 +230,7 @@ class DashboardComponent extends Component
                     }
 
                 })
-                ->take(5);
+                ->take(50);
 
             // Map URLs to product slugs or IDs
             $this->mostViewedProducts = $productPages->map(function ($page) {
@@ -251,6 +250,7 @@ class DashboardComponent extends Component
 
                     $image = Storage::url($product?->images->where('is_primary', true)->first()?->image_url
                         ?? $product?->images->first()?->image_url ?? '');
+
                     return [
                         'id' => $product?->id,
                         'name' => $product?->name,
