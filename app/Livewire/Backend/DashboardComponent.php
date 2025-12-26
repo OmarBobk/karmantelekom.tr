@@ -216,7 +216,7 @@ class DashboardComponent extends Component
     {
         try {
             // Fetch top 5 most visited product pages in the last 30 days
-            $analyticsData = Analytics::fetchMostVisitedPages(Period::days(30), 10);
+            $analyticsData = Analytics::fetchMostVisitedPages(Period::days(300), 100);
 
             // Filter for product URLs (adjust the pattern to match your routes)
             $productPages = collect($analyticsData)
@@ -224,7 +224,7 @@ class DashboardComponent extends Component
                     $url = $page['fullPageUrl'];
 //                    $url = 'http://developing.store/?productSlugUrl=ut-quidem-tempore&productIdUrl=15';
                     $parts = parse_url($url);
-                    if (isset($parts['query'])) {
+                    if (isset($parts['query']) && !str_contains($url, 'dev')) {
                         parse_str($parts['query'], $query);
                         return isset($query['productSlugUrl']) && isset($query['productIdUrl']);
                     }
