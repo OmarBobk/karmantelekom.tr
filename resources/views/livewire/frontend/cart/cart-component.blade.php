@@ -46,6 +46,10 @@
                 const msg = this.composeWhatsAppMessage();
                 const url = 'https://wa.me/' + this.whatsappNumber + '?text=' + encodeURIComponent(msg);
                 window.open(url, '_blank');
+                const items = this.$store.cart.items
+                const subtotal = this.$store.cart.subtotal
+
+                await window.Livewire.dispatch('order-now', {items, subtotal})
                 this.$store.cart.clear();
             } finally {
                 setTimeout(() => { this.loading = false; }, 800);

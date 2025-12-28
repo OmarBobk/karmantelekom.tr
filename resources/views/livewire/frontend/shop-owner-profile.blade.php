@@ -310,7 +310,7 @@
                     <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6 lg:p-8">
                         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
                             <h2 class="text-xl sm:text-2xl font-bold text-gray-900">Recent Orders</h2>
-                            
+
                             <!-- Search Bar -->
                             <div class="flex items-center space-x-3">
                                 <div class="relative">
@@ -324,7 +324,7 @@
                                         wire:model.live="orderSearch"
                                         placeholder="Search by order ID or customer name..."
                                         class="block w-full pl-10 pr-10 py-2 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors duration-200 text-sm"
-                                        
+
                                     >
                                     <div wire:loading wire:target="orderSearch" class="absolute inset-y-0 right-0 top-[23%] pr-3 flex items-center justify-center">
                                         <svg class="animate-spin h-5 w-5 text-blue-500" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -344,7 +344,7 @@
                                         </button>
                                     @endif
                                 </div>
-                                
+
                                 @if($orderSearch || $orderStatusFilter || $orderDateFilter)
                                     <div class="text-sm text-gray-500">
                                         {{ $recentOrders->count() }} result{{ $recentOrders->count() !== 1 ? 's' : '' }}
@@ -1610,7 +1610,7 @@
                                                 <p class="text-xs font-medium text-green-600 uppercase tracking-wide">
                                                     Customer</p>
                                                 <p class="text-sm font-bold text-green-900 truncate">{{ $selectedOrder->customer->name }}</p>
-                                                <p class="text-xs text-green-700">{{ $selectedOrder->customer->email }}</p>
+                                                <p class="text-xs text-green-700 break-all">{{ $selectedOrder->customer->email }}</p>
                                             </div>
                                         </div>
                                     </div>

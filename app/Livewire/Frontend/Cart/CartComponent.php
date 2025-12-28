@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace App\Livewire\Frontend\Cart;
 
+use App\Enums\OrderStatus;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Facades\Cart as CartFacade;
+use App\Models\Order;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
@@ -97,6 +101,63 @@ class CartComponent extends Component
                 'user_id' => $user_id,
                 'error' => $e->getMessage()
             ]);
+        }
+    }
+
+    #[On('order-now')]
+    public function handleOrderNow(array $items, int $subtotal): void
+    {
+        Log::info('Order Now', ['items' => $items]);
+
+        try {
+            DB::transaction(function () use ($items, $subtotal) {
+                Log::info('Starting order Transaction');
+
+                $cartItems = collect($items); // Get fresh cart data
+
+                // Calculate total price
+                $totalPrice = $subtotal;
+
+                // Create the order
+                $order = Order::create([
+                    'shop_id' => auth()->user()->ownedShop->id,
+                    'user_id' => Auth::id(),
+                    'status' => OrderStatus::PENDING,
+                    'total_price' => $totalPrice,
+                    'notes' => '',
+                ]);
+
+                // Create order items from cart items
+                foreach ($cartItems as $cartItem) {
+                    $order->items()->create([
+                        'product_id' => $cartItem['product_id'],
+                        'quantity' => $cartItem['quantity'],
+                        'price' => $cartItem['price'],
+                        'subtotal' => $cartItem['subtotal'],
+                    ]);
+                }
+
+                Log::info('Order', ['order' => $order]);
+                Log::info('Order items', ['items' => $order->items]);
+
+                // Clear the cart after successful order creation
+                \App\Facades\Cart::clearCart(Auth::id(), null);
+
+                // Dispatch OrderCreated event
+                \App\Events\OrderCreated::dispatch($order, Auth::id());
+            });
+
+
+
+            $this->dispatch('notify', [
+                'type' => 'alert-success',
+                'message' => 'Order placed successfully!'
+            ]);
+
+        } catch (\Exception $e) {
+            $this->addError('order', 'Failed to place order. Please try again. Error: ' . $e->getMessage());
+        } finally {
+
         }
     }
 

@@ -90,6 +90,7 @@ class ShopOwnerProfile extends Component
 
     private function loadMetrics(): void
     {
+
         $this->metrics = [
             'total_orders' => $this->shop->orders()->count(),
             'total_revenue' => $this->shop->orders()->sum('total_price') ?? 0,
@@ -198,43 +199,43 @@ class ShopOwnerProfile extends Component
     {
         $ranges = [];
         $now = now();
-        
+
         $ranges['today'] = [
             'start' => $now->toDateString(),
             'end' => $now->toDateString()
         ];
-        
+
         $ranges['yesterday'] = [
             'start' => $now->subDay()->toDateString(),
             'end' => $now->subDay()->toDateString()
         ];
-        
+
         $ranges['this_week'] = [
             'start' => $now->startOfWeek()->toDateTimeString(),
             'end' => $now->endOfWeek()->toDateTimeString()
         ];
-        
+
         $ranges['this_month'] = [
             'start' => $now->startOfMonth()->toDateTimeString(),
             'end' => $now->endOfMonth()->toDateTimeString()
         ];
-        
+
         $lastMonth = $now->subMonth();
         $ranges['last_month'] = [
             'start' => $lastMonth->startOfMonth()->toDateTimeString(),
             'end' => $lastMonth->endOfMonth()->toDateTimeString()
         ];
-        
+
         $ranges['last_30_days'] = [
             'start' => $now->subDays(30)->toDateTimeString(),
             'end' => $now->toDateTimeString()
         ];
-        
+
         $ranges['last_90_days'] = [
             'start' => $now->subDays(90)->toDateTimeString(),
             'end' => $now->toDateTimeString()
         ];
-        
+
         return $ranges;
     }
 
@@ -249,7 +250,7 @@ class ShopOwnerProfile extends Component
             })
             ->groupBy('product_id')
             ->orderByDesc('total_quantity')
-            ->with('product:id,name')
+            ->with('product')
             ->limit(5)
             ->get()
             ->toArray();
