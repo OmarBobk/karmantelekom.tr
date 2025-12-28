@@ -18,7 +18,7 @@
                        wire:model.live.debounce.300ms="searchQuery"
                        wire:loading.class="opacity-50"
                        @click="isOpen = true"
-                       class="w-full h-full {{ app()->getLocale() == 'ar' ? 'pr-11' : 'pl-11' }} bg-transparent text-base placeholder-gray-400 outline-none focus:outline-none focus:ring-0 border-0 focus:border-0"
+                       class="w-full h-full {{ app()->getLocale() == 'ar' ? 'pr-11' : 'pl-11' }} bg-[#2563eb0a] text-base placeholder-blue-900 outline-none focus:outline-none focus:ring-0 border-0 focus:border-0"
                 >
 
                 <!-- Clear Button -->

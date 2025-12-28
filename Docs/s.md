@@ -276,3 +276,27 @@ WW  ERAAAAAA    Q
 ---
 
 ## 🖥️ What You Can Ski
+
+
+{
+"items": [
+        {   
+            "price":"1650.00",
+            "quantity":2,
+            "subtotal":0,
+            "product_id":40,
+            "name":"LinkTech  🎧 HP21 Kulak Üstü Bluetooth Kulaklık",
+            "description":"<p>🔹 Bluetooth 5.3 – Hızlı ve stabil bağlantı<br>🔹 60 saat müzik / 50 saat konuşma süresi<br>🔹 USB Type-C hızlı şarj (≈ 2 saat)<br>🔹 2 × 40 mm sürücü – Dengeli ve güçlü ses<br>🔹 Hafif tasarım – 177 gram<br>🔹 10 metre kablosuz kullanım mesafesi</p>",
+            "image":"products/TzREC884ftYUme0CRinPrUUgmtYqJlkCZstMmoQh.png"
+        },
+        {
+            "price":"2100.00",
+            "quantity":2,
+            "subtotal":3300,
+            "product_id":42,
+            "name":"LinkTech HP8 Premium • ANC Kulak Üstü Bluetooth Kulaklık",
+            "description":"<p><strong>Öne Çıkan Özellikler</strong><br>• ANC aktif gürültü engelleme (28dB)<br>• 40 mm dinamik ses sürücüsü<br>• Hi-Fi yüksek ses kalitesi<br>• Bluetooth 5.3 + AUX 3.5mm<br>• 80 saat müzik / 90 saat konuşma<br>• ANC açıkken 76 saat kullanım<br>• USB Type-C şarj<br>• 10 metre bağlantı mesafesi<br>• 210 gram hafif tasarım<br>• Renkler: <span style=\"background-color:rgb(255,255,255);color:rgb(12,16,20);\">⚫ 𝗦𝗶𝘆𝗮𝗵 🟠 𝗧𝘂𝗿𝘂𝗻𝗰𝘂 ⚪ 𝗕𝗲𝘆𝗮𝘇</span></p>",
+            "image":"products/jkQCrcjVUW0laNKBAuHhbnMPxJRia4PFmdNPfGn7.png"
+        }
+    ]
+}
