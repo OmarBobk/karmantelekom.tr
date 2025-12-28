@@ -67,6 +67,10 @@ class="relative">
 {{--                    @include('livewire.frontend.partials.auth-menu')--}}
 {{--                @endguest--}}
 
+                @auth
+                    @include('livewire.frontend.partials.auth-menu')
+                @endauth
+
 
             </div>
         </div>
