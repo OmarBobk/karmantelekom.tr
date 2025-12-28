@@ -156,7 +156,7 @@
                                                 <div class="flex justify-between text-base font-medium text-gray-900">
                                                     <div class="flex-1 line-clamp-3">
                                                         <span class="text-base font-medium text-gray-900" x-text="item.name"></span>
-                                                        <span class="text-sm text-gray-700" x-text="item.description"></span>
+                                                        <span class="text-sm text-gray-700" x-html="item.description"></span>
                                                     </div>
                                                     <div>
                                                         <p class="ml-4" x-text="`${item.price} TL`"></p>
