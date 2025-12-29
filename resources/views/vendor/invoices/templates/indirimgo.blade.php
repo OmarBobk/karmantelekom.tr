@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>{{ $invoice->name }}</title>
+    <title>Order #{{  $invoice->buyer->serial  }} - {{ config('app.name') }}</title>
 
     <style>
         * {
@@ -197,15 +197,29 @@
             font-weight: 600;
             color: #1e293b;
         }
+        .items-table th:nth-child(2),
+        .items-table td:nth-child(2) {
+            text-align: center;
+        }
 
         .product-serial {
-            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+
             padding: 6px 10px;
             border-radius: 8px;
             font-size: 11px;
-            font-weight: 500;
+            font-weight: 600;
             color: #475569;
             border: 1px solid #cbd5e1;
+            background: linear-gradient(135deg, #f1f5f9 0%, #e2e8f0 100%);
+
+            white-space: nowrap;     /* ✅ prevents breaking into 2 lines */
+            word-break: normal;      /* ✅ avoid splitting words */
+            overflow-wrap: normal;   /* ✅ avoid wrapping */
+            line-height: 1;          /* ✅ tighter vertical */
+            min-width: 56px;         /* ✅ optional: consistent badge width */
         }
 
         .total-section {
@@ -259,7 +273,7 @@
             <div class="company-info">
                 <div class="logo-section">
                     <div class="logo-container">
-                        <img src="{{ asset('assets/images/indirimgo_logo.png') }}"
+                        <img src="{{ asset('assets/images/karmantelekom_logo.png') }}"
                              alt="{{ config('app.name') }}"
                              class="logo-image"
                              loading="eager">
