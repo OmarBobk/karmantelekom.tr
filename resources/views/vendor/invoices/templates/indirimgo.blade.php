@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Order #{{  $invoice->buyer->serial  }} - {{ config('app.name') }}</title>
+    <title>{{__('invoice.order')}} #{{  $invoice->buyer->serial  }} - {{ config('app.name') }}</title>
 
     <style>
         * {
@@ -281,8 +281,8 @@
                 </div>
             </div>
             <div class="invoice-meta">
-                <p><strong>Order No:</strong> #{{ $invoice->buyer->serial }}</p>
-                <p><strong>Date:</strong> {{ $invoice->buyer->date }}</p>
+                <p><strong>{{ __('invoice.order_no') }}:</strong> #{{ $invoice->buyer->serial }}</p>
+                <p><strong>{{__('invoice.date')}}:</strong> {{ $invoice->buyer->date }}</p>
             </div>
         </div>
     </div>
@@ -292,12 +292,12 @@
         <table class="items-table">
             <thead>
             <tr>
-                <th>Product Name</th>
-                <th>Code</th>
-                <th>Qty</th>
-                <th>Unit Price</th>
-                <th>Subtotal</th>
-                <th>Total</th>
+                <th>{{__('invoice.product_name')}}</th>
+                <th>{{__('invoice.code')}}</th>
+                <th>{{__('invoice.qty')}}</th>
+                <th>{{__('invoice.unit_price')}}</th>
+                <th>{{__('invoice.subtotal')}}</th>
+                <th>{{__('invoice.total')}}</th>
             </tr>
             </thead>
             <tbody>
@@ -316,7 +316,7 @@
                     $grandTotal += $itemTotal;
                 @endphp
                 <tr>
-                    <td><span class="product-name">{{ $item->product->name }}</span></td>
+                    <td><span class="product-name">{{ $item->product->translated_name }}</span></td>
                     <td><span class="product-serial">{{ $item->product->code }}</span></td>
                     <td>{{ $quantity }}</td>
                     <td>{{ number_format($unitPrice, 2) }} TL</td>
@@ -328,15 +328,15 @@
         </table>
 
         <div class="total-section">
-            <span class="total-label">Total</span>
+            <span class="total-label">{{__('invoice.total')}}</span>
             <span class="total-amount">{{ number_format($grandTotal, 2) }} TL</span>
         </div>
     </div>
 
     <!-- Footer -->
     <div class="contact-strip">
-        <p><strong>KarmanTelekom</strong> - {{__('main.thank_you_for_the_premium_shopping_experience!')}}</p>
-        <p>{{__('main.customer_service')}}: +90 535 340 25 39 | support@karmantelekom.tr</p>
+        <p><strong>KarmanTelekom</strong> - {{__('invoice.thank_you_for_the_premium_shopping_experience!')}}</p>
+        <p>{{__('invoice.customer_service')}}: +90 535 340 25 39 | support@karmantelekom.tr</p>
     </div>
 </div>
 </body>

@@ -97,4 +97,7 @@ return [
 
 
     'welcome_to_karmantelekom' => 'اهلا وسهلا في متجر كرمان تيليكوم',
+
+    'thank_you_for_the_premium_shopping_experience!' => 'شكراً لكم على تجربة التسوق المميزة!',
+    'customer_service' => 'خدمة العملاء',
 ];
