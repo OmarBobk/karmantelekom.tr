@@ -93,4 +93,7 @@ return [
     'welcome_to_karmantelekom' => 'Mağazamıza Hoşgeldiniz',
 
     'delivery_and_return' => 'İade ve Teslimat',
+
+    'thank_you_for_the_premium_shopping_experience!' => 'Alışveriş deneyimi için teşekkür ederiz!',
+    'customer_service' => 'Müşteri Hizmetleri',
 ];

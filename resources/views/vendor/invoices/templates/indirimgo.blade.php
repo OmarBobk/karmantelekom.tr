@@ -335,8 +335,8 @@
 
     <!-- Footer -->
     <div class="contact-strip">
-        <p><strong>İndirimGo</strong> - Thank you for the premium shopping experience!</p>
-        <p>Customer service: +90 535 340 25 39 | support@indirimgo.com</p>
+        <p><strong>KarmanTelekom</strong> - {{__('main.thank_you_for_the_premium_shopping_experience!')}}</p>
+        <p>{{__('main.customer_service')}}: +90 535 340 25 39 | support@karmantelekom.tr</p>
     </div>
 </div>
 </body>

@@ -94,4 +94,8 @@ return [
 
 
     'welcome_to_karmantelekom' => 'Welcome to Karman Telekom',
+
+    'thank_you_for_the_premium_shopping_experience!' => 'Thank you for the premium shopping experience!',
+    'customer_service' => 'Customer Service',
+
 ];
