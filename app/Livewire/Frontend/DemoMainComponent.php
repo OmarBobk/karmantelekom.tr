@@ -53,7 +53,7 @@ class DemoMainComponent extends Component
             ->get()
             ->toArray();
 
-        dd($this->categories, Category::all()->pluck('name')->toArray());
+//        dd($this->categories, Category::all()->pluck('name')->toArray());
     }
 
     private function loadArePricesEnabled(): void

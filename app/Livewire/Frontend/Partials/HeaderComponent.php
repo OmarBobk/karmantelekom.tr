@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Livewire\Frontend\Partials;
 
 use App\Facades\Cart as CartFacade;
+use App\Models\Category;
 use App\Services\CartService;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Session;
@@ -21,7 +22,7 @@ class HeaderComponent extends Component
     public string $searchComponentKey;
     public string $currentDirection = 'ltr';
     private LanguageService $languageService;
-    public $categories;
+    public $categories, $currentCategory;
 
     public array $settings = [];
 
@@ -36,7 +37,7 @@ class HeaderComponent extends Component
         $this->currentLanguage = $this->languageService->getCurrentLanguage();
         $this->currentDirection = $this->languageService->getCurrentDirection();
         $this->searchComponentKey = 'search-' . uniqid();
-        $this->categories = \App\Models\Category::with('children')
+        $this->categories = Category::with('children')
             ->whereNull('parent_id')
             ->where('status', true)
             ->orderBy('name')
@@ -45,6 +46,11 @@ class HeaderComponent extends Component
 
     public function render()
     {
+        $this->currentCategory = null;
+        if (request()->routeIs('products') && request('category') !== 'all') {
+            $this->currentCategory = Category::whereSlug(request('category'))->first();
+
+        }
 
         return view('livewire.frontend.partials.header-component');
     }

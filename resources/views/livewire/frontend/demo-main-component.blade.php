@@ -50,35 +50,6 @@
 
 
 
-    {{-- Start Categories Tabs Section --}}
-
-    <div class="w-full bg-white">
-        <div class="relative">
-            <nav class="relative overflow-x-auto scrollbar-hide -mb-px">
-                <div class="w-full flex gap-2 bg-white mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-3 relative">
-                    <div class=" border border-blue-300 py-1 px-3 rounded-xl text-md bg-blue-500 text-white">
-                        Charger
-                    </div>
-                    <div class="border border-gray-200 py-1 px-3 rounded-xl text-md">
-                        Cables
-                    </div>
-                    <div class="border border-gray-200 py-1 px-3 rounded-xl text-md">
-                        phones
-                    </div>
-                    <div class="border border-gray-200 py-1 px-3 rounded-xl text-md">
-                        Earbuds
-                    </div>
-                    <div class="border border-gray-200 py-1 px-3 rounded-xl text-md">
-                        Speakers
-                    </div>
-                </div>
-            </nav>
-        </div>
-    </div>
-
-    {{-- End Categories Tabs Section --}}
-
-
     <!-- Start Slider Component -->
     <div
         class="w-full bg-white" x-data="{
