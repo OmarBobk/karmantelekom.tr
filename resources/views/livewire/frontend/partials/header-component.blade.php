@@ -133,7 +133,7 @@ class="relative">
                             }}
                             "
                         >
-                            All
+                            {{__('main.all')}}
                         </a>
 
                         @foreach($categories as $category)
