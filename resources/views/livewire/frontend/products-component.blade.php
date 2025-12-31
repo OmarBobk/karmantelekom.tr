@@ -71,7 +71,7 @@
                         </div>
 
                         <!-- Product Info -->
-                        <div class="py-4 sm:p-4">
+                        <div class="sm:p-4 py-4 px-2">
                             <div class="mb-3">
                                 <button wire:click="$dispatch('openProductModal', { productId: {{ $product->id }} })" class="text-left">
                                     <div class="line-clamp-3">
