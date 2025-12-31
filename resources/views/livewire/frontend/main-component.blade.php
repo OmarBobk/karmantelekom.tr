@@ -571,7 +571,7 @@
                                             <div class="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 relative flex flex-col h-full">
                                                 @if($product->tag() != null)
                                                     <span
-                                                        class="absolute top-3 z-10 px-3 py-1 text-xs font-bold rounded-full shadow-md"
+                                                        class="absolute top-[43%] z-10 px-3 py-1 text-xs font-semibold text-center w-full "
                                                         style="{{ app()->getLocale() === 'AR' ? 'right:0;' : 'left:0;' }} background-color: {{ $product->tag()->background_color }}; color: {{ $product->tag()->text_color }}; border-color: {{ $product->tag()->border_color }};">
                                                                 {{ $product->tag()->icon . ' ' . $product->tag()->translated_name}}
                                                             </span>
