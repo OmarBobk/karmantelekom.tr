@@ -52,7 +52,7 @@
                 <div class="group/card {{ app()->getLocale() === 'ar' ? 'mr-4 ml-3' : 'ml-4 mr-3' }}">
                     <div class="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 relative">
                         @if($product->tag() != null)
-                            <span class="absolute top-3 z-10 px-3 py-1 text-xs font-bold rounded-full shadow-md animate-pulse"
+                            <span class="absolute top-[42%] z-10 px-3 py-1 text-xs font-semibold w-full text-center"
                                   style="{{ app()->getLocale() === 'ar' ? 'right:0;' : 'left:0;' }} background-color: {{ $product->tag()->background_color }}; color: {{ $product->tag()->text_color }}; border-color: {{ $product->tag()->border_color }};">
                                 {{ $product->tag()->icon . ' ' . $product->tag()->translated_name}}
                             </span>
@@ -71,7 +71,7 @@
                         </div>
 
                         <!-- Product Info -->
-                        <div class="p-4">
+                        <div class="py-4 sm:p-4">
                             <div class="mb-3">
                                 <button wire:click="$dispatch('openProductModal', { productId: {{ $product->id }} })" class="text-left">
                                     <div class="line-clamp-3">
