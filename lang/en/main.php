@@ -98,4 +98,16 @@ return [
     'thank_you_for_the_premium_shopping_experience!' => 'Thank you for the premium shopping experience!',
     'customer_service' => 'Customer Service',
 
+
+    'wholesale_prices' => 'Wholesale Prices',
+    'min_qty' => 'Min Quantity',
+    'max_qty' => 'Max Quantity',
+    'max' => 'Max',
+    'min' => 'Min',
+
+    'price_tiers' => 'Price Tiers',
+    'from' => 'From',
+    'catalog' => "Catalog",
+
+
 ];

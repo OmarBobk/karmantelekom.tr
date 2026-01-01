@@ -96,4 +96,16 @@ return [
 
     'thank_you_for_the_premium_shopping_experience!' => 'Alışveriş deneyimi için teşekkür ederiz!',
     'customer_service' => 'Müşteri Hizmetleri',
+
+    'wholesale_prices' => 'Toptan Fiyatlar',
+
+    'min_qty' => 'Minimum Miktar',
+    'max_qty' => 'Maksimum Miktar',
+    'max' => 'Maksimum',
+    'min' => 'Minimum',
+    'price_tiers' => 'Fiyat Seviyeleri',
+    'from' => 'itibaren',
+    'catalog' => "Katalog",
+
+
 ];

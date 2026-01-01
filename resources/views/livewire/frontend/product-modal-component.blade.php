@@ -2,6 +2,42 @@
     x-data="{
         show: @entangle('showModal'),
         quantity: 1,
+        minQty: 1,
+        maxQty: 9999,
+        init() {
+            this.updateQuantityLimits();
+            this.$watch('show', value => {
+                if (value) {
+                    this.updateQuantityLimits();
+                }
+            });
+        },
+        updateQuantityLimits() {
+            @if($product && $product->priceTiers->isNotEmpty())
+                const wholesalePrices = @js($product->priceTiers->map(fn($wp) => ['min_qty' => $wp->min_qty, 'max_qty' => $wp->max_qty]));
+                if (wholesalePrices.length > 0) {
+                    this.minQty = Math.min(...wholesalePrices.map(p => p.min_qty));
+                    this.maxQty = Math.max(...wholesalePrices.map(p => p.max_qty));
+                    // Set initial quantity to minimum if current quantity is less
+                    if (this.quantity < this.minQty) {
+                        this.quantity = this.minQty;
+                    }
+                    if (this.quantity > this.maxQty) {
+                        this.quantity = this.maxQty;
+                    }
+                }
+            @endif
+        },
+        decreaseQty() {
+            if (this.quantity > this.minQty) {
+                this.quantity--;
+            }
+        },
+        increaseQty() {
+            if (this.quantity < this.maxQty) {
+                this.quantity++;
+            }
+        },
         stopScroll() {
             if (this.show) {
                 document.body.classList.add('overflow-hidden');
@@ -12,6 +48,8 @@
         closeAndReset() {
             $wire.closeModal();
             this.quantity = 1;
+            this.minQty = 1;
+            this.maxQty = 9999;
         }
     }"
     x-init="$watch('show', value => stopScroll())"
@@ -128,8 +166,83 @@
                     </span>
                 </div>
 
-                <!-- Price -->
-                @if($product->prices->isNotEmpty())
+                <!-- Wholesale Prices -->
+                @if($product->priceTiers->isNotEmpty())
+                    <div class="my-4">
+                        <h4 class="text-lg font-semibold text-gray-900 mb-3">{{ __('main.wholesale_prices') ?? 'Wholesale Prices' }}:</h4>
+                        @if($product->priceTiers->count() > 1)
+                            <!-- Multiple Wholesale Prices - Show as cards -->
+                            <div class="space-y-3 max-h-64 overflow-y-auto">
+                                @foreach($product->priceTiers as $index => $wholesalePrice)
+                                    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 hover:shadow-md transition-all duration-200 hover:border-blue-300">
+                                        <div class="flex items-center justify-between">
+                                            <div class="flex-1">
+                                                <div class="flex items-center gap-3 mb-2">
+                                                    <span class="text-2xl font-bold text-blue-600">
+                                                        {{ number_format($wholesalePrice->price, 2) }} {{ $wholesalePrice->currency->symbol ?? $wholesalePrice->currency->code }}
+                                                    </span>
+                                                    @if($wholesalePrice->currency)
+                                                        <span class="text-xs text-gray-500 bg-white px-2 py-1 rounded-full border border-gray-200">
+                                                            {{ $wholesalePrice->currency->code }}
+                                                        </span>
+                                                    @endif
+                                                </div>
+                                                <div class="flex items-center gap-4 text-sm text-gray-600">
+                                                    <div class="flex items-center gap-1.5">
+                                                        <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                                                        </svg>
+                                                        <span class="font-medium text-gray-700">{{ __('main.min_qty') ?? 'Min' }}: <span class="text-blue-600 font-bold">{{ $wholesalePrice->min_qty }}</span></span>
+                                                    </div>
+                                                    <div class="flex items-center gap-1.5">
+                                                        <svg class="w-4 h-4 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path>
+                                                        </svg>
+                                                        <span class="font-medium text-gray-700">{{ __('main.max_qty') ?? 'Max' }}: <span class="text-blue-600 font-bold">{{ $wholesalePrice->max_qty }}</span></span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </div>
+                        @else
+                            <!-- Single Wholesale Price - Show prominently -->
+                            @php $wholesalePrice = $product->priceTiers->first(); @endphp
+                            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-xl p-5 shadow-sm">
+                                <div class="flex items-center justify-between">
+                                    <div class="flex-1">
+                                        <div class="flex items-center gap-3 mb-3">
+                                            <span class="text-3xl font-bold text-blue-600">
+                                                {{ number_format($wholesalePrice->price, 2) }} {{ $wholesalePrice->currency->symbol ?? $wholesalePrice->currency->code }}
+                                            </span>
+                                            @if($wholesalePrice->currency)
+                                                <span class="text-sm text-gray-600 bg-white px-3 py-1 rounded-full border border-gray-200 font-medium">
+                                                    {{ $wholesalePrice->currency->code }}
+                                                </span>
+                                            @endif
+                                        </div>
+                                        <div class="flex items-center gap-6 text-sm">
+                                            <div class="flex items-center gap-2">
+                                                <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path>
+                                                </svg>
+                                                <span class="font-semibold text-gray-700">{{ __('main.min_qty') ?? 'Min Quantity' }}: <span class="text-blue-600 text-lg font-bold">{{ $wholesalePrice->min_qty }}</span></span>
+                                            </div>
+                                            <div class="flex items-center gap-2">
+                                                <svg class="w-5 h-5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 17h8m0 0V9m0 8l-8-8-4 4-6-6"></path>
+                                                </svg>
+                                                <span class="font-semibold text-gray-700">{{ __('main.max_qty') ?? 'Max Quantity' }}: <span class="text-blue-600 text-lg font-bold">{{ $wholesalePrice->max_qty }}</span></span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        @endif
+                    </div>
+                @elseif($product->prices->isNotEmpty())
+                    <!-- Fallback to regular prices if no wholesale prices -->
                     <p class="text-3xl font-bold text-gray-900 my-2">
                         {{ $product->prices->first()->getFormattedPrice() }}
                     </p>
@@ -158,16 +271,29 @@
                 </div>
                 <!-- Quantity -->
                 <div class="mt-4 sm:mt-2">
-                    <label for="quantity" class=" font-medium text-gray-700 mb-2 block flex items-center gap-2">{{__('main.quantity')}}:
+                    <label for="quantity" class="font-medium text-gray-700 mb-2 block flex items-center gap-2">
+                        {{__('main.quantity')}}:
+{{--                        @if($product->priceTiers->isNotEmpty())--}}
+{{--                            <span class="text-xs text-gray-500 font-normal">--}}
+{{--                                ({{ __('main.min') ?? 'Min' }}: <span x-text="minQty"></span> - {{ __('main.max') ?? 'Max' }}: <span x-text="maxQty"></span>)--}}
+{{--                            </span>--}}
+{{--                        @endif--}}
+                    </label>
                     <div class="inline-flex items-center rounded-lg border border-gray-300">
-                        <button @click="quantity = Math.max(1, quantity - 1)" class="p-2 pl-3 hover:bg-gray-100 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <button @click="decreaseQty()"
+                                :disabled="quantity <= minQty"
+                                :class="quantity <= minQty ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'"
+                                class="p-2 pl-3 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" /></svg>
                         </button>
-                        <span x-text="quantity" class="px-4 py-2 font-medium "></span>
-                        <button @click="quantity++" class="p-2 pr-3  hover:bg-gray-100 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        <span x-text="quantity" class="px-4 py-2 font-medium"></span>
+                        <button @click="increaseQty()"
+                                :disabled="quantity >= maxQty"
+                                :class="quantity >= maxQty ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'"
+                                class="p-2 pr-3 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
                         </button>
-                    </div></label>
+                    </div>
                 </div>
 
             </div>

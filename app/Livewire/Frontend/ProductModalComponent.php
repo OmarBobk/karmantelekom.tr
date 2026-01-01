@@ -25,7 +25,16 @@ class ProductModalComponent extends Component
     public function openProductModal($productId): void
     {
 
-        $this->product = Product::with(['category', 'images', 'prices'])
+        $this->product = Product::with([
+                'category', 
+                'images', 
+                'prices',
+                'priceTiers' => function($q) {
+                    $q->where('is_active', true)
+                      ->with('currency')
+                      ->orderBy('min_qty');
+                }
+            ])
             ->find($productId);
 
         $this->productSlugUrl = $this->product->slug;

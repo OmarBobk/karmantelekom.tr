@@ -100,4 +100,16 @@ return [
 
     'thank_you_for_the_premium_shopping_experience!' => 'شكراً لكم على تجربة التسوق المميزة!',
     'customer_service' => 'خدمة العملاء',
+
+    'wholesale_prices' => 'أسعار الجملة',
+
+    'min_qty' => 'الحد الأدنى للكمية',
+    'max_qty' => 'الحد الأقصى للكمية',
+    'max' => 'الحد الأقصى',
+    'min' => 'الحد الأدنى',
+
+    'price_tiers' => 'مستويات الأسعار',
+    'from' => 'من',
+
+    'catalog' => "الكتالوج",
 ];
