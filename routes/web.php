@@ -1,5 +1,6 @@
 <?php
 
+use App\Livewire\Frontend\CatalogComponent;
 use App\Livewire\Frontend\CheckoutComponent;
 use App\Livewire\Frontend\ContactusComponent;
 use App\Livewire\Frontend\Errors\NotFound;
@@ -20,6 +21,7 @@ Route::get('/', MainComponent::class)
 Route::get('/products/{category}', ProductsComponent::class)
     ->middleware('shop.creation')
     ->name('products');
+
 //Route::get('/products', ProductsComponent::class)->name('products');
 Route::get('/contactus', ContactusComponent::class)
     ->middleware('shop.creation')
@@ -112,3 +114,9 @@ Route::get('/demo/progress-tracker', function () {
 
 
 Route::get('/demo/main', \App\Livewire\Frontend\DemoMainComponent::class)->name('demo.main');
+
+
+Route::middleware(['auth', 'role:admin|customer_salesperson'])->group(function () {
+    Route::get('/catalog/{category}', CatalogComponent::class)
+        ->name('catalog');
+});

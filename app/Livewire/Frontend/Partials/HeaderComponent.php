@@ -22,7 +22,6 @@ class HeaderComponent extends Component
     public string $searchComponentKey;
     public string $currentDirection = 'ltr';
     private LanguageService $languageService;
-    public $categories, $currentCategory;
 
     public array $settings = [];
 
@@ -37,21 +36,10 @@ class HeaderComponent extends Component
         $this->currentLanguage = $this->languageService->getCurrentLanguage();
         $this->currentDirection = $this->languageService->getCurrentDirection();
         $this->searchComponentKey = 'search-' . uniqid();
-        $this->categories = Category::with('children')
-            ->whereNull('parent_id')
-            ->where('status', true)
-            ->orderBy('name')
-            ->get();
     }
 
     public function render()
     {
-        $this->currentCategory = null;
-        if (request()->routeIs('products') && request('category') !== 'all') {
-            $this->currentCategory = Category::whereSlug(request('category'))->first();
-
-        }
-
         return view('livewire.frontend.partials.header-component');
     }
 

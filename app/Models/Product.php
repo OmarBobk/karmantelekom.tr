@@ -256,4 +256,18 @@ class Product extends Model
             default => $this->slug,
         };
     }
+
+    public function priceTiers(): HasMany
+    {
+        return $this->hasMany(WholesaleProduct::class)->orderBy('min_qty');
+    }
+
+    public function priceForQuantity(int $qty)
+    {
+        return $this->priceTiers()
+            ->where('min_qty', '<=', $qty)
+            ->where('max_qty', '>=', $qty)
+            ->value('price');
+    }
+
 }

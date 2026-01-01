@@ -1,6 +1,7 @@
 <?php
 
 use App\Livewire\Backend\Ads\AdsComponent;
+use App\Livewire\Backend\Catalog\CatalogComponent;
 use App\Livewire\Backend\Categories\CategoryComponent;
 use App\Livewire\Backend\DashboardComponent;
 use App\Livewire\Backend\Errors\NotFound;
@@ -18,6 +19,7 @@ Route::get('login', function () {
 Route::get('/', DashboardComponent::class)->name('main');
 Route::get('categories', CategoryComponent::class)->name('categories');
 Route::get('products', ProductsComponent::class)->name('products');
+Route::get('catalog', CatalogComponent::class)->name('catalog');
 Route::get('tags', TagComponent::class)->name('tags');
 Route::get('sections', SectionComponent::class)->name('sections');
 Route::get('ads', AdsComponent::class)->name('ads');
