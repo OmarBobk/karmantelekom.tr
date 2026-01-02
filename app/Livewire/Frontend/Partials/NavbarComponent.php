@@ -27,7 +27,7 @@ class NavbarComponent extends Component
     public function render(): Factory|View
     {
         $this->currentCategory = null;
-        if (request()->routeIs('products') && request('category') !== 'all') {
+        if ((request()->routeIs('products') && request('category') !== 'all') | (request()->routeIs('catalog') && request('category') !== 'all')) {
             $this->currentCategory = Category::whereSlug(request('category'))->first();
 
         }

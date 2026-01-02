@@ -3,7 +3,7 @@
     <div class="bg-white border-b border-gray-200">
         <div class="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-6">
             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 {{ app()->getLocale() === 'ar' ? 'sm:flex-row-reverse' : '' }}">
-                <h1 class="text-2xl font-bold text-gray-900">{{ __('main.catalog') ?? 'Catalog' }}</h1>
+                <h1 class="text-2xl font-bold text-gray-900">{{ __('main.catalog') ?? 'Catalog' }} ({{ __('main.wholesale_prices') }})</h1>
 
                 <!-- Custom Sort Filter Card -->
                 <button
@@ -57,7 +57,7 @@
                 <div class="group/card {{ app()->getLocale() === 'ar' ? 'mr-4 ml-3' : 'ml-4 mr-3' }}">
                     <div class="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 relative">
                         @if($product->tags->isNotEmpty())
-                            <span class="absolute top-[42%] z-10 px-3 py-1 text-xs font-semibold w-full text-center"
+                            <span class="absolute top-[37%] z-10 px-3 py-1 text-xs font-semibold w-full text-center"
                                   style="{{ app()->getLocale() === 'ar' ? 'right:0;' : 'left:0;' }} background-color: {{ $product->tags->first()->background_color }}; color: {{ $product->tags->first()->text_color }}; border-color: {{ $product->tags->first()->border_color }};">
                                 @if($product->tags->first()->icon)
                                     {{ $product->tags->first()->icon . ' ' }}

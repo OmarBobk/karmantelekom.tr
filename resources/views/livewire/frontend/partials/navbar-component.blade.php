@@ -44,7 +44,7 @@
                             href="{{ route((($isCatalog) ? 'catalog' : 'products'), ['category' => 'all']) }}"
                             class="inline-flex items-center rounded-xl border border-gray-200 px-4 py-2 text-md
                             font-medium text-gray-700 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50 transition
-                            {{ request()->routeIs('products') && request('category') === 'all'
+                            {{ ((request()->routeIs('products') && request('category') === 'all') | (request()->routeIs('catalog') && request('category') === 'all'))
                                 ? 'border-blue-300 bg-blue-500 text-white'
                                 : 'border-gray-200 text-gray-700 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50'
                             }}
@@ -78,11 +78,11 @@
                                     }}
                                     "
                                 >
-                                    <span class="truncate max-w-[160px] font-medium text-md">
-                                        {{ $category->translated_name }}
-                                    </span>
 
                                     @if($category->children->isNotEmpty())
+                                        <span class="truncate max-w-[160px] font-medium text-md">
+                                            {{ $category->translated_name }}
+                                        </span>
                                         <svg class="h-5 w-5  shrink-0
                                         {{ $isParentActive
                                             ? 'border-blue-300 bg-blue-500 text-gray-100'
@@ -91,6 +91,13 @@
                                         " xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
                                             <path fill-rule="evenodd" d="M5.23 7.21a.75.75 0 011.06.02L10 10.94l3.71-3.71a.75.75 0 111.06 1.06l-4.25 4.25a.75.75 0 01-1.06 0L5.23 8.27a.75.75 0 010-1.06z" clip-rule="evenodd" />
                                         </svg>
+                                    @else
+                                        <a
+                                            href="{{ route((($isCatalog) ? 'catalog' : 'products'), ['category' => $category->slug]) }}"
+                                            class="truncate text-md font-medium"
+                                        >
+                                            {{ $category->translated_name }}
+                                        </a>
                                     @endif
                                 </button>
 

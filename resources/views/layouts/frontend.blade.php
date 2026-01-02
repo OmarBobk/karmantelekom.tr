@@ -3,6 +3,8 @@
           lang="{{ strtolower(str_replace('_', '-', app()->getLocale())) }}"
           class="light" style="border:none">
         <head>
+            <meta name="cart-context"
+                  content="{{ request()->routeIs('catalog*') ? 'catalog' : 'products' }}">
             <!-- <script type="text/javascript">
                 var _iub = _iub || [];
                 _iub.csConfiguration = {"siteId":4147810,"cookiePolicyId":69197729,"lang":"en","storage":{"useSiteId":true}};
@@ -78,7 +80,8 @@
                             this.subtotal = this.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
                         },
 
-                        addItem(product, quantity = 1) {
+                        addItem(product, quantity = 1, options = {}) {
+                            const { catalog = false } = options;
                             const existingItem = this.items.find(item => item.product_id === product.id);
 
                             if (existingItem) {
@@ -92,7 +95,9 @@
 
                                     name: product.translated_name,
                                     description: product.translated_description,
-                                    image: product.images[0].image_url
+                                    image: product.images[0].image_url,
+
+                                    context: catalog ? 'catalog' : 'products'
                                 });
                             }
                             window.Livewire.dispatch('notify', [{

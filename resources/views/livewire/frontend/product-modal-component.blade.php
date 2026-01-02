@@ -1,6 +1,9 @@
 <div
     x-data="{
         show: @entangle('showModal'),
+        isCatalog: document
+            .querySelector('meta[name=cart-context]')
+            ?.getAttribute('content') === 'catalog',
         quantity: 1,
         minQty: 1,
         maxQty: 9999,
@@ -302,7 +305,7 @@
 
                 <div class="flex flex-col sm:flex-row gap-3">
                     <button
-                        @click="$store.cart.addItem({{ json_encode($product) }}, quantity); closeAndReset();"
+                        @click="$store.cart.addItem({{ json_encode($product) }}, quantity, { catalog: isCatalog }); closeAndReset();"
                         class="flex-1 w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-px transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                         aria-label="{{ __('main.add_to_cart') }}">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
