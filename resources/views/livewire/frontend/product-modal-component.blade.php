@@ -274,7 +274,7 @@
                 </div>
                 <!-- Quantity -->
                 <div class="mt-4 sm:mt-2">
-                    <label for="quantity" class="font-medium text-gray-700 mb-2 block flex items-center gap-2">
+                    <label for="quantity" class="font-medium text-gray-700 mb-2 flex items-center gap-2">
                         {{__('main.quantity')}}:
 {{--                        @if($product->priceTiers->isNotEmpty())--}}
 {{--                            <span class="text-xs text-gray-500 font-normal">--}}
@@ -307,6 +307,7 @@
                     <button
                         @click="$store.cart.addItem({{ json_encode($product) }}, quantity, { catalog: isCatalog }); closeAndReset();"
                         class="flex-1 w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-px transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        :class="isCatalog ? 'hidden': 'flex'"
                         aria-label="{{ __('main.add_to_cart') }}">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
                             <path d="M3 3h2l.4 2M7 13h10l4-8H5.4" stroke-linecap="round" stroke-linejoin="round"/>
