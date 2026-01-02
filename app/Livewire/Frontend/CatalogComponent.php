@@ -40,7 +40,7 @@ class CatalogComponent extends Component
                       ->with('currency')
                       ->orderBy('min_qty');
                 },
-                'tags'
+                'priceTiers.tags'
             ])
             ->where('is_active', true)
             ->whereHas('priceTiers', function($q) {

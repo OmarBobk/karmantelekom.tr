@@ -56,13 +56,13 @@
                 @endphp
                 <div class="group/card {{ app()->getLocale() === 'ar' ? 'mr-4 ml-3' : 'ml-4 mr-3' }}">
                     <div class="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300 relative">
-                        @if($product->tags->isNotEmpty())
+                        @if($product->priceTiers()->first()->tags->isNotEmpty())
                             <span class="absolute top-[37%] z-10 px-3 py-1 text-xs font-semibold w-full text-center"
-                                  style="{{ app()->getLocale() === 'ar' ? 'right:0;' : 'left:0;' }} background-color: {{ $product->tags->first()->background_color }}; color: {{ $product->tags->first()->text_color }}; border-color: {{ $product->tags->first()->border_color }};">
-                                @if($product->tags->first()->icon)
-                                    {{ $product->tags->first()->icon . ' ' }}
+                                  style="{{ app()->getLocale() === 'ar' ? 'right:0;' : 'left:0;' }} background-color: {{ $product->priceTiers()->first()->tags->first()->background_color }}; color: {{ $product->priceTiers()->first()->tags->first()->text_color }}; border-color: {{ $product->priceTiers()->first()->tags->first()->border_color }};">
+                                @if($product->priceTiers()->first()->tags->first()->icon)
+                                    {{ $product->priceTiers()->first()->tags->first()->icon . ' ' }}
                                 @endif
-                                {{ $product->tags->first()->translated_name }}
+                                {{ $product->priceTiers()->first()->tags->first()->translated_name }}
                             </span>
                         @endif
 
