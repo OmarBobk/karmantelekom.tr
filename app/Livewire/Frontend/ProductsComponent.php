@@ -14,7 +14,7 @@ class ProductsComponent extends Component
     use WithPagination;
 
     public $sortBy = 'newest';
-    public $perPage = 12;
+    public $perPage = 24;
     public $category;
 
     public function mount($category = null)
