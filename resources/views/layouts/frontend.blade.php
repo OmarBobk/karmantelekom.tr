@@ -178,6 +178,7 @@
             data-user="{{auth()->check() ? auth()->id() : ''}}"
             data-role="{{auth()->user()?->roles()->first()->name ?? ''}}"
         >
+        <script type="text/javascript">window.iyz = { token: '1c0c8fca-4009-4523-a6eb-10ebfd34b90b', position: 'bottomRight', ideaSoft: false, pwi: true};</script> <script type="text/javascript" src="https://static.iyzipay.com/buyer-protection/buyer-protection.js"></script>
             <!-- Notification Component -->
             <div
             x-data="{

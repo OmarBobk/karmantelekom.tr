@@ -112,7 +112,6 @@ Route::get('/demo/progress-tracker', function () {
     return view('demo.progress-tracker');
 })->name('demo.progress-tracker');
 
-
 Route::get('/demo/main', \App\Livewire\Frontend\DemoMainComponent::class)->name('demo.main');
 
 

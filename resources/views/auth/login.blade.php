@@ -4,7 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>{{ __('Login') }} - {{ config('app.name') }}</title>
+    <title>{{ __('auth.login') }} - {{ config('app.name') }}</title>
 
     <!-- Preload critical assets -->
     <link rel="preload" href="{{ asset('assets/images/karmantelekom_logo.png') }}" as="image">
@@ -105,10 +105,10 @@
             <!-- Welcome Text -->
             <div class="space-y-2">
                 <h1 class="text-3xl font-bold gradient-text">
-                    {{ __('Welcome Back') }}
+                    {{ __('auth.welcome_back') }}
                 </h1>
                 <p class="text-gray-600 dark:text-gray-400 text-sm">
-                    {{ __('Sign in to your account to continue') }}
+                    {{ __('auth.sign_in_to_your_account_to_continue') }}
                 </p>
             </div>
         </div>
@@ -140,7 +140,7 @@
                                   d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
                                   clip-rule="evenodd"></path>
                         </svg>
-                        <span class="text-sm font-medium">{{ __('Please fix the following errors:') }}</span>
+                        <span class="text-sm font-medium">{{ __('auth.fix_the_following_errors') }}:</span>
                     </div>
                     <ul class="text-xs space-y-1">
                         @foreach ($errors->all() as $error)
@@ -169,7 +169,7 @@
                 <!-- Email Field -->
                 <div class="space-y-2 mb-4">
                     <label for="email" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {{ __('Email Address') }}
+                        {{ __('auth.email_address') }}
                     </label>
                     <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -186,14 +186,14 @@
                                autofocus
                                autocomplete="username"
                                class="block w-full pl-10 pr-4 py-3 border-0 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-gray-600 transition-colors duration-200"
-                               placeholder="{{ __('Enter your email') }}">
+                               placeholder="{{ __('auth.enter_your_email') }}">
                     </div>
                 </div>
 
                 <!-- Password Field -->
                 <div class="space-y-2 mb-6">
                     <label for="password" class="block text-sm font-medium text-gray-700 dark:text-gray-300">
-                        {{ __('Password') }}
+                        {{ __('auth.password') }}
                     </label>
                     <div class="relative">
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -209,7 +209,7 @@
                                required
                                autocomplete="current-password"
                                class="block w-full pl-10 pr-10 py-3 border-0 rounded-lg bg-gray-50 dark:bg-gray-700 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:bg-white dark:focus:bg-gray-600 transition-colors duration-200"
-                               placeholder="{{ __('Enter your password') }}">
+                               placeholder="{{ __('auth.enter_your_password') }}">
                         <button type="button"
                                 @click="showPassword = !showPassword"
                                 class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors duration-200">
@@ -250,14 +250,14 @@
                         </div>
                         <span
                             class="ml-2 text-sm text-gray-700 dark:text-gray-300 group-hover:text-gray-900 dark:group-hover:text-white transition-colors duration-200">
-                                {{ __('Remember me') }}
+                                {{ __('auth.remember_me') }}
                             </span>
                     </label>
 
                     @if (Route::has('password.request'))
                         <a href="{{ route('password.request') }}"
                            class="text-sm font-medium text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition-colors duration-200 hover:underline">
-                            {{ __('Forgot password?') }}
+                            {{ __('auth.forget_password') }}?
                         </a>
                     @endif
                 </div>
@@ -277,30 +277,33 @@
                     </svg>
 
                     <!-- Button Text -->
-                    <span x-show="!isLoading">{{ __('Sign In') }}</span>
-                    <span x-show="isLoading">{{ __('Signing In...') }}</span>
+                    <span x-show="!isLoading">{{ __('auth.sign_in') }}</span>
+                    <span x-show="isLoading">{{ __('auth.signing_in') }}...</span>
                 </button>
             </form>
 
             <!-- Sign Up Link -->
-            <div class="text-center mt-6">
-                <p class="text-sm text-gray-600 dark:text-gray-400">
-                    {{ __("Don't have an account?") }}
-                    <a href="{{ route('register') }}"
-                       class="font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition-colors duration-200 hover:underline">
-                        {{ __('Sign up') }}
-                    </a>
-                </p>
-            </div>
+{{--            <div class="text-center mt-6">--}}
+{{--                <p class="text-sm text-gray-600 dark:text-gray-400">--}}
+{{--                    {{ __("Don't have an account?") }}--}}
+{{--                    <a href="{{ route('register') }}"--}}
+{{--                       class="font-semibold text-blue-600 dark:text-blue-400 hover:text-blue-500 dark:hover:text-blue-300 transition-colors duration-200 hover:underline">--}}
+{{--                        {{ __('Sign up') }}--}}
+{{--                    </a>--}}
+{{--                </p>--}}
+{{--            </div>--}}
         </div>
+
+
+
 
         <!-- Footer -->
         <div class="text-center mt-6">
             <p class="text-xs text-gray-500 dark:text-gray-400">
-                {{ __('By signing in, you agree to our') }}
-                <a href="#" class="text-blue-600 dark:text-blue-400 hover:underline">{{ __('Terms of Service') }}</a>
-                {{ __('and') }}
-                <a href="#" class="text-blue-600 dark:text-blue-400 hover:underline">{{ __('Privacy Policy') }}</a>
+                {{ __('auth.by_signing_in,_you_agree_to_our') }}
+                <a href="#" class="text-blue-600 dark:text-blue-400 hover:underline">{{ __('auth.terms_of_use') }}</a>
+                {{ __('auth.and') }}
+                <a href="{{route('privacy-policy')}}" class="text-blue-600 dark:text-blue-400 hover:underline">{{ __('auth.privacy_policy') }}</a>
             </p>
         </div>
     </div>

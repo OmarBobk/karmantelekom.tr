@@ -19,6 +19,23 @@ return [
     'account' => 'Account',
     'dashboard' => 'Dashboard',
     'logout' => 'Logout',
+    'login' => 'Login',
+    'welcome_back' => 'Welcome Back',
+    'sign_in_to_your_account_to_continue' => 'Sign in to your account to continue.',
+    'fix_the_following_errors' => 'Please fix the following errors',
+    'email_address' => 'Email Address',
+    'enter_your_email' => 'Enter your email',
+    'enter_your_password' => 'Enter your password',
+    'remember_me' => 'Remember Me',
+    'forget_password' => 'Forget Password',
+    'sign_in' => 'Sign In',
+    'signing_in' => 'Signing In',
+    'terms_of_use' => 'Terms of Use',
+    'privacy_policy' => 'Privacy Policy',
+    'by_signing_in,_you_agree_to_our' => 'By signing in, you agree to our',
+    'and' => 'and'
+
+
 
 
 ];
