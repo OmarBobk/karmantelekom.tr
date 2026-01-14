@@ -1,5 +1,6 @@
 <?php
 
+use App\Jobs\BackUpDatabase;
 use Illuminate\Foundation\Inspiring;
 use Illuminate\Support\Facades\Artisan;
 
