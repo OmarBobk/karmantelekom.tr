@@ -4,6 +4,8 @@ namespace App\Jobs;
 
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
+use Illuminate\Support\Facades\Config;
+use Illuminate\Support\Facades\Log;
 
 class BackUpDatabase implements ShouldQueue
 {
