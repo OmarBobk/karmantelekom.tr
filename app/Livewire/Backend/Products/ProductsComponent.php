@@ -1351,70 +1351,70 @@ class ProductsComponent extends Component
         })->toArray();
     }
 
-    public function edit($id)
-    {
-        $product = Product::findOrFail($id);
-        $this->editForm = [
-            'id' => $product->id,
-            'name' => $product->name,
-            'slug' => $product->slug,
-            'tr_name' => $product->tr_name,
-            'tr_slug' => $product->tr_slug,
-            'ar_name' => $product->ar_name,
-            'ar_slug' => $product->ar_slug,
-            'description' => $product->description,
-            'tr_description' => $product->tr_description,
-            'ar_description' => $product->ar_description,
-            'code' => $product->code,
-            'serial' => $product->serial,
-            'price' => $product->price,
-            'stock' => $product->stock,
-            'is_active' => $product->is_active,
-        ];
-        $this->showEditModal = true;
-    }
-
-    public function update()
-    {
-        $this->validate([
-            'editForm.name' => 'required|min:3',
-            'editForm.slug' => 'required|unique:products,slug,' . $this->editForm['id'],
-            'editForm.tr_name' => 'required|min:3',
-            'editForm.tr_slug' => 'required|unique:products,tr_slug,' . $this->editForm['id'],
-            'editForm.ar_name' => 'required|min:3',
-            'editForm.ar_slug' => 'required|unique:products,ar_slug,' . $this->editForm['id'],
-            'editForm.description' => 'required',
-            'editForm.tr_description' => 'required',
-            'editForm.ar_description' => 'required',
-            'editForm.code' => 'required|unique:products,code,' . $this->editForm['id'],
-            'editForm.serial' => 'required|unique:products,serial,' . $this->editForm['id'],
-            'editForm.price' => 'required|numeric|min:0',
-            'editForm.stock' => 'required|integer|min:0',
-            'editForm.is_active' => 'boolean',
-        ]);
-
-        $product = Product::find($this->editForm['id']);
-        $product->update([
-            'name' => $this->editForm['name'],
-            'slug' => $this->editForm['slug'],
-            'tr_name' => $this->editForm['tr_name'],
-            'tr_slug' => $this->editForm['tr_slug'],
-            'ar_name' => $this->editForm['ar_name'],
-            'ar_slug' => $this->editForm['ar_slug'],
-            'description' => $this->editForm['description'],
-            'tr_description' => $this->editForm['tr_description'],
-            'ar_description' => $this->editForm['ar_description'],
-            'code' => $this->editForm['code'],
-            'serial' => $this->editForm['serial'],
-            'price' => $this->editForm['price'],
-            'stock' => $this->editForm['stock'],
-            'is_active' => $this->editForm['is_active'],
-        ]);
-
-        $this->showEditModal = false;
-        $this->dispatch('notify', [
-            'type' => 'success',
-            'message' => 'Product updated successfully!'
-        ]);
-    }
+//    public function edit($id)
+//    {
+//        $product = Product::findOrFail($id);
+//        $this->editForm = [
+//            'id' => $product->id,
+//            'name' => $product->name,
+//            'slug' => $product->slug,
+//            'tr_name' => $product->tr_name,
+//            'tr_slug' => $product->tr_slug,
+//            'ar_name' => $product->ar_name,
+//            'ar_slug' => $product->ar_slug,
+//            'description' => $product->description,
+//            'tr_description' => $product->tr_description,
+//            'ar_description' => $product->ar_description,
+//            'code' => $product->code,
+//            'serial' => $product->serial,
+//            'price' => $product->price,
+//            'stock' => $product->stock,
+//            'is_active' => $product->is_active,
+//        ];
+//        $this->showEditModal = true;
+//    }
+//
+//    public function update()
+//    {
+//        $this->validate([
+//            'editForm.name' => 'required|min:3',
+//            'editForm.slug' => 'required|unique:products,slug,' . $this->editForm['id'],
+//            'editForm.tr_name' => 'required|min:3',
+//            'editForm.tr_slug' => 'required|unique:products,tr_slug,' . $this->editForm['id'],
+//            'editForm.ar_name' => 'required|min:3',
+//            'editForm.ar_slug' => 'required|unique:products,ar_slug,' . $this->editForm['id'],
+//            'editForm.description' => 'required',
+//            'editForm.tr_description' => 'required',
+//            'editForm.ar_description' => 'required',
+//            'editForm.code' => 'required|unique:products,code,' . $this->editForm['id'],
+//            'editForm.serial' => 'required|unique:products,serial,' . $this->editForm['id'],
+//            'editForm.price' => 'required|numeric|min:0',
+//            'editForm.stock' => 'required|integer|min:0',
+//            'editForm.is_active' => 'boolean',
+//        ]);
+//
+//        $product = Product::find($this->editForm['id']);
+//        $product->update([
+//            'name' => $this->editForm['name'],
+//            'slug' => $this->editForm['slug'],
+//            'tr_name' => $this->editForm['tr_name'],
+//            'tr_slug' => $this->editForm['tr_slug'],
+//            'ar_name' => $this->editForm['ar_name'],
+//            'ar_slug' => $this->editForm['ar_slug'],
+//            'description' => $this->editForm['description'],
+//            'tr_description' => $this->editForm['tr_description'],
+//            'ar_description' => $this->editForm['ar_description'],
+//            'code' => $this->editForm['code'],
+//            'serial' => $this->editForm['serial'],
+//            'price' => $this->editForm['price'],
+//            'stock' => $this->editForm['stock'],
+//            'is_active' => $this->editForm['is_active'],
+//        ]);
+//
+//        $this->showEditModal = false;
+//        $this->dispatch('notify', [
+//            'type' => 'success',
+//            'message' => 'Product updated successfully!'
+//        ]);
+//    }
 }
