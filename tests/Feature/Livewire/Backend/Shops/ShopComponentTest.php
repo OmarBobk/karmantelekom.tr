@@ -7,6 +7,7 @@ use App\Models\Shop;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use PHPUnit\Framework\Attributes\Test;
 use Spatie\Permission\Models\Role;
 use Tests\TestCase;
 
@@ -17,15 +18,15 @@ class ShopComponentTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        
+
         // Create roles
         Role::create(['name' => 'admin']);
         Role::create(['name' => 'salesperson']);
         Role::create(['name' => 'shop_owner']);
     }
 
-    /** @test */
-    public function it_can_filter_shops_by_created_at()
+    #[Test]
+    public function it_can_filter_shops_by_created_at(): void
     {
         $admin = User::factory()->create()->assignRole('admin');
         $salesperson = User::factory()->create()->assignRole('salesperson');
@@ -43,8 +44,8 @@ class ShopComponentTest extends TestCase
             ->assertDontSee($lastWeekShop->name);
     }
 
-    /** @test */
-    public function it_can_filter_shops_by_salesperson()
+    #[Test]
+    public function it_can_filter_shops_by_salesperson(): void
     {
         $admin = User::factory()->create()->assignRole('admin');
         $salesperson1 = User::factory()->create()->assignRole('salesperson');
@@ -63,8 +64,8 @@ class ShopComponentTest extends TestCase
             ->assertDontSee($unassignedShop->name);
     }
 
-    /** @test */
-    public function it_can_filter_shops_by_unassigned_salesperson()
+    #[Test]
+    public function it_can_filter_shops_by_unassigned_salesperson(): void
     {
         $admin = User::factory()->create()->assignRole('admin');
         $salesperson = User::factory()->create()->assignRole('salesperson');
@@ -82,8 +83,8 @@ class ShopComponentTest extends TestCase
             ->assertDontSee($assignedShop->name);
     }
 
-    /** @test */
-    public function it_can_clear_all_filters()
+    #[Test]
+    public function it_can_clear_all_filters(): void
     {
         $admin = User::factory()->create()->assignRole('admin');
         $shop = Shop::factory()->create();
@@ -102,11 +103,11 @@ class ShopComponentTest extends TestCase
             ->assertSet('salespersonFilter', null);
     }
 
-    /** @test */
-    public function it_resets_page_when_filters_change()
+    #[Test]
+    public function it_resets_page_when_filters_change(): void
     {
         $admin = User::factory()->create()->assignRole('admin');
-        
+
         // Create enough shops to have pagination
         Shop::factory()->count(15)->create();
 
@@ -119,11 +120,11 @@ class ShopComponentTest extends TestCase
             ->assertSet('page', 1);
     }
 
-    /** @test */
-    public function it_can_sort_by_created_at()
+    #[Test]
+    public function it_can_sort_by_created_at(): void
     {
         $admin = User::factory()->create()->assignRole('admin');
-        
+
         $oldShop = Shop::factory()->create(['created_at' => now()->subDays(5)]);
         $newShop = Shop::factory()->create(['created_at' => now()]);
 

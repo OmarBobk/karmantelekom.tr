@@ -18,14 +18,21 @@ use Livewire\Component;
 class DemoMainComponent extends Component
 {
     public int $activeCategory = 0;
+
     public $sections;
+
     public $contentSections;
+
     public bool $canSwitchCurrency;
+
     public string $priceType;
+
     public string $currentDirection = 'ltr';
+
     private LanguageService $languageService;
 
     public bool $arePricesEnabled = false;
+
     private bool $arePricesEnabledLoaded = false;
 
     public $categories;
@@ -53,12 +60,12 @@ class DemoMainComponent extends Component
             ->get()
             ->toArray();
 
-//        dd($this->categories, Category::all()->pluck('name')->toArray());
+        //        dd($this->categories, Category::all()->pluck('name')->toArray());
     }
 
     private function loadArePricesEnabled(): void
     {
-        if (!$this->arePricesEnabledLoaded) {
+        if (! $this->arePricesEnabledLoaded) {
             $this->arePricesEnabled = Setting::where('key', 'product_prices')->first()->value === 'enabled';
             $this->arePricesEnabledLoaded = true;
         }
@@ -66,11 +73,12 @@ class DemoMainComponent extends Component
 
     private function getCurrency(): Currency
     {
-        if (!$this->canSwitchCurrency) {
+        if (! $this->canSwitchCurrency) {
             return Currency::where('is_default', true)->firstOrFail();
         }
 
         $currencyCode = session('currency', 'TRY');
+
         return Currency::where('code', $currencyCode)->firstOrFail();
     }
 
@@ -85,13 +93,13 @@ class DemoMainComponent extends Component
             $this->dispatch('updateDirection', ['direction' => $this->currentDirection]);
 
         } catch (\Exception $e) {
-            logger()->error('Error handling language change: ' . $e->getMessage());
+            logger()->error('Error handling language change: '.$e->getMessage());
             $this->dispatch('languageError', ['message' => 'Failed to update content for the selected language']);
         }
     }
 
     #[On('currencyChanged')]
-    public function loadAllSections(string $code = null): void
+    public function loadAllSections(?string $code = null): void
     {
         try {
             $code = $code ?? $this->languageService->getCurrentLanguage();
@@ -107,11 +115,11 @@ class DemoMainComponent extends Component
             $this->dispatch('content-sections-updated');
 
         } catch (\Exception $e) {
-            logger()->error('Error loading sections: ' . $e->getMessage());
+            logger()->error('Error loading sections: '.$e->getMessage());
             $this->dispatch('notify', [
                 'type' => 'error',
-                'message' => 'Failed to load content sections: ' . $e->getMessage(),
-                'sec' => 10000
+                'message' => 'Failed to load content sections: '.$e->getMessage(),
+                'sec' => 10000,
             ]);
         }
     }
@@ -122,22 +130,22 @@ class DemoMainComponent extends Component
         $locale = App::getLocale();
 
         $query = Section::with([
-            'products' => function($query) use ($currency, $position) {
+            'products' => function ($query) use ($currency, $position) {
                 $query->visibleToUser()
                     ->with([
-                        'images' => function($query) use ($position) {
+                        'images' => function ($query) use ($position) {
                             if ($position === 'main.slider') {
                                 $query->where('is_primary', true);
                             } else {
                                 $query->orderBy('is_primary', 'desc');
                             }
                         },
-                        'prices' => function($query) use ($currency) {
+                        'prices' => function ($query) use ($currency) {
                             $query->where('currency_id', $currency->id);
-                        }
+                        },
                     ])
                     ->orderBy('section_products.ordering');
-            }
+            },
         ])
             ->where('position', $position)
             ->where('is_active', true)
@@ -152,14 +160,13 @@ class DemoMainComponent extends Component
 
     // Slider Component
     public $scrollPosition = 0;
+
     public $isScrolledLeft = true;
+
     public $isScrolledRight = false;
 
     /**
      * Add a product to the cart.
-     *
-     * @param int $productId
-     * @return void
      */
     public function addToCart(int $productId): void
     {
@@ -172,8 +179,9 @@ class DemoMainComponent extends Component
                 $this->dispatch('notify', [
                     'type' => 'error',
                     'message' => __('Product price is not available'),
-                    'sec' => 3000
+                    'sec' => 3000,
                 ]);
+
                 return;
             }
 
@@ -191,7 +199,7 @@ class DemoMainComponent extends Component
             $this->dispatch('notify', [
                 'type' => 'success',
                 'message' => __('Product added to cart successfully'),
-                'sec' => 3000
+                'sec' => 3000,
             ]);
 
             // Dispatch cart update event
@@ -200,8 +208,8 @@ class DemoMainComponent extends Component
         } catch (\Exception $e) {
             $this->dispatch('notify', [
                 'type' => 'error',
-                'message' => __('Failed to add product to cart') . $e->getMessage(),
-                'sec' => 3000
+                'message' => __('Failed to add product to cart').$e->getMessage(),
+                'sec' => 3000,
             ]);
         }
     }
@@ -212,7 +220,7 @@ class DemoMainComponent extends Component
     {
         return view('livewire.frontend.demo-main-component', [
             'canSwitchCurrency' => $this->canSwitchCurrency,
-            'direction' => $this->currentDirection
+            'direction' => $this->currentDirection,
         ]);
     }
 
