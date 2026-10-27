@@ -12,7 +12,6 @@ use App\Services\NotificationRecipientsService;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Support\Facades\Log;
-use Spatie\Activitylog\ActivityLogger;
 use Spatie\Activitylog\Models\Activity;
 
 /**
@@ -29,8 +28,7 @@ class HandleOrderUpdated implements ShouldQueue
      */
     public function __construct(
         private NotificationRecipientsService $recipientsService
-    ) {
-    }
+    ) {}
 
     /**
      * Handle the event.
@@ -55,7 +53,7 @@ class HandleOrderUpdated implements ShouldQueue
                 }
             }
             // Only log if there are actual changes
-            if (!empty($changes)) {
+            if (! empty($changes)) {
                 // Build descriptive message based on changes
                 $description = $this->buildChangeDescription($order, $changes);
 
@@ -124,10 +122,10 @@ class HandleOrderUpdated implements ShouldQueue
                     $descriptions[] = "total changed from {$oldTotal} to {$newTotal}";
                     break;
                 case 'shop_id':
-                    $descriptions[] = "shop changed";
+                    $descriptions[] = 'shop changed';
                     break;
                 case 'notes':
-                    $descriptions[] = "notes updated";
+                    $descriptions[] = 'notes updated';
                     break;
                 default:
                     $descriptions[] = "{$field} changed";
@@ -135,6 +133,7 @@ class HandleOrderUpdated implements ShouldQueue
         }
 
         $changeText = implode(', ', $descriptions);
+
         return "Order #{$order->id} {$changeText}";
     }
 }
