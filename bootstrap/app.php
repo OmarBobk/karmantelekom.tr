@@ -1,11 +1,8 @@
 <?php
 
-use Illuminate\Auth\AuthenticationException;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Route;
 
 return Application::configure(basePath: dirname(__DIR__))
     ->withProviders()
@@ -30,14 +27,5 @@ return Application::configure(basePath: dirname(__DIR__))
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions) {
-        // Customize the response for unauthenticated users
-//        $exceptions->renderable(function (AuthenticationException $e, Request $request) {
-//            if ($request->expectsJson()) {
-//                dd('bootstrap/app.php error');
-//                return response()->json(['message' => 'Unauthenticated.'], 401);
-//            }
-//
-//            // Redirect to your custom login route
-//            return redirect()->to(config('app.url') . '/404');
-//        });
+        //
     })->create();

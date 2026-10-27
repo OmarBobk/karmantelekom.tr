@@ -11,7 +11,7 @@ alwaysApply: true
     - Use object-oriented programming with a focus on SOLID principles.
     - Prefer iteration and modularization over duplication.
     - Use descriptive variable, method, and component names.
-    - Use lowercase with dashes for directories (e.g., app/Http/Livewire).
+    - Use lowercase with dashes for directories (e.g., app/Livewire).
     - Favor dependency injection and service containers.
 
     PHP/Laravel
@@ -50,7 +50,7 @@ alwaysApply: true
 
     Dependencies
 
-    - Laravel 11 (latest stable version)
+    - Laravel 12 (latest stable version)
     - Livewire 3.5+ for real-time, reactive components
     - Alpine.js for lightweight JavaScript interactions
     - Tailwind CSS for utility-first styling
@@ -94,4 +94,6 @@ alwaysApply: true
 
 
     NOTE: In Laravel, when you are creating a column in a table, you can modify the table migration file to add the column, and then run "php artisan migrate:fresh --seed" to apply the changes to the database. you don't need to create a new migration file for each new column.
+
+    NOTE: This application uses Laravel 12 with bootstrap/app.php for routing and middleware. Scheduled tasks live in routes/console.php. Do not use app/Http/Kernel.php or app/Console/Kernel.php.
 

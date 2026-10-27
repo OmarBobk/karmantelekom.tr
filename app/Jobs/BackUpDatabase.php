@@ -1,79 +1,109 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Jobs;
 
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Queue\Queueable;
 use Illuminate\Support\Facades\Config;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Process;
 
 class BackUpDatabase implements ShouldQueue
 {
     use Queueable;
 
-    /**
-     * Create a new job instance.
-     */
-    public function __construct()
-    {
-        //
-    }
+    public function __construct(public readonly ?string $backupPath = null) {}
 
-    /**
-     * Execute the job.
-     */
     public function handle(): void
     {
         Log::info('Backing up database');
 
         $connection = Config::get('database.default');
         $database = Config::get("database.connections.{$connection}.database");
-        $username = Config::get("database.connections.{$connection}.username");
-        $password = Config::get("database.connections.{$connection}.password");
-        $host = Config::get("database.connections.{$connection}.host");
-        $port = Config::get("database.connections.{$connection}.port", 3306);
+        $username = (string) Config::get("database.connections.{$connection}.username");
+        $password = (string) Config::get("database.connections.{$connection}.password");
+        $host = (string) Config::get("database.connections.{$connection}.host");
+        $port = (string) Config::get("database.connections.{$connection}.port", 3306);
 
-        $backupPath = storage_path('app/backups/');
+        $backupPath = rtrim($this->backupPath ?? storage_path('app/backups'), DIRECTORY_SEPARATOR).DIRECTORY_SEPARATOR;
 
-        if (!file_exists($backupPath)) {
+        if (! is_dir($backupPath)) {
             mkdir($backupPath, 0755, true);
         }
 
-        $backupName = 'database_backup_' . now()->format('Y-m-d_H-i-s') . '.sql';
-        $backupFile = $backupPath . $backupName;
+        $backupName = 'database_backup_'.now()->format('Y-m-d_H-i-s').'.sql';
+        $backupFile = $backupPath.$backupName;
+        $configFile = $this->writeMysqlClientConfig($host, $port, $username, $password);
 
-        // Build mysqldump command
-        $command = sprintf(
-            'mysqldump -h %s -P %s -u %s %s %s > %s',
-            escapeshellarg($host),
-            escapeshellarg($port),
-            escapeshellarg($username),
-            $password ? '-p' . escapeshellarg($password) : '',
-            escapeshellarg($database),
-            escapeshellarg($backupFile)
-        );
+        try {
+            $result = Process::forever()->run([
+                'mysqldump',
+                '--defaults-extra-file='.$configFile,
+                '--result-file='.$backupFile,
+                $database,
+            ]);
+        } finally {
+            if (is_file($configFile)) {
+                unlink($configFile);
+            }
+        }
 
-        // Execute backup
-        exec($command, $output, $returnVar);
+        if (! $result->successful()) {
+            Log::error('Database backup failed: '.$backupName, [
+                'error' => $result->errorOutput(),
+            ]);
 
-        if ($returnVar === 0 && file_exists($backupFile)) {
-            Log::info('Database backup created: ' . $backupName);
-        } else {
-            Log::error('Database backup failed: ' . $backupName);
+            if (is_file($backupFile)) {
+                unlink($backupFile);
+            }
+
             return;
         }
 
-        // Prune backups older than 7 days
-        $backups = glob($backupPath . '*.sql');
+        Log::info('Database backup created: '.$backupName);
+
+        $this->pruneOldBackups($backupPath);
+    }
+
+    private function writeMysqlClientConfig(string $host, string $port, string $username, string $password): string
+    {
+        $configFile = tempnam(sys_get_temp_dir(), 'mysql-backup-');
+
+        $contents = "[client]\n"
+            .'host='.$this->quoteMysqlConfigValue($host)."\n"
+            .'port='.$this->quoteMysqlConfigValue($port)."\n"
+            .'user='.$this->quoteMysqlConfigValue($username)."\n";
+
+        if ($password !== '') {
+            $contents .= 'password='.$this->quoteMysqlConfigValue($password)."\n";
+        }
+
+        file_put_contents($configFile, $contents);
+        chmod($configFile, 0600);
+
+        return $configFile;
+    }
+
+    private function quoteMysqlConfigValue(string $value): string
+    {
+        return '"'.str_replace(['\\', '"'], ['\\\\', '\\"'], $value).'"';
+    }
+
+    private function pruneOldBackups(string $backupPath): void
+    {
+        $backups = glob($backupPath.'*.sql') ?: [];
         $prunedBackups = 0;
+        $cutoff = now()->subDays(7)->timestamp;
 
         foreach ($backups as $backup) {
-            if (filemtime($backup) < now()->subDays(7)->timestamp) {
+            if (filemtime($backup) < $cutoff) {
                 unlink($backup);
                 $prunedBackups++;
             }
         }
 
-        Log::info('Database backups pruned: ' . $prunedBackups);
+        Log::info('Database backups pruned: '.$prunedBackups);
     }
 }
