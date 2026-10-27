@@ -72,7 +72,7 @@ Route::get('test', function() {
 });
 
 Route::fallback(function () {
-    dd('fallback');
+    return redirect()->route('404');
 });
 
 Route::post('invoice_pdf', [CheckoutComponent::class, 'exportOrderToPdf'])->name('invoice_pdf');
