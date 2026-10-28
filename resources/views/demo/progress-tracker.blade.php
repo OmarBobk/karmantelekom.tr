@@ -14,7 +14,7 @@
             <!-- Pending State -->
             <div>
                 <h2 class="text-xl font-semibold text-gray-800 mb-4 text-center">Pending State</h2>
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="bg-white rounded-lg shadow-xs border border-gray-200 p-6">
                     <!-- Title -->
                     <h5 class="text-sm font-semibold text-gray-700 mb-6 text-center">Classic Design</h5>
                     
@@ -100,7 +100,7 @@
                                     <div class="mt-3 text-center px-1">
                                         <span class="text-[10px] sm:text-xs md:text-sm font-medium 
                                             {{ $step['isActive'] ? 'text-gray-900 font-semibold' : 'text-gray-500' }} 
-                                            break-words leading-tight">
+                                            wrap-break-word leading-tight">
                                             {{ $step['label'] }}
                                         </span>
                                     </div>
@@ -114,7 +114,7 @@
             <!-- Delivered State -->
             <div>
                 <h2 class="text-xl font-semibold text-gray-800 mb-4 text-center">Delivered State</h2>
-                <div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+                <div class="bg-white rounded-lg shadow-xs border border-gray-200 p-6">
                     <!-- Title -->
                     <h5 class="text-sm font-semibold text-gray-700 mb-6 text-center">Classic Design</h5>
                     
@@ -206,7 +206,7 @@
                                     <div class="mt-3 text-center px-1">
                                         <span class="text-[10px] sm:text-xs md:text-sm font-medium 
                                             {{ $step['isActive'] ? 'text-gray-900 font-semibold' : 'text-gray-500' }} 
-                                            break-words leading-tight">
+                                            wrap-break-word leading-tight">
                                             {{ $step['label'] }}
                                         </span>
                                     </div>
@@ -219,7 +219,7 @@
         </div>
 
         <!-- Usage Instructions -->
-        <div class="mt-12 bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+        <div class="mt-12 bg-white rounded-lg shadow-xs border border-gray-200 p-6">
             <h3 class="text-lg font-semibold text-gray-900 mb-4">Usage Instructions</h3>
             <div class="prose prose-sm max-w-none">
                 <p class="text-gray-600 mb-4">

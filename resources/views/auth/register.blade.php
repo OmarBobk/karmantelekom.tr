@@ -92,7 +92,7 @@
                 <div class="flex justify-center mb-6">
                     <div class="relative">
                         <!-- Logo Container with Gradient Border -->
-                        <div class="absolute inset-0 bg-gradient-to-r from-blue-500 to-purple-600 rounded-2xl blur-lg opacity-75"></div>
+                        <div class="absolute inset-0 bg-linear-to-r from-blue-500 to-purple-600 rounded-2xl blur-lg opacity-75"></div>
                         <div class="relative bg-white dark:bg-gray-800 rounded-2xl p-6 shadow-2xl">
                             <img src="{{ asset('assets/images/indirimgo_logo.png') }}"
                                  alt="{{ config('app.name') }}"
@@ -120,7 +120,7 @@
                 @if ($errors->any())
                     <div class="mb-6 p-3 rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800">
                         <div class="flex items-center text-red-800 dark:text-red-200 mb-2">
-                            <svg class="w-4 h-4 mr-2 flex-shrink-0" fill="currentColor" viewBox="0 0 20 20">
+                            <svg class="w-4 h-4 mr-2 shrink-0" fill="currentColor" viewBox="0 0 20 20">
                                 <path fill-rule="evenodd"
                                       d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z"
                                       clip-rule="evenodd"></path>
@@ -286,7 +286,7 @@
                                            required
                                            class="sr-only">
                                     <div
-                                        class="w-4 h-4 border-2 border-gray-300 dark:border-gray-600 rounded group-hover:border-blue-500 transition-colors duration-200"
+                                        class="w-4 h-4 border-2 border-gray-300 dark:border-gray-600 rounded-sm group-hover:border-blue-500 transition-colors duration-200"
                                         :class="{ 'bg-blue-500 border-blue-500': terms }">
                                         <svg x-show="terms" class="w-2.5 h-2.5 text-white mx-auto mt-0.5" fill="currentColor"
                                              viewBox="0 0 20 20">
@@ -309,7 +309,7 @@
                     <!-- Submit Button -->
                     <button type="submit"
                             :disabled="isLoading"
-                            class="group relative w-full flex justify-center py-3 px-4 border border-transparent rounded-lg text-sm font-semibold text-white gradient-btn focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl">
+                            class="group relative w-full flex justify-center py-3 px-4 border border-transparent rounded-lg text-sm font-semibold text-white gradient-btn focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed transition-all duration-200 shadow-lg hover:shadow-xl">
 
                         <!-- Loading Spinner -->
                         <svg x-show="isLoading" class="animate-spin -ml-1 mr-2 h-4 w-4 text-white" fill="none"

@@ -9,7 +9,7 @@
                 <button
                     wire:click="$set('sortBy', '{{ $sortBy === 'newest' ? 'oldest' : 'newest' }}')"
                     type="button"
-                    class="flex items-center justify-between min-w-[180px] px-6 py-2 border border-blue-400 rounded-lg bg-white hover:bg-blue-50 transition-colors duration-150 shadow-sm group focus:outline-none focus:ring-2 focus:ring-blue-400 {{ app()->getLocale() === 'ar' ? 'flex-row-reverse' : '' }}"
+                    class="flex items-center justify-between min-w-[180px] px-6 py-2 border border-blue-400 rounded-lg bg-white hover:bg-blue-50 transition-colors duration-150 shadow-xs group focus:outline-hidden focus:ring-2 focus:ring-blue-400 {{ app()->getLocale() === 'ar' ? 'flex-row-reverse' : '' }}"
                 >
                     <span class="text-base text-gray-800 font-medium">
                         {{ $sortBy === 'newest' ? __('main.newest_to_oldest') : __('main.oldest_to_newest') }}
@@ -33,7 +33,7 @@
     </div>
 
     <!-- Loading State -->
-    <div wire:loading.delay wire:loading.class="!flex" class="fixed inset-0 bg-black/20 backdrop-blur-sm z-50 items-center justify-center">
+    <div wire:loading.delay wire:loading.class="!flex" class="fixed inset-0 bg-black/20 backdrop-blur-xs z-50 items-center justify-center">
         <div class="bg-white rounded-lg shadow-xl p-6 max-w-sm mx-auto">
             <div class="flex items-center space-x-4 {{ app()->getLocale() === 'ar' ? 'space-x-reverse' : '' }}">
                 <svg class="animate-spin size-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
@@ -96,7 +96,7 @@
                             <div class="mt-auto pt-4">
                                 <button
                                     @click="$store.cart.addItem({{ json_encode($product) }}, 1);"
-                                    class=" w-full flex items-center justify-center gap-2 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-px transition-all duration-300 focus:outline-none "
+                                    class=" w-full flex items-center justify-center gap-2 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-px transition-all duration-300 focus:outline-hidden "
                                     aria-label="{{ __('Add to cart') }}"
                                 >
                                     <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">

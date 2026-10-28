@@ -1,15 +1,15 @@
-<div class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50">
+<div class="min-h-screen bg-linear-to-br from-slate-50 via-blue-50 to-indigo-50">
     <!-- Header Section -->
-    <div class="bg-white/80 backdrop-blur-sm border-b border-gray-200/50 sticky top-0 z-[49]">
+    <div class="bg-white/80 backdrop-blur-xs border-b border-gray-200/50 sticky top-0 z-49">
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div class="flex items-center justify-between h-16">
                 <div class="flex items-center space-x-3">
-                    <div class="w-8 h-8 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
+                    <div class="w-8 h-8 bg-linear-to-r from-indigo-500 to-purple-600 rounded-lg flex items-center justify-center">
                         <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11V7a4 4 0 00-8 0v4M5 9h14l1 12H4L5 9z" />
                         </svg>
                     </div>
-                    <h1 class="text-xl font-bold bg-gradient-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
+                    <h1 class="text-xl font-bold bg-linear-to-r from-gray-900 to-gray-600 bg-clip-text text-transparent">
                         Checkout
                     </h1>
                 </div>
@@ -56,9 +56,9 @@
 
         <!-- Error Messages -->
         @if ($errors->any())
-            <div class="mb-6 bg-red-50 border-l-4 border-red-400 rounded-r-lg p-4 shadow-sm">
+            <div class="mb-6 bg-red-50 border-l-4 border-red-400 rounded-r-lg p-4 shadow-xs">
                 <div class="flex">
-                    <div class="flex-shrink-0">
+                    <div class="shrink-0">
                         <svg class="h-5 w-5 text-red-400" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clip-rule="evenodd" />
                         </svg>
@@ -79,9 +79,9 @@
 
         <!-- Success Message -->
         @if (session('success'))
-            <div class="mb-6 bg-green-50 border-l-4 border-green-400 rounded-r-lg p-4 shadow-sm">
+            <div class="mb-6 bg-green-50 border-l-4 border-green-400 rounded-r-lg p-4 shadow-xs">
                 <div class="flex">
-                    <div class="flex-shrink-0">
+                    <div class="shrink-0">
                         <svg class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
                             <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd" />
                         </svg>
@@ -97,8 +97,8 @@
             <!-- Checkout Form -->
             <div class="xl:col-span-2 space-y-6 order-2 sm:order-1">
                 <!-- Shop Selection Card -->
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-200/50 overflow-visible">
-                    <div class="px-6 py-4 bg-gradient-to-r from-gray-50 to-gray-100/50 border-b border-gray-200/50">
+                <div class="bg-white rounded-2xl shadow-xs border border-gray-200/50 overflow-visible">
+                    <div class="px-6 py-4 bg-linear-to-r from-gray-50 to-gray-100/50 border-b border-gray-200/50">
                         <div class="flex items-center space-x-3">
                             <div class="w-10 h-10 bg-indigo-100 rounded-xl flex items-center justify-center">
                                 <svg class="w-5 h-5 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -132,7 +132,7 @@
                                     Shop Location <span class="text-red-500">*</span>
                                 </label>
 
-                                <div class="w-full bg-gray-50 border-2 border-gray-200 rounded-xl shadow-sm pl-4 pr-12 py-4">
+                                <div class="w-full bg-gray-50 border-2 border-gray-200 rounded-xl shadow-xs pl-4 pr-12 py-4">
                                     <div class="flex items-center">
                                         <div class="flex-1">
                                             <span class="block text-base font-medium text-gray-900">{{ $ownedShop->name }}</span>
@@ -196,7 +196,7 @@
                                         type="button"
                                         @click="open = !open; if(open) { $nextTick(() => $refs.searchInput.focus()) }"
                                         @click.away="open = false"
-                                        class="relative w-full bg-white border-2 border-gray-200 rounded-xl shadow-sm pl-4 pr-12 py-4 text-left cursor-pointer transition-all duration-200 hover:border-indigo-300 focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                                        class="relative w-full bg-white border-2 border-gray-200 rounded-xl shadow-xs pl-4 pr-12 py-4 text-left cursor-pointer transition-all duration-200 hover:border-indigo-300 focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                                         :class="{ 'border-indigo-500 ring-2 ring-indigo-500/20': open, 'border-gray-200': !open }"
                                     >
                                         <div class="flex items-center">
@@ -225,7 +225,7 @@
                                         x-transition:leave="transition ease-in duration-150"
                                         x-transition:leave-start="transform opacity-100 scale-100"
                                         x-transition:leave-end="transform opacity-0 scale-95"
-                                        class="absolute z-[9999] mt-2 w-full bg-white shadow-xl rounded-xl border border-gray-200 max-h-64 overflow-hidden"
+                                        class="absolute z-9999 mt-2 w-full bg-white shadow-xl rounded-xl border border-gray-200 max-h-64 overflow-hidden"
                                         style="display: none; position: absolute !important; z-index: 9999 !important;"
                                     >
                                         <!-- Search Input -->
@@ -241,7 +241,7 @@
                                                     x-model="searchQuery"
                                                     type="text"
                                                     placeholder="Search shops..."
-                                                    class="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
+                                                    class="block w-full pl-10 pr-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-hidden focus:ring-2 focus:ring-indigo-500/20 focus:border-indigo-500"
                                                     @keydown.escape="open = false"
                                                 >
                                             </div>
@@ -257,7 +257,7 @@
                                                     class="w-full text-left px-4 py-3 hover:bg-indigo-50 transition-colors duration-150 border-b border-gray-100 last:border-b-0"
                                                 >
                                                     <div class="flex items-start space-x-3">
-                                                        <div class="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center flex-shrink-0 mt-0.5">
+                                                        <div class="w-8 h-8 bg-indigo-100 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
                                                             <svg class="w-4 h-4 text-indigo-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" />
                                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" />
@@ -313,8 +313,8 @@
                 </div>
 
                 <!-- Order Notes Card -->
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-200/50 overflow-hidden">
-                    <div class="px-6 py-4 bg-gradient-to-r from-gray-50 to-gray-100/50 border-b border-gray-200/50">
+                <div class="bg-white rounded-2xl shadow-xs border border-gray-200/50 overflow-hidden">
+                    <div class="px-6 py-4 bg-linear-to-r from-gray-50 to-gray-100/50 border-b border-gray-200/50">
                         <div class="flex items-center space-x-3">
                             <div class="w-10 h-10 bg-purple-100 rounded-xl flex items-center justify-center">
                                 <svg class="w-5 h-5 text-purple-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -333,7 +333,7 @@
                             <textarea
                                 wire:model="orderNotes"
                                 rows="4"
-                                class="block w-full border-2 border-gray-200 rounded-xl shadow-sm focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 resize-none transition-all duration-200"
+                                class="block w-full border-2 border-gray-200 rounded-xl shadow-xs focus:ring-2 focus:ring-purple-500/20 focus:border-purple-500 resize-none transition-all duration-200"
                                 placeholder="Add any special instructions, delivery preferences, or additional notes for your order..."
                             ></textarea>
                             <div class="absolute bottom-3 right-3 text-xs text-gray-400">
@@ -352,16 +352,16 @@
                 </div>
 
                 <!-- Place Order Button -->
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-200/50 overflow-hidden">
+                <div class="bg-white rounded-2xl shadow-xs border border-gray-200/50 overflow-hidden">
                     <div class="p-6">
                         <button
                             wire:click="placeOrder"
                             wire:loading.attr="disabled"
                             wire:loading.class="opacity-50 cursor-not-allowed"
-                            class="w-full group relative flex justify-center items-center px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 focus:outline-none focus:ring-4 focus:ring-indigo-500/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+                            class="w-full group relative flex justify-center items-center px-8 py-4 bg-linear-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 text-white font-semibold rounded-xl shadow-lg hover:shadow-xl transform hover:-translate-y-0.5 transition-all duration-200 focus:outline-hidden focus:ring-4 focus:ring-indigo-500/30 disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
                             :disabled="$wire.isProcessing"
                         >
-                            <div class="absolute inset-0 bg-gradient-to-r from-indigo-600 to-purple-600 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                            <div class="absolute inset-0 bg-linear-to-r from-indigo-600 to-purple-600 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
                             <div class="relative flex items-center space-x-3">
                                 <svg wire:loading wire:target="placeOrder" class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -389,8 +389,8 @@
 
             <!-- Order Summary -->
             <div class="xl:col-span-1 order-1 sm:order-2">
-                <div class="bg-white rounded-2xl shadow-sm border border-gray-200/50 overflow-hidden sticky top-24">
-                    <div class="px-6 py-4 bg-gradient-to-r from-gray-50 to-gray-100/50 border-b border-gray-200/50">
+                <div class="bg-white rounded-2xl shadow-xs border border-gray-200/50 overflow-hidden sticky top-24">
+                    <div class="px-6 py-4 bg-linear-to-r from-gray-50 to-gray-100/50 border-b border-gray-200/50">
                         <div class="flex items-center space-x-3">
                             <div class="w-10 h-10 bg-green-100 rounded-xl flex items-center justify-center">
                                 <svg class="w-5 h-5 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -410,11 +410,11 @@
                             <div class="space-y-4 mb-6 max-h-96 overflow-y-auto">
                                 @foreach($cart->items as $item)
                                     <div class="flex items-center space-x-4 p-3 bg-gray-50 rounded-xl">
-                                        <div class="flex-shrink-0">
+                                        <div class="shrink-0">
                                             <img
                                                 src="/storage/{{ $item->product->primaryImageUrl ?? asset('storage/products/default.jpg') }}"
                                                 alt="{{ $item->product->name }}"
-                                                class="w-12 h-12 rounded-lg object-cover shadow-sm"
+                                                class="w-12 h-12 rounded-lg object-cover shadow-xs"
                                             >
                                         </div>
                                         <div class="flex-1 min-w-0">
@@ -425,7 +425,7 @@
                                                 Qty: {{ $item->quantity }} × {{ number_format($item->price, 2) }} TL
                                             </p>
                                         </div>
-                                        <div class="flex-shrink-0">
+                                        <div class="shrink-0">
                                             <p class="text-sm font-semibold text-gray-900">
                                                 {{ number_format($item->subtotal, 2) }} TL
                                             </p>
@@ -480,16 +480,16 @@
 
     <!-- Invoice Confirmation Modal -->
     @if($showInvoiceModal)
-        <div class="fixed inset-0 z-[9999] overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+        <div class="fixed inset-0 z-9999 overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
             <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
                 <!-- Background overlay -->
-                <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"></div>
+                <div class="fixed inset-0 bg-gray-500/75 transition-opacity" aria-hidden="true"></div>
 
                 <!-- Modal panel -->
                 <div class="relative inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full mx-auto w-full max-w-sm">
                     <div class="bg-white px-4 pt-5 pb-4 sm:p-6 sm:pb-4">
                         <div class="sm:flex sm:items-start">
-                            <div class="mx-auto flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-indigo-100 sm:mx-0 sm:h-10 sm:w-10">
+                            <div class="mx-auto shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-indigo-100 sm:mx-0 sm:h-10 sm:w-10">
                                 <svg class="h-6 w-6 text-indigo-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                 </svg>
@@ -515,7 +515,7 @@
                                 wire:click="downloadPdfAndRedirect"
                                 wire:loading.attr="disabled"
                                 wire:loading.class="opacity-50 cursor-not-allowed"
-                                class="w-full sm:w-auto inline-flex justify-center rounded-md border border-transparent shadow-sm px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:text-sm transition-colors duration-200"
+                                class="w-full sm:w-auto inline-flex justify-center rounded-md border border-transparent shadow-xs px-4 py-2 bg-indigo-600 text-base font-medium text-white hover:bg-indigo-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:text-sm transition-colors duration-200"
                             >
                                 <svg wire:loading class="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                     <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -542,7 +542,7 @@
                             wire:click="goHome"
                             wire:loading.attr="disabled"
                             wire:loading.class="opacity-50 cursor-not-allowed"
-                            class="w-full sm:w-auto inline-flex justify-center rounded-md border border-gray-300 shadow-sm px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
+                            class="w-full sm:w-auto inline-flex justify-center rounded-md border border-gray-300 shadow-xs px-4 py-2 bg-white text-base font-medium text-gray-700 hover:bg-gray-50 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 sm:text-sm disabled:opacity-50 disabled:cursor-not-allowed transition-colors duration-200"
                         >
                             <svg wire:loading wire:target="goHome" class="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                                 <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>

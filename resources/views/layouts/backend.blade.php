@@ -47,7 +47,7 @@
                 }
             }"
             @notify.window="add($event.detail)"
-            class="fixed top-4 right-4 z-[99999] space-y-2 w-full max-w-sm"
+            class="fixed top-4 right-4 z-99999 space-y-2 w-full max-w-sm"
         >
             <template x-for="notification in notifications" :key="notification.id">
                 <div
@@ -71,10 +71,10 @@
                             <div class="flex-1 mr-3">
                                 <p class="text-sm font-medium text-white" x-text="notification.message"></p>
                             </div>
-                            <div class="flex flex-shrink-0">
+                            <div class="flex shrink-0">
                                 <button
                                     @click="remove(notification.id)"
-                                    class="inline-flex text-white hover:text-gray-200 focus:outline-none focus:ring-2 focus:ring-white rounded-md"
+                                    class="inline-flex text-white hover:text-gray-200 focus:outline-hidden focus:ring-2 focus:ring-white rounded-md"
                                 >
                                     <span class="sr-only">Close</span>
                                     <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -117,12 +117,12 @@
             <!-- Sidebar -->
             <aside
                 x-cloak
-                class="fixed top-0 left-0 z-40 w-64 h-screen transition-transform duration-300 ease-in-out lg:translate-x-0 lg:block bg-gradient-to-b from-gray-50 to-white border-r border-gray-100"
+                class="fixed top-0 left-0 z-40 w-64 h-screen transition-transform duration-300 ease-in-out lg:translate-x-0 lg:block bg-linear-to-b from-gray-50 to-white border-r border-gray-100"
                 :class="sidebarOpen ? 'translate-x-0' : '-translate-x-full'"
             >
                 <div class="h-full px-3 py-4 overflow-y-auto">
                     <div class="flex items-center justify-center px-2">
-                        <a href="#" class="text-2xl font-bold bg-gradient-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
+                        <a href="#" class="text-2xl font-bold bg-linear-to-r from-blue-600 to-indigo-600 bg-clip-text text-transparent">
                             <img src="{{ asset('assets/images/karmantelekom_logo.png') }}" class="w-32" alt="">
                         </a>
                         <button @click="sidebarOpen = !sidebarOpen" class="lg:hidden p-2 rounded-lg hover:bg-gray-100 transition-colors duration-200">
@@ -306,7 +306,7 @@
                                     <button
                                         @click="open = !open"
                                         @click.away="open = false"
-                                        class="relative flex rounded-full bg-gray-100 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                                        class="relative flex rounded-full bg-gray-100 text-sm focus:outline-hidden focus:ring-2 focus:ring-blue-500"
                                     >
                                         <!-- User Avatar -->
                                         <img
@@ -323,7 +323,7 @@
                                         x-transition:leave="transition ease-in duration-75"
                                         x-transition:leave-start="transform opacity-100 scale-100"
                                         x-transition:leave-end="transform opacity-0 scale-95"
-                                        class="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none"
+                                        class="absolute right-0 z-10 mt-2 w-48 origin-top-right rounded-md bg-white py-1 shadow-lg ring-1 ring-black/5 focus:outline-hidden"
                                     >
                                         <a href="{{config('app.url')}}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Website</a>
                                         <a href="{{route('subdomain.settings')}}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">Settings</a>

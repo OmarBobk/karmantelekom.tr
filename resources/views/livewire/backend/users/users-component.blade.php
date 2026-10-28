@@ -19,7 +19,7 @@ x-init="
         showToast('{{ session('error') }}', 'error');
     @endif
 "
-class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-8">
+class="min-h-screen bg-linear-to-br from-slate-50 via-blue-50 to-indigo-50 py-8">
 
     <!-- Custom Styles -->
     <style>
@@ -45,7 +45,7 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
     </style>
 
     <!-- Toast Notification System -->
-    <div class="fixed top-4 right-4 z-[60] space-y-2">
+    <div class="fixed top-4 right-4 z-60 space-y-2">
         <template x-for="toast in toasts" :key="toast.id">
             <div x-show="true"
                  x-transition:enter="transform ease-out duration-300 transition"
@@ -54,20 +54,20 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
                  x-transition:leave="transition ease-in duration-100"
                  x-transition:leave-start="opacity-100"
                  x-transition:leave-end="opacity-0"
-                 class="max-w-sm w-full bg-white/95 backdrop-blur-sm shadow-2xl rounded-2xl pointer-events-auto ring-1 ring-black/5 overflow-hidden border border-white/20">
+                 class="max-w-sm w-full bg-white/95 backdrop-blur-xs shadow-2xl rounded-2xl pointer-events-auto ring-1 ring-black/5 overflow-hidden border border-white/20">
 
                 <div class="p-4">
                     <div class="flex items-start">
-                        <div class="flex-shrink-0">
+                        <div class="shrink-0">
                             <template x-if="toast.type === 'success'">
-                                <div class="w-8 h-8 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full flex items-center justify-center shadow-lg">
+                                <div class="w-8 h-8 bg-linear-to-r from-green-400 to-emerald-500 rounded-full flex items-center justify-center shadow-lg">
                                     <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
                                         <path fill-rule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clip-rule="evenodd"/>
                                     </svg>
                                 </div>
                             </template>
                             <template x-if="toast.type === 'error'">
-                                <div class="w-8 h-8 bg-gradient-to-r from-red-400 to-rose-500 rounded-full flex items-center justify-center shadow-lg">
+                                <div class="w-8 h-8 bg-linear-to-r from-red-400 to-rose-500 rounded-full flex items-center justify-center shadow-lg">
                                     <svg class="w-5 h-5 text-white" fill="currentColor" viewBox="0 0 20 20">
                                         <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
                                     </svg>
@@ -79,9 +79,9 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
                                :class="toast.type === 'success' ? 'text-gray-800' : 'text-gray-800'"
                                class="text-sm font-semibold leading-5"></p>
                         </div>
-                        <div class="ml-4 flex-shrink-0 flex">
+                        <div class="ml-4 shrink-0 flex">
                             <button @click="removeToast(toast.id)"
-                                    class="bg-transparent rounded-full inline-flex text-gray-400 hover:text-gray-600 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200">
+                                    class="bg-transparent rounded-full inline-flex text-gray-400 hover:text-gray-600 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors duration-200">
                                 <svg class="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
                                     <path fill-rule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clip-rule="evenodd"/>
                                 </svg>
@@ -92,7 +92,7 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
 
                 <!-- Enhanced Progress bar -->
                 <div class="bg-gray-100 h-1.5">
-                    <div :class="toast.type === 'success' ? 'bg-gradient-to-r from-green-400 to-emerald-500' : 'bg-gradient-to-r from-red-400 to-rose-500'"
+                    <div :class="toast.type === 'success' ? 'bg-linear-to-r from-green-400 to-emerald-500' : 'bg-linear-to-r from-red-400 to-rose-500'"
                          class="h-1.5 rounded-b-2xl"
                          style="animation: progress 5s linear forwards;">
                     </div>
@@ -105,17 +105,17 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
 
         <!-- Enhanced Header -->
         <div class="mb-10">
-            <div class="bg-white/60 backdrop-blur-sm rounded-3xl p-8 shadow-xl border border-white/20">
+            <div class="bg-white/60 backdrop-blur-xs rounded-3xl p-8 shadow-xl border border-white/20">
                 <div class="flex flex-col lg:flex-row lg:items-center lg:justify-between">
                     <div class="flex-1 min-w-0">
                         <div class="flex items-center space-x-4">
-                            <div class="p-3 bg-gradient-to-r from-indigo-500 to-purple-600 rounded-2xl shadow-lg">
+                            <div class="p-3 bg-linear-to-r from-indigo-500 to-purple-600 rounded-2xl shadow-lg">
                                 <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197m13.5-9a2.5 2.5 0 11-5 0 2.5 2.5 0 015 0z"/>
                                 </svg>
                             </div>
                             <div>
-                                <h1 class="text-3xl font-bold bg-gradient-to-r from-gray-900 via-indigo-800 to-purple-800 bg-clip-text text-transparent">
+                                <h1 class="text-3xl font-bold bg-linear-to-r from-gray-900 via-indigo-800 to-purple-800 bg-clip-text text-transparent">
                                     Users Management
                                 </h1>
                                 <p class="mt-2 text-sm text-gray-600">
@@ -137,7 +137,7 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
                     <div class="mt-6 lg:mt-0 lg:ml-8">
                         <div class="flex flex-col sm:flex-row space-y-3 sm:space-y-0 sm:space-x-3">
                             <!-- Export Button -->
-                            <button class="inline-flex items-center px-4 py-2.5 border border-gray-300 rounded-xl shadow-sm text-sm font-medium text-gray-700 bg-white/80 backdrop-blur-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200">
+                            <button class="inline-flex items-center px-4 py-2.5 border border-gray-300 rounded-xl shadow-xs text-sm font-medium text-gray-700 bg-white/80 backdrop-blur-xs hover:bg-gray-50 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200">
                                 <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
                                 </svg>
@@ -147,7 +147,7 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
                             <!-- Add User Button -->
                             <button
                                 wire:click="openAddModal"
-                                class="inline-flex items-center px-6 py-2.5 border border-transparent rounded-xl shadow-lg text-sm font-semibold text-white bg-gradient-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 transform hover:scale-105"
+                                class="inline-flex items-center px-6 py-2.5 border border-transparent rounded-xl shadow-lg text-sm font-semibold text-white bg-linear-to-r from-indigo-600 to-purple-600 hover:from-indigo-700 hover:to-purple-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-all duration-200 transform hover:scale-105"
                             >
                                 <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
@@ -164,7 +164,7 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
         <div class="bg-white/70 backdrop-blur-lg rounded-2xl shadow-xl mb-8 p-6 border border-white/20">
             <div class="flex items-center justify-between mb-6">
                 <div class="flex items-center space-x-3">
-                    <div class="p-2 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-xl">
+                    <div class="p-2 bg-linear-to-r from-blue-500 to-indigo-600 rounded-xl">
                         <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.414A1 1 0 013 6.707V4z"/>
                         </svg>
@@ -194,7 +194,7 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
                             wire:model.live.debounce.300ms="search"
                             type="text"
                             placeholder="Search by name or email..."
-                            class="search-input w-full pl-11 pr-10 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 bg-white/80 backdrop-blur-sm"
+                            class="search-input w-full pl-11 pr-10 py-3 border border-gray-300 rounded-xl shadow-xs focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 bg-white/80 backdrop-blur-xs"
                         />
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <svg class="w-5 h-5 text-gray-400 group-focus-within:text-indigo-500 transition-colors duration-200" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -218,7 +218,7 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Role</label>
                     <div class="relative">
-                        <select wire:model.live="roleFilter" class="filter-dropdown appearance-none w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200">
+                        <select wire:model.live="roleFilter" class="filter-dropdown appearance-none w-full px-4 py-3 border border-gray-300 rounded-xl shadow-xs focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200">
                             <option value="">All Roles</option>
                             @foreach($roles as $role)
                                 <option value="{{ $role->name }}">{{ ucfirst(str_replace('_', ' ', $role->name)) }}</option>
@@ -236,7 +236,7 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Status</label>
                     <div class="relative">
-                        <select wire:model.live="verificationFilter" class="filter-dropdown appearance-none w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200">
+                        <select wire:model.live="verificationFilter" class="filter-dropdown appearance-none w-full px-4 py-3 border border-gray-300 rounded-xl shadow-xs focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200">
                             <option value="">All Status</option>
                             <option value="verified">✓ Verified</option>
                             <option value="unverified">✗ Unverified</option>
@@ -253,7 +253,7 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-2">Show</label>
                     <div class="relative">
-                        <select wire:model.live="perPage" class="filter-dropdown appearance-none w-full px-4 py-3 border border-gray-300 rounded-xl shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200">
+                        <select wire:model.live="perPage" class="filter-dropdown appearance-none w-full px-4 py-3 border border-gray-300 rounded-xl shadow-xs focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200">
                             <option value="10">10 per page</option>
                             <option value="25">25 per page</option>
                             <option value="50">50 per page</option>
@@ -270,7 +270,7 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
 
             <!-- Bulk Actions Bar -->
             @if(count($selectedUsers) > 0)
-                <div class="mt-6 p-4 bg-gradient-to-r from-indigo-50 to-purple-50 rounded-xl border border-indigo-200/50">
+                <div class="mt-6 p-4 bg-linear-to-r from-indigo-50 to-purple-50 rounded-xl border border-indigo-200/50">
                     <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between space-y-3 sm:space-y-0">
                         <div class="flex items-center space-x-3">
                             <div class="p-2 bg-indigo-500 rounded-lg">
@@ -289,7 +289,7 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
                         <div class="relative">
                             <select
                                 wire:model.live="bulkAction"
-                                class="filter-dropdown appearance-none pl-4 pr-10 py-2.5 border border-indigo-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 text-sm"
+                                class="filter-dropdown appearance-none pl-4 pr-10 py-2.5 border border-indigo-300 rounded-lg shadow-xs focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all duration-200 text-sm"
                             >
                                 <option value="">Choose Action...</option>
                                 <option value="delete">🗑️ Delete Selected</option>
@@ -305,7 +305,7 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
 
                             <!-- Enhanced loading indicator for bulk actions -->
                             <div wire:loading wire:target="bulkAction"
-                                 class="absolute inset-0 bg-gradient-to-r from-violet-50/90 to-purple-50/90 backdrop-blur-sm flex items-center justify-center rounded-lg border border-violet-200/50"
+                                 class="absolute inset-0 bg-linear-to-r from-violet-50/90 to-purple-50/90 backdrop-blur-xs flex items-center justify-center rounded-lg border border-violet-200/50"
                                  x-data="{}"
                                  x-show="true"
                                  x-transition:enter="ease-out duration-200"
@@ -337,7 +337,7 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
         <div class="bg-white/70 backdrop-blur-lg rounded-2xl shadow-2xl overflow-hidden border border-white/20">
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-100">
-                    <thead class="bg-gradient-to-r from-gray-50 to-gray-100 backdrop-blur-sm">
+                    <thead class="bg-linear-to-r from-gray-50 to-gray-100 backdrop-blur-xs">
                     <tr>
                         <!-- Select All Checkbox -->
                         <th scope="col"
@@ -345,7 +345,7 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
                             <input
                                 type="checkbox"
                                 wire:model.live="selectAll"
-                                class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded-sm"
                             />
                         </th>
 
@@ -467,14 +467,14 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
                                     type="checkbox"
                                     wire:model.live="selectedUsers"
                                     value="{{ $user->id }}"
-                                    class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                    class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded-sm"
                                 />
                             </td>
 
                             <!-- Name -->
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex items-center">
-                                    <div class="flex-shrink-0 h-10 w-10">
+                                    <div class="shrink-0 h-10 w-10">
                                         <img class="h-10 w-10 rounded-full" src="{{ $user->profile_photo_url }}"
                                              alt="{{ $user->name }}">
                                     </div>
@@ -693,7 +693,7 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
         <!-- Main Loading Indicator for CRUD Operations (Exclude modal close operations) -->
         <div wire:loading.delay
              wire:target="createUser,updateUser,deleteUser,performBulkAction,sortBy,updatedSearch,updatedRoleFilter,updatedVerificationFilter,updatedPerPage"
-             class="fixed inset-0 bg-gradient-to-br from-indigo-900/20 via-purple-900/20 to-pink-900/20 backdrop-blur-sm flex items-center justify-center z-50"
+             class="fixed inset-0 bg-linear-to-br from-indigo-900/20 via-purple-900/20 to-pink-900/20 backdrop-blur-xs flex items-center justify-center z-50"
              x-data="{}"
              x-show="true"
              x-transition:enter="ease-out duration-300"
@@ -714,12 +714,12 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
                             <!-- Inner ring -->
                             <div class="absolute inset-4 border-2 border-white/50 rounded-full animate-spin" style="animation-duration: 0.8s; animation-direction: reverse;"></div>
                             <!-- Center dot -->
-                            <div class="absolute inset-6 bg-gradient-to-r from-blue-400 to-purple-500 rounded-full animate-ping"></div>
+                            <div class="absolute inset-6 bg-linear-to-r from-blue-400 to-purple-500 rounded-full animate-ping"></div>
                         </div>
 
                         <!-- Loading text with gradient -->
                         <div class="text-center">
-                            <div class="text-lg font-semibold bg-gradient-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
+                            <div class="text-lg font-semibold bg-linear-to-r from-blue-600 via-purple-600 to-pink-600 bg-clip-text text-transparent">
                                 Processing...
                             </div>
                             <div class="text-sm text-gray-600 mt-1 opacity-80">
@@ -736,14 +736,14 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
                 </div>
 
                 <!-- Glow effect -->
-                <div class="absolute inset-0 bg-gradient-to-r from-blue-400/20 via-purple-400/20 to-pink-400/20 rounded-3xl blur-xl animate-pulse"></div>
+                <div class="absolute inset-0 bg-linear-to-r from-blue-400/20 via-purple-400/20 to-pink-400/20 rounded-3xl blur-xl animate-pulse"></div>
             </div>
         </div>
 
         <!-- Specific Loading for Creating User -->
         <div wire:loading.delay
              wire:target="createUser"
-             class="fixed inset-0 bg-gradient-to-br from-green-900/20 via-emerald-900/20 to-teal-900/20 backdrop-blur-sm flex items-center justify-center z-50"
+             class="fixed inset-0 bg-linear-to-br from-green-900/20 via-emerald-900/20 to-teal-900/20 backdrop-blur-xs flex items-center justify-center z-50"
              x-data="{}"
              x-show="true"
              x-transition:enter="ease-out duration-300"
@@ -755,7 +755,7 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
                     <div class="flex flex-col items-center space-y-6">
                         <!-- User creation icon with animation -->
                         <div class="relative">
-                            <div class="w-16 h-16 bg-gradient-to-r from-green-400 to-emerald-500 rounded-full flex items-center justify-center animate-bounce">
+                            <div class="w-16 h-16 bg-linear-to-r from-green-400 to-emerald-500 rounded-full flex items-center justify-center animate-bounce">
                                 <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"/>
                                 </svg>
@@ -764,7 +764,7 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
                         </div>
 
                         <div class="text-center">
-                            <div class="text-lg font-semibold bg-gradient-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
+                            <div class="text-lg font-semibold bg-linear-to-r from-green-600 to-emerald-600 bg-clip-text text-transparent">
                                 Creating User...
                             </div>
                             <div class="text-sm text-gray-600 mt-1 opacity-80">
@@ -779,7 +779,7 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
         <!-- Specific Loading for Updating User -->
         <div wire:loading.delay
              wire:target="updateUser"
-             class="fixed inset-0 bg-gradient-to-br from-amber-900/20 via-orange-900/20 to-red-900/20 backdrop-blur-sm flex items-center justify-center z-50"
+             class="fixed inset-0 bg-linear-to-br from-amber-900/20 via-orange-900/20 to-red-900/20 backdrop-blur-xs flex items-center justify-center z-50"
              x-data="{}"
              x-show="true"
              x-transition:enter="ease-out duration-300"
@@ -791,7 +791,7 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
                     <div class="flex flex-col items-center space-y-6">
                         <!-- Update icon with rotation animation -->
                         <div class="relative">
-                            <div class="w-16 h-16 bg-gradient-to-r from-amber-400 to-orange-500 rounded-full flex items-center justify-center">
+                            <div class="w-16 h-16 bg-linear-to-r from-amber-400 to-orange-500 rounded-full flex items-center justify-center">
                                 <svg class="w-8 h-8 text-white animate-spin" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/>
                                 </svg>
@@ -800,7 +800,7 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
                         </div>
 
                         <div class="text-center">
-                            <div class="text-lg font-semibold bg-gradient-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
+                            <div class="text-lg font-semibold bg-linear-to-r from-amber-600 to-orange-600 bg-clip-text text-transparent">
                                 Updating User...
                             </div>
                             <div class="text-sm text-gray-600 mt-1 opacity-80">
@@ -815,7 +815,7 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
         <!-- Specific Loading for Deleting User -->
         <div wire:loading.delay
              wire:target="deleteUser"
-             class="fixed inset-0 bg-gradient-to-br from-red-900/20 via-rose-900/20 to-pink-900/20 backdrop-blur-sm flex items-center justify-center z-50"
+             class="fixed inset-0 bg-linear-to-br from-red-900/20 via-rose-900/20 to-pink-900/20 backdrop-blur-xs flex items-center justify-center z-50"
              x-data="{}"
              x-show="true"
              x-transition:enter="ease-out duration-300"
@@ -827,7 +827,7 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
                     <div class="flex flex-col items-center space-y-6">
                         <!-- Delete icon with pulsing animation -->
                         <div class="relative">
-                            <div class="w-16 h-16 bg-gradient-to-r from-red-400 to-rose-500 rounded-full flex items-center justify-center animate-pulse">
+                            <div class="w-16 h-16 bg-linear-to-r from-red-400 to-rose-500 rounded-full flex items-center justify-center animate-pulse">
                                 <svg class="w-8 h-8 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
                                 </svg>
@@ -836,7 +836,7 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
                         </div>
 
                         <div class="text-center">
-                            <div class="text-lg font-semibold bg-gradient-to-r from-red-600 to-rose-600 bg-clip-text text-transparent">
+                            <div class="text-lg font-semibold bg-linear-to-r from-red-600 to-rose-600 bg-clip-text text-transparent">
                                 Deleting User...
                             </div>
                             <div class="text-sm text-gray-600 mt-1 opacity-80">
@@ -851,7 +851,7 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
         <!-- Bulk Actions Loading -->
         <div wire:loading.delay
              wire:target="performBulkAction"
-             class="fixed inset-0 bg-gradient-to-br from-violet-900/20 via-purple-900/20 to-indigo-900/20 backdrop-blur-sm flex items-center justify-center z-50"
+             class="fixed inset-0 bg-linear-to-br from-violet-900/20 via-purple-900/20 to-indigo-900/20 backdrop-blur-xs flex items-center justify-center z-50"
              x-data="{}"
              x-show="true"
              x-transition:enter="ease-out duration-300"
@@ -870,7 +870,7 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
                         </div>
 
                         <div class="text-center">
-                            <div class="text-lg font-semibold bg-gradient-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">
+                            <div class="text-lg font-semibold bg-linear-to-r from-violet-600 to-indigo-600 bg-clip-text text-transparent">
                                 Processing Bulk Action...
                             </div>
                             <div class="text-sm text-gray-600 mt-1 opacity-80">
@@ -892,7 +892,7 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
              x-transition:enter-start="opacity-0 translate-x-4"
              x-transition:enter-end="opacity-100 translate-x-0">
 
-            <div class="bg-white/90 backdrop-blur-sm rounded-full px-4 py-2 shadow-lg border border-gray-200/50 flex items-center space-x-2">
+            <div class="bg-white/90 backdrop-blur-xs rounded-full px-4 py-2 shadow-lg border border-gray-200/50 flex items-center space-x-2">
                 <div class="flex space-x-1">
                     <div class="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse" style="animation-delay: 0s;"></div>
                     <div class="w-1.5 h-1.5 bg-blue-400 rounded-full animate-pulse" style="animation-delay: 0.2s;"></div>
@@ -905,7 +905,7 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
 
     <!-- Add User Modal -->
     @if($addModalOpen)
-        <div class="fixed inset-0 bg-gray-900 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+        <div class="fixed inset-0 bg-gray-900/50 overflow-y-auto h-full w-full z-50"
              x-data="{}"
              x-show="true"
              x-transition:enter="ease-out duration-300"
@@ -935,7 +935,7 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
                                 type="text"
                                 id="name"
                                 wire:model="name"
-                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-xs focus:outline-hidden focus:ring-blue-500 focus:border-blue-500"
                                 required
                             />
                             @error('name') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
@@ -948,7 +948,7 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
                                 type="email"
                                 id="email"
                                 wire:model="email"
-                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-xs focus:outline-hidden focus:ring-blue-500 focus:border-blue-500"
                                 required
                             />
                             @error('email') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
@@ -961,7 +961,7 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
                                 type="password"
                                 id="password"
                                 wire:model="password"
-                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-xs focus:outline-hidden focus:ring-blue-500 focus:border-blue-500"
                                 required
                             />
                             @error('password') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
@@ -975,7 +975,7 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
                                 type="password"
                                 id="password_confirmation"
                                 wire:model="password_confirmation"
-                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-xs focus:outline-hidden focus:ring-blue-500 focus:border-blue-500"
                                 required
                             />
                             @error('password_confirmation') <span
@@ -988,7 +988,7 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
                             <select
                                 id="selectedRole"
                                 wire:model="selectedRole"
-                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-xs focus:outline-hidden focus:ring-blue-500 focus:border-blue-500"
                                 required
                             >
                                 <option value="">Select a role</option>
@@ -1006,7 +1006,7 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
                                 type="checkbox"
                                 id="emailVerified"
                                 wire:model="emailVerified"
-                                class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded-sm"
                             />
                             <label for="emailVerified" class="ml-2 block text-sm text-gray-900">
                                 Mark email as verified
@@ -1018,13 +1018,13 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
                         <button
                             type="button"
                             wire:click="closeModals"
-                            class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                         >
                             Cancel
                         </button>
                                             <button
                         type="submit"
-                        class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-75 disabled:cursor-not-allowed transition-all duration-200"
+                        class="px-4 py-2 border border-transparent rounded-md shadow-xs text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-75 disabled:cursor-not-allowed transition-all duration-200"
                         wire:loading.attr="disabled"
                     >
                         <span wire:loading.remove wire:target="createUser" class="flex items-center">
@@ -1043,7 +1043,7 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
 
     <!-- Edit User Modal -->
     @if($editModalOpen)
-        <div class="fixed inset-0 bg-gray-900 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+        <div class="fixed inset-0 bg-gray-900/50 overflow-y-auto h-full w-full z-50"
              x-data="{}"
              x-show="true"
              x-transition:enter="ease-out duration-300"
@@ -1073,7 +1073,7 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
                                 type="text"
                                 id="edit_name"
                                 wire:model="name"
-                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-xs focus:outline-hidden focus:ring-blue-500 focus:border-blue-500"
                                 required
                             />
                             @error('name') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
@@ -1086,7 +1086,7 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
                                 type="email"
                                 id="edit_email"
                                 wire:model="email"
-                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-xs focus:outline-hidden focus:ring-blue-500 focus:border-blue-500"
                                 required
                             />
                             @error('email') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
@@ -1102,7 +1102,7 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
                                 type="password"
                                 id="edit_password"
                                 wire:model="password"
-                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-xs focus:outline-hidden focus:ring-blue-500 focus:border-blue-500"
                             />
                             @error('password') <span class="text-red-500 text-sm">{{ $message }}</span> @enderror
                         </div>
@@ -1115,7 +1115,7 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
                                 type="password"
                                 id="edit_password_confirmation"
                                 wire:model="password_confirmation"
-                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-xs focus:outline-hidden focus:ring-blue-500 focus:border-blue-500"
                             />
                             @error('password_confirmation') <span
                                 class="text-red-500 text-sm">{{ $message }}</span> @enderror
@@ -1127,7 +1127,7 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
                             <select
                                 id="edit_selectedRole"
                                 wire:model="selectedRole"
-                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                                class="mt-1 block w-full px-3 py-2 border border-gray-300 rounded-md shadow-xs focus:outline-hidden focus:ring-blue-500 focus:border-blue-500"
                                 required
                             >
                                 <option value="">Select a role</option>
@@ -1145,7 +1145,7 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
                                 type="checkbox"
                                 id="edit_emailVerified"
                                 wire:model="emailVerified"
-                                class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded"
+                                class="h-4 w-4 text-blue-600 focus:ring-blue-500 border-gray-300 rounded-sm"
                             />
                             <label for="edit_emailVerified" class="ml-2 block text-sm text-gray-900">
                                 Mark email as verified
@@ -1157,13 +1157,13 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
                         <button
                             type="button"
                             wire:click="closeModals"
-                            class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                            class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                         >
                             Cancel
                         </button>
                                             <button
                         type="submit"
-                        class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-75 disabled:cursor-not-allowed transition-all duration-200"
+                        class="px-4 py-2 border border-transparent rounded-md shadow-xs text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 disabled:opacity-75 disabled:cursor-not-allowed transition-all duration-200"
                         wire:loading.attr="disabled"
                     >
                         <span wire:loading.remove wire:target="updateUser" class="flex items-center">
@@ -1182,7 +1182,7 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
 
     <!-- Delete Confirmation Modal -->
     @if($deleteModalOpen)
-        <div class="fixed inset-0 bg-gray-900 bg-opacity-50 overflow-y-auto h-full w-full z-50"
+        <div class="fixed inset-0 bg-gray-900/50 overflow-y-auto h-full w-full z-50"
              x-data="{}"
              x-show="true"
              x-transition:enter="ease-out duration-300"
@@ -1218,13 +1218,13 @@ class="min-h-screen bg-gradient-to-br from-slate-50 via-blue-50 to-indigo-50 py-
                 <div class="flex justify-end space-x-3">
                     <button
                         wire:click="closeModals"
-                        class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        class="px-4 py-2 border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                     >
                         Cancel
                     </button>
                                     <button
                     wire:click="deleteUser"
-                    class="px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-75 disabled:cursor-not-allowed transition-all duration-200"
+                    class="px-4 py-2 border border-transparent rounded-md shadow-xs text-sm font-medium text-white bg-red-600 hover:bg-red-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-red-500 disabled:opacity-75 disabled:cursor-not-allowed transition-all duration-200"
                     wire:loading.attr="disabled"
                 >
                     <span wire:loading.remove wire:target="deleteUser" class="flex items-center">

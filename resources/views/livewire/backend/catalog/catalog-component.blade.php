@@ -10,7 +10,7 @@
                     </h2>
                 </div>
                 <div class="mt-4 flex md:mt-0 md:ml-4">
-                    <button wire:click="openAddModal" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    <button wire:click="openAddModal" class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-xs text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
                         </svg>
@@ -29,7 +29,7 @@
                         wire:model.live.debounce.300ms="search"
                         type="text"
                         placeholder="Search products..."
-                        class="w-full px-10 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                        class="w-full px-10 py-2 border border-gray-300 rounded-md focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
                     />
                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -49,7 +49,7 @@
                 </div>
 
                 <!-- Product Filter -->
-                <select wire:model.live="product" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <select wire:model.live="product" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     <option value="">All Products</option>
                     @foreach($products as $prod)
                         <option value="{{ $prod->id }}">{{ $prod->name }}</option>
@@ -57,7 +57,7 @@
                 </select>
 
                 <!-- Currency Filter -->
-                <select wire:model.live="currency" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <select wire:model.live="currency" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     <option value="">All Currencies</option>
                     @foreach($currencies as $curr)
                         <option value="{{ $curr->id }}">{{ $curr->code }}</option>
@@ -65,14 +65,14 @@
                 </select>
 
                 <!-- Status Filter -->
-                <select wire:model.live="status" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <select wire:model.live="status" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     <option value="">All Statuses</option>
                     <option value="active">Active</option>
                     <option value="inactive">Inactive</option>
                 </select>
 
                 <!-- Sort Field -->
-                <select wire:model.live="sortField" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
+                <select wire:model.live="sortField" class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-blue-500">
                     <option value="created_at">Sort By</option>
                     <option value="price">Price</option>
                     <option value="min_qty">Min Quantity</option>
@@ -80,7 +80,7 @@
                 </select>
 
                 <!-- Bulk Actions -->
-                <select wire:model.live="bulkAction" class="rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                <select wire:model.live="bulkAction" class="rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500">
                     <option value="">Bulk Actions</option>
                     <option value="delete">Delete Selected</option>
                     <option value="activate">Enable Visibility</option>
@@ -99,7 +99,7 @@
                         <thead class="bg-gray-50">
                             <tr>
                                 <th class="px-6 py-3 text-left">
-                                    <input type="checkbox" wire:model.live="selectAll" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                                    <input type="checkbox" wire:model.live="selectAll" class="rounded-sm border-gray-300 text-blue-600 focus:ring-blue-500" />
                                 </th>
                                 <th wire:click="sortBy('product_id')" class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer">
                                     <div class="flex items-center space-x-1">
@@ -153,11 +153,11 @@
                                 <!-- Wholesale Product Row -->
                                 <tr class="hover:bg-gray-50 group">
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <input type="checkbox" wire:model.live="selectedProducts" value="{{ $wholesaleProduct->id }}" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500" />
+                                        <input type="checkbox" wire:model.live="selectedProducts" value="{{ $wholesaleProduct->id }}" class="rounded-sm border-gray-300 text-blue-600 focus:ring-blue-500" />
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
                                         <div class="flex items-center">
-                                            <div class="h-10 w-10 flex-shrink-0">
+                                            <div class="h-10 w-10 shrink-0">
                                                 @if($wholesaleProduct->product && $wholesaleProduct->product->images->where('is_primary', true)->first())
                                                     <img class="h-10 w-10 rounded-lg object-cover"
                                                         src="{{ Storage::disk('public')->exists($wholesaleProduct->product->images->where('is_primary', true)->first()->image_url)
@@ -198,8 +198,8 @@
                                                         wire:loading.class="opacity-50"
                                                         wire:target="toggleStatus({{ $wholesaleProduct->id }})">
                                                     <span class="sr-only">Toggle visibility</span>
-                                                    <div class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 {{ $wholesaleProduct->is_active ? 'bg-blue-600' : 'bg-gray-200' }}">
-                                                        <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {{ $wholesaleProduct->is_active ? 'translate-x-5' : 'translate-x-0' }}"></span>
+                                                    <div class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 {{ $wholesaleProduct->is_active ? 'bg-blue-600' : 'bg-gray-200' }}">
+                                                        <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out {{ $wholesaleProduct->is_active ? 'translate-x-5' : 'translate-x-0' }}"></span>
                                                     </div>
                                                 </button>
                                             </div>
@@ -277,12 +277,12 @@
 
     <!-- Delete Confirmation Modal -->
     @if($showDeleteModal)
-        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity z-50">
+        <div class="fixed inset-0 bg-gray-500/75 transition-opacity z-50">
         <div class="fixed inset-0 z-10 overflow-y-auto">
             <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
                 <div class="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
                     <div class="sm:flex sm:items-start">
-                            <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
+                            <div class="mx-auto flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-red-100 sm:mx-0 sm:h-10 sm:w-10">
                                 <svg class="h-6 w-6 text-red-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
                             </svg>
@@ -302,14 +302,14 @@
                             <button
                                 type="button"
                                 wire:click="deleteProduct"
-                                class="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-3 sm:w-auto"
+                                class="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-red-500 sm:ml-3 sm:w-auto"
                             >
                                 Delete
                             </button>
                             <button
                                 type="button"
                                 wire:click="$set('showDeleteModal', false)"
-                                class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
+                                class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-xs ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
                             >
                                 Cancel
                             </button>
@@ -333,10 +333,10 @@
         }
     }"
     x-show="$wire.editModalOpen"
-    class="fixed inset-0 z-[41] overflow-y-auto"
+    class="fixed inset-0 z-41 overflow-y-auto"
     x-cloak>
         <!-- Backdrop -->
-        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+        <div class="fixed inset-0 bg-gray-500/75 transition-opacity"></div>
 
         <!-- Modal Content -->
         <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
@@ -383,7 +383,7 @@
                                 }" class="relative">
                                     <button type="button"
                                         @click="open = !open"
-                                        class="mt-1 relative w-full cursor-default rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 text-left shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm">
+                                        class="mt-1 relative w-full cursor-default rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 text-left shadow-xs focus:border-blue-500 focus:outline-hidden focus:ring-1 focus:ring-blue-500 sm:text-sm">
                                         <span class="block truncate" x-text="selectedProductName"></span>
                                         <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
                                             <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
@@ -399,9 +399,9 @@
                                             <input type="text"
                                                 x-model="search"
                                                 placeholder="Search products..."
-                                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
                                         </div>
-                                        <ul class="max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
+                                        <ul class="max-h-60 rounded-md py-1 text-base ring-1 ring-black/5 overflow-auto focus:outline-hidden sm:text-sm">
                                             <template x-for="product in filteredProducts" :key="product.id">
                                                 <li @click="selectedProduct = product.id; open = false"
                                                     class="relative cursor-pointer select-none py-2 pl-3 pr-9 hover:bg-gray-100"
@@ -437,7 +437,7 @@
                                     step="0.01"
                                     min="0"
                                     id="edit-price"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
                                 @error('editForm.price')
                                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
@@ -449,7 +449,7 @@
                                 <select
                                     wire:model="editForm.currency_id"
                                     id="edit-currency"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
                                     <option value="">Select a currency</option>
                                     @foreach($currencies as $currency)
                                         <option value="{{ $currency->id }}">{{ $currency->code }} ({{ $currency->symbol }})</option>
@@ -472,8 +472,8 @@
                                                 wire:loading.class="opacity-50"
                                                 wire:target="toggleEditFormVisibility">
                                             <span class="sr-only">Toggle visibility</span>
-                                            <div class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 {{ $editForm['is_active'] ? 'bg-blue-600' : 'bg-gray-200' }}">
-                                                <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {{ $editForm['is_active'] ? 'translate-x-5' : 'translate-x-0' }}"></span>
+                                            <div class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 {{ $editForm['is_active'] ? 'bg-blue-600' : 'bg-gray-200' }}">
+                                                <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out {{ $editForm['is_active'] ? 'translate-x-5' : 'translate-x-0' }}"></span>
                                             </div>
                                         </button>
                                     </div>
@@ -491,7 +491,7 @@
                                     wire:model="editForm.min_qty"
                                     min="1"
                                     id="edit-min-qty"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
                                 @error('editForm.min_qty')
                                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
@@ -504,7 +504,7 @@
                                     wire:model="editForm.max_qty"
                                     min="1"
                                     id="edit-max-qty"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
                                 @error('editForm.max_qty')
                                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
@@ -517,7 +517,7 @@
                                     <button
                                         type="button"
                                         @click="open = !open"
-                                        class="relative w-full cursor-default rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 text-left shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm"
+                                        class="relative w-full cursor-default rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 text-left shadow-xs focus:border-blue-500 focus:outline-hidden focus:ring-1 focus:ring-blue-500 sm:text-sm"
                                     >
                                         <span class="flex flex-wrap gap-1">
                                             @if(!empty($editForm['tags']))
@@ -548,7 +548,7 @@
                                         @click.away="open = false"
                                         class="absolute z-10 mt-1 w-full rounded-md bg-white shadow-lg"
                                     >
-                                        <ul class="max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
+                                        <ul class="max-h-60 rounded-md py-1 text-base ring-1 ring-black/5 overflow-auto focus:outline-hidden sm:text-sm">
                                             @foreach($allTags as $tag)
                                                 <li
                                                     class="relative cursor-pointer select-none py-2 pl-3 pr-9 hover:bg-gray-100"
@@ -589,11 +589,11 @@
                     <div class="mt-6 flex justify-end gap-3">
                         <button type="button"
                             @click="$wire.editModalOpen = false"
-                            class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                             Cancel
                         </button>
                         <button type="submit"
-                            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                             Save Changes
                         </button>
                     </div>
@@ -604,12 +604,12 @@
 
     <!-- Bulk Action Confirmation Modal -->
     @if($showBulkActionModal)
-        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity z-50">
+        <div class="fixed inset-0 bg-gray-500/75 transition-opacity z-50">
             <div class="fixed inset-0 z-10 overflow-y-auto">
                 <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
                     <div class="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
                         <div class="sm:flex sm:items-start">
-                            <div class="mx-auto flex h-12 w-12 flex-shrink-0 items-center justify-center rounded-full bg-yellow-100 sm:mx-0 sm:h-10 sm:w-10">
+                            <div class="mx-auto flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-yellow-100 sm:mx-0 sm:h-10 sm:w-10">
                                 <svg class="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                                     <path stroke-linecap="round" stroke-linejoin="round" d="M12 9v3.75m-9.303 3.376c-.866 1.5.217 3.374 1.948 3.374h14.71c1.73 0 2.813-1.874 1.948-3.374L13.949 3.378c-.866-1.5-3.032-1.5-3.898 0L2.697 16.126zM12 15.75h.007v.008H12v-.008z" />
                                 </svg>
@@ -629,14 +629,14 @@
                             <button
                                 type="button"
                                 wire:click="confirmBulkAction"
-                                class="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-red-500 sm:ml-3 sm:w-auto"
+                                class="inline-flex w-full justify-center rounded-md bg-red-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-red-500 sm:ml-3 sm:w-auto"
                             >
                                 Confirm
                             </button>
                             <button
                                 type="button"
                                 wire:click="cancelBulkAction"
-                                class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
+                                class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-xs ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto"
                             >
                                 Cancel
                             </button>
@@ -660,10 +660,10 @@
             }
         }"
         x-show="$wire.addModalOpen"
-        class="fixed inset-0 z-[41] overflow-y-auto"
+        class="fixed inset-0 z-41 overflow-y-auto"
         x-cloak>
         <!-- Backdrop -->
-        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+        <div class="fixed inset-0 bg-gray-500/75 transition-opacity"></div>
 
         <!-- Modal Content -->
         <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
@@ -710,7 +710,7 @@
                                 }" class="relative">
                                     <button type="button"
                                         @click="open = !open"
-                                        class="mt-1 relative w-full cursor-default rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 text-left shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm">
+                                        class="mt-1 relative w-full cursor-default rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 text-left shadow-xs focus:border-blue-500 focus:outline-hidden focus:ring-1 focus:ring-blue-500 sm:text-sm">
                                         <span class="block truncate" x-text="selectedProductName"></span>
                                         <span class="pointer-events-none absolute inset-y-0 right-0 flex items-center pr-2">
                                             <svg class="h-5 w-5 text-gray-400" viewBox="0 0 20 20" fill="currentColor">
@@ -726,9 +726,9 @@
                                             <input type="text"
                                                 x-model="search"
                                                 placeholder="Search products..."
-                                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
+                                                class="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm">
                                         </div>
-                                        <ul class="max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
+                                        <ul class="max-h-60 rounded-md py-1 text-base ring-1 ring-black/5 overflow-auto focus:outline-hidden sm:text-sm">
                                             <template x-for="product in filteredProducts" :key="product.id">
                                                 <li @click="selectedProduct = product.id; open = false"
                                                     class="relative cursor-pointer select-none py-2 pl-3 pr-9 hover:bg-gray-100"
@@ -764,7 +764,7 @@
                                     step="0.01"
                                     min="0"
                                     id="add-price"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
                                 @error('addForm.price')
                                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
@@ -776,7 +776,7 @@
                                 <select
                                     wire:model="addForm.currency_id"
                                     id="add-currency"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
                                     <option value="">Select a currency</option>
                                     @foreach($currencies as $currency)
                                         <option value="{{ $currency->id }}">{{ $currency->code }} ({{ $currency->symbol }})</option>
@@ -796,8 +796,8 @@
                                         <button type="button"
                                                 wire:click="toggleAddFormVisibility"
                                                 class="group relative">
-                                            <div class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 {{ $addForm['is_active'] ? 'bg-blue-600' : 'bg-gray-200' }}">
-                                                <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {{ $addForm['is_active'] ? 'translate-x-5' : 'translate-x-0' }}"></span>
+                                            <div class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 {{ $addForm['is_active'] ? 'bg-blue-600' : 'bg-gray-200' }}">
+                                                <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out {{ $addForm['is_active'] ? 'translate-x-5' : 'translate-x-0' }}"></span>
                                             </div>
                                         </button>
                                     </div>
@@ -815,7 +815,7 @@
                                     wire:model="addForm.min_qty"
                                     min="1"
                                     id="add-min-qty"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
                                 @error('addForm.min_qty')
                                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
@@ -828,7 +828,7 @@
                                     wire:model="addForm.max_qty"
                                     min="1"
                                     id="add-max-qty"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
                                 @error('addForm.max_qty')
                                     <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                 @enderror
@@ -841,7 +841,7 @@
                                     <button
                                         type="button"
                                         @click="open = !open"
-                                        class="relative w-full cursor-default rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 text-left shadow-sm focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 sm:text-sm"
+                                        class="relative w-full cursor-default rounded-md border border-gray-300 bg-white py-2 pl-3 pr-10 text-left shadow-xs focus:border-blue-500 focus:outline-hidden focus:ring-1 focus:ring-blue-500 sm:text-sm"
                                     >
                                         <span class="flex flex-wrap gap-1">
                                             @if(!empty($addForm['tags']))
@@ -872,7 +872,7 @@
                                         @click.away="open = false"
                                         class="absolute z-10 mt-1 w-full rounded-md bg-white shadow-lg"
                                     >
-                                        <ul class="max-h-60 rounded-md py-1 text-base ring-1 ring-black ring-opacity-5 overflow-auto focus:outline-none sm:text-sm">
+                                        <ul class="max-h-60 rounded-md py-1 text-base ring-1 ring-black/5 overflow-auto focus:outline-hidden sm:text-sm">
                                             @foreach($allTags as $tag)
                                                 <li
                                                     class="relative cursor-pointer select-none py-2 pl-3 pr-9 hover:bg-gray-100"
@@ -913,11 +913,11 @@
                     <div class="mt-6 flex justify-end gap-3">
                         <button type="button"
                             wire:click="$set('addModalOpen', false)"
-                            class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            class="inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                             Cancel
                         </button>
                         <button type="submit"
-                            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                            class="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                             Create Wholesale Product
                         </button>
                     </div>

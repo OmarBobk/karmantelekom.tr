@@ -99,7 +99,7 @@
                 x-transition:enter="transition ease-out duration-300"
                 x-transition:enter-start="opacity-0 scale-50"
                 x-transition:enter-end="opacity-100 scale-100"
-                class="absolute top-[-7%] right-[21%] bg-blue-600 text-white text-xs font-bold rounded-full h-5 min-w-[1.25rem] px-1 flex items-center justify-center group-hover:bg-blue-700 transition-colors duration-200 z-50"
+                class="absolute top-[-7%] right-[21%] bg-blue-600 text-white text-xs font-bold rounded-full h-5 min-w-5 px-1 flex items-center justify-center group-hover:bg-blue-700 transition-colors duration-200 z-50"
             ></div>
         </button>
     </div>
@@ -152,7 +152,7 @@
                                 <ul role="list" class="-my-6 divide-y divide-gray-200">
                                     <template x-for="item in $store.cart.items" :key="item.product_id">
                                         <li class="py-6 flex items-center">
-                                            <div class="flex-shrink-0 w-24 h-24 border border-gray-200 rounded-md overflow-hidden">
+                                            <div class="shrink-0 w-24 h-24 border border-gray-200 rounded-md overflow-hidden">
                                                 <img :src="'/storage/' + item.image" :alt="item.name" class="w-full h-full object-center object-cover">
                                             </div>
 
@@ -207,7 +207,7 @@
                         <!-- Minimum Order Warning -->
                         <div x-show="$store.cart.subtotal < minOrderAmount" class="mt-4 p-3 bg-yellow-50 border border-yellow-200 rounded-md">
                             <div class="flex">
-                                <div class="flex-shrink-0">
+                                <div class="shrink-0">
                                     <svg class="h-5 w-5 text-yellow-400" viewBox="0 0 20 20" fill="currentColor">
                                         <path fill-rule="evenodd" d="M8.257 3.099c.765-1.36 2.722-1.36 3.486 0l5.58 9.92c.75 1.334-.213 2.98-1.742 2.98H4.42c-1.53 0-2.493-1.646-1.743-2.98l5.58-9.92zM11 13a1 1 0 11-2 0 1 1 0 012 0zm-1-8a1 1 0 00-1 1v3a1 1 0 002 0V6a1 1 0 00-1-1z" clip-rule="evenodd" />
                                     </svg>
@@ -225,7 +225,7 @@
                             <button
                                 :disabled="loading || $store.cart.subtotal < minOrderAmount"
                                 @click.prevent="orderViaWhatsApp()"
-                                class="flex justify-center items-center w-full px-6 py-3 border border-transparent rounded-md shadow-sm text-base font-medium text-white transition-colors duration-200"
+                                class="flex justify-center items-center w-full px-6 py-3 border border-transparent rounded-md shadow-xs text-base font-medium text-white transition-colors duration-200"
                                 :class="$store.cart.subtotal < minOrderAmount ? 'bg-gray-400 cursor-not-allowed' : 'bg-indigo-600 hover:bg-indigo-700'">
                                 <span x-show="!loading && $store.cart.subtotal >= minOrderAmount">{{__('cart.order_now')}}</span>
                                 <span x-show="!loading && $store.cart.subtotal < minOrderAmount">Minimum 1000 TL gerekli</span>

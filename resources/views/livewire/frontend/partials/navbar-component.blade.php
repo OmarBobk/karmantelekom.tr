@@ -9,7 +9,7 @@
                 <!-- Left button (desktop only) -->
                 <button
                     type="button"
-                    class="hidden lg:flex absolute left-0 top-1/2 -translate-y-1/2 z-20 h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white shadow-sm hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed"
+                    class="hidden lg:flex absolute left-0 top-1/2 -translate-y-1/2 z-20 h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white shadow-xs hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed"
                     @click="scrollBy(-320)"
                     :disabled="atStart"
                     aria-label="Scroll left"
@@ -22,7 +22,7 @@
                 <!-- Right button (desktop only) -->
                 <button
                     type="button"
-                    class="hidden lg:flex absolute right-[-2rem] top-1/2 -translate-y-1/2 z-20 h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white shadow-sm hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed"
+                    class="hidden lg:flex absolute -right-8 top-1/2 -translate-y-1/2 z-20 h-9 w-9 items-center justify-center rounded-full border border-gray-200 bg-white shadow-xs hover:bg-gray-50 disabled:opacity-30 disabled:cursor-not-allowed"
                     @click="scrollBy(320)"
                     :disabled="atEnd"
                     aria-label="Scroll right"
@@ -128,8 +128,8 @@
                 </div>
 
                 <!-- Optional fade edges (desktop only) -->
-                <div class="pointer-events-none hidden lg:block absolute inset-y-0 left-0 w-10 bg-gradient-to-r from-white to-transparent"></div>
-                <div class="pointer-events-none hidden lg:block absolute inset-y-0 right-[-2rem] w-10 bg-gradient-to-l from-white to-transparent"></div>
+                <div class="pointer-events-none hidden lg:block absolute inset-y-0 left-0 w-10 bg-linear-to-r from-white to-transparent"></div>
+                <div class="pointer-events-none hidden lg:block absolute inset-y-0 -right-8 w-10 bg-linear-to-l from-white to-transparent"></div>
             </div>
         </div>
 

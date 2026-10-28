@@ -12,7 +12,7 @@
 @endphp
 <div class="max-w-7xl mx-auto space-y-8">
     {{-- Shop Header --}}
-    <div class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-3xl py-6 px-8 text-white shadow-lg flex flex-col md:flex-row md:items-center md:justify-between min-h-[96px]">
+    <div class="bg-linear-to-r from-blue-600 to-indigo-600 rounded-3xl py-6 px-8 text-white shadow-lg flex flex-col md:flex-row md:items-center md:justify-between min-h-[96px]">
         {{-- Shop Header left section --}}
         <div class="w-full md:w-[60%] h-full flex flex-col justify-center">
             <h1 class="text-3xl font-bold mb-2">{{ $shop->name }}</h1>
@@ -33,21 +33,21 @@
         <div class="flex flex-wrap justify-around gap-4 mt-4 md:mt-0 w-full md:w-auto h-full items-center">
             @if(!empty($links['facebook']))
                 <a href="{{ $links['facebook'] }}" target="_blank" rel="noopener" x-data="{hover:false}" @mouseenter="hover=true" @mouseleave="hover=false"
-                   :class="{'ring-2 ring-white/40 scale-105': hover}" class="flex items-center px-5 py-2 rounded-xl bg-white/10 border border-white/20 backdrop-blur-md transition-all duration-300 space-x-2 focus:outline-none focus:ring-2 focus:ring-white/60">
+                   :class="{'ring-2 ring-white/40 scale-105': hover}" class="flex items-center px-5 py-2 rounded-xl bg-white/10 border border-white/20 backdrop-blur-md transition-all duration-300 space-x-2 focus:outline-hidden focus:ring-2 focus:ring-white/60">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M17 2.5h-2.5A4.5 4.5 0 0 0 10 7v2H7v3h3v7h3v-7h2.5l.5-3H13V7a1.5 1.5 0 0 1 1.5-1.5H17V2.5Z" /></svg>
                     <span class="font-semibold">Green Valley Market</span>
                 </a>
             @endif
             @if(!empty($links['instagram']))
                 <a href="{{ $links['instagram'] }}" target="_blank" rel="noopener" x-data="{hover:false}" @mouseenter="hover=true" @mouseleave="hover=false"
-                   :class="{'ring-2 ring-white/40 scale-105': hover}" class="flex items-center px-5 py-2 rounded-xl bg-white/10 border border-white/20 backdrop-blur-md transition-all duration-300 space-x-2 focus:outline-none focus:ring-2 focus:ring-white/60">
+                   :class="{'ring-2 ring-white/40 scale-105': hover}" class="flex items-center px-5 py-2 rounded-xl bg-white/10 border border-white/20 backdrop-blur-md transition-all duration-300 space-x-2 focus:outline-hidden focus:ring-2 focus:ring-white/60">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="4" /><circle cx="12" cy="12" r="4" /><path d="M16.5 7.5v.001" /></svg>
                     <span class="font-semibold">@greenvalleymarket</span>
                 </a>
             @endif
             @if(!empty($links['website']))
                 <a href="{{ $links['website'] }}" target="_blank" rel="noopener" x-data="{hover:false}" @mouseenter="hover=true" @mouseleave="hover=false"
-                   :class="{'ring-2 ring-white/40 scale-105': hover}" class="flex items-center px-5 py-2 rounded-xl bg-white/10 border border-white/20 backdrop-blur-md transition-all duration-300 space-x-2 focus:outline-none focus:ring-2 focus:ring-white/60">
+                   :class="{'ring-2 ring-white/40 scale-105': hover}" class="flex items-center px-5 py-2 rounded-xl bg-white/10 border border-white/20 backdrop-blur-md transition-all duration-300 space-x-2 focus:outline-hidden focus:ring-2 focus:ring-white/60">
                     <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" d="M12 3a9 9 0 1 0 0 18a9 9 0 0 0 0-18Zm0 0c2.5 0 4.5 4 4.5 9s-2 9-4.5 9s-4.5-4-4.5-9s2-9 4.5-9Zm0 0a8.997 8.997 0 0 1 7.843 4.582M12 3A8.997 8.997 0 0 0 4.157 7.582" /></svg>
                     <span class="font-semibold">{{ parse_url($links['website'], PHP_URL_HOST) ?? $links['website'] }}</span>
                 </a>
@@ -200,7 +200,7 @@
                     class="flex items-center rounded-2xl px-8 py-7 min-h-[96px] transition-all duration-200 cursor-pointer"
                     style="box-shadow: 0 4px 24px 0 rgba(0,0,0,0.07);"
                 >
-                    <div class="flex-shrink-0">
+                    <div class="shrink-0">
                         <span class="flex items-center justify-center w-14 h-14 rounded-xl font-bold text-2xl text-white"
                             style="background: #4264fa; box-shadow: 0 4px 16px 0 rgba(66,100,250,0.15);">
                             {{ $i+1 }}

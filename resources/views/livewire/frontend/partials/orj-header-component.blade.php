@@ -109,7 +109,7 @@ class="relative">
                             x-transition:leave="transition ease-in duration-150"
                             x-transition:leave-start="opacity-100 translate-y-0"
                             x-transition:leave-end="opacity-0 translate-y-1"
-                            class="absolute z-20 mt-1 w-56 rounded-md bg-white shadow-lg ring-1 ring-black ring-opacity-5 focus:outline-none">
+                            class="absolute z-20 mt-1 w-56 rounded-md bg-white shadow-lg ring-1 ring-black/5 focus:outline-hidden">
                             <div class="py-1">
                                 @foreach($category->children as $child)
                                     <a href="{{ route('products', ['category' => $child->slug]) }}" class="block px-4 py-2 text-sm text-gray-700 hover:bg-gray-100 hover:text-blue-600">{{ $child->translated_name }}</a>
@@ -154,7 +154,7 @@ class="relative">
 
             <!-- Sidebar Header -->
             <div class="flex items-center justify-between py-6 {{app()->getLocale() == 'ar' ? 'pl-8 pr-10' : 'pl-10 pr-8'}} border-b border-gray-100">
-                <a href="{{ route('main') }}" class="text-2xl font-semibold font-poppins bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">
+                <a href="{{ route('main') }}" class="text-2xl font-semibold font-poppins bg-linear-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">
                     <img src="{{ asset('assets/images/karmantelekom_logo.png') }}" class="w-24" alt="">
                 </a>
                 <button @click="sidebarOpen = false"

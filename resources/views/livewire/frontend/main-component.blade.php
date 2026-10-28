@@ -22,7 +22,7 @@
         x-show="show"
         x-on:currency-switching.window="show = true"
         x-on:currency-switched.window="setTimeout(() => show = false, 300)"
-        class="fixed inset-0 z-50 bg-gray-900/50 backdrop-blur-sm transition-opacity"
+        class="fixed inset-0 z-50 bg-gray-900/50 backdrop-blur-xs transition-opacity"
         x-transition:enter="ease-out duration-300"
         x-transition:enter-start="opacity-0"
         x-transition:enter-end="opacity-100"
@@ -35,7 +35,7 @@
         aria-busy="true"
     >
         <div class="fixed left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2">
-            <div class="bg-white/90 backdrop-blur-sm shadow-xl rounded-lg px-6 py-4 flex items-center gap-3 border border-gray-200/50">
+            <div class="bg-white/90 backdrop-blur-xs shadow-xl rounded-lg px-6 py-4 flex items-center gap-3 border border-gray-200/50">
                 <div class="relative">
                     <svg class="animate-spin size-6 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                         <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
@@ -132,7 +132,7 @@
                 <div class="absolute {{ app()->getLocale() === 'ar' ? 'right-0' : 'left-0' }} bottom-[3px] w-12 z-10 hidden md:flex items-center justify-start"
                     :class="{ 'pointer-events-none': atStart }"
                 >
-                    <div class="absolute inset-0 bg-gradient-to-r from-white via-white to-transparent
+                    <div class="absolute inset-0 bg-linear-to-r from-white via-white to-transparent
                                 opacity-0 transition-opacity duration-200"
                         :class="{ 'opacity-90': !atStart }"
                     ></div>
@@ -141,7 +141,7 @@
                 <div class="absolute {{ app()->getLocale() === 'ar' ? 'left-0' : 'right-0' }} bottom-[3px] w-12 z-10 hidden md:flex items-center justify-end"
                     :class="{ 'pointer-events-none': atEnd }"
                 >
-                    <div class="absolute inset-0 bg-gradient-to-l from-white via-white to-transparent
+                    <div class="absolute inset-0 bg-linear-to-l from-white via-white to-transparent
                                 opacity-0 transition-opacity duration-200"
                         :class="{ 'opacity-90': !atEnd }"
                     ></div>
@@ -203,7 +203,7 @@
                     <button
                         @click="scrollLeft($wire.activeCategory)"
                         class="hidden lg:flex items-center justify-center size-10 rounded-full bg-white hover:bg-gray-50 text-gray-600 hover:text-gray-900 shadow-lg border border-gray-200 absolute {{ app()->getLocale() === 'ar' ? '-right-2 md:-right-6' : '-left-2 md:-left-6' }} top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 z-10 transition-all duration-200
-                            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                            focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                         :class="{ 'pointer-events-none opacity-50': {{ app()->getLocale() === 'ar' ? 'atEnd' : 'atStart' }} }"
                         aria-label="Scroll products left"
                     >
@@ -216,7 +216,7 @@
                     <button
                         @click="scrollRight($wire.activeCategory)"
                         class="hidden lg:flex items-center justify-center size-10 rounded-full bg-white hover:bg-gray-50 text-gray-600 hover:text-gray-900 shadow-lg border border-gray-200 absolute {{ app()->getLocale() === 'ar' ? '-left-2 md:-left-6' : '-right-2 md:-right-6' }} top-1/2 -translate-y-1/2 opacity-0 group-hover:opacity-100 z-10 transition-all duration-200
-                            focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                            focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                         :class="{ 'pointer-events-none opacity-50': {{ app()->getLocale() === 'ar' ? 'atStart' : 'atEnd' }} }"
                         aria-label="Scroll products right"
                     >
@@ -246,7 +246,7 @@
                                 <div class="relative" x-cloak>
                                     <div
                                         x-ref="slider-{{ $index }}"
-                                        class="flex lg:rounded md:rounded-none sm:rounded-2xl overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory h-[580px]"
+                                        class="flex lg:rounded-sm md:rounded-none sm:rounded-2xl overflow-x-auto scrollbar-hide scroll-smooth snap-x snap-mandatory h-[580px]"
                                         @scroll.debounce.50ms="updateScrollButtons($wire.activeCategory)"
                                         role="list"
                                         aria-label="Products in {{ $section->name }}"
@@ -258,7 +258,7 @@
                                                     <!-- Wishlist Button (top-right) -->
 {{--                                                    <button--}}
 {{--                                                        wire:click="toggleWishlist({{ $product->id }})"--}}
-{{--                                                        class="absolute top-4 right-4 p-2 rounded-full bg-white/80 hover:bg-blue-50 shadow transition z-20"--}}
+{{--                                                        class="absolute top-4 right-4 p-2 rounded-full bg-white/80 hover:bg-blue-50 shadow-sm transition z-20"--}}
 {{--                                                        aria-label="Add to wishlist"--}}
 {{--                                                    >--}}
 {{--                                                        <svg class="w-5 h-5 text-rose-400" fill="currentColor" viewBox="0 0 20 20">--}}
@@ -321,7 +321,7 @@
                                                         <!-- Add to Cart Button -->
                                                         <button
                                                             @click="$store.cart.addItem({{ json_encode($product) }}, 1);"
-                                                            class="mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-px transition-all duration-300 focus:outline-none "
+                                                            class="mt-4 w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-px transition-all duration-300 focus:outline-hidden "
                                                             aria-label="{{ __('main.add_to_cart') }}"
                                                         >
                                                             <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -591,11 +591,11 @@
 
 
                                                 <!-- Product Info -->
-                                                <div class="p-4 flex flex-col flex-grow">
-                                                    <div class="flex-grow">
+                                                <div class="p-4 flex flex-col grow">
+                                                    <div class="grow">
                                                         <div class="mb-3">
                                                             <button wire:click="$dispatch('openProductModal', { productId: {{ $product->id }} })" class="text-left">
-                                                                <div class="line-clamp-3 h-[4.5rem] {{ app()->getLocale() == 'ar' ? 'text-right' : '' }}">
+                                                                <div class="line-clamp-3 h-18 {{ app()->getLocale() == 'ar' ? 'text-right' : '' }}">
                                                                     <h3 class="text-sm font-medium text-gray-900 hover:text-blue-600 transition-colors duration-200 line-clamp-1">{{ $product->translated_name }}</h3>
                                                                     <span class="text-sm text-gray-500 line-clamp-2">{!! $product->translated_description !!}</span>
                                                                 </div>
@@ -619,7 +619,7 @@
                                                     <div class="mt-4">
                                                         <button
                                                             @click="$store.cart.addItem({{ json_encode($product) }}, 1);"
-                                                            class="w-full flex items-center justify-center gap-2 py-1 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-px transition-all duration-300 focus:outline-none"
+                                                            class="w-full flex items-center justify-center gap-2 py-1 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-px transition-all duration-300 focus:outline-hidden"
                                                             aria-label="{{ __('main.add_to_cart') }}"
                                                         >
                                                             <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">

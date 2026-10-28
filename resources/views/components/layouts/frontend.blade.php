@@ -63,7 +63,7 @@
                 }
             }"
         @notify.window="add($event.detail)"
-        class="fixed top-4 right-4 z-[99999] space-y-2 w-full max-w-sm"
+        class="fixed top-4 right-4 z-99999 space-y-2 w-full max-w-sm"
     >
         <template x-for="notification in notifications" :key="notification.id">
             <div
@@ -87,10 +87,10 @@
                         <div class="flex-1 mr-3">
                             <p class="text-sm font-medium text-white" x-text="notification.message"></p>
                         </div>
-                        <div class="flex flex-shrink-0">
+                        <div class="flex shrink-0">
                             <button
                                 @click="remove(notification.id)"
-                                class="inline-flex text-white hover:text-gray-200 focus:outline-none focus:ring-2 focus:ring-white rounded-md"
+                                class="inline-flex text-white hover:text-gray-200 focus:outline-hidden focus:ring-2 focus:ring-white rounded-md"
                             >
                                 <span class="sr-only">Close</span>
                                 <svg class="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
@@ -104,7 +104,7 @@
         </template>
     </div>
 
-        <header class="bg-white shadow-sm">
+        <header class="bg-white shadow-xs">
             <livewire:frontend.partials.header-component />
         </header>
         <main>

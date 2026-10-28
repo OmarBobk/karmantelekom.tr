@@ -8,7 +8,7 @@
                     <p class="mt-1 text-gray-600">Manage your product sections and their contents</p>
                 </div>
                 <div class="mt-4 md:mt-0">
-                    <button wire:click="create" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    <button wire:click="create" class="inline-flex items-center px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
                         </svg>
@@ -36,7 +36,7 @@
         </div>
 
         <!-- Sections Table -->
-        <div class="bg-white rounded-lg shadow overflow-hidden">
+        <div class="bg-white rounded-lg shadow-sm overflow-hidden">
             <div class="overflow-x-auto min-w-full">
                 <div class="inline-block min-w-full align-middle">
                     <table class="min-w-full divide-y divide-gray-200">
@@ -77,10 +77,10 @@
                                                         wire:loading.class="opacity-50"
                                                         wire:target="toggleActive({{ $section->id }})">
                                                     <span class="sr-only">Toggle section status</span>
-                                                    <div class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 {{ $section->is_active ? 'bg-blue-600' : 'bg-gray-200' }}">
-                                                        <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {{ $section->is_active ? 'translate-x-5' : 'translate-x-0' }}"></span>
+                                                    <div class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 {{ $section->is_active ? 'bg-blue-600' : 'bg-gray-200' }}">
+                                                        <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out {{ $section->is_active ? 'translate-x-5' : 'translate-x-0' }}"></span>
                                                     </div>
-                                                    <span class="absolute left-1/2 -translate-x-1/2 -bottom-8 hidden group-hover:block bg-gray-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
+                                                    <span class="absolute left-1/2 -translate-x-1/2 -bottom-8 hidden group-hover:block bg-gray-900 text-white text-xs rounded-sm py-1 px-2 whitespace-nowrap">
                                                         {{ $section->is_active ? 'Active' : 'Inactive' }}
                                                     </span>
                                                 </button>
@@ -96,11 +96,11 @@
                                                 wire:loading.class="opacity-50"
                                                 wire:target="toggleScrollable({{ $section->id }})">
                                             <span class="sr-only">Toggle section scrollable</span>
-                                            <div class="relative inline-flex h-6 w-11 flex-shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 {{ $section->scrollable ? 'bg-blue-600' : 'bg-gray-200' }}">
-                                                <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow ring-0 transition duration-200 ease-in-out {{ $section->scrollable ? 'translate-x-5' : 'translate-x-0' }}"></span>
+                                            <div class="relative inline-flex h-6 w-11 shrink-0 cursor-pointer rounded-full border-2 border-transparent transition-colors duration-200 ease-in-out focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 {{ $section->scrollable ? 'bg-blue-600' : 'bg-gray-200' }}">
+                                                <span class="inline-block h-5 w-5 transform rounded-full bg-white shadow-sm ring-0 transition duration-200 ease-in-out {{ $section->scrollable ? 'translate-x-5' : 'translate-x-0' }}"></span>
                                             </div>
 
-                                            <span class="absolute left-1/2 -translate-x-1/2 -bottom-8 hidden group-hover:block bg-gray-900 text-white text-xs rounded py-1 px-2 whitespace-nowrap">
+                                            <span class="absolute left-1/2 -translate-x-1/2 -bottom-8 hidden group-hover:block bg-gray-900 text-white text-xs rounded-sm py-1 px-2 whitespace-nowrap">
                                                 {{ $section->scrollable ? 'Scrollable' : 'Not Scrollable' }}
                                             </span>
                                         </button>
@@ -215,7 +215,7 @@
                     x-transition:leave="ease-in duration-200"
                     x-transition:leave-start="opacity-100"
                     x-transition:leave-end="opacity-0"
-                    class="fixed inset-0 transition-opacity bg-gray-500 bg-opacity-75"
+                    class="fixed inset-0 transition-opacity bg-gray-500/75"
                     @click="$wire.closeModal()">
                 </div>
 
@@ -267,7 +267,7 @@
                         <div>
                             <label for="description" class="block text-sm font-medium text-gray-700">Description</label>
                             <textarea wire:model="description" id="description" rows="3"
-                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></textarea>
+                                    class="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"></textarea>
                             @error('description') <span class="mt-1 text-sm text-red-600">{{ $message }}</span> @enderror
                         </div>
 
@@ -275,7 +275,7 @@
                             <div>
                                 <label for="position" class="block text-sm font-medium text-gray-700">Position</label>
                                 <select wire:model="position" id="position"
-                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
+                                        class="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
                                     @foreach($this->availablePositions as $positionOption)
                                         <option value="{{ $positionOption->value }}"
                                                 class="flex items-center py-2">
@@ -328,7 +328,7 @@
                                            wire:model.live="order"
                                            id="order"
                                            min="1"
-                                           class="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm {{ $errors->has('order') ? 'border-red-300 text-red-900 placeholder-red-300 focus:border-red-500 focus:ring-red-500' : '' }}">
+                                           class="block w-full rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm {{ $errors->has('order') ? 'border-red-300 text-red-900 placeholder-red-300 focus:border-red-500 focus:ring-red-500' : '' }}">
                                     @error('order')
                                         <div class="absolute inset-y-0 right-0 pr-3 flex items-end pointer-events-none">
                                             <svg class="h-5 w-5 text-red-500" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
@@ -348,7 +348,7 @@
                                 <label class="block text-sm font-medium text-gray-700">Status</label>
                                 <div class="mt-2">
                                     <label class="inline-flex items-center">
-                                        <input type="checkbox" wire:model="is_active" class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                        <input type="checkbox" wire:model="is_active" class="rounded-sm border-gray-300 text-blue-600 shadow-xs focus:border-blue-500 focus:ring-blue-500">
                                         <span class="ml-2 text-sm text-gray-600">Active</span>
                                     </label>
                                 </div>
@@ -359,7 +359,7 @@
                                 <label class="block text-sm font-medium text-gray-700">Scrollable</label>
                                 <div class="mt-2">
                                     <label class="inline-flex items-center">
-                                        <input type="checkbox" wire:model="scrollable" class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                        <input type="checkbox" wire:model="scrollable" class="rounded-sm border-gray-300 text-blue-600 shadow-xs focus:border-blue-500 focus:ring-blue-500">
                                         <span class="ml-2 text-sm text-gray-600">Enable Scrolling</span>
                                     </label>
                                 </div>
@@ -446,7 +446,7 @@
                                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
                                                     <input type="checkbox"
                                                         wire:model.live="selectAllProducts"
-                                                        class="rounded border-gray-300 text-blue-600">
+                                                        class="rounded-sm border-gray-300 text-blue-600">
                                                 </th>
                                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Image</th>
                                                 <th class="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Name</th>
@@ -461,7 +461,7 @@
                                                         <input type="checkbox"
                                                             wire:model.live="selectedProducts"
                                                             value="{{ $product->id }}"
-                                                            class="rounded border-gray-300 text-blue-600">
+                                                            class="rounded-sm border-gray-300 text-blue-600">
                                                     </td>
                                                     <td class="px-4 py-3 whitespace-nowrap">
                                                         @if($product->images->where('is_primary', true)->first())
@@ -492,7 +492,7 @@
                                                     <td class="px-4 py-3 whitespace-nowrap">
                                                         <input type="number"
                                                             wire:model.live="productOrders.{{ $product->id }}"
-                                                            class="w-20 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                                            class="w-20 rounded-md border-gray-300 shadow-xs focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
                                                             min="0">
                                                     </td>
                                                 </tr>
@@ -508,12 +508,12 @@
 
                         <div class="mt-5 sm:mt-6 sm:flex sm:flex-row-reverse">
                             <button type="submit"
-                                    class="inline-flex justify-center w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto">
+                                    class="inline-flex justify-center w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-xs hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:ml-3 sm:w-auto">
                                 {{ $editingSection ? 'Update Section' : 'Create Section' }}
                             </button>
                             <button type="button"
                                     @click="$wire.closeModal()"
-                                    class="mt-3 inline-flex justify-center w-full px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:w-auto">
+                                    class="mt-3 inline-flex justify-center w-full px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-xs hover:bg-gray-50 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 sm:mt-0 sm:w-auto">
                                 Cancel
                             </button>
                         </div>
@@ -545,13 +545,13 @@
             x-show="showFullImage"
             x-cloak
             @keydown.escape.window="showFullImage = false"
-            class="fixed inset-0 z-[100] flex items-center justify-center bg-black bg-opacity-75"
+            class="fixed inset-0 z-100 flex items-center justify-center bg-black/75"
             @click="showFullImage = false">
 
             <div class="relative max-w-7xl mx-auto p-4" @click.stop>
                 <button type="button"
                         @click="showFullImage = false"
-                        class="flex justify-end w-full text-white hover:text-gray-300 focus:outline-none">
+                        class="flex justify-end w-full text-white hover:text-gray-300 focus:outline-hidden">
                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"/>
                     </svg>

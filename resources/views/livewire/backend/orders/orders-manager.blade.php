@@ -1,6 +1,6 @@
 <div>
     <div class="bg-white rounded-3xl shadow-lg border border-gray-100">
-        <div class="px-6 py-4 border-b border-gray-100 bg-gradient-to-r from-white to-gray-50">
+        <div class="px-6 py-4 border-b border-gray-100 bg-linear-to-r from-white to-gray-50">
             <div class="flex flex-col space-y-4">
                 <h1 class="text-2xl font-extrabold text-gray-900 tracking-tight">Orders Manager</h1>
                 <div class="flex flex-col lg:flex-row lg:items-center gap-4">
@@ -10,7 +10,7 @@
                             wire:model.live.debounce.300ms="search"
                             type="text"
                             placeholder="Search by order ID, shop, or user..."
-                            class="w-full pl-10 pr-8 py-2 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 text-gray-700 placeholder-gray-400 shadow-sm transition"
+                            class="w-full pl-10 pr-8 py-2 rounded-xl border border-gray-200 bg-gray-50 focus:bg-white focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 text-gray-700 placeholder-gray-400 shadow-xs transition"
                         />
                         <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                             <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -36,14 +36,14 @@
                             <input
                                 type="date"
                                 wire:model.live="fromDate"
-                                class="rounded-xl border-gray-200 bg-gray-50 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 px-3 py-2 text-gray-700 shadow-sm w-32 sm:w-36"
+                                class="rounded-xl border-gray-200 bg-gray-50 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 px-3 py-2 text-gray-700 shadow-xs w-32 sm:w-36"
                                 placeholder="From"
                             />
                             <span class="text-gray-400 text-sm">-</span>
                             <input
                                 type="date"
                                 wire:model.live="toDate"
-                                class="rounded-xl border-gray-200 bg-gray-50 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 px-3 py-2 text-gray-700 shadow-sm w-32 sm:w-36"
+                                class="rounded-xl border-gray-200 bg-gray-50 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 px-3 py-2 text-gray-700 shadow-xs w-32 sm:w-36"
                                 placeholder="To"
                             />
                         </div>
@@ -51,7 +51,7 @@
                         <div class="relative min-w-32">
                             <select
                                 wire:model.live="statusFilter"
-                                class="rounded-xl border-gray-200 bg-gray-50 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 pl-3 pr-10 py-2 text-gray-700 shadow-sm appearance-none w-full"
+                                class="rounded-xl border-gray-200 bg-gray-50 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 pl-3 pr-10 py-2 text-gray-700 shadow-xs appearance-none w-full"
                             >
                                 <option value="">All Statuses</option>
                                 @foreach($statuses as $status)
@@ -70,7 +70,7 @@
                             <div class="relative min-w-36">
                                 <select
                                     wire:model.live="salespersonFilter"
-                                    class="rounded-xl border-gray-200 bg-gray-50 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 pl-3 pr-10 py-2 text-gray-700 shadow-sm appearance-none w-full"
+                                    class="rounded-xl border-gray-200 bg-gray-50 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 pl-3 pr-10 py-2 text-gray-700 shadow-xs appearance-none w-full"
                                 >
                                     <option value="">All users</option>
                                     @foreach($salespeople as $salesperson)
@@ -89,7 +89,7 @@
                         <div class="relative min-w-32">
                             <select
                                 wire:model="bulkAction"
-                                class="rounded-xl border-gray-200 bg-gray-50 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 pl-3 pr-10 py-2 text-gray-700 shadow-sm appearance-none w-full"
+                                class="rounded-xl border-gray-200 bg-gray-50 focus:border-indigo-400 focus:ring-2 focus:ring-indigo-200 pl-3 pr-10 py-2 text-gray-700 shadow-xs appearance-none w-full"
                             >
                                 <option value="">Bulk Actions</option>
                                 <option value="delete">Delete</option>
@@ -108,7 +108,7 @@
                         <button
                             wire:click="confirmBulkAction"
                             wire:loading.attr="disabled"
-                            class="px-4 py-2 bg-indigo-600 text-white rounded-xl font-semibold shadow hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition whitespace-nowrap"
+                            class="px-4 py-2 bg-indigo-600 text-white rounded-xl font-semibold shadow-sm hover:bg-indigo-700 focus:outline-hidden focus:ring-2 focus:ring-indigo-400 transition whitespace-nowrap"
                         >
                             Apply
                         </button>
@@ -116,7 +116,7 @@
                         <button
                             wire:click="clearAllFilters"
                             wire:loading.attr="disabled"
-                            class="px-4 py-2 bg-gray-500 text-white rounded-xl font-semibold shadow hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400 transition whitespace-nowrap"
+                            class="px-4 py-2 bg-gray-500 text-white rounded-xl font-semibold shadow-sm hover:bg-gray-600 focus:outline-hidden focus:ring-2 focus:ring-gray-400 transition whitespace-nowrap"
                             title="Clear all filters"
                         >
                             <svg class="w-4 h-4 mr-2 inline" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -149,7 +149,7 @@
                                 <input
                                     type="checkbox"
                                     wire:model="selectAll"
-                                    class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-400 focus:ring-indigo-200"
+                                    class="rounded-sm border-gray-300 text-indigo-600 shadow-xs focus:border-indigo-400 focus:ring-indigo-200"
                                 />
                             </th>
 
@@ -316,7 +316,7 @@
                                         type="checkbox"
                                         wire:model="selectedOrders"
                                         value="{{ $order->id }}"
-                                        class="rounded border-gray-300 text-indigo-600 shadow-sm focus:border-indigo-400 focus:ring-indigo-200"
+                                        class="rounded-sm border-gray-300 text-indigo-600 shadow-xs focus:border-indigo-400 focus:ring-indigo-200"
                                     />
                                 </td>
                                 <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
@@ -326,7 +326,7 @@
                                 </td>
                                 <td class="px-3 sm:px-6 py-4 whitespace-nowrap text-sm text-gray-900 hidden md:table-cell">
                                     <div class="flex items-center gap-3">
-                                        <img src="https://ui-avatars.com/api/?name={{ urlencode($order->customer->name) }}&background=4f46e5&color=fff&size=32" alt="{{ $order->customer->name }}" class="w-8 h-8 rounded-full shadow border border-white" />
+                                        <img src="https://ui-avatars.com/api/?name={{ urlencode($order->customer->name) }}&background=4f46e5&color=fff&size=32" alt="{{ $order->customer->name }}" class="w-8 h-8 rounded-full shadow-sm border border-white" />
                                         <div>
                                             <div class="font-semibold">{{ $order->customer->name }}</div>
                                             <div class="text-xs text-gray-400">{{ $order->customer->email }}</div>
@@ -349,7 +349,7 @@
                                     <div class="relative" x-data="{ open: false }" @keydown.escape.window="open = false" @click.away="open = false">
                                         <button type="button"
                                             @click="open = !open"
-                                            class="w-full max-w-48 flex items-center justify-between px-3 py-2 rounded-xl border-2 focus:outline-none focus:ring-2 focus:ring-indigo-400 transition {{ $order->status->colorClasses() }} shadow-sm"
+                                            class="w-full max-w-48 flex items-center justify-between px-3 py-2 rounded-xl border-2 focus:outline-hidden focus:ring-2 focus:ring-indigo-400 transition {{ $order->status->colorClasses() }} shadow-xs"
                                             :aria-expanded="open"
                                         >
                                             <div class="flex items-center gap-2">
@@ -362,13 +362,13 @@
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 9l-7 7-7-7" />
                                             </svg>
                                         </button>
-                                        <div x-show="open" x-transition.origin.top.left class="absolute z-30 mt-2 w-72 rounded-2xl shadow-2xl bg-white ring-1 ring-black ring-opacity-5 focus:outline-none right-0 sm:left-0" style="display: none;">
+                                        <div x-show="open" x-transition.origin.top.left class="absolute z-30 mt-2 w-72 rounded-2xl shadow-2xl bg-white ring-1 ring-black/5 focus:outline-hidden right-0 sm:left-0" style="display: none;">
                                             <div class="py-2 max-h-96 overflow-y-auto">
                                                 @foreach($availableStatuses as $status)
                                                     <button type="button"
                                                         wire:click="updateOrderStatus({{ $order->id }}, '{{ $status->value }}')"
                                                         @click="open = false"
-                                                        class="w-full flex items-center gap-3 px-4 py-3 mb-1 transition font-semibold focus:outline-none {{ $status->colorClasses() }} {{ $order->status->value === $status->value ? 'ring-2 ring-indigo-400 border border-indigo-200' : 'hover:bg-gray-50' }}"
+                                                        class="w-full flex items-center gap-3 px-4 py-3 mb-1 transition font-semibold focus:outline-hidden {{ $status->colorClasses() }} {{ $order->status->value === $status->value ? 'ring-2 ring-indigo-400 border border-indigo-200' : 'hover:bg-gray-50' }}"
                                                     >
                                                         {!! $status->icon() !!}
                                                         <div class="flex flex-col text-left flex-1">
@@ -445,13 +445,13 @@
             <button
                 wire:click="performBulkAction"
                 wire:loading.attr="disabled"
-                class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+                class="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 focus:outline-hidden focus:ring-2 focus:ring-indigo-500"
             >
                 Confirm
             </button>
             <button
                 wire:click="cancelBulkAction"
-                class="ml-2 px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
+                class="ml-2 px-4 py-2 bg-gray-200 text-gray-800 rounded-md hover:bg-gray-300 focus:outline-hidden focus:ring-2 focus:ring-gray-500"
             >
                 Cancel
             </button>
@@ -462,7 +462,7 @@
     <div class="fixed inset-0 z-50 overflow-y-auto" style="display: {{ $showOrderDetailsModal ? 'block' : 'none' }};" x-data="{ show: @entangle('showOrderDetailsModal') }">
         <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <!-- Backdrop -->
-            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"
+            <div class="fixed inset-0 bg-gray-500/75 transition-opacity"
                  wire:click="closeOrderDetailsModal"
                  x-show="show"
                  x-transition:enter="ease-out duration-300"
@@ -487,10 +487,10 @@
                  x-transition:leave-end="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95">
 
                 <!-- Modal Header -->
-                <div class="bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-6 sm:px-6">
+                <div class="bg-linear-to-r from-indigo-600 to-purple-600 px-4 py-6 sm:px-6">
                     <div class="flex items-center justify-between">
                         <div class="flex items-center space-x-3">
-                            <div class="flex-shrink-0 w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                            <div class="shrink-0 w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
                                 <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                 </svg>
@@ -505,7 +505,7 @@
                             </div>
                         </div>
                         <button wire:click="closeOrderDetailsModal"
-                                class="rounded-full bg-white bg-opacity-20 p-2 text-white hover:bg-opacity-30 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 transition-all">
+                                class="rounded-full bg-white/20 p-2 text-white hover:bg-white/30 focus:outline-hidden focus:ring-2 focus:ring-white/50 transition-all">
                             <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12" />
                             </svg>
@@ -522,7 +522,7 @@
                                 <!-- Order Summary Cards -->
                                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                                     <!-- Shop Card -->
-                                    <div class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
+                                    <div class="bg-linear-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
                                         <div class="flex items-center space-x-3">
                                             <div class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
                                                 <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -537,7 +537,7 @@
                                     </div>
 
                                     <!-- Salesperson Card -->
-                                    <div class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
+                                    <div class="bg-linear-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
                                         <div class="flex items-center space-x-3">
                                             <div class="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
                                                 <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -552,7 +552,7 @@
                                     </div>
 
                                     <!-- Status Card -->
-                                    <div class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 border border-purple-200">
+                                    <div class="bg-linear-to-br from-purple-50 to-purple-100 rounded-xl p-4 border border-purple-200">
                                         <div class="flex items-center space-x-3">
                                             <div class="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
                                                 {!! $selectedOrder->status->icon() !!}
@@ -562,7 +562,7 @@
                                                 <div class="relative" x-data="{ open: false }" @keydown.escape.window="open = false" @click.away="open = false">
                                                     <button type="button"
                                                             @click="open = !open"
-                                                            class="text-sm font-bold text-purple-900 hover:text-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 rounded-md transition-colors"
+                                                            class="text-sm font-bold text-purple-900 hover:text-purple-700 focus:outline-hidden focus:ring-2 focus:ring-purple-500 focus:ring-offset-2 rounded-md transition-colors"
                                                             :aria-expanded="open">
                                                         {{ $selectedOrder->status->label() }}
                                                         <svg class="inline ml-1 w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -576,15 +576,15 @@
                                                          x-transition:leave="transition ease-in duration-75"
                                                          x-transition:leave-start="transform opacity-100 scale-100"
                                                          x-transition:leave-end="transform opacity-0 scale-95"
-                                                         class="absolute z-30 mt-2 w-64 rounded-xl shadow-2xl bg-white ring-1 ring-black ring-opacity-5 focus:outline-none right-0 sm:left-0"
+                                                         class="absolute z-30 mt-2 w-64 rounded-xl shadow-2xl bg-white ring-1 ring-black/5 focus:outline-hidden right-0 sm:left-0"
                                                          style="display: none;">
                                                         <div class="py-2 max-h-80 overflow-y-auto">
                                                             @foreach($availableStatuses as $status)
                                                                 <button type="button"
                                                                         wire:click="updateOrderStatus({{ $selectedOrder->id }}, '{{ $status->value }}')"
                                                                         @click="open = false"
-                                                                        class="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors focus:outline-none focus:bg-gray-50 {{ $selectedOrder->status->value === $status->value ? 'bg-indigo-50 border-l-4 border-indigo-400' : '' }}">
-                                                                    <div class="flex-shrink-0">
+                                                                        class="w-full flex items-center gap-3 px-4 py-3 text-left hover:bg-gray-50 transition-colors focus:outline-hidden focus:bg-gray-50 {{ $selectedOrder->status->value === $status->value ? 'bg-indigo-50 border-l-4 border-indigo-400' : '' }}">
+                                                                    <div class="shrink-0">
                                                                         {!! $status->icon() !!}
                                                                     </div>
                                                                     <div class="flex-1 min-w-0">
@@ -606,7 +606,7 @@
                                     </div>
 
                                     <!-- Total Card -->
-                                    <div class="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl p-4 border border-emerald-200">
+                                    <div class="bg-linear-to-br from-emerald-50 to-emerald-100 rounded-xl p-4 border border-emerald-200">
                                         <div class="flex items-center space-x-3">
                                             <div class="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center">
                                                 <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -623,7 +623,7 @@
 
                                 <!-- Order Items -->
                                 <div class="bg-white border border-gray-200 rounded-2xl overflow-hidden">
-                                    <div class="bg-gradient-to-r from-gray-50 to-gray-100 px-4 sm:px-6 py-4 border-b border-gray-200">
+                                    <div class="bg-linear-to-r from-gray-50 to-gray-100 px-4 sm:px-6 py-4 border-b border-gray-200">
                                         <h4 class="text-lg font-bold text-gray-900 flex items-center">
                                             <svg class="w-5 h-5 mr-3 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" />
@@ -641,7 +641,7 @@
                                             @foreach($selectedOrder->items as $item)
                                                 <div class="p-4 hover:bg-gray-50 transition-colors">
                                                     <div class="flex items-start space-x-3">
-                                                        <div class="flex-shrink-0">
+                                                        <div class="shrink-0">
                                                             <img class="w-16 h-16 rounded-lg object-cover border border-gray-200"
                                                                  src="{{ asset('storage/' . $item->product->primary_image_url) }}"
                                                                  alt="{{ $item->product->name }}">
@@ -652,7 +652,7 @@
                                                                     <p class="text-sm font-semibold text-gray-900 truncate">{{ $item->product->name }}</p>
                                                                     <p class="text-xs text-gray-500">{{ $item->product->code }}</p>
                                                                 </div>
-                                                                <div class="flex-shrink-0 ml-2">
+                                                                <div class="shrink-0 ml-2">
                                                                     <span class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                                                                         Qty: {{ $item->quantity }}
                                                                     </span>
@@ -689,7 +689,7 @@
                                                     <tr class="hover:bg-gray-50 transition-colors">
                                                         <td class="px-6 py-4 whitespace-nowrap">
                                                             <div class="flex items-center">
-                                                                <div class="flex-shrink-0 w-12 h-12">
+                                                                <div class="shrink-0 w-12 h-12">
                                                                     <img class="w-12 h-12 rounded-lg object-cover border border-gray-200"
                                                                          src="{{ asset('storage/' . $item->product->primary_image_url) }}"
                                                                          alt="{{ $item->product->name }}">
@@ -720,7 +720,7 @@
 
                                 <!-- Order Notes -->
                                 @if($selectedOrder->notes)
-                                    <div class="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 sm:p-6">
+                                    <div class="bg-linear-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 sm:p-6">
                                         <h4 class="text-lg font-bold text-amber-900 mb-3 flex items-center">
                                             <svg class="w-5 h-5 mr-3 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
@@ -743,7 +743,7 @@
                                     <button type="submit"
                                             wire:loading.attr="disabled"
                                             @if(!$selectedOrder) disabled @endif
-                                            class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-xl text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                                            class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-xl text-white bg-green-600 hover:bg-green-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
                                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                                         </svg>
@@ -755,7 +755,7 @@
                             <div class="flex flex-col sm:flex-row gap-3">
                                 <button wire:click="closeOrderDetailsModal"
                                         type="button"
-                                        class="w-full sm:w-auto inline-flex items-center justify-center px-6 py-2 border border-gray-300 text-sm font-medium rounded-xl text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+                                        class="w-full sm:w-auto inline-flex items-center justify-center px-6 py-2 border border-gray-300 text-sm font-medium rounded-xl text-gray-700 bg-white hover:bg-gray-50 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
                                     Close
                                 </button>
                             </div>

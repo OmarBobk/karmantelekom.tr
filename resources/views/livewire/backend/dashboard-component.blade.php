@@ -7,7 +7,7 @@
                 <p class="mt-1 text-gray-600">Monitor your business metrics at a glance.</p>
             </div>
             <div class="mt-4 md:mt-0">
-                <div class="inline-flex rounded-md shadow-sm">
+                <div class="inline-flex rounded-md shadow-xs">
                     <button
                         wire:click="updatePeriod('week')"
                         class="relative inline-flex items-center px-4 py-2 text-sm font-medium rounded-l-md border {{ $period === 'week' ? 'bg-blue-600 text-white border-blue-600' : 'bg-white text-gray-700 border-gray-300 hover:bg-gray-50' }}"
@@ -31,7 +31,7 @@
         <div class="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
             <div class="p-6">
                 <div class="flex items-center">
-                    <div class="inline-flex flex-shrink-0 items-center justify-center h-16 w-16 text-blue-600 bg-blue-100 rounded-lg">
+                    <div class="inline-flex shrink-0 items-center justify-center h-16 w-16 text-blue-600 bg-blue-100 rounded-lg">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 13V6a2 2 0 00-2-2H6a2 2 0 00-2 2v7m16 0v5a2 2 0 01-2 2H6a2 2 0 01-2-2v-5m16 0h-2.586a1 1 0 00-.707.293l-2.414 2.414a1 1 0 01-.707.293h-3.172a1 1 0 01-.707-.293l-2.414-2.414A1 1 0 006.586 13H4"></path>
                         </svg>
@@ -52,7 +52,7 @@
         <div class="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
             <div class="p-6">
                 <div class="flex items-center">
-                    <div class="inline-flex flex-shrink-0 items-center justify-center h-16 w-16 text-purple-600 bg-purple-100 rounded-lg">
+                    <div class="inline-flex shrink-0 items-center justify-center h-16 w-16 text-purple-600 bg-purple-100 rounded-lg">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"></path>
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"></path>
@@ -74,7 +74,7 @@
         <div class="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
             <div class="p-6">
                 <div class="flex items-center">
-                    <div class="inline-flex flex-shrink-0 items-center justify-center h-16 w-16 text-indigo-600 bg-indigo-100 rounded-lg">
+                    <div class="inline-flex shrink-0 items-center justify-center h-16 w-16 text-indigo-600 bg-indigo-100 rounded-lg">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z"></path>
                         </svg>
@@ -95,7 +95,7 @@
         <div class="bg-white rounded-lg shadow-lg hover:shadow-xl transition-shadow duration-300">
             <div class="p-6">
                 <div class="flex items-center">
-                    <div class="inline-flex flex-shrink-0 items-center justify-center h-16 w-16 text-green-600 bg-green-100 rounded-lg">
+                    <div class="inline-flex shrink-0 items-center justify-center h-16 w-16 text-green-600 bg-green-100 rounded-lg">
                         <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"></path>
                         </svg>
@@ -279,7 +279,7 @@
                         }
                     }"
                     x-init="init()"
-                    class="relative w-full aspect-[16/9] sm:aspect-[21/9] p-4 sm:p-0"
+                    class="relative w-full aspect-video sm:aspect-21/9 p-4 sm:p-0"
                 >
                     <canvas x-ref="canvas" class="w-full h-full"></canvas>
                 </div>
@@ -291,13 +291,13 @@
             <div class="p-6">
                 <h2 class="text-lg font-medium text-gray-900 mb-4">Quick Actions</h2>
                 <div class="space-y-4">
-                    <button wire:click="addNewProduct" class="inline-flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
+                    <button wire:click="addNewProduct" class="inline-flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-blue-500">
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                         </svg>
                         Add New Product
                     </button>
-                    <a href="{{route('subdomain.sections')}}" class="inline-flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
+                    <a href="{{route('subdomain.sections')}}" class="inline-flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-white bg-purple-600 rounded-md hover:bg-purple-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-purple-500">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 mr-2">
                             <path d="M12 15a3 3 0 1 0 0-6 3 3 0 0 0 0 6Z" />
                             <path fill-rule="evenodd" d="M1.323 11.447C2.811 6.976 7.028 3.75 12.001 3.75c4.97 0 9.185 3.223 10.675 7.69.12.362.12.752 0 1.113-1.487 4.471-5.705 7.697-10.677 7.697-4.97 0-9.186-3.223-10.675-7.69a1.762 1.762 0 0 1 0-1.113ZM17.25 12a5.25 5.25 0 1 1-10.5 0 5.25 5.25 0 0 1 10.5 0Z" clip-rule="evenodd" />
@@ -305,14 +305,14 @@
 
                         View Sections
                     </a>
-                    <a href="{{route('subdomain.settings')}}" class="inline-flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                    <a href="{{route('subdomain.settings')}}" class="inline-flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-white bg-indigo-600 rounded-md hover:bg-indigo-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 mr-2">
                             <path fill-rule="evenodd" d="M12 6.75a5.25 5.25 0 0 1 6.775-5.025.75.75 0 0 1 .313 1.248l-3.32 3.319c.063.475.276.934.641 1.299.365.365.824.578 1.3.64l3.318-3.319a.75.75 0 0 1 1.248.313 5.25 5.25 0 0 1-5.472 6.756c-1.018-.086-1.87.1-2.309.634L7.344 21.3A3.298 3.298 0 1 1 2.7 16.657l8.684-7.151c.533-.44.72-1.291.634-2.309A5.342 5.342 0 0 1 12 6.75ZM4.117 19.125a.75.75 0 0 1 .75-.75h.008a.75.75 0 0 1 .75.75v.008a.75.75 0 0 1-.75.75h-.008a.75.75 0 0 1-.75-.75v-.008Z" clip-rule="evenodd" />
                         </svg>
 
                         Go To Settings
                     </a>
-                    <a href="{{config('app.url')}}" class="inline-flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-md hover:bg-teal-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-teal-500">
+                    <a href="{{config('app.url')}}" class="inline-flex items-center justify-center w-full px-4 py-2 text-sm font-medium text-white bg-teal-600 rounded-md hover:bg-teal-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-teal-500">
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6v6m0 0v6m0-6h6m-6 0H6"></path>
                         </svg>
@@ -348,8 +348,8 @@
                                         #{{ $product['id'] }}
                                     </td>
                                     <td class="px-6 py-4 whitespace-nowrap">
-                                        <div class="flex-shrink-0 h-16 w-16">
-                                            <img class="h-16 w-16 rounded-lg object-cover border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200"
+                                        <div class="shrink-0 h-16 w-16">
+                                            <img class="h-16 w-16 rounded-lg object-cover border border-gray-200 shadow-xs hover:shadow-md transition-shadow duration-200"
                                                  src="{{ $product['image'] ?? asset('images/placeholder.png') }}"
                                                  alt="{{ $product['name'] }}">
                                         </div>
@@ -403,8 +403,8 @@
                                             #{{ $product['id'] }}
                                         </td>
                                         <td class="px-6 py-4 whitespace-nowrap">
-                                            <div class="flex-shrink-0 h-16 w-16">
-                                                <img class="h-16 w-16 rounded-lg object-cover border border-gray-200 shadow-sm hover:shadow-md transition-shadow duration-200"
+                                            <div class="shrink-0 h-16 w-16">
+                                                <img class="h-16 w-16 rounded-lg object-cover border border-gray-200 shadow-xs hover:shadow-md transition-shadow duration-200"
                                                      src="{{ $product['image']  }}"
                                                      alt="{{ $product['name'] }}">
                                             </div>

@@ -29,7 +29,7 @@
          x-transition:leave="transition ease-in duration-150"
          x-transition:leave-start="opacity-100 scale-100"
          x-transition:leave-end="opacity-0 scale-95"
-         class="absolute {{ $position === 'bottom' ? 'bottom-full mb-2' : 'mt-2' }} {{ app()->getLocale() === 'ar' ? 'left-0' : 'right-0' }} w-48 rounded-xl bg-white shadow-lg ring-1 ring-black ring-opacity-5 z-50"
+         class="absolute {{ $position === 'bottom' ? 'bottom-full mb-2' : 'mt-2' }} {{ app()->getLocale() === 'ar' ? 'left-0' : 'right-0' }} w-48 rounded-xl bg-white shadow-lg ring-1 ring-black/5 z-50"
          x-cloak>
         <div class="py-1">
             <button wire:click="changeLanguage('en')"

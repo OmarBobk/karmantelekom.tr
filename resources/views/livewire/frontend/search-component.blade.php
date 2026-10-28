@@ -18,13 +18,13 @@
                        wire:model.live.debounce.300ms="searchQuery"
                        wire:loading.class="opacity-50"
                        @click="isOpen = true"
-                       class="w-full h-full {{ app()->getLocale() == 'ar' ? 'pr-11' : 'pl-11' }} bg-[#2563eb0a] text-base placeholder-blue-900 outline-none focus:outline-none focus:ring-0 border-0 focus:border-0"
+                       class="w-full h-full {{ app()->getLocale() == 'ar' ? 'pr-11' : 'pl-11' }} bg-[#2563eb0a] text-base placeholder-blue-900 outline-hidden focus:outline-hidden focus:ring-0 border-0 focus:border-0"
                 >
 
                 <!-- Clear Button -->
                 <button wire:click="$set('searchQuery', '')"
                         x-show="$wire.searchQuery"
-                        class="absolute {{ app()->getLocale() == 'ar' ? 'left-3' : 'right-3' }} p-1 text-gray-400 hover:text-gray-600 focus:outline-none">
+                        class="absolute {{ app()->getLocale() == 'ar' ? 'left-3' : 'right-3' }} p-1 text-gray-400 hover:text-gray-600 focus:outline-hidden">
                     <svg class="size-5" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor">
                         <path stroke-linecap="round" stroke-linejoin="round" d="M6 18L18 6M6 6l12 12" />
                     </svg>
@@ -34,7 +34,7 @@
             <!-- Search Results Dropdown -->
             <div x-show="isOpen && $wire.searchQuery.length >= 2"
                  x-cloak
-                 class="absolute mt-2 w-full bg-white/95 backdrop-blur-sm rounded-xl shadow-xl border border-gray-200/80 overflow-hidden z-50 search-results"
+                 class="absolute mt-2 w-full bg-white/95 backdrop-blur-xs rounded-xl shadow-xl border border-gray-200/80 overflow-hidden z-50 search-results"
                  >
 
                 <!-- Loading State -->
@@ -77,7 +77,7 @@
                                                     <div class="p-2">
                                                         <div class="flex items-start gap-2">
                                                             <button wire:click="$dispatch('openProductModal', { productId: {{ $result['id'] }} })" class="">
-                                                                <div class="line-clamp-3 h-[4.5rem] {{ app()->getLocale() == 'ar' ? 'text-right' : 'text-left' }}">
+                                                                <div class="line-clamp-3 h-18 {{ app()->getLocale() == 'ar' ? 'text-right' : 'text-left' }}">
                                                                     <h3 class="text-sm font-medium text-gray-900 hover:text-emerald-600 transition-colors duration-200 line-clamp-1">{{ $result['title'] }}</h3>
                                                                     <p class="text-sm text-gray-500 line-clamp-2 {{ app()->getLocale() == 'ar' ? 'text-right' : 'text-left' }}">{!! $result['description'] !!}</p>
                                                                 </div>

@@ -35,7 +35,7 @@
         <div class="md:col-span-2 bg-white rounded-2xl shadow-lg p-8 transition-all duration-300">
             <h2 class="text-2xl font-bold mb-6 text-gray-900">{{ __('main.form_title') }}</h2>
             @if($success)
-                <div class="mb-4 p-4 rounded-lg bg-gradient-success text-white shadow">{{ __('main.success') }}</div>
+                <div class="mb-4 p-4 rounded-lg bg-gradient-success text-white shadow-sm">{{ __('main.success') }}</div>
             @endif
             <form wire:submit.prevent="submit" class="space-y-6">
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -57,11 +57,11 @@
                 </div>
                 <div>
                     <x-label for="message" :value="__('main.message')" />
-                    <textarea id="message" rows="5" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring focus:ring-primary-200 focus:ring-opacity-50 transition" wire:model="message"></textarea>
+                    <textarea id="message" rows="5" class="mt-1 block w-full rounded-md border-gray-300 shadow-xs focus:border-primary-500 focus:ring-3 focus:ring-primary-200/50 transition" wire:model="message"></textarea>
                     <x-input-error for="message" />
                 </div>
                 <div>
-                    <x-button class="w-full bg-warning-500 hover:bg-warning-600 text-white text-lg font-semibold py-3 rounded-lg shadow transition duration-200 flex items-center justify-center gap-2">
+                    <x-button class="w-full bg-warning-500 hover:bg-warning-600 text-white text-lg font-semibold py-3 rounded-lg shadow-sm transition duration-200 flex items-center justify-center gap-2">
                         <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5"><path stroke-linecap="round" stroke-linejoin="round" d="M2.25 12l8.954-8.955c.44-.439 1.152-.439 1.591 0L21.75 12M4.5 9.75v7.5A2.25 2.25 0 0 0 6.75 19.5h10.5a2.25 2.25 0 0 0 2.25-2.25v-7.5" /></svg>
                         <span>{{ __('main.send_message') }}</span>
                     </x-button>

@@ -2,7 +2,7 @@
 
     <div class="min-h-screen bg-gray-50">
         <!-- Header Section -->
-        <div class="bg-gradient-to-r from-blue-600 to-indigo-600 shadow-lg">
+        <div class="bg-linear-to-r from-blue-600 to-indigo-600 shadow-lg">
             <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
                 <div class="flex flex-col md:flex-row md:items-center md:justify-between">
                     <div class="flex-1">
@@ -17,7 +17,7 @@
                                 </svg>
                                 <button
                                     onclick="toggleAddress()"
-                                    class="text-left hover:underline focus:outline-none focus:underline"
+                                    class="text-left hover:underline focus:outline-hidden focus:underline"
                                     title="Click to view full address"
                                 >
                                      <span id="address-display" class="block truncate max-w-xs sm:max-w-md lg:max-w-lg">
@@ -40,7 +40,7 @@
                         </div>
                     </div>
                     <div class="mt-4 md:mt-0">
-                        <div class="bg-white/20 backdrop-blur-sm rounded-xl px-6 py-4">
+                        <div class="bg-white/20 backdrop-blur-xs rounded-xl px-6 py-4">
                             <div class="text-center">
                                 <div
                                     class="text-2xl font-bold text-white">{{ number_format($metrics['total_orders']) }}</div>
@@ -55,8 +55,8 @@
         <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
             <div class="flex flex-col lg:flex-row gap-8">
                 <!-- Sidebar Navigation -->
-                <div class="lg:w-64 flex-shrink-0">
-                    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-6">
+                <div class="lg:w-64 shrink-0">
+                    <div class="bg-white rounded-2xl shadow-xs border border-gray-200 p-6">
                         <h3 class="text-lg font-semibold text-gray-900 mb-4">Profile Sections</h3>
                         <nav class="space-y-2">
                             @php
@@ -91,7 +91,7 @@
                                     class="w-full flex items-center space-x-3 px-4 py-3 rounded-xl text-left transition-all duration-200 {{ $activeTab === $tabKey ? 'bg-blue-50 text-blue-700 border border-blue-200' : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900' }}"
                                 >
                                     <div
-                                        class="flex-shrink-0 {!! $activeTab === $tabKey ? 'text-blue-600' : 'text-gray-400' !!}">
+                                        class="shrink-0 {!! $activeTab === $tabKey ? 'text-blue-600' : 'text-gray-400' !!}">
                                         {!! $tab['icon'] !!}
                                     </div>
                                     <span class="font-medium">{{ $tab['label'] }}</span>
@@ -106,9 +106,9 @@
                     <!-- Metrics Cards -->
                     @if($activeTab === 'basic')
                         <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6 mb-6 sm:mb-8">
-                            <div class="flex bg-white rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6">
+                            <div class="flex bg-white rounded-2xl shadow-xs border border-gray-200 p-4 sm:p-6">
                                 <div class="flex items-center">
-                                    <div class="flex-shrink-0">
+                                    <div class="shrink-0">
                                         <div
                                             class="w-10 h-10 sm:w-12 sm:h-12 bg-green-100 rounded-xl flex items-center justify-center">
                                             <svg class="w-5 h-5 sm:w-6 sm:h-6 text-green-600" fill="none"
@@ -126,9 +126,9 @@
                                 </div>
                             </div>
 
-                            <div class="flex bg-white rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6">
+                            <div class="flex bg-white rounded-2xl shadow-xs border border-gray-200 p-4 sm:p-6">
                                 <div class="flex items-center">
-                                    <div class="flex-shrink-0">
+                                    <div class="shrink-0">
                                         <div
                                             class="w-10 h-10 sm:w-12 sm:h-12 bg-blue-100 rounded-xl flex items-center justify-center">
                                             <svg class="w-5 h-5 sm:w-6 sm:h-6 text-blue-600" fill="none"
@@ -145,9 +145,9 @@
                                 </div>
                             </div>
 
-                            <div class="flex bg-white rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6">
+                            <div class="flex bg-white rounded-2xl shadow-xs border border-gray-200 p-4 sm:p-6">
                                 <div class="flex items-center">
-                                    <div class="flex-shrink-0">
+                                    <div class="shrink-0">
                                         <div
                                             class="w-10 h-10 sm:w-12 sm:h-12 bg-purple-100 rounded-xl flex items-center justify-center">
                                             <svg class="w-5 h-5 sm:w-6 sm:h-6 text-purple-600" fill="none"
@@ -164,9 +164,9 @@
                                 </div>
                             </div>
 
-                            <div class="flex bg-white rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6">
+                            <div class="flex bg-white rounded-2xl shadow-xs border border-gray-200 p-4 sm:p-6">
                                 <div class="flex items-center">
-                                    <div class="flex-shrink-0">
+                                    <div class="shrink-0">
                                         <div
                                             class="w-10 h-10 sm:w-12 sm:h-12 bg-orange-100 rounded-xl flex items-center justify-center">
                                             <svg class="w-5 h-5 sm:w-6 sm:h-6 text-orange-600" fill="none"
@@ -186,7 +186,7 @@
                         </div>
 
                         <!-- Basic Information Card -->
-                        <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6 lg:p-8">
+                        <div class="bg-white rounded-2xl shadow-xs border border-gray-200 p-4 sm:p-6 lg:p-8">
                             <div
                                 class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-4 sm:mb-6">
                                 <h2 class="text-xl sm:text-2xl font-bold text-gray-900">Basic Information</h2>
@@ -227,7 +227,7 @@
                                             Email</label>
                                         <div
                                             class="bg-gray-50 rounded-xl px-3 sm:px-4 py-2 sm:py-3 text-gray-900 flex items-center">
-                                            <svg class="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 mr-2 flex-shrink-0"
+                                            <svg class="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 mr-2 shrink-0"
                                                  fill="none"
                                                  stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -261,7 +261,7 @@
                                                 Number</label>
                                             <div
                                                 class="bg-gray-50 rounded-xl px-3 sm:px-4 py-2 sm:py-3 text-gray-900 flex items-center">
-                                                <svg class="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 mr-2 flex-shrink-0"
+                                                <svg class="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 mr-2 shrink-0"
                                                      fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round"
                                                           stroke-width="2"
@@ -278,7 +278,7 @@
                                             Number</label>
                                         <div
                                             class="bg-gray-50 rounded-xl px-3 sm:px-4 py-2 sm:py-3 text-gray-900 flex items-center">
-                                            <svg class="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 mr-2 flex-shrink-0"
+                                            <svg class="w-3 h-3 sm:w-4 sm:h-4 text-gray-400 mr-2 shrink-0"
                                                  fill="none"
                                                  stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -307,7 +307,7 @@
 
                 @if($activeTab === 'orders')
                     <!-- Order History Card -->
-                    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6 lg:p-8">
+                    <div class="bg-white rounded-2xl shadow-xs border border-gray-200 p-4 sm:p-6 lg:p-8">
                         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
                             <h2 class="text-xl sm:text-2xl font-bold text-gray-900">Recent Orders</h2>
 
@@ -459,7 +459,7 @@
                                         <div class="flex items-center space-x-4">
                                             <!-- Order Icon -->
                                             <div
-                                                class="w-12 h-12 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-sm flex-shrink-0">
+                                                class="w-12 h-12 bg-linear-to-br from-blue-500 to-indigo-600 rounded-xl flex items-center justify-center shadow-xs shrink-0">
                                                 <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor"
                                                      viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round"
@@ -485,7 +485,7 @@
                                             <div class="flex flex-col gap-1 sm:gap-0 items-end sm:flex-row sm:items-center space-x-2">
                                                 <button
                                                     wire:click="showOrderDetails({{ $order->id }})"
-                                                    class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-sm"
+                                                    class="inline-flex items-center px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-xl hover:bg-blue-700 focus:outline-hidden focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all duration-200 shadow-xs"
                                                     title="View Order Details"
                                                 >
                                                     <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor"
@@ -507,7 +507,7 @@
                                                     @csrf
                                                     <button
                                                         type="submit"
-                                                        class="justify-center sm:justify-start w-full sm:w-auto inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-xl hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 shadow-sm"
+                                                        class="justify-center sm:justify-start w-full sm:w-auto inline-flex items-center px-4 py-2 bg-green-600 text-white text-sm font-medium rounded-xl hover:bg-green-700 focus:outline-hidden focus:ring-2 focus:ring-green-500 focus:ring-offset-2 transition-all duration-200 shadow-xs"
                                                         title="Export as PDF"
                                                     >
                                                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor"
@@ -568,7 +568,7 @@
                                 </div>
                             @empty
                                 <div class="text-center py-12">
-                                    <div class="w-20 h-20 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mx-auto mb-6">
+                                    <div class="w-20 h-20 bg-linear-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mx-auto mb-6">
                                         @if($orderSearch)
                                             <svg class="w-10 h-10 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                                 <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
@@ -618,7 +618,7 @@
                     <!-- Enhanced Purchasing Analytics Dashboard -->
                     <div class="space-y-4 sm:space-y-6">
                         <!-- Header Section with Purchasing Insights -->
-                        <div class="bg-gradient-to-r from-blue-600 to-indigo-600 rounded-2xl p-4 sm:p-6 text-white">
+                        <div class="bg-linear-to-r from-blue-600 to-indigo-600 rounded-2xl p-4 sm:p-6 text-white">
                             <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
                                 <div>
                                     <h2 class="text-xl sm:text-2xl font-bold mb-1 sm:mb-2">Purchasing Analytics</h2>
@@ -642,7 +642,7 @@
                         <!-- Purchasing Insights Grid -->
                         <div class="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
                             <!-- Most Purchased Products -->
-                            <div class="lg:col-span-2 bg-white rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6">
+                            <div class="lg:col-span-2 bg-white rounded-2xl shadow-xs border border-gray-200 p-4 sm:p-6">
                                 <div
                                     class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-0 mb-4 sm:mb-6">
                                     <div>
@@ -667,10 +667,10 @@
                                 <div class="space-y-3 sm:space-y-4">
                                     @forelse($topProducts as $index => $product)
                                         <div
-                                            class="group relative bg-gradient-to-r from-gray-50 to-white border border-gray-200 rounded-xl p-3 sm:p-4 hover:shadow-lg hover:border-blue-300 transition-all duration-300">
+                                            class="group relative bg-linear-to-r from-gray-50 to-white border border-gray-200 rounded-xl p-3 sm:p-4 hover:shadow-lg hover:border-blue-300 transition-all duration-300">
                                             <!-- Rank Badge -->
                                             <div
-                                                class="absolute -top-2 -left-2 w-6 h-6 sm:w-8 sm:h-8 bg-gradient-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-xs sm:text-sm shadow-lg">
+                                                class="absolute -top-2 -left-2 w-6 h-6 sm:w-8 sm:h-8 bg-linear-to-br from-blue-500 to-indigo-600 rounded-full flex items-center justify-center text-white font-bold text-xs sm:text-sm shadow-lg">
                                                 #{{ $index + 1 }}
                                             </div>
 
@@ -750,7 +750,7 @@
                                                                         $percentage = $maxQuantity > 0 ? ($product['total_quantity'] / $maxQuantity) * 100 : 0;
                                                                     @endphp
                                                                     <div
-                                                                        class="bg-gradient-to-r from-blue-500 to-indigo-600 h-1.5 sm:h-2 rounded-full transition-all duration-300"
+                                                                        class="bg-linear-to-r from-blue-500 to-indigo-600 h-1.5 sm:h-2 rounded-full transition-all duration-300"
                                                                         style="width: {{ $percentage }}%"></div>
                                                                 </div>
                                                             </div>
@@ -782,7 +782,7 @@
                                         <!-- Empty State -->
                                         <div class="text-center py-12">
                                             <div
-                                                class="w-20 h-20 bg-gradient-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                                                class="w-20 h-20 bg-linear-to-br from-blue-100 to-indigo-100 rounded-full flex items-center justify-center mx-auto mb-4">
                                                 <svg class="w-10 h-10 text-blue-600" fill="none" stroke="currentColor"
                                                      viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round"
@@ -812,7 +812,7 @@
                             <!-- Purchasing Insights Sidebar -->
                             <div class="space-y-4 sm:space-y-6">
                                 <!-- Quick Stats Card -->
-                                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6">
+                                <div class="bg-white rounded-2xl shadow-xs border border-gray-200 p-4 sm:p-6">
                                     <h4 class="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Purchase
                                         Summary</h4>
                                     <div class="space-y-3 sm:space-y-4">
@@ -838,13 +838,13 @@
                                 </div>
 
                                 <!-- Smart Recommendations -->
-                                <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6">
+                                <div class="bg-white rounded-2xl shadow-xs border border-gray-200 p-4 sm:p-6">
                                     <h4 class="text-base sm:text-lg font-semibold text-gray-900 mb-3 sm:mb-4">Smart
                                         Insights</h4>
                                     <div class="space-y-2 sm:space-y-3">
                                         <div class="flex items-start space-x-2 sm:space-x-3">
                                             <div
-                                                class="w-6 h-6 sm:w-8 sm:h-8 bg-blue-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                                class="w-6 h-6 sm:w-8 sm:h-8 bg-blue-100 rounded-lg flex items-center justify-center shrink-0">
                                                 <svg class="w-3 h-3 sm:w-4 sm:h-4 text-blue-600" fill="none"
                                                      stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round"
@@ -861,7 +861,7 @@
                                         </div>
                                         <div class="flex items-start space-x-2 sm:space-x-3">
                                             <div
-                                                class="w-6 h-6 sm:w-8 sm:h-8 bg-green-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                                class="w-6 h-6 sm:w-8 sm:h-8 bg-green-100 rounded-lg flex items-center justify-center shrink-0">
                                                 <svg class="w-3 h-3 sm:w-4 sm:h-4 text-green-600" fill="none"
                                                      stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round"
@@ -878,7 +878,7 @@
                                         </div>
                                         <div class="flex items-start space-x-2 sm:space-x-3">
                                             <div
-                                                class="w-6 h-6 sm:w-8 sm:h-8 bg-purple-100 rounded-lg flex items-center justify-center flex-shrink-0">
+                                                class="w-6 h-6 sm:w-8 sm:h-8 bg-purple-100 rounded-lg flex items-center justify-center shrink-0">
                                                 <svg class="w-3 h-3 sm:w-4 sm:h-4 text-purple-600" fill="none"
                                                      stroke="currentColor" viewBox="0 0 24 24">
                                                     <path stroke-linecap="round" stroke-linejoin="round"
@@ -904,7 +904,7 @@
 
                 @if($activeTab === 'addresses')
                     <!-- Addresses Card -->
-                    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-4 sm:p-6 lg:p-8">
+                    <div class="bg-white rounded-2xl shadow-xs border border-gray-200 p-4 sm:p-6 lg:p-8">
                         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 mb-6">
                             <h2 class="text-xl sm:text-2xl font-bold text-gray-900">Shop Addresses</h2>
                             <button
@@ -937,7 +937,7 @@
 
                                             <div class="space-y-2">
                                                 <div class="flex items-start gap-2 text-gray-600">
-                                                    <svg class="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0" fill="none"
+                                                    <svg class="w-4 h-4 text-gray-400 mt-0.5 shrink-0" fill="none"
                                                          stroke="currentColor" viewBox="0 0 24 24">
                                                         <path stroke-linecap="round" stroke-linejoin="round"
                                                               stroke-width="2"
@@ -947,12 +947,12 @@
                                                               d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"></path>
                                                     </svg>
                                                     <span
-                                                        class="text-sm sm:text-base break-words">{{ $address->full_address }}</span>
+                                                        class="text-sm sm:text-base wrap-break-word">{{ $address->full_address }}</span>
                                                 </div>
 
                                                 @if($address->coordinates)
                                                     <div class="flex items-start gap-2 text-gray-600">
-                                                        <svg class="w-4 h-4 text-gray-400 mt-0.5 flex-shrink-0"
+                                                        <svg class="w-4 h-4 text-gray-400 mt-0.5 shrink-0"
                                                              fill="none"
                                                              stroke="currentColor" viewBox="0 0 24 24">
                                                             <path stroke-linecap="round" stroke-linejoin="round"
@@ -1047,7 +1047,7 @@
 
                 @if($activeTab === 'notifications')
                     <!-- Notifications Card -->
-                    <div class="bg-white rounded-2xl shadow-sm border border-gray-200 p-8">
+                    <div class="bg-white rounded-2xl shadow-xs border border-gray-200 p-8">
                         <h2 class="text-2xl font-bold text-gray-900 mb-6">Notification Settings</h2>
                         <div class="space-y-6">
                             <div class="flex items-center justify-between p-4 bg-gray-50 rounded-xl">
@@ -1116,7 +1116,7 @@
          role="dialog" aria-modal="true">
         <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <!-- Background overlay -->
-            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"
+            <div class="fixed inset-0 bg-gray-500/75 transition-opacity" aria-hidden="true"
                  wire:click="closeEditModal"></div>
 
             <!-- Modal panel -->
@@ -1239,7 +1239,7 @@
          aria-labelledby="password-modal-title" role="dialog" aria-modal="true">
         <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <!-- Background overlay -->
-            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"
+            <div class="fixed inset-0 bg-gray-500/75 transition-opacity" aria-hidden="true"
                  wire:click="closePasswordModal"></div>
 
             <!-- Modal panel -->
@@ -1361,7 +1361,7 @@
          aria-labelledby="address-modal-title" role="dialog" aria-modal="true">
         <div class="flex items-end justify-center min-h-screen pt-4 px-2 pb-20 text-center sm:block sm:p-0">
             <!-- Background overlay -->
-            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"
+            <div class="fixed inset-0 bg-gray-500/75 transition-opacity" aria-hidden="true"
                  wire:click="closeAddressModal"></div>
 
             <!-- Modal panel -->
@@ -1509,7 +1509,7 @@
                                 type="checkbox"
                                 id="addressIsPrimary"
                                 wire:model="addressIsPrimary"
-                                class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500 focus:ring-2"
+                                class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded-sm focus:ring-blue-500 focus:ring-2"
                             >
                             <label for="addressIsPrimary" class="text-sm font-medium text-gray-700">
                                 Set as primary address
@@ -1548,7 +1548,7 @@
          aria-labelledby="order-details-modal-title" role="dialog" aria-modal="true">
         <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <!-- Background overlay -->
-            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" aria-hidden="true"
+            <div class="fixed inset-0 bg-gray-500/75 transition-opacity" aria-hidden="true"
                  wire:click="closeOrderDetailsModal"></div>
 
             <!-- Modal panel -->
@@ -1556,11 +1556,11 @@
                 class="relative inline-block align-bottom bg-white rounded-t-2xl sm:rounded-2xl text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle w-full sm:max-w-4xl sm:w-full max-h-[90vh] sm:max-h-[85vh]">
                 @if($selectedOrder)
                     <!-- Modal Header -->
-                    <div class="bg-gradient-to-r from-indigo-600 to-purple-600 px-4 py-6 sm:px-6">
+                    <div class="bg-linear-to-r from-indigo-600 to-purple-600 px-4 py-6 sm:px-6">
                         <div class="flex items-center justify-between">
                             <div class="flex items-center space-x-3">
                                 <div
-                                    class="flex-shrink-0 w-10 h-10 bg-white bg-opacity-20 rounded-full flex items-center justify-center">
+                                    class="shrink-0 w-10 h-10 bg-white/20 rounded-full flex items-center justify-center">
                                     <svg class="w-6 h-6 text-white" fill="none" stroke="currentColor"
                                          viewBox="0 0 24 24">
                                         <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
@@ -1577,7 +1577,7 @@
                                 </div>
                             </div>
                             <button wire:click="closeOrderDetailsModal"
-                                    class="rounded-full bg-white bg-opacity-20 p-2 text-white hover:bg-opacity-30 focus:outline-none focus:ring-2 focus:ring-white focus:ring-opacity-50 transition-all">
+                                    class="rounded-full bg-white/20 p-2 text-white hover:bg-white/30 focus:outline-hidden focus:ring-2 focus:ring-white/50 transition-all">
                                 <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                     <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                           d="M6 18L18 6M6 6l12 12"/>
@@ -1595,7 +1595,7 @@
                                 <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                                     <!-- Customer Card -->
                                     <div
-                                        class="bg-gradient-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
+                                        class="bg-linear-to-br from-green-50 to-green-100 rounded-xl p-4 border border-green-200">
                                         <div class="flex items-center space-x-3">
                                             <div
                                                 class="w-10 h-10 bg-green-500 rounded-lg flex items-center justify-center">
@@ -1617,7 +1617,7 @@
 
                                     <!-- Status Card -->
                                     <div
-                                        class="bg-gradient-to-br from-purple-50 to-purple-100 rounded-xl p-4 border border-purple-200">
+                                        class="bg-linear-to-br from-purple-50 to-purple-100 rounded-xl p-4 border border-purple-200">
                                         <div class="flex items-center space-x-3">
                                             <div
                                                 class="w-10 h-10 bg-purple-500 rounded-lg flex items-center justify-center">
@@ -1633,7 +1633,7 @@
 
                                     <!-- Total Card -->
                                     <div
-                                        class="bg-gradient-to-br from-emerald-50 to-emerald-100 rounded-xl p-4 border border-emerald-200">
+                                        class="bg-linear-to-br from-emerald-50 to-emerald-100 rounded-xl p-4 border border-emerald-200">
                                         <div class="flex items-center space-x-3">
                                             <div
                                                 class="w-10 h-10 bg-emerald-500 rounded-lg flex items-center justify-center">
@@ -1655,7 +1655,7 @@
 
                                     <!-- Items Count Card -->
                                     <div
-                                        class="bg-gradient-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
+                                        class="bg-linear-to-br from-blue-50 to-blue-100 rounded-xl p-4 border border-blue-200">
                                         <div class="flex items-center space-x-3">
                                             <div
                                                 class="w-10 h-10 bg-blue-500 rounded-lg flex items-center justify-center">
@@ -1678,7 +1678,7 @@
                                 <!-- Order Items -->
                                 <div class="bg-white border border-gray-200 rounded-2xl overflow-hidden">
                                     <div
-                                        class="bg-gradient-to-r from-gray-50 to-gray-100 px-4 sm:px-6 py-4 border-b border-gray-200">
+                                        class="bg-linear-to-r from-gray-50 to-gray-100 px-4 sm:px-6 py-4 border-b border-gray-200">
                                         <h4 class="text-lg font-bold text-gray-900 flex items-center">
                                             <svg class="w-5 h-5 mr-3 text-gray-600" fill="none" stroke="currentColor"
                                                  viewBox="0 0 24 24">
@@ -1699,7 +1699,7 @@
                                             @foreach($selectedOrder->items as $item)
                                                 <div class="p-4 hover:bg-gray-50 transition-colors">
                                                     <div class="flex items-start space-x-3">
-                                                        <div class="flex-shrink-0">
+                                                        <div class="shrink-0">
                                                             <img
                                                                 class="w-16 h-16 rounded-lg object-cover border border-gray-200"
                                                                 src="{{ asset('storage/' . $item->product->primary_image_url) }}"
@@ -1711,7 +1711,7 @@
                                                                     <p class="text-sm font-semibold text-gray-900 truncate">{{ $item->product->name }}</p>
                                                                     <p class="text-xs text-gray-500">{{ $item->product->code }}</p>
                                                                 </div>
-                                                                <div class="flex-shrink-0 ml-2">
+                                                                <div class="shrink-0 ml-2">
                                                                     <span
                                                                         class="inline-flex items-center px-2 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-800">
                                                                         Qty: {{ $item->quantity }}
@@ -1757,7 +1757,7 @@
                                                 <tr class="hover:bg-gray-50 transition-colors">
                                                     <td class="px-6 py-4 whitespace-nowrap">
                                                         <div class="flex items-center">
-                                                            <div class="flex-shrink-0 w-12 h-12">
+                                                            <div class="shrink-0 w-12 h-12">
                                                                 <img
                                                                     class="w-12 h-12 rounded-lg object-cover border border-gray-200"
                                                                     src="{{ asset('storage/' . $item->product->primary_image_url) }}"
@@ -1793,7 +1793,7 @@
                                 <!-- Order Notes -->
                                 @if($selectedOrder->notes)
                                     <div
-                                        class="bg-gradient-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 sm:p-6">
+                                        class="bg-linear-to-br from-amber-50 to-orange-50 border border-amber-200 rounded-2xl p-4 sm:p-6">
                                         <h4 class="text-lg font-bold text-amber-900 mb-3 flex items-center">
                                             <svg class="w-5 h-5 mr-3 text-amber-600" fill="none" stroke="currentColor"
                                                  viewBox="0 0 24 24">
@@ -1820,7 +1820,7 @@
                                     @csrf
                                     <button type="submit"
                                             wire:loading.attr="disabled"
-                                            class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-xl text-white bg-green-600 hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
+                                            class="w-full sm:w-auto inline-flex items-center justify-center px-4 py-2 border border-transparent text-sm font-medium rounded-xl text-white bg-green-600 hover:bg-green-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-green-500 disabled:opacity-50 disabled:cursor-not-allowed transition-colors">
                                         <svg class="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                                   d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"/>
@@ -1833,7 +1833,7 @@
                             <div class="flex flex-col sm:flex-row gap-3">
                                 <button wire:click="closeOrderDetailsModal"
                                         type="button"
-                                        class="w-full sm:w-auto inline-flex items-center justify-center px-6 py-2 border border-gray-300 text-sm font-medium rounded-xl text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
+                                        class="w-full sm:w-auto inline-flex items-center justify-center px-6 py-2 border border-gray-300 text-sm font-medium rounded-xl text-gray-700 bg-white hover:bg-gray-50 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition-colors">
                                     Close
                                 </button>
                             </div>

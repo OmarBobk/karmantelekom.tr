@@ -112,7 +112,7 @@ class="relative">
 
 {{--            <!-- Sidebar Header -->--}}
 {{--            <div class="flex items-center justify-between py-6 {{app()->getLocale() == 'ar' ? 'pl-8 pr-10' : 'pl-10 pr-8'}} border-b border-gray-100">--}}
-{{--                <a href="{{ route('main') }}" class="text-2xl font-semibold font-poppins bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">--}}
+{{--                <a href="{{ route('main') }}" class="text-2xl font-semibold font-poppins bg-linear-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">--}}
 {{--                    <img src="{{ asset('assets/images/karmantelekom_logo.png') }}" class="w-24" alt="">--}}
 {{--                </a>--}}
 {{--                <button @click="sidebarOpen = false"--}}

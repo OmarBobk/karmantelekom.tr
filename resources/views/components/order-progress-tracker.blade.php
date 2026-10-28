@@ -59,7 +59,7 @@
     ];
 @endphp
 
-<div class="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+<div class="bg-white rounded-lg shadow-xs border border-gray-200 p-6">
     <!-- Title -->
     <h5 class="text-sm font-semibold text-gray-700 mb-6 text-center">Classic Design</h5>
     
@@ -94,7 +94,7 @@
                     <div class="mt-3 text-center px-1">
                         <span class="text-[10px] sm:text-xs md:text-sm font-medium 
                             {{ $isActive ? 'text-gray-900 font-semibold' : 'text-gray-500' }} 
-                            break-words leading-tight">
+                            wrap-break-word leading-tight">
                             {{ $step['label'] }}
                         </span>
                     </div>

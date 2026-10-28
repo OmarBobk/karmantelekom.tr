@@ -22,11 +22,11 @@
 ])
 
 <div class="w-full bg-white py-4">
-    <div class="group flex overflow-hidden p-2 [--gap:1rem] [gap:var(--gap)] flex-row [--duration:20s]">
+    <div class="group flex overflow-hidden p-2 [--gap:1rem] gap-(--gap) flex-row [--duration:20s]">
         @foreach(range(1, 2) as $iteration)
-            <div class="flex shrink-0 justify-around [gap:var(--gap)] animate-marquee flex-row group-hover:[animation-play-state:paused]">
+            <div class="flex shrink-0 justify-around gap-(--gap) animate-marquee flex-row group-hover:[animation-play-state:paused]">
                 @foreach($testimonials as $testimonial)
-                    <figure class="relative h-full w-64 cursor-pointer overflow-hidden rounded-xl border p-4 border-gray-950/[.1] bg-gray-950/[.01] hover:bg-gray-950/[.05] dark:border-gray-50/[.1] dark:bg-gray-50/[.10] dark:hover:bg-gray-50/[.15]">
+                    <figure class="relative h-full w-64 cursor-pointer overflow-hidden rounded-xl border p-4 border-gray-950/10 bg-gray-950/1 hover:bg-gray-950/5 dark:border-gray-50/10 dark:bg-gray-50/10 dark:hover:bg-gray-50/15">
                         <div class="flex flex-row items-center gap-2">
                             <img class="rounded-full" width="32" height="32" alt="" src="{{ $testimonial['avatar'] }}">
                             <div class="flex flex-col">
@@ -40,9 +40,9 @@
             </div>
         @endforeach
         @foreach(range(1, 2) as $iteration)
-            <div class="flex shrink-0 justify-around [gap:var(--gap)] animate-marquee flex-row group-hover:[animation-play-state:paused]">
+            <div class="flex shrink-0 justify-around gap-(--gap) animate-marquee flex-row group-hover:[animation-play-state:paused]">
                 @foreach($testimonials as $testimonial)
-                    <figure class="relative h-full w-64 cursor-pointer overflow-hidden rounded-xl border p-4 border-gray-950/[.1] bg-gray-950/[.01] hover:bg-gray-950/[.05] dark:border-gray-50/[.1] dark:bg-gray-50/[.10] dark:hover:bg-gray-50/[.15]">
+                    <figure class="relative h-full w-64 cursor-pointer overflow-hidden rounded-xl border p-4 border-gray-950/10 bg-gray-950/1 hover:bg-gray-950/5 dark:border-gray-50/10 dark:bg-gray-50/10 dark:hover:bg-gray-50/15">
                         <div class="flex flex-row items-center gap-2">
                             <img class="rounded-full" width="32" height="32" alt="" src="{{ $testimonial['avatar'] }}">
                             <div class="flex flex-col">

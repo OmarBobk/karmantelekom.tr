@@ -5,7 +5,7 @@
             <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 sm:ml-4 ml-3">
                 <!-- Fast Shipping -->
                 <div class="flex items-center gap-4 group">
-                    <div class="flex-shrink-0 w-14 h-14 rounded-full bg-orange-500 flex items-center justify-center group-hover:scale-110 transition-transform duration-200 shadow-lg">
+                    <div class="shrink-0 w-14 h-14 rounded-full bg-orange-500 flex items-center justify-center group-hover:scale-110 transition-transform duration-200 shadow-lg">
                         <svg class="w-9 h-9 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z" />
                         </svg>
@@ -22,7 +22,7 @@
 
                 <!-- Free Shipping -->
                 <div class="flex items-center gap-4 group">
-                    <div class="flex-shrink-0 w-14 h-14 rounded-full bg-blue-400 flex items-center justify-center group-hover:scale-110 transition-transform duration-200 shadow-lg">
+                    <div class="shrink-0 w-14 h-14 rounded-full bg-blue-400 flex items-center justify-center group-hover:scale-110 transition-transform duration-200 shadow-lg">
                         <svg class="w-9 h-9 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4" />
                         </svg>
@@ -39,7 +39,7 @@
 
                 <!-- Payment Options -->
                 <div class="flex items-center gap-4 group">
-                    <div class="flex-shrink-0 w-14 h-14 rounded-full bg-pink-500 flex items-center justify-center group-hover:scale-110 transition-transform duration-200 shadow-lg relative">
+                    <div class="shrink-0 w-14 h-14 rounded-full bg-pink-500 flex items-center justify-center group-hover:scale-110 transition-transform duration-200 shadow-lg relative">
                         <svg class="w-9 h-9 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M3 10h18M7 15h1m4 0h1m-7 4h12a3 3 0 003-3V8a3 3 0 00-3-3H6a3 3 0 00-3 3v8a3 3 0 003 3z" />
                         </svg>
@@ -57,7 +57,7 @@
 
                 <!-- Secure Shopping -->
                 <div class="flex items-center gap-4 group">
-                    <div class="flex-shrink-0 w-14 h-14 rounded-full bg-lime-500 flex items-center justify-center group-hover:scale-110 transition-transform duration-200 shadow-lg">
+                    <div class="shrink-0 w-14 h-14 rounded-full bg-lime-500 flex items-center justify-center group-hover:scale-110 transition-transform duration-200 shadow-lg">
                         <svg class="w-9 h-9 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" />
                         </svg>
@@ -81,7 +81,7 @@
         <div class="flex flex-col justify-between">
             <div class="sm:pr-3 pr-2">
                 <div class="flex">
-                    <span class="text-2xl font-semibold bg-gradient-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">
+                    <span class="text-2xl font-semibold bg-linear-to-r from-blue-500 to-purple-600 bg-clip-text text-transparent">
                         <img src="{{ asset('assets/images/karmantelekom_logo.png') }}" class="" alt="">
                     </span>
                 </div>
@@ -188,13 +188,13 @@
                         <img
                             src="{{ asset('assets/images/visa_logo.png') }}"
                             alt="Visa"
-                            class="h-7 w-auto object-contain filter grayscale hover:grayscale-0 transition duration-200 drop-shadow-sm"
+                            class="h-7 w-auto object-contain filter grayscale hover:grayscale-0 transition duration-200 drop-shadow-xs"
                         >
                         @if(file_exists(public_path('assets/images/mastercard_logo.png')))
                             <img
                                 src="{{ asset('assets/images/mastercard_logo.png') }}"
                                 alt="Mastercard"
-                                class="h-7 w-auto object-contain filter grayscale hover:grayscale-0 transition duration-200 drop-shadow-sm"
+                                class="h-7 w-auto object-contain filter grayscale hover:grayscale-0 transition duration-200 drop-shadow-xs"
                             >
                         @endif
                     </div>

@@ -30,7 +30,7 @@
         }" 
         class="rounded-lg p-4 shadow-lg">
             <div class="flex">
-                <div class="flex-shrink-0">
+                <div class="shrink-0">
                     <svg x-show="type === 'success'" class="h-5 w-5 text-green-400" viewBox="0 0 20 20" fill="currentColor">
                         <path fill-rule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clip-rule="evenodd"/>
                     </svg>
@@ -49,7 +49,7 @@
                 </div>
                 <div class="ml-auto pl-3">
                     <div class="-mx-1.5 -my-1.5">
-                        <button @click="show = false" class="inline-flex rounded-md p-1.5 focus:outline-none focus:ring-2 focus:ring-offset-2" :class="{
+                        <button @click="show = false" class="inline-flex rounded-md p-1.5 focus:outline-hidden focus:ring-2 focus:ring-offset-2" :class="{
                             'bg-green-50 text-green-500 hover:bg-green-100 focus:ring-green-600': type === 'success',
                             'bg-red-50 text-red-500 hover:bg-red-100 focus:ring-red-600': type === 'error',
                             'bg-yellow-50 text-yellow-500 hover:bg-yellow-100 focus:ring-yellow-600': type === 'warning',
@@ -77,7 +77,7 @@
                 </div>
                 <div class="mt-4 flex md:mt-0 md:ml-4">
                     <button wire:click="$set('addModalOpen', true)"
-                            class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out">
+                            class="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-xs text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500 transition duration-150 ease-in-out">
                         <svg class="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2"
                                   d="M12 6v6m0 0v6m0-6h6m-6 0H6"/>
@@ -89,7 +89,7 @@
         </div>
 
         <!-- Filters -->
-        <div class="bg-white rounded-xl shadow-sm mb-6 p-6">
+        <div class="bg-white rounded-xl shadow-xs mb-6 p-6">
             <div class="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
                 <!-- Search -->
                 <div class="relative">
@@ -97,7 +97,7 @@
                         wire:model.live.debounce.300ms="search"
                         type="text"
                         placeholder="Search categories..."
-                        class="w-full px-10 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out"
+                        class="w-full px-10 py-3 border border-gray-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out"
                     />
                     <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                         <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -120,7 +120,7 @@
 
                 <!-- Status Filter -->
                 <select wire:model.live="status"
-                        class="w-full px-3 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                        class="w-full px-3 py-3 border border-gray-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
                     <option value="">All Statuses</option>
                     <option value="active">Active</option>
                     <option value="inactive">Inactive</option>
@@ -128,7 +128,7 @@
 
                 <!-- Date Filter -->
                 <select wire:model.live="dateFilter"
-                        class="w-full px-3 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                        class="w-full px-3 py-3 border border-gray-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
                     <option value="">All Time</option>
                     <option value="today">Today</option>
                     <option value="week">This Week</option>
@@ -138,7 +138,7 @@
 
                 <!-- Order By Filter -->
                 <select wire:model.live="orderBy"
-                        class="w-full px-3 py-3 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
+                        class="w-full px-3 py-3 border border-gray-200 rounded-lg focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition duration-150 ease-in-out">
                     <option value="newest">Newest to Oldest</option>
                     <option value="oldest">Oldest to Newest</option>
                 </select>
@@ -146,14 +146,14 @@
         </div>
 
         <!-- Table -->
-        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+        <div class="bg-white rounded-xl shadow-xs overflow-hidden">
             <div class="overflow-x-auto">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                     <tr>
                         <th class="px-6 py-4 text-left">
                             <input type="checkbox" wire:model.live="selectAll"
-                                   class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 transition duration-150 ease-in-out"/>
+                                   class="rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500 transition duration-150 ease-in-out"/>
                         </th>
                         <th wire:click="sortBy('name')"
                             class="px-6 py-4 text-left text-sm font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:text-gray-700 transition duration-150 ease-in-out">
@@ -184,7 +184,7 @@
                         <tr class="hover:bg-gray-50 transition duration-150 ease-in-out">
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <input type="checkbox" wire:model.live="selectedCategories" value="{{ $category->id }}"
-                                       class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500 transition duration-150 ease-in-out"/>
+                                       class="rounded-sm border-gray-300 text-indigo-600 focus:ring-indigo-500 transition duration-150 ease-in-out"/>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex items-center">
@@ -214,12 +214,12 @@
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <div class="flex items-center justify-center">
                                     <button wire:click="toggleStatus({{ $category->id }})"
-                                            class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 {{ $category->status ? 'bg-indigo-600' : 'bg-gray-200' }}"
+                                            class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 {{ $category->status ? 'bg-indigo-600' : 'bg-gray-200' }}"
                                             role="switch"
                                             aria-checked="{{ $category->status ? 'true' : 'false' }}">
                                         <span class="sr-only">Toggle status</span>
                                         <span
-                                            class="inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition-transform {{ $category->status ? 'translate-x-6' : 'translate-x-1' }}"></span>
+                                            class="inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition-transform {{ $category->status ? 'translate-x-6' : 'translate-x-1' }}"></span>
                                     </button>
                                     <label for="status"
                                            class="ml-2 block text-sm text-gray-900">{{ $category->status ? 'Active' : 'Inactive' }}</label>
@@ -276,7 +276,7 @@
             x-show="show"
             class="fixed inset-0 z-50 overflow-hidden"
             x-cloak>
-            <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+            <div class="fixed inset-0 bg-gray-500/75 transition-opacity"></div>
             <div class="fixed inset-0 z-10 overflow-y-auto">
                 <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
                     <div
@@ -284,7 +284,7 @@
                         @click.away="$wire.showDeleteModal = false">
                         <div class="absolute right-0 top-0 pr-4 pt-4">
                             <button type="button" wire:click="$set('showDeleteModal', false)"
-                                    class="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none transition duration-150 ease-in-out">
+                                    class="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-hidden transition duration-150 ease-in-out">
                                 <span class="sr-only">Close</span>
                                 <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                                      stroke="currentColor">
@@ -305,7 +305,7 @@
                                     </p>
                                     <div class="mt-4">
                                         <h4 class="font-semibold mb-2">Categories to be deleted:</h4>
-                                        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                                        <div class="bg-white rounded-xl shadow-xs overflow-hidden">
                                             <div class="overflow-x-auto">
                                                 <table class="min-w-full text-sm">
                                                     <thead class="bg-gray-50">
@@ -347,7 +347,7 @@
                                     </div>
                                     <div class="mt-4">
                                         <h4 class="font-semibold mb-2">Products to be deleted:</h4>
-                                        <div class="bg-white rounded-xl shadow-sm overflow-hidden">
+                                        <div class="bg-white rounded-xl shadow-xs overflow-hidden">
                                             <div class="overflow-x-auto">
                                                 <table class="min-w-full text-sm">
                                                     <thead class="bg-gray-50">
@@ -392,11 +392,11 @@
                                     <div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
                                         <button type="button"
                                                 wire:click="$set('showDeleteModal', false)"
-                                                class="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded hover:bg-gray-300 dark:hover:bg-gray-600">
+                                                class="px-4 py-2 bg-gray-200 dark:bg-gray-700 rounded-sm hover:bg-gray-300 dark:hover:bg-gray-600">
                                             Cancel
                                         </button>
                                         <button wire:click="deleteCategory" wire:loading.attr="disabled"
-                                                class="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+                                                class="px-4 py-2 bg-red-600 text-white rounded-sm hover:bg-red-700"
                                                 aria-label="Confirm delete">
                                             Delete
                                         </button>
@@ -423,7 +423,7 @@
          })"
          class="fixed inset-0 z-50 overflow-hidden"
          @refresh-parent-categories.window="$wire.$refresh()">
-        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+        <div class="fixed inset-0 bg-gray-500/75 transition-opacity"></div>
         <div class="fixed inset-0 z-10 overflow-y-auto">
             <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
                 <div
@@ -431,7 +431,7 @@
                     @click.away="$wire.resetAddForm()">
                     <div class="absolute right-0 top-0 pr-4 pt-4">
                         <button type="button" wire:click="resetAddForm"
-                                class="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none transition duration-150 ease-in-out">
+                                class="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-hidden transition duration-150 ease-in-out">
                             <span class="sr-only">Close</span>
                             <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                                  stroke="currentColor">
@@ -450,7 +450,7 @@
                                         <input type="text"
                                                wire:model="addForm.name"
                                                id="name"
-                                               class="mt-1 block w-full rounded-lg border-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm transition duration-150 ease-in-out">
+                                               class="mt-1 block w-full rounded-lg border-gray-200 shadow-xs focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm transition duration-150 ease-in-out">
                                         @error('addForm.name')
                                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                         @enderror
@@ -461,7 +461,7 @@
                                         <input type="text"
                                                wire:model="addForm.tr_name"
                                                id="tr_name"
-                                               class="mt-1 block w-full rounded-lg border-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm transition duration-150 ease-in-out">
+                                               class="mt-1 block w-full rounded-lg border-gray-200 shadow-xs focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm transition duration-150 ease-in-out">
                                         @error('addForm.tr_name')
                                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                         @enderror
@@ -472,7 +472,7 @@
                                         <input type="text"
                                                wire:model="addForm.ar_name"
                                                id="ar_name"
-                                               class="mt-1 block w-full rounded-lg border-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm transition duration-150 ease-in-out">
+                                               class="mt-1 block w-full rounded-lg border-gray-200 shadow-xs focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm transition duration-150 ease-in-out">
                                         @error('addForm.ar_name')
                                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                         @enderror
@@ -495,23 +495,23 @@
                                     <div class="flex items-center">
                                         <button type="button"
                                                 wire:click="toggleAddFormStatus()"
-                                                class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 {{ $addForm['status'] ? 'bg-indigo-600' : 'bg-gray-200' }}"
+                                                class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 {{ $addForm['status'] ? 'bg-indigo-600' : 'bg-gray-200' }}"
                                                 role="switch"
                                                 aria-checked="{{ $addForm['status'] ? 'true' : 'false' }}">
                                             <span class="sr-only">Toggle status</span>
-                                            <span class="inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition-transform {{ $addForm['status'] ? 'translate-x-6' : 'translate-x-1' }}"></span>
+                                            <span class="inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition-transform {{ $addForm['status'] ? 'translate-x-6' : 'translate-x-1' }}"></span>
                                         </button>
                                         <label for="status" class="ml-2 block text-sm text-gray-900">Active</label>
                                     </div>
 
                                     <div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
                                         <button type="submit"
-                                                class="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 sm:ml-3 sm:w-auto transition duration-150 ease-in-out">
+                                                class="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 sm:ml-3 sm:w-auto transition duration-150 ease-in-out">
                                             Create Category
                                         </button>
                                         <button type="button"
                                                 wire:click="$set('addModalOpen', false)"
-                                                class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto transition duration-150 ease-in-out">
+                                                class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-xs ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto transition duration-150 ease-in-out">
                                             Cancel
                                         </button>
                                     </div>
@@ -537,7 +537,7 @@
          })"
          class="fixed inset-0 z-50 overflow-hidden"
          @refresh-parent-categories.window="$wire.$refresh()">
-        <div class="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity"></div>
+        <div class="fixed inset-0 bg-gray-500/75 transition-opacity"></div>
         <div class="fixed inset-0 z-10 overflow-y-auto">
             <div class="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
                 <div
@@ -545,7 +545,7 @@
                     @click.away="open = false">
                     <div class="absolute right-0 top-0 pr-4 pt-4">
                         <button type="button" wire:click="$set('editModalOpen', false)"
-                                class="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-none transition duration-150 ease-in-out">
+                                class="rounded-md bg-white text-gray-400 hover:text-gray-500 focus:outline-hidden transition duration-150 ease-in-out">
                             <span class="sr-only">Close</span>
                             <svg class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke-width="1.5"
                                  stroke="currentColor">
@@ -564,7 +564,7 @@
                                         <input type="text"
                                                wire:model="editForm.name"
                                                id="edit_name"
-                                               class="mt-1 block w-full rounded-lg border-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm transition duration-150 ease-in-out">
+                                               class="mt-1 block w-full rounded-lg border-gray-200 shadow-xs focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm transition duration-150 ease-in-out">
                                         @error('editForm.name')
                                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                         @enderror
@@ -575,7 +575,7 @@
                                         <input type="text"
                                                wire:model="editForm.tr_name"
                                                id="edit_tr_name"
-                                               class="mt-1 block w-full rounded-lg border-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm transition duration-150 ease-in-out">
+                                               class="mt-1 block w-full rounded-lg border-gray-200 shadow-xs focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm transition duration-150 ease-in-out">
                                         @error('editForm.tr_name')
                                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                         @enderror
@@ -586,7 +586,7 @@
                                         <input type="text"
                                                wire:model="editForm.ar_name"
                                                id="edit_ar_name"
-                                               class="mt-1 block w-full rounded-lg border-gray-200 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm transition duration-150 ease-in-out">
+                                               class="mt-1 block w-full rounded-lg border-gray-200 shadow-xs focus:border-indigo-500 focus:ring-indigo-500 sm:text-sm transition duration-150 ease-in-out">
                                         @error('editForm.ar_name')
                                         <p class="mt-1 text-sm text-red-600">{{ $message }}</p>
                                         @enderror
@@ -609,23 +609,23 @@
                                     <div class="flex items-center">
                                         <button type="button"
                                                 wire:click="toggleEditFormStatus()"
-                                                class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 {{ $editForm['status'] ? 'bg-indigo-600' : 'bg-gray-200' }}"
+                                                class="relative inline-flex h-6 w-11 items-center rounded-full transition-colors focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2 {{ $editForm['status'] ? 'bg-indigo-600' : 'bg-gray-200' }}"
                                                 role="switch"
                                                 aria-checked="{{ $editForm['status'] ? 'true' : 'false' }}">
                                             <span class="sr-only">Toggle status</span>
-                                            <span class="inline-block h-4 w-4 transform rounded-full bg-white shadow ring-0 transition-transform {{ $editForm['status'] ? 'translate-x-6' : 'translate-x-1' }}"></span>
+                                            <span class="inline-block h-4 w-4 transform rounded-full bg-white shadow-sm ring-0 transition-transform {{ $editForm['status'] ? 'translate-x-6' : 'translate-x-1' }}"></span>
                                         </button>
                                         <label for="edit_status" class="ml-2 block text-sm text-gray-900">Active</label>
                                     </div>
 
                                     <div class="mt-5 sm:mt-4 sm:flex sm:flex-row-reverse">
                                         <button type="submit"
-                                                class="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-indigo-500 sm:ml-3 sm:w-auto transition duration-150 ease-in-out">
+                                                class="inline-flex w-full justify-center rounded-md bg-indigo-600 px-3 py-2 text-sm font-semibold text-white shadow-xs hover:bg-indigo-500 sm:ml-3 sm:w-auto transition duration-150 ease-in-out">
                                             Update Category
                                         </button>
                                         <button type="button"
                                                 wire:click="$set('editModalOpen', false)"
-                                                class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-sm ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto transition duration-150 ease-in-out">
+                                                class="mt-3 inline-flex w-full justify-center rounded-md bg-white px-3 py-2 text-sm font-semibold text-gray-900 shadow-xs ring-1 ring-inset ring-gray-300 hover:bg-gray-50 sm:mt-0 sm:w-auto transition duration-150 ease-in-out">
                                             Cancel
                                         </button>
                                     </div>

@@ -63,7 +63,7 @@
     x-transition:leave="ease-in duration-200">
 
     <!-- Overlay: click away closes modal -->
-    <div class="absolute inset-0 w-full h-full bg-black bg-opacity-50 backdrop-blur-sm"
+    <div class="absolute inset-0 w-full h-full bg-black/50 backdrop-blur-xs"
     x-cloak
     x-transition:enter="ease-out duration-300"
     x-transition:leave="ease-in duration-200"
@@ -120,7 +120,7 @@
             <!-- Thumbnails -->
             <div class="flex mt-4 space-x-2 overflow-x-auto py-2">
                 <template x-for="(image, index) in images" :key="index">
-                    <button @click="setActive(index)" class="relative bg-white focus:outline-none flex-shrink-0">
+                    <button @click="setActive(index)" class="relative bg-white focus:outline-hidden shrink-0">
                         <img :src="image.url" alt="Thumbnail" class="w-16 h-16 object-cover rounded-md border-2 transition" :class="activeImageIndex === index ? 'border-blue-500' : 'border-transparent'">
                     </button>
                 </template>
@@ -177,7 +177,7 @@
                             <!-- Multiple Wholesale Prices - Show as cards -->
                             <div class="space-y-3 max-h-64 overflow-y-auto">
                                 @foreach($product->priceTiers as $index => $wholesalePrice)
-                                    <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 hover:shadow-md transition-all duration-200 hover:border-blue-300">
+                                    <div class="bg-linear-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 hover:shadow-md transition-all duration-200 hover:border-blue-300">
                                         <div class="flex items-center justify-between">
                                             <div class="flex-1">
                                                 <div class="flex items-center gap-3 mb-2">
@@ -212,7 +212,7 @@
                         @else
                             <!-- Single Wholesale Price - Show prominently -->
                             @php $wholesalePrice = $product->priceTiers->first(); @endphp
-                            <div class="bg-gradient-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-xl p-5 shadow-sm">
+                            <div class="bg-linear-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-xl p-5 shadow-xs">
                                 <div class="flex items-center justify-between">
                                     <div class="flex-1">
                                         <div class="flex items-center gap-3 mb-3">
@@ -262,12 +262,12 @@
                     <ul class="list-none text-gray-600 space-y-2">
                         <li class="flex justify-between items-center text-sm">
                             <span class="font-medium text-gray-700">{{__('main.code')}}: </span>
-                            <span class="font-mono text-gray-800 bg-gray-200 px-2 py-0.5 rounded">{{$product->code}}</span>
+                            <span class="font-mono text-gray-800 bg-gray-200 px-2 py-0.5 rounded-sm">{{$product->code}}</span>
                         </li>
                         @if($product->serial)
                             <li class="flex justify-between items-center text-sm">
                                 <span class="font-medium text-gray-700">{{__('main.serial')}}: </span>
-                                <span class="font-mono text-gray-800 bg-gray-200 px-2 py-0.5 rounded">{{$product->serial}}</span>
+                                <span class="font-mono text-gray-800 bg-gray-200 px-2 py-0.5 rounded-sm">{{$product->serial}}</span>
                             </li>
                         @endif
                     </ul>
@@ -286,14 +286,14 @@
                         <button @click="decreaseQty()"
                                 :disabled="quantity <= minQty"
                                 :class="quantity <= minQty ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'"
-                                class="p-2 pl-3 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                class="p-2 pl-3 rounded-l-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20 12H4" /></svg>
                         </button>
                         <span x-text="quantity" class="px-4 py-2 font-medium"></span>
                         <button @click="increaseQty()"
                                 :disabled="quantity >= maxQty"
                                 :class="quantity >= maxQty ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'"
-                                class="p-2 pr-3 rounded-r-lg focus:outline-none focus:ring-2 focus:ring-blue-500">
+                                class="p-2 pr-3 rounded-r-lg focus:outline-hidden focus:ring-2 focus:ring-blue-500">
                             <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4" /></svg>
                         </button>
                     </div>
@@ -306,7 +306,7 @@
                 <div class="flex flex-col sm:flex-row gap-3">
                     <button
                         @click="$store.cart.addItem({{ json_encode($product) }}, quantity, { catalog: isCatalog }); closeAndReset();"
-                        class="flex-1 w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-px transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+                        class="flex-1 w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-px transition-all duration-300 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                         :class="isCatalog ? 'hidden': 'flex'"
                         aria-label="{{ __('main.add_to_cart') }}">
                         <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -317,7 +317,7 @@
                         <span>{{ __('main.add_to_cart') }}</span>
                     </button>
                     <button @click="closeAndReset()"
-                            class="flex-1 flex items-center justify-center px-4 py-3 bg-white text-gray-600 font-semibold rounded-xl shadow-md border border-gray-300 hover:bg-gray-50 transition focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
+                            class="flex-1 flex items-center justify-center px-4 py-3 bg-white text-gray-600 font-semibold rounded-xl shadow-md border border-gray-300 hover:bg-gray-50 transition focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
                         <span>{{__('main.close')}}</span>
                     </button>
                 </div>

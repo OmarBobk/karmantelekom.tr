@@ -3,7 +3,7 @@
     <button
         wire:click="toggleDropdown"
         @click.away="open = false"
-        class="relative flex items-center justify-center w-10 h-10 rounded-full hover:bg-blue-100 transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500"
+        class="relative flex items-center justify-center w-10 h-10 rounded-full hover:bg-blue-100 transition-colors focus:outline-hidden focus:ring-2 focus:ring-blue-500"
         :class="open ? 'bg-blue-100' : ''"
     >
         <svg class="w-6 h-6 text-gray-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -12,7 +12,7 @@
 
         <!-- Unread Count Badge -->
         @if($this->unreadCount > 0)
-            <span class="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white bg-red-500 rounded-full min-w-[1.25rem] h-5">
+            <span class="absolute -top-1 -right-1 inline-flex items-center justify-center px-1.5 py-0.5 text-xs font-bold leading-none text-white bg-red-500 rounded-full min-w-5 h-5">
                 {{ $this->unreadCount > 99 ? '99+' : $this->unreadCount }}
             </span>
         @endif
@@ -28,7 +28,7 @@
         x-transition:leave-start="transform opacity-100 scale-100"
         x-transition:leave-end="transform opacity-0 scale-95"
         class="absolute right-[-130%] z-50 mt-2 w-screen sm:w-96 max-w-[calc(100vw-2rem)] origin-top-right rounded-lg bg-white
-        shadow-xl ring-1 ring-black ring-opacity-5 focus:outline-none
+        shadow-xl ring-1 ring-black/5 focus:outline-hidden
                sm:right-0
                "
         style="display: none;"
@@ -38,7 +38,7 @@
             <div class="flex items-center space-x-2 min-w-0">
                 <h3 class="text-base sm:text-lg font-semibold text-gray-800 truncate">Notifications</h3>
                 @if($this->unreadCount > 0)
-                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 flex-shrink-0">
+                    <span class="inline-flex items-center px-2 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 shrink-0">
                         {{ $this->unreadCount }} new
                     </span>
                 @endif
@@ -49,7 +49,7 @@
                     wire:click="markAllAsRead"
                     wire:loading.attr="disabled"
                     wire:target="markAllAsRead"
-                    class="text-xs sm:text-sm text-blue-600 hover:text-blue-800 font-medium transition-all duration-200 hover:bg-blue-50 px-2 py-1 rounded disabled:opacity-50 flex-shrink-0"
+                    class="text-xs sm:text-sm text-blue-600 hover:text-blue-800 font-medium transition-all duration-200 hover:bg-blue-50 px-2 py-1 rounded-sm disabled:opacity-50 shrink-0"
                 >
                     <span wire:loading.remove wire:target="markAllAsRead" class="hidden sm:inline">Mark all read</span>
                     <span wire:loading.remove wire:target="markAllAsRead" class="sm:hidden">Mark all</span>
@@ -78,7 +78,7 @@
                      @click="if($event.target.tagName !== 'A' && $event.target.tagName !== 'BUTTON') { isRemoving = true; setTimeout(() => isRemoving = false, 200); }">
 
                     <!-- Notification Icon -->
-                    <div class="flex-shrink-0 mt-0.5 sm:mt-1">
+                    <div class="shrink-0 mt-0.5 sm:mt-1">
                         @if($notification['icon'] === 'check-circle')
                             <div class="w-7 h-7 sm:w-8 sm:h-8 bg-green-100 rounded-full flex items-center justify-center group-hover:bg-green-200 transition-colors">
                                 <svg class="w-3.5 h-3.5 sm:w-4 sm:h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -158,7 +158,7 @@
                                     wire:click.stop="markAsRead('{{ $notification['id'] }}')"
                                     wire:loading.attr="disabled"
                                     wire:target="markAsRead('{{ $notification['id'] }}')"
-                                    class="text-xs text-blue-600 hover:text-blue-800 font-medium transition-all duration-200 opacity-70 sm:opacity-0 group-hover:opacity-100 hover:bg-blue-50 px-2 py-1 rounded"
+                                    class="text-xs text-blue-600 hover:text-blue-800 font-medium transition-all duration-200 opacity-70 sm:opacity-0 group-hover:opacity-100 hover:bg-blue-50 px-2 py-1 rounded-sm"
                                     onclick="event.stopPropagation();"
                                 >
                                     <span wire:loading.remove wire:target="markAsRead('{{ $notification['id'] }}')">Mark read</span>
@@ -174,7 +174,7 @@
                     </div>
 
                     <!-- Unread Indicator -->
-                    <div class="flex-shrink-0">
+                    <div class="shrink-0">
                         <div class="w-2 h-2 bg-blue-500 rounded-full group-hover:bg-blue-600 transition-colors"></div>
                     </div>
                 </div>
