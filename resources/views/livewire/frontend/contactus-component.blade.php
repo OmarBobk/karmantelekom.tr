@@ -41,23 +41,23 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <div>
                         <x-label for="name" :value="__('main.your_name')" />
-                        <x-input id="name" type="text" class="mt-1 block w-full" wire:model.defer="name" autocomplete="name" />
+                        <x-input id="name" type="text" class="mt-1 block w-full" wire:model="name" autocomplete="name" />
                         <x-input-error for="name" />
                     </div>
                     <div>
                         <x-label for="email" :value="__('main.email_address')" />
-                        <x-input id="email" type="email" class="mt-1 block w-full" wire:model.defer="email" autocomplete="email" />
+                        <x-input id="email" type="email" class="mt-1 block w-full" wire:model="email" autocomplete="email" />
                         <x-input-error for="email" />
                     </div>
                 </div>
                 <div>
                     <x-label for="subject" :value="__('main.subject')" />
-                    <x-input id="subject" type="text" class="mt-1 block w-full" wire:model.defer="subject" />
+                    <x-input id="subject" type="text" class="mt-1 block w-full" wire:model="subject" />
                     <x-input-error for="subject" />
                 </div>
                 <div>
                     <x-label for="message" :value="__('main.message')" />
-                    <textarea id="message" rows="5" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring focus:ring-primary-200 focus:ring-opacity-50 transition" wire:model.defer="message"></textarea>
+                    <textarea id="message" rows="5" class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-primary-500 focus:ring focus:ring-primary-200 focus:ring-opacity-50 transition" wire:model="message"></textarea>
                     <x-input-error for="message" />
                 </div>
                 <div>

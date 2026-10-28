@@ -398,7 +398,7 @@
                             <div>
                                 <label for="name" class="block text-sm font-medium text-gray-700">Product Name (English)</label>
                                 <input type="text"
-                                    wire:model.blur="editForm.name"
+                                    wire:model.live.blur="editForm.name"
                                     @blur="$wire.generateSlug('edit')"
                                     id="name"
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
@@ -424,7 +424,7 @@
                             <div>
                                 <label for="tr-name" class="block text-sm font-medium text-gray-700">Product Name (Turkish)</label>
                                 <input type="text"
-                                    wire:model.blur="editForm.tr_name"
+                                    wire:model.live.blur="editForm.tr_name"
                                     @blur="$wire.generateSlug('edit', 'tr')"
                                     id="tr-name"
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
@@ -450,7 +450,7 @@
                             <div>
                                 <label for="ar-name" class="block text-sm font-medium text-gray-700">Product Name (Arabic)</label>
                                 <input type="text"
-                                    wire:model.blur="editForm.ar_name"
+                                    wire:model.live.blur="editForm.ar_name"
                                     @blur="$wire.generateSlug('edit', 'ar')"
                                     id="ar-name"
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
@@ -723,7 +723,7 @@
                                         <input
                                             x-ref="fileInput"
                                             id="images-{{ $iteration }}"
-                                            wire:model.defer="newImages"
+                                            wire:model="newImages"
                                             type="file"
                                             multiple
                                             accept="image/*"
@@ -1111,7 +1111,7 @@
                             <div>
                                 <label for="add-name" class="block text-sm font-medium text-gray-700">Product Name (English)</label>
                                 <input type="text"
-                                    wire:model.blur="addForm.name"
+                                    wire:model.live.blur="addForm.name"
                                     @blur="$wire.generateSlug('add')"
                                     id="add-name"
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
@@ -1137,7 +1137,7 @@
                             <div>
                                 <label for="add-tr-name" class="block text-sm font-medium text-gray-700">Product Name (Turkish)</label>
                                 <input type="text"
-                                    wire:model.blur="addForm.tr_name"
+                                    wire:model.live.blur="addForm.tr_name"
                                     @blur="$wire.generateSlug('add', 'tr')"
                                     id="add-tr-name"
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
@@ -1163,7 +1163,7 @@
                             <div>
                                 <label for="add-ar-name" class="block text-sm font-medium text-gray-700">Product Name (Arabic)</label>
                                 <input type="text"
-                                    wire:model.blur="addForm.ar_name"
+                                    wire:model.live.blur="addForm.ar_name"
                                     @blur="$wire.generateSlug('add', 'ar')"
                                     id="add-ar-name"
                                     class="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm">
@@ -1388,7 +1388,7 @@
                                         <input
                                             x-ref="fileInput"
                                             id="add-images-{{ $iteration }}"
-                                            wire:model.defer="newProductImages"
+                                            wire:model="newProductImages"
                                             type="file"
                                             multiple
                                             accept="image/*"
