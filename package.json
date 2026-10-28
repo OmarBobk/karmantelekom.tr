@@ -12,17 +12,16 @@
         "autoprefixer": "^10.4.16",
         "axios": "^1.7.4",
         "clockwork-browser": "^1.1.2",
-        "concurrently": "^9.0.1",
+        "concurrently": "^10.0.0",
         "laravel-echo": "^2.2.4",
-        "laravel-vite-plugin": "^1.0",
+        "laravel-vite-plugin": "^3.0.0",
         "postcss": "^8.4.32",
-        "puppeteer": "^24.12.1",
         "pusher-js": "^8.4.0",
         "tailwindcss": "^3.4.0",
-        "vite": "^6.0"
+        "vite": "^8.0.0"
     },
     "dependencies": {
-        "alpinejs": "^3.14.8",
+        "puppeteer": "^25.0.0",
         "tailwindcss-rtl": "^0.9.0"
     }
 }

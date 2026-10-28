@@ -24,12 +24,6 @@ export default defineConfig({
             host: 'localhost',
         },
     },
-    
-    // Optimize dependencies
-    optimizeDeps: {
-        include: ['alpinejs'],
-    },
-    
     // CSS optimizations
     css: {
         devSourcemap: false,
