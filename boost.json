@@ -9,5 +9,5 @@
         "cursor",
         "phpstorm"
     ],
-    "guidelines": []
+    "guidelines": true
 }

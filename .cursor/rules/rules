@@ -17,7 +17,7 @@
     - Use PHP 8.1+ features when appropriate (e.g., typed properties, match expressions).
     - Follow PSR-12 coding standards.
     - Use strict typing: `declare(strict_types=1);`
-    - Utilize Laravel 12's built-in features and helpers when possible.
+    - Utilize Laravel 13's built-in features and helpers when possible.
     - Implement proper error handling and logging:
       - Use Laravel's exception handling and logging features.
       - Create custom exceptions when necessary.
@@ -32,7 +32,7 @@
 
     - Use Livewire for dynamic components and real-time user interactions.
     - Favor the use of Livewire's lifecycle hooks and properties.
-    - Use the latest Livewire (3.5+) features for optimization and reactivity.
+    - Use the latest Livewire (4) features for optimization and reactivity.
     - Implement Blade components with Livewire directives (e.g., wire:model).
     - Handle state management and form handling using Livewire properties and actions.
     - Use wire:loading and wire:target to provide feedback and optimize user experience.
@@ -48,10 +48,10 @@
 
     Dependencies
 
-    - Laravel 12 (latest stable version)
-    - Livewire 3.5+ for real-time, reactive components
+    - Laravel 13 (latest stable version)
+    - Livewire 4 for real-time, reactive components
     - Alpine.js for lightweight JavaScript interactions
-    - Tailwind CSS for utility-first styling
+    - Tailwind CSS 4 for utility-first styling (CSS-first config in resources/css/app.css, no tailwind.config.js)
     - Tailwind UI for pre-built UI components and themes
     - Composer for dependency management
     - NPM/Yarn for frontend dependencies
@@ -93,4 +93,4 @@
 
     NOTE: In Laravel, when you are creating a column in a table, you can modify the table migration file to add the column, and then run "php artisan migrate:fresh --seed" to apply the changes to the database. you don't need to create a new migration file for each new column.
 
-    NOTE: This application uses Laravel 12 with bootstrap/app.php for routing and middleware. Scheduled tasks live in routes/console.php. Do not use app/Http/Kernel.php or app/Console/Kernel.php.
+    NOTE: This application uses Laravel 13 with bootstrap/app.php for routing and middleware. Scheduled tasks live in routes/console.php. Do not use app/Http/Kernel.php or app/Console/Kernel.php.
