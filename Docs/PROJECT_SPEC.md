@@ -1,0 +1,1200 @@
+# Karman Telekom Systems Management
+
+## 1. Project Overview
+
+### 1.1 Purpose
+
+Karman Telekom Systems Management is an internal web-based management system designed to operate the day-to-day business of Karman Telekom's two mobile phone stores.
+
+The system will centralize inventory management, purchasing, sales, used-device tracking, repairs, customer debts, supplier debts, cashbox operations, expenses, and reporting.
+
+The platform must provide reliable operational and financial records while remaining straightforward for the owner and employees to use.
+
+### 1.2 Phase 1 Scope
+
+Phase 1 delivers a complete internal management system for the two existing Karman Telekom stores.
+
+The system must support:
+
+- Store-specific inventory and operations.
+- Centralized owner access to both stores.
+- Employee accounts, roles, and permissions.
+- Product catalog and supplier management.
+- Purchasing and inventory receiving.
+- Quantity-based and individually tracked inventory.
+- Used-phone acquisition, repair, cost tracking, and profitability.
+- Point of Sale (POS) and sales history.
+- Customers and customer debts.
+- Supplier debts and payment history.
+- Store cashboxes, cashbox sessions, and employee accountability.
+- Expense and revenue records.
+- Store Network for product discovery, reservation, and coordination between the two stores.
+- Operational and financial dashboards and reports.
+- Auditable business transactions.
+
+### 1.3 Future Extensibility
+
+The architecture should allow the system to evolve into a solution serving additional retail businesses in the future.
+
+This is an architectural constraint, not a requirement to build a full multi-tenant SaaS platform in Phase 1.
+
+Phase 1 does not include:
+
+- Self-service tenant registration.
+- Subscription management or billing.
+- Tenant onboarding workflows.
+- A public marketplace for unrelated businesses.
+- A generalized SaaS administration platform.
+
+Future extensibility must not introduce unnecessary complexity into the initial implementation.
+
+---
+
+## 2. Core Business Principles
+
+### 2.1 Financial and Inventory Integrity
+
+Correctness of financial records, inventory quantities, device identity, cost calculations, and outstanding balances takes priority over feature count and implementation speed.
+
+Incorrect financial or inventory records can directly cause business losses.
+
+All implementation decisions must favor correctness, traceability, and safe failure.
+
+### 2.2 Store Separation
+
+Each store operates with its own inventory, cashbox, and authorized employees.
+
+The owner must be able to manage both stores from one account.
+
+Employees must only access the information and perform the operations permitted by their roles and store assignments.
+
+### 2.3 Traceable Transactions
+
+Important business operations must create traceable records.
+
+The system must preserve the relationships between purchases, inventory movements, devices, sales, payments, debts, cashbox movements, and expenses.
+
+Financial or inventory records must not be silently overwritten or deleted to correct historical mistakes.
+
+Corrections must follow explicitly authorized workflows and preserve the original transaction history.
+
+### 2.4 Server-Side Enforcement
+
+Business rules, authorization, pricing, inventory validation, reservation validation, and financial calculations must be enforced on the server.
+
+Frontend validation improves usability but must never be the only protection against invalid or unauthorized operations.
+
+### 2.5 Incremental Development
+
+The system must be implemented in small, testable increments.
+
+Foundational domain models and business rules must be established before implementing features that depend on them.
+
+Cursor and other coding agents must not invent business rules when requirements are ambiguous.
+
+---
+
+## 3. Stores, Users, Roles, and Permissions
+
+### 3.1 Store Management
+
+The system must represent the two existing Karman Telekom stores as distinct operational locations.
+
+Each store must have its own:
+
+- Inventory.
+- Inventory movement history.
+- Purchase and receiving records.
+- Sales records.
+- Cashbox and cashbox sessions.
+- Store-specific expenses.
+- Employee assignments.
+- Operational reporting.
+
+Transactions involving both stores must preserve the identity of each participating store.
+
+### 3.2 Owner Access
+
+The owner must be able to:
+
+- Access both stores.
+- View consolidated information.
+- Compare store performance.
+- Manage authorized users and permissions.
+- Review financial and inventory records.
+- Investigate discrepancies and audit histories.
+
+### 3.3 Employee Access
+
+Employees must have access according to their assigned roles and store permissions.
+
+The system must prevent unauthorized cross-store access, including access attempted by manipulating URLs, request parameters, or submitted data.
+
+### 3.4 Employee Accountability
+
+Important business operations must identify the user who performed them.
+
+Where relevant, records must also identify the responsible store, transaction timestamp, and related business transaction.
+
+The owner must be able to investigate which employee performed a sale, recorded an expense, received a payment, approved a reservation, or made another significant change.
+
+---
+
+## 4. Product Catalog
+
+### 4.1 General Requirements
+
+The product catalog must be flexible enough to support different retail product categories without assuming that every product is a mobile phone.
+
+The initial business primarily covers:
+
+- New mobile phones.
+- Used mobile phones.
+- Mobile accessories.
+- Repair-related products and parts where applicable.
+- Other products sold by Karman Telekom.
+
+### 4.2 Product Information
+
+Product records may contain:
+
+- Product name.
+- Category.
+- Brand.
+- Model.
+- Description.
+- Relevant specifications.
+- Images.
+- Supported identifiers.
+- Tracking requirements.
+- Active or inactive status.
+
+The exact fields must reflect the needs of the product category.
+
+Product definitions must remain separate from store-specific inventory records.
+
+### 4.3 Product Identification
+
+The system should support product lookup using available identifiers, such as:
+
+- Barcode.
+- SKU.
+- Brand and model.
+- IMEI or serial number for individually tracked devices.
+
+The identifier used for a lookup must not be confused with the identity of the product definition itself.
+
+An IMEI identifies an individual device, not every device of the same model.
+
+### 4.4 Product Catalog Container
+
+The system must provide a reusable catalog of known product definitions.
+
+When an employee adds an item to a store's inventory, the employee should be able to search the catalog using an available identifier.
+
+If the product definition already exists, the employee should reuse it rather than create a duplicate.
+
+If it does not exist, an authorized employee may create a new product definition.
+
+Creating a catalog entry must not automatically create inventory or imply that stock has been received.
+
+The catalog is a source of product information, not a second inventory.
+
+---
+
+## 5. Inventory Management
+
+### 5.1 Store-Specific Inventory
+
+Each store must have an independently managed inventory.
+
+The system must support:
+
+- Viewing available stock.
+- Searching and filtering products.
+- Viewing quantities and stock status.
+- Viewing inventory valuation where authorized.
+- Recording inventory movements.
+- Investigating inventory discrepancies.
+- Tracking product location and availability.
+- Reviewing historical inventory changes.
+
+The same product definition may be associated with inventory at both stores, but the quantities and movement histories must remain store-specific.
+
+### 5.2 Inventory Tracking Types
+
+The system must distinguish between at least two inventory tracking approaches.
+
+#### Quantity-Tracked Products
+
+Products such as cables, chargers, and accessories can be tracked by quantity.
+
+The system must maintain reliable stock quantities and prevent invalid stock movements.
+
+#### Individually Tracked Devices
+
+Phones and other products that require individual identification must have their own device records.
+
+Each device must have its own identity, lifecycle, location, and relevant transaction history.
+
+The system must prevent the same device from being represented as multiple independent physical items merely because it appears in multiple workflows.
+
+### 5.3 Inventory Movements
+
+Inventory changes must be traceable.
+
+Relevant movement types may include:
+
+- Purchase receipt.
+- Sale.
+- Customer return.
+- Supplier return.
+- Store transfer.
+- Approved inventory adjustment.
+- Other explicitly authorized stock movements.
+
+Each movement must identify its source or reason, affected item, quantity where applicable, store, timestamp, and responsible user.
+
+The implementation must define valid movement types and transitions.
+
+A stock quantity must not be changed independently of the corresponding business operation when that operation requires an inventory movement record.
+
+### 5.4 Inventory Integrity
+
+The system must prevent:
+
+- Duplicate receiving of the same purchase quantities.
+- Duplicate stock deductions for one sale.
+- Unauthorized inventory adjustments.
+- Negative stock where prohibited by the approved business rules.
+- Conflicting operations on the same individually tracked device.
+- Inventory changes without traceable reasons.
+
+Inventory operations must be protected against duplicate submissions and concurrent requests.
+
+---
+
+## 6. Used-Device Management
+
+### 6.1 Individual Device Records
+
+Every individually tracked used phone must have its own device record.
+
+The record must support, where applicable:
+
+- IMEI.
+- Serial number.
+- Product model.
+- Acquisition date.
+- Acquisition source.
+- Original purchase price.
+- Current store.
+- Physical location.
+- Condition.
+- Device status.
+- Inspection history.
+- Repair history.
+- Additional cost records.
+- Sale history.
+
+Device identity and validation rules must be defined before implementation.
+
+The system must prevent duplicate active device identities according to the approved identifier rules.
+
+### 6.2 Device Lifecycle
+
+The system must track the lifecycle of each device.
+
+Potential states include:
+
+- Acquired.
+- Awaiting inspection.
+- Under repair.
+- Available for sale.
+- Reserved.
+- Sold.
+- Returned.
+- Transferred.
+- Written off.
+
+These are proposed states. The final allowed states and transitions must be documented before the lifecycle implementation is finalized.
+
+Invalid transitions must be rejected.
+
+A device must not be simultaneously available for conflicting operations, such as being sold and actively reserved.
+
+### 6.3 Repair Management
+
+The system must maintain a repair history for each device.
+
+Each repair record should support:
+
+- Device reference.
+- Repair date.
+- Problem description.
+- Work performed.
+- Parts used and their costs.
+- Labor cost.
+- Other attributable costs.
+- Responsible employee or technician.
+- Repair status.
+- Relevant notes.
+
+Repair records must remain linked to the device throughout its lifecycle.
+
+Historical repair costs must not be silently overwritten.
+
+### 6.4 Device-Level Cost Tracking
+
+The system must track the cost of each used device individually.
+
+Cost components must be recorded separately rather than collapsed into one manually editable total.
+
+Potential cost components include:
+
+- Original acquisition price.
+- Additional acquisition costs.
+- Repair parts.
+- Repair labor.
+- Other approved device-related costs.
+
+The system must preserve both the individual cost components and the resulting calculated cost values.
+
+### 6.5 Device Profitability
+
+The owner must be able to determine the cost and realized profit of each individually tracked device.
+
+The implementation must distinguish between:
+
+- Original purchase price.
+- Recorded additional costs.
+- Approved inventory cost basis.
+- Sale price.
+- Applicable adjustments.
+- Recognized cost at sale.
+- Realized profit.
+
+The exact cost-allocation formula, treatment of different expense categories, and handling of returns must be approved before implementing the final profit calculation.
+
+The system must not silently assume that every expense is capitalized into inventory cost or that every recorded cash inflow represents profit.
+
+### 6.6 Device History
+
+The system must preserve a traceable history of each device, including relevant acquisition, inspection, repair, cost, reservation, transfer, sale, and return events.
+
+The device history must remain accessible to authorized users even after the device is sold or otherwise removed from available inventory.
+
+---
+
+## 7. Brands and Suppliers
+
+### 7.1 Brands
+
+The system must allow authorized users to manage product brands and associate products with them.
+
+### 7.2 Suppliers
+
+Supplier records must support the management of suppliers from whom Karman Telekom purchases products and parts.
+
+Supplier information should include relevant contact details and business references.
+
+The system must support:
+
+- Supplier purchase history.
+- Purchase invoices.
+- Payments to suppliers.
+- Outstanding supplier balances.
+- Supplier payment history.
+- Relevant purchase adjustments and returns.
+
+Supplier records must remain linked to their purchases and financial transactions.
+
+---
+
+## 8. Purchasing and Supplier Debts
+
+### 8.1 Purchase Records
+
+The system must support purchase records associated with a supplier and receiving store.
+
+Purchase records must identify their items, quantities, unit costs, totals, and relevant invoice information.
+
+The system must distinguish between recording a purchase, receiving stock, and paying the supplier.
+
+These events may occur at different times and must not be treated as interchangeable.
+
+### 8.2 Receiving Inventory
+
+Receiving purchased products must update the appropriate store inventory through traceable movements.
+
+The system must prevent duplicate receiving operations.
+
+A failed receiving operation must not leave partially updated inventory or purchase records.
+
+### 8.3 Supplier Debt Management
+
+Recording supplier debts is a required Phase 1 feature.
+
+The system must track:
+
+- Amounts owed to each supplier.
+- Purchases that create supplier obligations.
+- Payments made to suppliers.
+- Outstanding balances.
+- Payment dates and references.
+- Approved adjustments.
+- Supplier transaction history.
+
+Supplier balances must reconcile with recorded obligations, payments, and approved adjustments.
+
+The system must not treat the creation of a purchase invoice as proof that the supplier has been paid.
+
+### 8.4 Purchase Costing
+
+For ordinary quantity-tracked products, the initial costing approach will be Weighted Average Cost.
+
+The exact calculation rules, timing of recalculation, treatment of purchase-related additional costs, and handling of returns or corrections must be documented before implementation.
+
+The system must preserve the underlying purchase and inventory transaction history needed to explain the resulting cost values.
+
+The average cost must not be changed through an unexplained manual overwrite.
+
+---
+
+## 9. Point of Sale (POS)
+
+### 9.1 Purpose
+
+The POS must allow authorized employees to sell products efficiently while preserving accurate inventory and financial records.
+
+### 9.2 Core Requirements
+
+The POS must support:
+
+- Product search and selection.
+- Barcode or identifier lookup where applicable.
+- Quantity-based cart items.
+- Selection of individual tracked devices.
+- Server-side price and total calculation.
+- Discounts according to approved permissions and rules.
+- Payment recording.
+- Cash payments.
+- Card payments.
+- Mixed payments where supported by the approved workflow.
+- Sale references and receipts.
+- Customer association where applicable.
+- Customer credit sales where authorized.
+- Searchable sales history.
+
+### 9.3 Sale Records
+
+Each completed sale must preserve the relevant historical information, including:
+
+- Store.
+- Responsible employee.
+- Sale timestamp.
+- Items sold.
+- Quantities.
+- Applied prices and discounts.
+- Payment allocations.
+- Relevant customer.
+- Device references where applicable.
+- Related inventory movements.
+- Related debt and cashbox records.
+
+Historical sales must not depend on the current product price or current product description to reconstruct the original transaction.
+
+### 9.4 Transaction Integrity
+
+A completed sale must update its related records consistently.
+
+Depending on the transaction, this may include:
+
+- Sale and sale items.
+- Inventory movements.
+- Device status.
+- Payment records.
+- Customer debt.
+- Cashbox movements.
+- Audit events.
+
+Related changes must be atomic where required by the business transaction.
+
+The system must prevent duplicate sales caused by repeated submissions and must validate current stock and device availability at completion time.
+
+### 9.5 Sales History
+
+Authorized employees must be able to find and inspect relevant sales records.
+
+The owner must be able to review sales across both stores.
+
+Historical records must be protected against unauthorized modification or deletion.
+
+### 9.6 Returns, Refunds, and Corrections
+
+The system must eventually support the approved workflows for returns, refunds, voids, and corrections.
+
+The exact rules remain an explicit business decision until approved.
+
+Cursor must not invent refund eligibility, restocking rules, financial adjustments, or device-status transitions.
+
+These workflows must preserve the original sale and create traceable corrective records.
+
+---
+
+## 10. Customers and Customer Debts
+
+### 10.1 Customer Management
+
+The system must support customer records and associate them with relevant sales and payments.
+
+Only necessary customer information should be collected and made available to authorized users.
+
+### 10.2 Customer Debt Tracking
+
+The system must support sales in which customers owe all or part of the amount due, subject to approved permissions and business rules.
+
+It must track:
+
+- Original obligations.
+- Outstanding balances.
+- Customer payments.
+- Payment dates and references.
+- Relevant sales.
+- Approved adjustments.
+- Debt history.
+
+### 10.3 Debt Integrity
+
+Customer balances must reconcile with sales, payments, and approved adjustments.
+
+Recording a customer debt payment must not create a new sale.
+
+The system must prevent duplicate payment recording and preserve traceable relationships between payments and outstanding obligations.
+
+Payment allocation rules for customers with multiple debts must be documented before implementing the affected workflow.
+
+---
+
+## 11. Cashbox Management
+
+### 11.1 One Cashbox per Store
+
+Each store must have one logical cashbox.
+
+The cashbox represents the store's cash-management record and must not be duplicated for individual employees.
+
+Employee activity must instead be attributed through user records and cashbox sessions.
+
+### 11.2 Cashbox Sessions
+
+The system must support opening and closing cashbox sessions.
+
+Each session must record:
+
+- Store.
+- Responsible employee.
+- Opening timestamp.
+- Opening cash balance.
+- Closing timestamp.
+- Expected closing cash.
+- Actual counted cash.
+- Cash difference.
+- Relevant notes.
+- Approved corrections where applicable.
+
+The exact session rules, including whether multiple employees can operate under one open session, must be documented before implementation.
+
+### 11.3 Employee Accountability
+
+Every relevant operation must identify the employee who performed it.
+
+The system must preserve the distinction between:
+
+- The store's cashbox.
+- The cashbox session.
+- The employee performing the operation.
+- The business transaction associated with the operation.
+
+The system must not attribute every transaction to the employee who opened the cashbox merely because that employee owns the session.
+
+### 11.4 Cashbox Movements
+
+Relevant cash movements may include:
+
+- Cash received from sales.
+- Cash received from customer debt payments.
+- Cash paid for approved expenses.
+- Cash paid to suppliers.
+- Approved cash withdrawals or additions.
+- Other explicitly authorized movements.
+
+Each movement must reference its reason and related transaction where applicable.
+
+Cash movements must not be confused with accounting profit or total business revenue.
+
+Card payments must remain distinguishable from physical cash movements.
+
+### 11.5 Reconciliation
+
+The owner and authorized employees must be able to compare expected and actual cash balances.
+
+Discrepancies must remain visible and auditable.
+
+Corrections must follow approved procedures rather than silently replacing historical values.
+
+---
+
+## 12. Expense Management
+
+The system must provide an expense-management section for recording store expenses and other approved business costs.
+
+Expense records should support:
+
+- Store.
+- Expense category.
+- Amount.
+- Date.
+- Payment method.
+- Responsible employee.
+- Description.
+- Supporting reference where applicable.
+- Related supplier or device when relevant.
+
+The system must distinguish general operating expenses from costs attributable to individual devices or inventory.
+
+Expense classification and its effect on inventory valuation, device profitability, and financial reporting must follow approved business rules.
+
+An expense record must not automatically create an inventory movement or change a device's cost basis without an explicitly defined rule.
+
+---
+
+## 13. Revenue and Financial Reporting
+
+The system must provide reliable records and reports for sales, payments, expenses, debts, and related financial activity.
+
+It must distinguish between:
+
+- Sales revenue.
+- Cash received.
+- Card payments.
+- Customer debt collections.
+- Supplier payments.
+- Inventory acquisition costs.
+- Operating expenses.
+- Device-related costs.
+- Refunds and adjustments.
+- Realized profit.
+
+These concepts must not be treated as interchangeable.
+
+Revenue and profit reports must use documented calculation rules and traceable underlying records.
+
+The exact accounting treatment, tax handling, reporting conventions, and other unresolved financial rules must be approved before implementing the affected calculations.
+
+The owner must be able to investigate the underlying transactions that contribute to important financial totals.
+
+---
+
+## 14. Store Network
+
+### 14.1 Purpose
+
+Store Network is an internal product-discovery, reservation, and coordination feature connecting Karman Telekom's two stores.
+
+It allows employees at one store to discover eligible products and individually tracked devices that the other store has explicitly made available for sharing.
+
+Its purpose is to help employees serve customers using inventory available across both stores.
+
+Store Network is not a second inventory, a second product catalog, or an independent source of stock quantities.
+
+It operates on the existing product, inventory, and device records.
+
+### 14.2 Phase 1 Scope
+
+Store Network is included in Phase 1.
+
+However, its implementation depends on the successful establishment of:
+
+1. Store-level authorization and isolation.
+2. The product catalog.
+3. Reliable inventory records and movements.
+4. Individually tracked device records.
+5. Device availability and lifecycle rules.
+6. Concurrency-safe reservation handling.
+7. Audit records.
+
+The feature must not be implemented as a standalone listing system disconnected from these foundations.
+
+### 14.3 Publishing Listings
+
+Authorized employees may publish eligible products or individual devices to Store Network.
+
+Listings may expose:
+
+- Product name and model.
+- Relevant specifications.
+- Device condition.
+- Available images.
+- Asking price.
+- Owning store.
+- Current availability status.
+
+The system must not expose restricted internal information such as acquisition cost, repair expenses, internal profit, or customer information unless explicitly authorized by an approved business rule.
+
+A listing must reference the original product or device record.
+
+Publishing or viewing a listing must not duplicate inventory, change the owning store, or independently modify stock quantities.
+
+### 14.4 Search and Discovery
+
+Authorized employees must be able to search and filter shared listings using relevant attributes, such as:
+
+- Product name and model.
+- Category and brand.
+- Price range.
+- Device condition.
+- Relevant specifications.
+- Owning store.
+- Availability status.
+
+Listings must not be presented as currently available without checking their underlying inventory or device state.
+
+### 14.5 Reservation Requests and Approval
+
+An employee at one store must be able to request a temporary reservation for an eligible item owned by the other store.
+
+The owning store must explicitly approve or reject the request through an authorized employee.
+
+Submitting a request alone does not reserve the item.
+
+The system must record:
+
+- Item or device reference.
+- Requesting store.
+- Requesting employee.
+- Owning store.
+- Request timestamp.
+- Approval decision.
+- Approving employee.
+- Reservation status.
+- Expiration timestamp when applicable.
+- Relevant notes.
+
+### 14.6 Reservation Expiration
+
+Approved reservations must expire automatically according to a configurable duration.
+
+The owner must be able to configure the default reservation duration.
+
+The exact default duration remains to be decided.
+
+Expiration must be enforced on the server and must not depend on a browser remaining open or an employee manually refreshing a page.
+
+An expired reservation must be treated as inactive even if a background job has not yet updated its displayed status.
+
+After expiration, the item may become available for another request, provided no other valid business condition prevents it.
+
+### 14.7 Reservation and Inventory Integrity
+
+The system must prevent conflicting reservations and sales of the same individually tracked device.
+
+Reservation approval and sale completion must revalidate the current item state and protect against concurrent operations.
+
+The implementation must handle situations in which:
+
+- Two employees request the same device.
+- Two reservation approvals occur concurrently.
+- A device is sold while a reservation request is pending.
+- A device is transferred while a reservation is active.
+- A reservation expires while another operation is being processed.
+
+The system must not leave the item in an inconsistent state if one of these operations fails.
+
+### 14.8 Fulfillment and Store Coordination
+
+Store Network must preserve the distinction between:
+
+- The owning store.
+- The requesting store.
+- The store currently holding the item.
+- The employee who requested the reservation.
+- The employee who approved the reservation.
+- The store and employee responsible for completing the sale.
+
+Possible fulfillment arrangements include collection from the owning store or an authorized transfer to the requesting store.
+
+A reservation does not itself transfer ownership, move stock, or complete a sale.
+
+Actual transfers and sales must use their corresponding business workflows and create the appropriate inventory and financial records.
+
+### 14.9 Cross-Store Financial Rules
+
+The system must record enough information to identify the stores and employees involved in a cross-store transaction.
+
+However, the rules for sales attribution, internal store settlement, profit allocation, and employee incentives are not yet finalized.
+
+Cursor must not invent these rules.
+
+The affected financial workflows must remain incomplete until the owner approves the relevant business rules.
+
+### 14.10 Auditability
+
+Important Store Network events must be traceable, including:
+
+- Listing publication.
+- Listing changes and removal.
+- Reservation requests.
+- Approval or rejection.
+- Cancellation.
+- Expiration.
+- Related transfers.
+- Related sales.
+
+Each event must identify the relevant user, store, item, timestamp, and associated transaction where applicable.
+
+---
+
+## 15. Dashboard and Reporting
+
+### 15.1 Owner Dashboard
+
+The owner must have a consolidated dashboard covering both stores.
+
+It should provide access to important operational and financial indicators, including:
+
+- Sales.
+- Inventory.
+- Low-stock information.
+- Used-device status and costs.
+- Customer debts.
+- Supplier debts.
+- Expenses.
+- Cashbox balances and discrepancies.
+- Relevant profitability indicators.
+- Store Network activity.
+
+### 15.2 Store-Level Views
+
+Authorized employees must be able to access the operational information required for their store and role.
+
+Store-specific views must not disclose restricted information from the other store.
+
+### 15.3 Reporting Integrity
+
+Reports must derive from authoritative business records.
+
+The system must not calculate profit by treating every incoming payment as revenue or every outgoing payment as an expense.
+
+Reports must respect the approved financial classification and costing rules.
+
+Consolidated totals must reconcile with the applicable underlying store records.
+
+---
+
+## 16. Audit Trail and Historical Integrity
+
+The system must provide traceability for significant business actions.
+
+Relevant events include:
+
+- Product and inventory changes.
+- Purchase and receiving operations.
+- Device registration and lifecycle changes.
+- Repair and cost records.
+- Sales and payment operations.
+- Customer and supplier debt transactions.
+- Cashbox sessions and movements.
+- Expense records.
+- Inventory transfers.
+- Store Network listings and reservations.
+- Financial corrections and approved adjustments.
+- Changes to sensitive permissions.
+
+Audit records must identify the responsible user, timestamp, affected record, and relevant transaction.
+
+Sensitive operations must not be made unauditable merely because the initiating employee has elevated permissions.
+
+The implementation must distinguish between ordinary editable operational data and historical financial or inventory records that require controlled corrections.
+
+---
+
+## 17. Data Integrity and Security Requirements
+
+### 17.1 Atomic Operations
+
+Related database changes must be performed atomically where required by the business transaction.
+
+A failed sale, stock receipt, payment, or reservation approval must not leave partially committed business records.
+
+### 17.2 Idempotency and Duplicate Prevention
+
+Operations that can be submitted repeatedly must be protected against duplicate effects.
+
+Examples include:
+
+- Completing a sale.
+- Receiving a purchase.
+- Recording a payment.
+- Approving a reservation.
+- Completing an inventory transfer.
+
+### 17.3 Concurrency
+
+Operations involving limited stock, individually tracked devices, active reservations, and financial balances must be safe under concurrent requests.
+
+Application-level checks alone are insufficient when database constraints, transactions, or locking are required to prevent conflicting operations.
+
+### 17.4 Authorization
+
+Access to records and business actions must be authorized on the server.
+
+The system must validate both the user's permissions and the relevant store or record scope.
+
+### 17.5 Financial Precision
+
+Money calculations must use appropriate fixed-precision representations rather than binary floating-point arithmetic.
+
+The application's currency, monetary precision, rounding conventions, and supported payment rules must be documented before financial workflows are finalized.
+
+### 17.6 Testing
+
+Automated tests must cover business rules, authorization, financial calculations, inventory movements, duplicate submissions, concurrency-sensitive workflows, and failure cases.
+
+A successful page render is not sufficient evidence that a business operation is correct.
+
+---
+
+## 18. Decisions That Remain Open
+
+The following decisions have intentionally not been finalized.
+
+Cursor must not silently choose business rules for these areas.
+
+### 18.1 Financial and Costing Decisions
+
+- Exact currency and monetary precision rules.
+- Rounding conventions.
+- Treatment of taxes.
+- Allocation of freight and additional purchase costs.
+- Detailed weighted-average costing calculations.
+- Treatment of supplier returns and purchase corrections.
+- Which device-related expenses become part of inventory cost.
+- Final device-level profit formula.
+- Customer payment allocation across multiple debts.
+- Supplier payment allocation and adjustments.
+- Refund, exchange, return, and void rules.
+- Discount limits and approval requirements.
+- Financial reporting and accounting conventions.
+
+### 18.2 Cashbox Decisions
+
+- Whether multiple employees can operate under one open session.
+- Session handover procedures.
+- Rules for cash additions, withdrawals, and corrections.
+- Approval requirements for cashbox discrepancies.
+
+### 18.3 Inventory and Device Decisions
+
+- Exact identifier validation rules.
+- Treatment of duplicate or incorrect IMEIs.
+- Final device lifecycle states and transitions.
+- Store transfer approval and receiving rules.
+- Negative-stock policy for quantity-tracked products.
+- Detailed treatment of returned or defective devices.
+
+### 18.4 Store Network Decisions
+
+- Default reservation duration.
+- Which product categories are eligible for sharing.
+- Whether listing publication requires additional approval.
+- Detailed reservation cancellation and extension rules.
+- Exact fulfillment and transfer workflow.
+- Sales attribution when one store finds the customer and the other owns the device.
+- Internal settlement or profit allocation between stores.
+- Employee incentives or referral commissions.
+
+### 18.5 General Rule for Unresolved Decisions
+
+Before implementing a workflow affected by an unresolved decision, Cursor must:
+
+1. Identify the missing decision.
+2. Explain why it affects the implementation.
+3. Present the relevant options and their consequences.
+4. Request the owner's approval.
+5. Document the approved decision before completing the affected workflow.
+
+Cursor may continue implementing unrelated work that does not depend on the unresolved decision.
+
+Cursor must not invent financial formulas, reservation policies, permissions, or transaction semantics merely to make a feature appear complete.
+
+---
+
+## 19. Phase 1 Dependencies and Implementation Priorities
+
+All listed capabilities belong to the initial system scope, but they must be implemented in a dependency-aware sequence.
+
+### Priority 1 — Secure Foundations
+
+- Authentication.
+- Stores and employee assignments.
+- Roles and permissions.
+- Server-side store isolation.
+- Audit conventions.
+
+### Priority 2 — Product and Inventory Foundations
+
+- Product catalog.
+- Categories and brands.
+- Suppliers.
+- Store-specific inventory.
+- Inventory movement history.
+- Identifier and tracking rules.
+
+### Priority 3 — Purchasing and Cost Foundations
+
+- Purchase records.
+- Supplier obligations and payments.
+- Inventory receiving.
+- Weighted-average costing foundations.
+- Individual device acquisition and cost records.
+
+### Priority 4 — Device Lifecycle and Repair Management
+
+- Individual device records.
+- IMEI and serial-number validation.
+- Device status and location.
+- Repair history.
+- Separate device cost components.
+- Approved device cost calculation.
+
+### Priority 5 — Sales and Financial Operations
+
+- POS.
+- Sales history.
+- Payment recording.
+- Customer debts.
+- Cashbox sessions and movements.
+- Expenses.
+- Returns and corrections according to approved rules.
+
+### Priority 6 — Store Network
+
+- Shared listings.
+- Cross-store discovery.
+- Reservation requests.
+- Owner-approved reservations.
+- Automatic expiration.
+- Concurrency protection.
+- Transfer and sale integration.
+
+Store Network must not introduce an independent inventory or device-identity system.
+
+### Priority 7 — Consolidated Management and Reporting
+
+- Owner dashboard.
+- Store-level reports.
+- Inventory reporting.
+- Debt reporting.
+- Cashbox reconciliation.
+- Device profitability reporting.
+- Store Network activity reporting.
+
+### Priority 8 — Production Readiness
+
+- End-to-end verification.
+- Security review.
+- Financial and inventory reconciliation.
+- Backup and recovery testing.
+- Deployment procedures.
+- Employee acceptance testing.
+
+The exact task breakdown and execution sequence must be documented in `IMPLEMENTATION_PLAN.md`.
+
+---
+
+## 20. Acceptance Criteria for Phase 1
+
+Phase 1 is considered complete when the owner can reliably manage both stores and the approved daily workflows satisfy the following conditions.
+
+### Inventory
+
+- Each store has accurate, separately scoped inventory.
+- Product definitions can be reused without duplicating physical stock.
+- Inventory changes are traceable.
+- Individual devices have distinct identities and histories.
+
+### Purchasing and Supplier Debts
+
+- Purchases and stock receipts are traceable.
+- Supplier obligations and payments are recorded accurately.
+- Outstanding supplier balances reconcile with their underlying transactions.
+
+### Used Devices
+
+- Each tracked device has an individual record.
+- Acquisition and repair costs remain separately identifiable.
+- Device lifecycle and location are accurate.
+- Device profitability follows an approved calculation rule.
+
+### Sales and Customer Debts
+
+- Sales create consistent financial and inventory records.
+- Duplicate sales are prevented.
+- Payments are traceable.
+- Customer balances reconcile with sales, payments, and approved adjustments.
+
+### Cashbox and Expenses
+
+- Each store has one logical cashbox.
+- Cashbox sessions identify their responsible employees.
+- Relevant transactions identify the employees who performed them.
+- Cash movements remain distinguishable from card payments.
+- Discrepancies are visible and auditable.
+
+### Store Network
+
+- Employees can discover eligible products shared by the other store.
+- Listings reference existing inventory and device records.
+- The owning store controls reservation approval.
+- Active reservations prevent conflicting operations.
+- Reservations expire automatically.
+- Transfers and sales preserve correct inventory and financial records.
+
+### Security and Auditability
+
+- Store isolation is enforced on the server.
+- Unauthorized operations are rejected.
+- Important actions are traceable.
+- Financial and inventory corrections preserve historical records.
+
+### Overall Reliability
+
+- Critical automated tests pass.
+- Failed operations do not leave inconsistent records.
+- Financial and inventory reports reconcile with authoritative transactions.
+- Both stores can complete their approved daily workflows.
+- Unresolved business rules are documented rather than silently assumed.
+
+---
+
+## 21. Final Principle
+
+Karman Telekom Systems Management must be designed around the integrity of the business, not merely around a collection of screens and features.
+
+The system must make it possible to determine:
+
+- What the business owns.
+- Where each item is located.
+- What each device cost.
+- What was repaired and how much it cost.
+- What was sold and for how much.
+- What customers owe.
+- What the business owes suppliers.
+- What cash was received or paid.
+- Which employee performed each important operation.
+- How each store contributes to the overall business.
+
+The initial implementation must remain focused on the two Karman Telekom stores while establishing reliable foundations for future expansion.
+
+No feature is considered complete merely because its interface exists. Its business rules, authorization, data integrity, failure handling, and relevant tests must also be verified.
