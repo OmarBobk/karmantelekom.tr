@@ -7,6 +7,7 @@ namespace App\Models;
 use Database\Factories\StoreFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 
 /**
  * An operational Karman Telekom store location.
@@ -29,4 +30,14 @@ class Store extends Model
         'phone',
         'address',
     ];
+
+    /**
+     * Users assigned to this store as employees.
+     *
+     * @return BelongsToMany<User, $this>
+     */
+    public function employees(): BelongsToMany
+    {
+        return $this->belongsToMany(User::class)->withTimestamps();
+    }
 }
