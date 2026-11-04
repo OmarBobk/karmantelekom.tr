@@ -58,6 +58,9 @@ class RolesAndPermissionsSeeder extends Seeder
             'customer_profile',
         ]);
 
+        // Employee: Internal store staff; store access comes from assignments, not permissions
+        Role::firstOrCreate(['name' => 'employee']);
+
         // Create Admin User
         $admin = User::factory()->create([
             'name' => 'Admin',

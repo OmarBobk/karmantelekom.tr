@@ -147,6 +147,19 @@ Establish the security and organizational foundations used by every subsequent f
 
 All store-access tests pass, and the authorization pattern is reusable across inventory, purchasing, POS, finance, and Store Network.
 
+### Approved Foundation Decisions
+
+- Operational stores are modeled as `Store` (`stores`), separate from the existing B2B customer `Shop` records.
+- Each store has a required, unique, stable `code`; names are required but not unique. Initial stores: `KT01` and `KT02`.
+- The existing `admin` role represents the owner. Store management, including employee assignment, requires both the `admin` role and the `manage_stores` permission.
+- Stores have no deletion or deactivation workflow yet.
+- Internal staff use the `employee` role, which carries no operational permissions by default.
+- An employee can be assigned to one or more stores (`store_user`). Only the owner manages assignments, and only users with the `employee` role can be assigned. Removing a membership remains possible after the user loses the role.
+- Assignment grants store membership only; it does not grant inventory, sales, financial, or management permissions.
+- The owner can access all stores without assignment.
+- Assignment changes are recorded in the activity log (`store_assignment`) with the actor, target user, and store, atomically with the membership change. No-op requests are not logged.
+- Existing `salesperson`, `shop_owner`, `customer`, and `Shop` behavior is unchanged. Spatie permission teams remain disabled.
+
 ---
 
 ## 6. Phase 2 — Product Catalog, Suppliers, and Inventory Foundations

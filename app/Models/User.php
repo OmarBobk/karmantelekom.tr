@@ -3,24 +3,27 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Jetstream\HasProfilePhoto;
 use Laravel\Sanctum\HasApiTokens;
 use Spatie\Permission\Traits\HasRoles;
-use Illuminate\Database\Eloquent\Relations\HasOne;
 
 class User extends Authenticatable
 {
     use HasApiTokens;
-    use HasRoles;
-
-    /** @use HasFactory<\Database\Factories\UserFactory> */
+    /** @use HasFactory<UserFactory> */
     use HasFactory;
+
     use HasProfilePhoto;
+
+    use HasRoles;
     use Notifiable;
     use TwoFactorAuthenticatable;
 
@@ -77,15 +80,13 @@ class User extends Authenticatable
 
     /**
      * Get all orders for the user.
-     * 
+     *
      * How to use:
      * $user = User::find(1);
      * $userOrders = $user->orders; // Returns collection of orders
      * foreach($user->orders as $order) {
      *     echo $order->id;
      * }
-     *
-     * @return HasMany
      */
     public function orders(): HasMany
     {
@@ -93,15 +94,23 @@ class User extends Authenticatable
     }
 
     /**
+     * Operational stores this user is assigned to as an employee.
+     *
+     * @return BelongsToMany<Store, $this>
+     */
+    public function stores(): BelongsToMany
+    {
+        return $this->belongsToMany(Store::class)->withTimestamps();
+    }
+
+    /**
      * Get the user's owned shop (for shop owners)
-     * 
+     *
      * How to use:
      * $user = User::find(1);
      * if($user->hasRole('shop_owner')) {
      *     $shop = $user->ownedShop; // Returns single shop
      * }
-     *
-     * @return HasOne
      */
     public function ownedShop(): HasOne
     {
@@ -110,14 +119,12 @@ class User extends Authenticatable
 
     /**
      * Get shops assigned to this user as a salesperson
-     * 
+     *
      * How to use:
      * $user = User::find(1);
      * if($user->hasRole('salesperson')) {
      *     $shops = $user->assignedShops; // Returns collection
      * }
-     *
-     * @return HasMany
      */
     public function assignedShops(): HasMany
     {
@@ -126,7 +133,7 @@ class User extends Authenticatable
 
     /**
      * Get all shops related to this user (owned + assigned)
-     * 
+     *
      * How to use:
      * $user = User::find(1);
      * $allShops = $user->allRelatedShops; // Returns collection
@@ -136,26 +143,24 @@ class User extends Authenticatable
     public function getAllRelatedShopsAttribute()
     {
         $shops = collect();
-        
+
         if ($this->ownedShop) {
             $shops->push($this->ownedShop);
         }
-        
+
         $shops = $shops->merge($this->assignedShops);
-        
+
         return $shops->unique('id');
     }
 
     /**
      * Check if user is a shop owner
-     * 
+     *
      * How to use:
      * $user = User::find(1);
      * if($user->isShopOwner()) {
      *     echo "User is a shop owner";
      * }
-     *
-     * @return bool
      */
     public function isShopOwner(): bool
     {
@@ -164,14 +169,12 @@ class User extends Authenticatable
 
     /**
      * Check if user is a salesperson
-     * 
+     *
      * How to use:
      * $user = User::find(1);
      * if($user->isSalesperson()) {
      *     echo "User is a salesperson";
      * }
-     *
-     * @return bool
      */
     public function isSalesperson(): bool
     {

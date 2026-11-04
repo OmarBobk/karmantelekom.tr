@@ -45,6 +45,14 @@ class StorePolicy
     }
 
     /**
+     * Determine whether the user can assign or remove employees for the store.
+     */
+    public function manageEmployees(User $user, Store $store): bool
+    {
+        return $this->canManageStores($user);
+    }
+
+    /**
      * Determine whether the user can delete the model.
      */
     public function delete(User $user, Store $store): bool
