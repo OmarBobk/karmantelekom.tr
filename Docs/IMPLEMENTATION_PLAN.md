@@ -160,6 +160,14 @@ All store-access tests pass, and the authorization pattern is reusable across in
 - Assignment changes are recorded in the activity log (`store_assignment`) with the actor, target user, and store, atomically with the membership change. No-op requests are not logged.
 - Existing `salesperson`, `shop_owner`, `customer`, and `Shop` behavior is unchanged. Spatie permission teams remain disabled.
 
+### Operational Store Access
+
+- Admins can access every store without membership. Employees can access only stores they are currently assigned to. Guests and users with any other role have no access, even with a leftover membership.
+- Roles and memberships are re-queried on every check, so removing a membership or the `employee` role takes effect on the next check.
+- Store access grants no management or operational permissions. Store management still requires the `admin` role and the `manage_stores` permission.
+- Use `Store::query()->accessibleTo($user)` to list or look up stores, and `$user->can('access', $store)` (`StorePolicy::access`) to authorize a single store. Never trust a submitted store ID without one of these checks.
+- No global scope or middleware applies these checks. Every future store-owned workflow (inventory, purchasing, POS, cashbox, expenses, reporting) must explicitly scope queries and authorize actions with them, and add its own tests.
+
 ---
 
 ## 6. Phase 2 — Product Catalog, Suppliers, and Inventory Foundations

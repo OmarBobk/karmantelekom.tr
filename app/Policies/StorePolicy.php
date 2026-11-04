@@ -45,6 +45,16 @@ class StorePolicy
     }
 
     /**
+     * Determine whether the user may operate in the store.
+     *
+     * Grants store membership-level access only, never management or operational permissions.
+     */
+    public function access(User $user, Store $store): bool
+    {
+        return $store->isAccessibleBy($user);
+    }
+
+    /**
      * Determine whether the user can assign or remove employees for the store.
      */
     public function manageEmployees(User $user, Store $store): bool
