@@ -4,8 +4,8 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use Illuminate\Database\Seeder;
-use Spatie\Permission\Models\Role;
 use Spatie\Permission\Models\Permission;
+use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 
 class RolesAndPermissionsSeeder extends Seeder
@@ -25,6 +25,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'customer_profile',
             'edit_orders',
             'delete_orders',
+            'manage_stores',
         ];
 
         // Create permissions
