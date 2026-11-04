@@ -21,11 +21,12 @@ class DeleteAccountTest extends TestCase
             $this->markTestSkipped('Account deletion is not enabled.');
         }
 
-        $this->actingAs($user = User::factory()->create());
+        $this->actingAs($user = User::factory()->create(['password' => 'password']));
 
         $component = Livewire::test(DeleteUserForm::class)
             ->set('password', 'password')
-            ->call('deleteUser');
+            ->call('deleteUser')
+            ->assertHasNoErrors();
 
         $this->assertNull($user->fresh());
     }
