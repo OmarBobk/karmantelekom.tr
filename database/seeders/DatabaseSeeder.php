@@ -18,10 +18,11 @@ class DatabaseSeeder extends Seeder
             ProductSeeder::class,
             ProductPriceSeeder::class,
             SectionSeeder::class,
-//            ShopSeeder::class,
-//            AddressSeeder::class,
+            //            ShopSeeder::class,
+            //            AddressSeeder::class,
             // SalespersonAssignmentSeeder::class, // Uncomment if you want to use it
             SettingSeeder::class,
+            StoreSeeder::class,
         ]);
     }
 }
