@@ -119,13 +119,16 @@
                                             <span class="text-xs text-gray-500">{{ $match->tracking_mode->label() }}</span>
                                             <span class="ms-auto flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
                                                 @foreach (['sku', 'barcode'] as $identifierField)
-                                                    @if ($match->{$identifierField})
+                                                    @php
+                                                        $identifier = $match->{$identifierField};
+                                                    @endphp
+                                                    @if ($identifier !== null && $identifier !== '')
                                                         @php
-                                                            $isExact = $searchIdentifier !== null && mb_strtolower($match->{$identifierField}) === mb_strtolower($searchIdentifier);
+                                                            $isExact = $searchIdentifier !== null && (string) $identifier === $searchIdentifier;
                                                         @endphp
                                                         <span @class(['rounded px-1.5 py-0.5', 'bg-amber-50 font-semibold text-amber-900 ring-1 ring-amber-200' => $isExact])>
                                                             {{ __('catalog.fields.'.$identifierField) }}
-                                                            <bdi dir="ltr" class="font-mono">{{ $match->{$identifierField} }}</bdi>
+                                                            <bdi dir="ltr" class="font-mono">{{ $identifier }}</bdi>
                                                             @if ($isExact)<span class="sr-only">({{ __('purchases.draft.exact_match') }})</span>@endif
                                                         </span>
                                                     @endif
