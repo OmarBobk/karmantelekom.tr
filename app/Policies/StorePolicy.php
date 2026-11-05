@@ -83,6 +83,30 @@ class StorePolicy
     }
 
     /**
+     * Determine whether the user can inspect used devices and open or close their repairs in this store.
+     */
+    public function serviceDevices(User $user, Store $store): bool
+    {
+        return $this->ownerHas($user, 'service_devices') && $store->isAccessibleBy($user);
+    }
+
+    /**
+     * Determine whether the user can see device cost amounts and record or correct device costs in this store.
+     */
+    public function manageDeviceCosts(User $user, Store $store): bool
+    {
+        return $this->ownerHas($user, 'manage_device_costs') && $store->isAccessibleBy($user);
+    }
+
+    /**
+     * Determine whether the user can correct a mistyped IMEI or serial number in this store.
+     */
+    public function correctUnitIdentity(User $user, Store $store): bool
+    {
+        return $this->ownerHas($user, 'correct_unit_identity') && $store->isAccessibleBy($user);
+    }
+
+    /**
      * Determine whether the user can assign or remove employees for the store.
      */
     public function manageEmployees(User $user, Store $store): bool

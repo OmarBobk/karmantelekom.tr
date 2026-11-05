@@ -12,6 +12,8 @@
         <p class="mt-1 text-sm text-gray-500">{{ __('inventory.store.subtitle') }}</p>
     </div>
 
+    <livewire:backend.inventory.device-lookup :store="$store" />
+
     <section aria-labelledby="stock-product-title" class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-200">
         <h2 id="stock-product-title" class="text-base font-semibold text-gray-900">{{ __('inventory.store.find_product_title') }}</h2>
         <p class="text-xs text-gray-500">{{ __('inventory.store.find_product_help') }}</p>

@@ -15,6 +15,10 @@ enum AdjustmentReason: string
     case DAMAGED = 'damaged';
     case LOST = 'lost';
     case PURCHASE = 'purchase';
+    case INSPECTION = 'inspection';
+    case REPAIR = 'repair';
+    case DEVICE_COST = 'device_cost';
+    case IDENTITY_CORRECTION = 'identity_correction';
 
     public function label(): string
     {

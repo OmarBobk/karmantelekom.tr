@@ -43,6 +43,9 @@ class OperationalStoreSetupSeeder extends Seeder
         'manage_purchases',
         'receive_purchases',
         'pay_suppliers',
+        'service_devices',
+        'manage_device_costs',
+        'correct_unit_identity',
     ];
 
     public function run(): void

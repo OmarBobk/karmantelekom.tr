@@ -197,6 +197,7 @@ class ProductInventory extends Component
 
         $movements = $this->store->inventoryMovements()
             ->where('product_definition_id', $definition->id)
+            ->where('quantity_change', '<>', 0)
             ->with(['actor:id,name', 'unit.identifiers', 'reference' => fn (MorphTo $reference) => $reference->morphWith([
                 PurchaseReceiptLine::class => ['receipt.purchase:id,supplier_invoice_number'],
             ])])
@@ -207,7 +208,7 @@ class ProductInventory extends Component
         $units = $tracksUnits
             ? $this->store->units()
                 ->where('product_definition_id', $definition->id)
-                ->when($this->unitStatusFilter !== 'all', fn ($query) => $query->where('status', UnitStatus::tryFrom($this->unitStatusFilter) ?? UnitStatus::AVAILABLE))
+                ->when($this->unitStatusFilter !== 'all', fn ($query) => $query->whereIn('status', $this->unitStatusesForFilter()))
                 ->with('identifiers')
                 ->latest('id')
                 ->paginate(25, pageName: 'units')
@@ -232,6 +233,18 @@ class ProductInventory extends Component
             'lastPurchase' => $canViewPurchases ? $this->lastPurchaseLine($definition) : null,
             ...$this->localeViewData(),
         ])->title($definition->name.' — '.$this->store->code);
+    }
+
+    /**
+     * @return list<UnitStatus>
+     */
+    private function unitStatusesForFilter(): array
+    {
+        return match ($this->unitStatusFilter) {
+            'in_service' => [UnitStatus::INSPECTION, UnitStatus::IN_REPAIR],
+            'removed' => [UnitStatus::REMOVED],
+            default => [UnitStatus::AVAILABLE],
+        };
     }
 
     /**

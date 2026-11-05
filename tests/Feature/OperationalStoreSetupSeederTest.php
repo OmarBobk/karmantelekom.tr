@@ -56,7 +56,7 @@ class OperationalStoreSetupSeederTest extends TestCase
         app(PermissionRegistrar::class)->forgetCachedPermissions();
         $admin = Role::findByName('admin');
         $this->assertEqualsCanonicalizing(
-            ['manage_users', 'manage_stores', 'manage_catalog', 'manage_suppliers', 'view_inventory', 'adjust_inventory', 'manage_purchases', 'receive_purchases', 'pay_suppliers'],
+            ['manage_users', 'manage_stores', 'manage_catalog', 'manage_suppliers', 'view_inventory', 'adjust_inventory', 'manage_purchases', 'receive_purchases', 'pay_suppliers', 'service_devices', 'manage_device_costs', 'correct_unit_identity'],
             $admin->permissions->pluck('name')->all(),
         );
         $this->assertTrue(Role::findByName('salesperson')->permissions->isEmpty());

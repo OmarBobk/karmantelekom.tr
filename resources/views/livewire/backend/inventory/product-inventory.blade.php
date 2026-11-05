@@ -178,7 +178,7 @@
                     <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-4 py-3">
                         <h2 id="units-title" class="text-base font-semibold text-gray-900">{{ __('inventory.units.title') }}</h2>
                         <div class="flex gap-1 rounded-lg bg-gray-100 p-1 text-sm" role="radiogroup" aria-label="{{ __('inventory.units.filter') }}">
-                            @foreach (['available', 'removed', 'all'] as $filter)
+                            @foreach ($product->tracking_mode === \App\Enums\TrackingMode::USED_DEVICE ? ['available', 'in_service', 'removed', 'all'] : ['available', 'removed', 'all'] as $filter)
                                 <label @class(['flex min-h-11 cursor-pointer items-center rounded-md px-3', 'bg-white font-medium text-gray-900 shadow-sm' => $unitStatusFilter === $filter, 'text-gray-600' => $unitStatusFilter !== $filter])>
                                     <input type="radio" wire:model.live="unitStatusFilter" value="{{ $filter }}" class="sr-only">
                                     {{ __("inventory.units.filters.{$filter}") }}
@@ -195,7 +195,7 @@
                                     <a href="{{ route('subdomain.inventory.unit', [$store, $unit]) }}" class="flex min-h-11 flex-wrap items-center gap-x-4 gap-y-1 px-4 py-3 hover:bg-gray-50">
                                         <span dir="ltr" class="font-mono text-sm font-medium text-gray-900">{{ $unit->primaryIdentifierValue() }}</span>
                                         <span class="rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">{{ $unit->condition->label() }}</span>
-                                        <span @class(['ms-auto rounded-full px-2.5 py-0.5 text-xs font-medium', 'bg-green-50 text-green-700' => $unit->status === \App\Enums\UnitStatus::AVAILABLE, 'bg-gray-100 text-gray-600' => $unit->status !== \App\Enums\UnitStatus::AVAILABLE])>{{ $unit->status->label() }}</span>
+                                        <span class="ms-auto rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset {{ $unit->status->badgeClasses() }}">{{ $unit->status->label() }}</span>
                                     </a>
                                 </li>
                             @endforeach

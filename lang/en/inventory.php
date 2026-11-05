@@ -7,6 +7,8 @@ return [
 
     'unit_statuses' => [
         'available' => 'Available',
+        'inspection' => 'Awaiting inspection',
+        'in_repair' => 'In repair',
         'removed' => 'Removed',
     ],
 
@@ -23,6 +25,13 @@ return [
         'adjustment_increase' => 'Increase',
         'adjustment_decrease' => 'Decrease',
         'purchase_receipt' => 'Purchase receipt',
+        'inspection' => 'Inspection',
+        'repair_started' => 'Repair started',
+        'repair_completed' => 'Repair completed',
+        'repair_cancelled' => 'Repair cancelled',
+        'device_cost_recorded' => 'Cost recorded',
+        'device_cost_reversed' => 'Cost corrected',
+        'identifier_corrected' => 'Identifier corrected',
     ],
 
     'reasons' => [
@@ -32,6 +41,10 @@ return [
         'damaged' => 'Damaged',
         'lost' => 'Lost',
         'purchase' => 'Purchase receipt',
+        'inspection' => 'Inspection',
+        'repair' => 'Repair',
+        'device_cost' => 'Device cost',
+        'identity_correction' => 'Identity correction',
     ],
 
     'identifier_types' => [
@@ -142,6 +155,7 @@ return [
         'filter' => 'Filter units by status',
         'filters' => [
             'available' => 'Available',
+            'in_service' => 'Inspection & repair',
             'removed' => 'Removed',
             'all' => 'All',
         ],

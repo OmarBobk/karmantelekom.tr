@@ -7,6 +7,8 @@ return [
 
     'unit_statuses' => [
         'available' => 'متاح',
+        'inspection' => 'بانتظار الفحص',
+        'in_repair' => 'قيد الصيانة',
         'removed' => 'مُزال',
     ],
 
@@ -23,6 +25,13 @@ return [
         'adjustment_increase' => 'زيادة',
         'adjustment_decrease' => 'نقص',
         'purchase_receipt' => 'استلام مشتريات',
+        'inspection' => 'فحص',
+        'repair_started' => 'بدء صيانة',
+        'repair_completed' => 'إكمال صيانة',
+        'repair_cancelled' => 'إلغاء صيانة',
+        'device_cost_recorded' => 'تسجيل تكلفة',
+        'device_cost_reversed' => 'تصحيح تكلفة',
+        'identifier_corrected' => 'تصحيح معرّف',
     ],
 
     'reasons' => [
@@ -32,6 +41,10 @@ return [
         'damaged' => 'تالف',
         'lost' => 'مفقود',
         'purchase' => 'استلام مشتريات',
+        'inspection' => 'فحص',
+        'repair' => 'صيانة',
+        'device_cost' => 'تكلفة جهاز',
+        'identity_correction' => 'تصحيح معرّف',
     ],
 
     'identifier_types' => [
@@ -142,6 +155,7 @@ return [
         'filter' => 'تصفية الوحدات حسب الحالة',
         'filters' => [
             'available' => 'المتاحة',
+            'in_service' => 'الفحص والصيانة',
             'removed' => 'المُزالة',
             'all' => 'الكل',
         ],

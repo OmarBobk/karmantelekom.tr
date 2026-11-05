@@ -497,6 +497,101 @@ The implementation must not assume that every recorded expense automatically bec
 
 The owner must approve the relevant cost-allocation rules before implementation.
 
+### Implemented Device Lifecycle Scope
+
+- **Records.** Phase 4 extends the existing records instead of adding a separate device table:
+  - Units (`inventory_units`) gain a `lifecycle_revision`.
+  - Identifier slots (`inventory_unit_identifiers`) gain an exact-lookup index.
+  - Movements (`inventory_movements`) record lifecycle events.
+  - New append-only tables hold the detail: `device_inspections`, `device_repairs`, `device_cost_entries`, and `inventory_unit_identifier_corrections`.
+- **Statuses.** A unit is `available`, `inspection`, `in_repair`, or `removed`:
+  - Only `available` counts as available stock.
+  - `removed` is final.
+  - Phase 2 registration and Phase 3 receipts still create `available` units.
+- **Transitions.** These apply only to store-owned used devices:
+
+  | Action | From | To |
+  | --- | --- | --- |
+  | Inspect: ready | available, inspection | available |
+  | Inspect: needs repair | available, inspection | inspection |
+  | Start repair | inspection | in_repair |
+  | Complete repair | in_repair | inspection |
+  | Cancel repair | in_repair | inspection |
+  | Remove | available, inspection | removed |
+
+  - A device graded `for_parts` cannot be marked ready.
+  - Removal is blocked while a repair is open.
+  - An external repair can only be closed after confirming that the device is physically back.
+  - Each device has at most one open repair (a generated unique scope).
+- **Events.** Each action writes exactly one movement through `InventoryLedger`, using the same idempotency key, fingerprint replay, and lock order (definition, unit, then repair, cost, or identifier rows):
+  - Inspection, repair, cost, and identifier events have zero quantity.
+  - A database `CHECK` restricts zero-quantity rows to those unit event types.
+  - The product page's stock history lists only movements that change quantity.
+  - The unit page timeline lists everything, paginated on the server.
+- **Stale forms.** Every lifecycle or condition change increments `lifecycle_revision`:
+  - Forms submit the status and revision they were opened with, and both are checked under the unit lock, so a device that left and returned to the same status is still detected.
+  - A stale form writes nothing, explains the change, adopts the current state, and keeps the operator's input.
+  - A replay with the same key returns the original result before this check.
+- **Costs.** Parts, labor, additional acquisition, and other costs are separate entries:
+  - Amounts are exact `DECIMAL(15,2)` values in TRY or USD, and each currency is totalled separately.
+  - An unknown amount (`NULL`) is distinct from a recorded `0.00`.
+  - Entries are never edited. A correction reverses the original and records an optional replacement in one movement.
+  - Recording a part cost does not consume stock.
+  - Invoice acquisition prices are unchanged, and units without a purchase receipt show their acquisition cost as unknown.
+  - Declared acquisition costs, recognized cost basis, and realized profit are deferred to the sales phase.
+- **Identity correction.** A typo is fixed in the existing identifier slot under lock:
+  - A reason is required, and the before and after values are kept in `inventory_unit_identifier_corrections`.
+  - The old value is released.
+  - A value held by any other unit is rejected, including removed units and secondary IMEIs.
+- **Lookup.** Exact IMEI or serial search runs across the user's stores, or within one store from the store page:
+  - Both IMEI slots are searched.
+  - Serials keep leading zeros and case.
+  - Pasted IMEIs may contain spaces, hyphens, or Arabic digits.
+  - One current match opens the device page. Several current matches are listed so the operator can choose.
+  - A value that was corrected away is shown only as a historical match, which must be opened explicitly.
+- **Deferred.** Transfers, customer and supplier returns, and sale-time costing are deferred.
+
+### Phase 4 Access
+
+- Screens: `/operations/inventory/{store}/units/{unit}` (device page), plus the lookup on `/operations/inventory` and `/operations/inventory/{store}`.
+- Every action is owner-only (`admin` role) and requires store access plus:
+  - `service_devices` to inspect, start, complete, or cancel repairs;
+  - `manage_device_costs` to record or correct costs, and to see any cost amount, cost entry, or cost event;
+  - `correct_unit_identity` to correct identifiers;
+  - `adjust_inventory` to remove a unit, as before.
+- Completing a repair without cost access is allowed; the repair then shows "costing pending".
+- The invoice link keeps the Phase 3 purchase permissions. The acquisition amount on device screens also needs `manage_device_costs`.
+- `OperationalStoreSetupSeeder` grants the three new permissions to the existing `admin` role only.
+
+### Phase 4 Setup on an Existing Database
+
+Applied only to the local development database (`dev.store`) and the isolated test database. Before running on a target server, review and deploy the code and take a fresh database backup. The Phase 1 to Phase 3 migrations and setup must already be applied.
+
+1. Run `php artisan migrate:status`. All Phase 3 migrations (`2026_11_05_122656` to `2026_11_05_122703`) must show `Ran`, and these seven must be pending. All are additive. The second one replaces the movement quantity `CHECK` constraint with a wider one that still accepts every existing row.
+
+   - `2026_11_05_180922_add_lifecycle_revision_to_inventory_units_table`
+   - `2026_11_05_180923_allow_unit_events_in_inventory_movements_table`
+   - `2026_11_05_180924_add_lookup_index_to_inventory_unit_identifiers_table`
+   - `2026_11_05_180925_create_device_inspections_table`
+   - `2026_11_05_180926_create_device_repairs_table`
+   - `2026_11_05_180927_create_device_cost_entries_table`
+   - `2026_11_05_180928_create_inventory_unit_identifier_corrections_table`
+
+2. Preview, then apply only these migrations:
+
+   ```bash
+   php artisan migrate --pretend --path=database/migrations/2026_11_05_180922_add_lifecycle_revision_to_inventory_units_table.php --path=database/migrations/2026_11_05_180923_allow_unit_events_in_inventory_movements_table.php --path=database/migrations/2026_11_05_180924_add_lookup_index_to_inventory_unit_identifiers_table.php --path=database/migrations/2026_11_05_180925_create_device_inspections_table.php --path=database/migrations/2026_11_05_180926_create_device_repairs_table.php --path=database/migrations/2026_11_05_180927_create_device_cost_entries_table.php --path=database/migrations/2026_11_05_180928_create_inventory_unit_identifier_corrections_table.php
+   php artisan migrate --force --path=database/migrations/2026_11_05_180922_add_lifecycle_revision_to_inventory_units_table.php --path=database/migrations/2026_11_05_180923_allow_unit_events_in_inventory_movements_table.php --path=database/migrations/2026_11_05_180924_add_lookup_index_to_inventory_unit_identifiers_table.php --path=database/migrations/2026_11_05_180925_create_device_inspections_table.php --path=database/migrations/2026_11_05_180926_create_device_repairs_table.php --path=database/migrations/2026_11_05_180927_create_device_cost_entries_table.php --path=database/migrations/2026_11_05_180928_create_inventory_unit_identifier_corrections_table.php
+   ```
+
+3. Grant the new owner permissions with the targeted seeder (safe to rerun; it creates no users). Do not run `RolesAndPermissionsSeeder` or general seeders.
+
+   ```bash
+   php artisan db:seed --class=OperationalStoreSetupSeeder --force
+   ```
+
+Existing units keep their status and start at revision 0. The migrations were verified on MariaDB 10.4, including rolling back all seven and re-applying them.
+
 ### Acceptance Criteria
 
 - Two devices of the same model have separate records.

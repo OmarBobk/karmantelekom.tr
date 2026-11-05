@@ -11,12 +11,17 @@ declare(strict_types=1);
 
 use App\Actions\Catalog\SaveProductDefinition;
 use App\Actions\Inventory\AdjustQuantity;
+use App\Actions\Inventory\CorrectUnitIdentifier;
 use App\Actions\Inventory\RecordOpeningBalance;
 use App\Actions\Inventory\RegisterUnit;
+use App\Actions\Inventory\StartRepair;
 use App\Enums\AdjustmentReason;
 use App\Enums\MovementType;
+use App\Enums\RepairerType;
 use App\Enums\UnitCondition;
+use App\Enums\UnitStatus;
 use App\Exceptions\Inventory\IdempotencyConflictException;
+use App\Exceptions\Inventory\StaleUnitStateException;
 use App\Models\InventoryMovement;
 use App\Models\ProductDefinition;
 use App\Models\Store;
@@ -56,6 +61,13 @@ try {
         'register' => $movementResult(app(RegisterUnit::class)(
             $actor, $store, $definition, UnitCondition::B, $payload['imei'], null, null, null, $payload['key'],
         )),
+        'start_repair' => $movementResult(app(StartRepair::class)(
+            $actor, $store, $payload['unit_id'], UnitStatus::from($payload['expected_status']), $payload['expected_revision'],
+            RepairerType::EXTERNAL, $payload['repairer'], 'Concurrent repair', $payload['key'],
+        )),
+        'correct_identifier' => $movementResult(app(CorrectUnitIdentifier::class)(
+            $actor, $store, $payload['unit_id'], $payload['identifier_id'], $payload['expected_value'], $payload['new_value'], 'Concurrent correction', $payload['key'],
+        )),
         'change_tracking_mode' => (function () use ($actor, $definition, $payload): array {
             app(SaveProductDefinition::class)($actor, $definition, ['name' => $definition->name, 'tracking_mode' => $payload['tracking_mode']]);
 
@@ -66,6 +78,8 @@ try {
     $result = ['status' => 'validation', 'errors' => array_keys($exception->errors())];
 } catch (IdempotencyConflictException) {
     $result = ['status' => 'conflict'];
+} catch (StaleUnitStateException $exception) {
+    $result = ['status' => 'stale', 'current_status' => $exception->currentStatus->value];
 }
 
 echo json_encode($result, JSON_THROW_ON_ERROR);
