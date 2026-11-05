@@ -1,0 +1,107 @@
+<div dir="rtl" lang="ar" class="mx-auto max-w-5xl space-y-6 text-start">
+    <div>
+        <a href="{{ route('subdomain.stores') }}" class="inline-flex items-center gap-1 text-sm font-medium text-blue-600 hover:text-blue-800">
+            <svg class="h-4 w-4 rotate-180" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
+                <path fill-rule="evenodd" d="M12.79 5.23a.75.75 0 0 1-.02 1.06L8.832 10l3.938 3.71a.75.75 0 1 1-1.04 1.08l-4.5-4.25a.75.75 0 0 1 0-1.08l4.5-4.25a.75.75 0 0 1 1.06.02Z" clip-rule="evenodd" />
+            </svg>
+            {{ __('stores.actions.back') }}
+        </a>
+        <div class="mt-3 flex flex-wrap items-center gap-3">
+            <h1 class="text-2xl font-bold text-gray-900">{{ $store->name }}</h1>
+            <span dir="ltr" class="rounded-md bg-gray-100 px-2 py-1 font-mono text-sm text-gray-700">{{ $store->code }}</span>
+        </div>
+        <dl class="mt-2 flex flex-wrap gap-x-6 gap-y-1 text-sm text-gray-600">
+            <div class="flex gap-1">
+                <dt class="text-gray-500">{{ __('stores.fields.phone') }}:</dt>
+                <dd dir="ltr">{{ $store->phone ?: __('stores.form.not_provided') }}</dd>
+            </div>
+            <div class="flex gap-1">
+                <dt class="text-gray-500">{{ __('stores.fields.address') }}:</dt>
+                <dd>{{ $store->address ?: __('stores.form.not_provided') }}</dd>
+            </div>
+        </dl>
+    </div>
+
+    <section class="rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-200" aria-labelledby="assign-employee-title">
+        <h2 id="assign-employee-title" class="text-base font-semibold text-gray-900">{{ __('stores.employees.assign_title') }}</h2>
+
+        @if ($availableEmployees->isEmpty())
+            <p class="mt-2 text-sm text-gray-500">{{ __('stores.empty.no_available_employees') }}</p>
+        @else
+            <form wire:submit="assign" class="mt-3 flex flex-col gap-3 sm:flex-row sm:items-start">
+                <div class="flex-1">
+                    <label for="employee-select" class="sr-only">{{ __('stores.fields.employee') }}</label>
+                    <select id="employee-select" wire:model="selectedEmployeeId" @error('selectedEmployeeId') aria-invalid="true" @enderror class="block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        <option value="">{{ __('stores.employees.select_placeholder') }}</option>
+                        @foreach ($availableEmployees as $candidate)
+                            <option value="{{ $candidate->id }}">{{ $candidate->name }} — {{ $candidate->email }}</option>
+                        @endforeach
+                    </select>
+                    @error('selectedEmployeeId') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                </div>
+                <button type="submit" wire:loading.attr="disabled" wire:target="assign" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60">
+                    <span wire:loading.remove wire:target="assign">{{ __('stores.actions.assign') }}</span>
+                    <span wire:loading wire:target="assign">{{ __('stores.actions.assigning') }}</span>
+                </button>
+            </form>
+        @endif
+    </section>
+
+    <section class="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-200" aria-labelledby="assigned-employees-title">
+        <div class="flex items-center justify-between border-b border-gray-200 px-5 py-4">
+            <h2 id="assigned-employees-title" class="text-base font-semibold text-gray-900">{{ __('stores.employees.title') }}</h2>
+            <span class="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-sm font-medium text-blue-700">{{ $employees->count() }}</span>
+        </div>
+
+        @if ($employees->isEmpty())
+            <div class="px-6 py-10 text-center">
+                <svg class="mx-auto h-10 w-10 text-gray-400" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" aria-hidden="true">
+                    <path stroke-linecap="round" stroke-linejoin="round" d="M18 18.72a9.094 9.094 0 0 0 3.741-.479 3 3 0 0 0-4.682-2.72m.94 3.198.001.031c0 .225-.012.447-.037.666A11.944 11.944 0 0 1 12 21c-2.17 0-4.207-.576-5.963-1.584A6.062 6.062 0 0 1 6 18.719m12 0a5.971 5.971 0 0 0-.941-3.197m0 0A5.995 5.995 0 0 0 12 12.75a5.995 5.995 0 0 0-5.058 2.772m0 0a3 3 0 0 0-4.681 2.72 8.986 8.986 0 0 0 3.74.477m.94-3.197a5.971 5.971 0 0 0-.94 3.197M15 6.75a3 3 0 1 1-6 0 3 3 0 0 1 6 0Zm6 3a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Zm-13.5 0a2.25 2.25 0 1 1-4.5 0 2.25 2.25 0 0 1 4.5 0Z" />
+                </svg>
+                <h3 class="mt-3 text-sm font-semibold text-gray-900">{{ __('stores.empty.employees_title') }}</h3>
+                <p class="mt-1 text-sm text-gray-500">{{ __('stores.empty.employees_body') }}</p>
+            </div>
+        @else
+            <ul class="divide-y divide-gray-100">
+                @foreach ($employees as $employee)
+                    <li wire:key="employee-{{ $employee->id }}" class="flex flex-col gap-3 px-5 py-4 sm:flex-row sm:items-center sm:justify-between">
+                        <div class="min-w-0">
+                            <p class="font-medium text-gray-900">{{ $employee->name }}</p>
+                            <p dir="ltr" class="truncate text-end text-sm text-gray-500 sm:text-start">{{ $employee->email }}</p>
+                            <p class="mt-1 flex flex-wrap items-center gap-1 text-xs text-gray-500">
+                                <span>{{ __('stores.employees.other_stores') }}:</span>
+                                @forelse ($employee->stores as $otherStore)
+                                    <span dir="ltr" class="rounded bg-gray-100 px-1.5 py-0.5 font-mono text-gray-700">{{ $otherStore->code }}</span>
+                                @empty
+                                    <span>{{ __('stores.employees.none') }}</span>
+                                @endforelse
+                            </p>
+                        </div>
+                        <button type="button" wire:click="confirmRemoval({{ $employee->id }})" class="self-start rounded-lg border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 sm:self-center">
+                            {{ __('stores.actions.remove') }}
+                        </button>
+                    </li>
+                @endforeach
+            </ul>
+        @endif
+    </section>
+
+    @if ($employeeToRemove)
+        <div class="fixed inset-0 z-50 overflow-y-auto" role="alertdialog" aria-modal="true" aria-labelledby="remove-employee-title" aria-describedby="remove-employee-body">
+            <div class="fixed inset-0 bg-gray-900/50" wire:click="cancelRemoval"></div>
+            <div class="relative flex min-h-full items-center justify-center p-4">
+                <div dir="rtl" class="relative w-full max-w-md rounded-xl bg-white p-6 text-start shadow-xl">
+                    <h2 id="remove-employee-title" class="text-lg font-semibold text-gray-900">{{ __('stores.remove.title') }}</h2>
+                    <div id="remove-employee-body" class="mt-3 space-y-2 text-sm text-gray-600">
+                        <p>{{ __('stores.remove.body', ['name' => $employeeToRemove->name, 'store' => $store->name]) }}</p>
+                        <p class="rounded-lg bg-blue-50 p-3 text-blue-800">{{ __('stores.remove.account_note') }}</p>
+                    </div>
+                    <div class="mt-6 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                        <button type="button" wire:click="cancelRemoval" class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">{{ __('stores.actions.cancel') }}</button>
+                        <button type="button" wire:click="remove" wire:loading.attr="disabled" wire:target="remove" class="rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-60">{{ __('stores.actions.confirm_remove') }}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    @endif
+</div>
