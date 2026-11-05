@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\IdentifierType;
+use App\Enums\RepairStatus;
 use App\Enums\UnitCondition;
 use App\Enums\UnitStatus;
 use Illuminate\Database\Eloquent\Model;
@@ -23,6 +24,7 @@ use Illuminate\Support\Carbon;
  * @property int $product_definition_id
  * @property UnitStatus $status
  * @property UnitCondition $condition
+ * @property int $lifecycle_revision
  * @property Carbon|null $removed_at
  */
 class InventoryUnit extends Model
@@ -30,7 +32,7 @@ class InventoryUnit extends Model
     /**
      * @var list<string>
      */
-    protected $fillable = ['store_id', 'product_definition_id', 'status', 'condition', 'removed_at'];
+    protected $fillable = ['store_id', 'product_definition_id', 'status', 'condition', 'lifecycle_revision', 'removed_at'];
 
     /**
      * @return array<string, string>
@@ -40,6 +42,7 @@ class InventoryUnit extends Model
         return [
             'status' => UnitStatus::class,
             'condition' => UnitCondition::class,
+            'lifecycle_revision' => 'integer',
             'removed_at' => 'datetime',
         ];
     }
@@ -84,6 +87,46 @@ class InventoryUnit extends Model
     public function acquisition(): HasOne
     {
         return $this->hasOne(PurchaseReceiptUnit::class);
+    }
+
+    /**
+     * @return HasMany<DeviceInspection, $this>
+     */
+    public function inspections(): HasMany
+    {
+        return $this->hasMany(DeviceInspection::class);
+    }
+
+    /**
+     * @return HasMany<DeviceRepair, $this>
+     */
+    public function repairs(): HasMany
+    {
+        return $this->hasMany(DeviceRepair::class);
+    }
+
+    /**
+     * @return HasOne<DeviceRepair, $this>
+     */
+    public function openRepair(): HasOne
+    {
+        return $this->hasOne(DeviceRepair::class)->where('status', RepairStatus::OPEN);
+    }
+
+    /**
+     * @return HasMany<DeviceCostEntry, $this>
+     */
+    public function costEntries(): HasMany
+    {
+        return $this->hasMany(DeviceCostEntry::class);
+    }
+
+    /**
+     * @return HasMany<InventoryUnitIdentifierCorrection, $this>
+     */
+    public function identifierCorrections(): HasMany
+    {
+        return $this->hasMany(InventoryUnitIdentifierCorrection::class);
     }
 
     public function primaryIdentifierValue(): ?string

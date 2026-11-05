@@ -8,6 +8,7 @@ use App\Enums\AdjustmentReason;
 use App\Enums\MovementType;
 use App\Enums\UnitStatus;
 use App\Exceptions\Inventory\IdempotencyConflictException;
+use App\Exceptions\Inventory\StaleUnitStateException;
 use App\Models\InventoryMovement;
 use App\Models\ProductDefinition;
 use App\Models\Store;
@@ -22,11 +23,16 @@ class RemoveUnit
     public function __construct(private readonly InventoryLedger $ledger) {}
 
     /**
-     * Remove an available unit from stock. The unit and its identifiers are kept.
+     * Remove an available unit, or a used device held in inspection, from stock. The unit and
+     * its identifiers are kept. A unit with an open repair cannot be removed.
+     *
+     * A form opened on the unit page passes the revision it saw, so a stale form is rejected
+     * even when the device has since returned to the same status.
      *
      * @throws AuthorizationException
      * @throws ModelNotFoundException when the unit does not belong to the store.
      * @throws ValidationException
+     * @throws StaleUnitStateException
      * @throws IdempotencyConflictException
      */
     public function __invoke(
@@ -36,6 +42,7 @@ class RemoveUnit
         AdjustmentReason $reason,
         ?string $note,
         string $idempotencyKey,
+        ?int $expectedRevision = null,
     ): InventoryMovement {
         Gate::forUser($actor)->authorize('adjustInventory', $store);
 
@@ -47,6 +54,12 @@ class RemoveUnit
 
         $unit = $store->units()->whereKey($unitId)->firstOrFail();
 
+        $payload = ['reason' => $reason->value, 'note' => $note];
+
+        if ($expectedRevision !== null) {
+            $payload['expected_revision'] = $expectedRevision;
+        }
+
         return $this->ledger->record(
             $actor,
             $store,
@@ -54,15 +67,24 @@ class RemoveUnit
             'remove_unit',
             $unit->id,
             $idempotencyKey,
-            ['reason' => $reason->value, 'note' => $note],
-            function (ProductDefinition $locked) use ($store, $unitId, $reason, $note): array {
+            $payload,
+            function (ProductDefinition $locked) use ($store, $unitId, $reason, $note, $expectedRevision): array {
                 $unit = $store->units()->whereKey($unitId)->lockForUpdate()->firstOrFail();
 
-                if ($unit->status !== UnitStatus::AVAILABLE) {
+                if ($expectedRevision !== null && $unit->lifecycle_revision !== $expectedRevision) {
+                    throw new StaleUnitStateException($unit->status, $unit->lifecycle_revision);
+                }
+
+                if ($unit->status === UnitStatus::IN_REPAIR) {
+                    throw ValidationException::withMessages(['reason' => __('devices.errors.remove_during_repair')]);
+                }
+
+                if (! $unit->status->allowsRemoval()) {
                     throw ValidationException::withMessages(['reason' => __('inventory.errors.unit_not_available')]);
                 }
 
-                $unit->update(['status' => UnitStatus::REMOVED, 'removed_at' => now()]);
+                $statusBefore = $unit->status;
+                UnitLifecycle::advance($unit, ['status' => UnitStatus::REMOVED, 'removed_at' => now()]);
 
                 return [
                     'type' => MovementType::ADJUSTMENT_DECREASE,
@@ -70,7 +92,7 @@ class RemoveUnit
                     'note' => $note,
                     'inventory_unit_id' => $unit->id,
                     'quantity_change' => -1,
-                    'unit_status_before' => UnitStatus::AVAILABLE,
+                    'unit_status_before' => $statusBefore,
                     'unit_status_after' => UnitStatus::REMOVED,
                 ];
             },

@@ -22,9 +22,9 @@ use LogicException;
 /**
  * Writes every stock change together with its append-only movement.
  *
- * Lock order: product definition rows first (ascending id), then balance or unit rows.
- * Tracking-mode edits take the same definition lock, so mode and history checks made
- * inside the mutation cannot race them.
+ * Lock order: product definition rows first (ascending id), then balance or unit rows,
+ * then a unit's open repair, cost entry, or identifier rows. Tracking-mode edits take the
+ * same definition lock, so mode and history checks made inside the mutation cannot race them.
  */
 class InventoryLedger
 {
@@ -37,8 +37,12 @@ class InventoryLedger
      * type, reason, and change attributes. An identical retry by the same actor
      * returns the original movement without running the mutation again.
      *
+     * Detail rows that must reference the movement (inspections, repairs, costs, identifier
+     * corrections) are written by $afterMovement inside the same transaction.
+     *
      * @param  array<string, mixed>  $payload  Normalized request values that identify the submission.
      * @param  Closure(ProductDefinition): array<string, mixed>  $mutation
+     * @param  (Closure(InventoryMovement): void)|null  $afterMovement
      *
      * @throws IdempotencyConflictException
      * @throws UniqueConstraintViolationException when a non-key unique constraint is violated.
@@ -52,6 +56,7 @@ class InventoryLedger
         string $idempotencyKey,
         array $payload,
         Closure $mutation,
+        ?Closure $afterMovement = null,
     ): InventoryMovement {
         $key = Idempotency::key($idempotencyKey);
 
@@ -64,7 +69,7 @@ class InventoryLedger
         ]);
 
         try {
-            return DB::transaction(function () use ($actor, $store, $productDefinitionId, $key, $fingerprint, $mutation): InventoryMovement {
+            return DB::transaction(function () use ($actor, $store, $productDefinitionId, $key, $fingerprint, $mutation, $afterMovement): InventoryMovement {
                 $definition = ProductDefinition::query()
                     ->whereKey($productDefinitionId)
                     ->lockForUpdate()
@@ -76,7 +81,13 @@ class InventoryLedger
                     return $this->replay($existing, $actor, $fingerprint);
                 }
 
-                return $this->apply($actor, $store, $definition, $key, $fingerprint, $mutation($definition));
+                $movement = $this->apply($actor, $store, $definition, $key, $fingerprint, $mutation($definition));
+
+                if ($afterMovement !== null) {
+                    $afterMovement($movement);
+                }
+
+                return $movement;
             });
         } catch (UniqueConstraintViolationException $exception) {
             // The losing transaction has rolled back; resolve against the committed winner.

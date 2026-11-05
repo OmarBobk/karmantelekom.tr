@@ -10,6 +10,8 @@
             <p class="mt-1 text-sm text-gray-500">{{ __('inventory.stores.empty_body') }}</p>
         </div>
     @else
+        <livewire:backend.inventory.device-lookup />
+
         <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
             @foreach ($stores as $store)
                 <li wire:key="inventory-store-{{ $store->id }}">

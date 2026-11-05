@@ -9,6 +9,8 @@ use App\Enums\MovementType;
 use App\Enums\UnitStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Carbon;
 use LogicException;
@@ -120,5 +122,55 @@ class InventoryMovement extends Model
     public function reference(): MorphTo
     {
         return $this->morphTo();
+    }
+
+    /**
+     * @return HasOne<DeviceInspection, $this>
+     */
+    public function inspection(): HasOne
+    {
+        return $this->hasOne(DeviceInspection::class);
+    }
+
+    /**
+     * @return HasOne<DeviceRepair, $this>
+     */
+    public function startedRepair(): HasOne
+    {
+        return $this->hasOne(DeviceRepair::class, 'started_movement_id');
+    }
+
+    /**
+     * @return HasOne<DeviceRepair, $this>
+     */
+    public function closedRepair(): HasOne
+    {
+        return $this->hasOne(DeviceRepair::class, 'closed_movement_id');
+    }
+
+    /**
+     * Costs recorded by this movement (a cost entry, a replacement, or costs entered on repair completion).
+     *
+     * @return HasMany<DeviceCostEntry, $this>
+     */
+    public function costEntries(): HasMany
+    {
+        return $this->hasMany(DeviceCostEntry::class);
+    }
+
+    /**
+     * @return HasMany<DeviceCostEntry, $this>
+     */
+    public function reversedCostEntries(): HasMany
+    {
+        return $this->hasMany(DeviceCostEntry::class, 'reversal_movement_id');
+    }
+
+    /**
+     * @return HasOne<InventoryUnitIdentifierCorrection, $this>
+     */
+    public function identifierCorrection(): HasOne
+    {
+        return $this->hasOne(InventoryUnitIdentifierCorrection::class);
     }
 }

@@ -4,11 +4,19 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Actions\Inventory\RecordInspection;
 use App\Actions\Inventory\RecordOpeningBalance;
+use App\Actions\Inventory\RegisterUnit;
+use App\Enums\InspectionOutcome;
 use App\Enums\TrackingMode;
+use App\Enums\UnitCondition;
+use App\Enums\UnitStatus;
+use App\Models\DeviceRepair;
 use App\Models\InventoryBalance;
 use App\Models\InventoryMovement;
 use App\Models\InventoryUnit;
+use App\Models\InventoryUnitIdentifier;
+use App\Models\InventoryUnitIdentifierCorrection;
 use App\Models\ProductDefinition;
 use App\Models\Store;
 use App\Models\User;
@@ -162,6 +170,82 @@ class InventoryConcurrencyTest extends TestCase
             $winner->quantity_after,
             (int) InventoryBalance::query()->where('product_definition_id', $winner->product_definition_id)->value('quantity'),
         );
+    }
+
+    #[Test]
+    public function two_operators_starting_a_repair_on_one_device_open_exactly_one_repair(): void
+    {
+        $phone = ProductDefinition::factory()->create(['tracking_mode' => TrackingMode::USED_DEVICE]);
+        $unit = $this->deviceAwaitingInspection($phone, self::imei('35693803564380'));
+        $request = [
+            'operation' => 'start_repair',
+            'store_id' => $this->storeOne->id,
+            'definition_id' => $phone->id,
+            'unit_id' => $unit->id,
+            'expected_status' => UnitStatus::INSPECTION->value,
+            'expected_revision' => $unit->lifecycle_revision,
+        ];
+
+        $results = $this->raceWhileLocked([$phone], [
+            [...$request, 'repairer' => 'Shop A', 'key' => 'repair-a'],
+            [...$request, 'repairer' => 'Shop B', 'key' => 'repair-b'],
+        ]);
+
+        $this->assertEqualsCanonicalizing(['ok', 'stale'], array_column($results, 'status'));
+        $this->assertSame(1, DeviceRepair::query()->where('inventory_unit_id', $unit->id)->count());
+        $this->assertSame(UnitStatus::IN_REPAIR, $unit->fresh()->status);
+        $this->assertSame($unit->lifecycle_revision + 1, $unit->fresh()->lifecycle_revision);
+        $this->assertSame(1, InventoryMovement::query()->where('type', 'repair_started')->count());
+    }
+
+    #[Test]
+    public function two_devices_corrected_to_one_imei_concurrently_keep_it_unique(): void
+    {
+        $phoneA = ProductDefinition::factory()->create(['tracking_mode' => TrackingMode::USED_DEVICE]);
+        $phoneB = ProductDefinition::factory()->create(['tracking_mode' => TrackingMode::USED_DEVICE]);
+        $unitA = $this->deviceAwaitingInspection($phoneA, self::imei('35693803564380'));
+        $unitB = $this->deviceAwaitingInspection($phoneB, self::imei('35693803564381'), $this->storeTwo);
+        $target = self::imei('35693803564382');
+
+        // Different definitions take different locks, so only the identifier constraint can serialize them.
+        $results = $this->raceWhileLocked([$phoneA, $phoneB], [
+            $this->correctionRequest($unitA, $this->storeOne, $target, 'fix-a'),
+            $this->correctionRequest($unitB, $this->storeTwo, $target, 'fix-b'),
+        ]);
+
+        $this->assertEqualsCanonicalizing(['ok', 'validation'], array_column($results, 'status'));
+        $this->assertSame(1, InventoryUnitIdentifier::query()->where('value', $target)->count());
+        $this->assertSame(1, InventoryUnitIdentifierCorrection::count());
+        $this->assertSame(1, InventoryMovement::query()->where('type', 'identifier_corrected')->count());
+    }
+
+    private function deviceAwaitingInspection(ProductDefinition $phone, string $imei, ?Store $store = null): InventoryUnit
+    {
+        $store ??= $this->storeOne;
+        app(RegisterUnit::class)($this->owner, $store, $phone, UnitCondition::B, $imei, null, null, null, 'reg-'.$imei);
+        $unit = InventoryUnit::query()->whereHas('identifiers', fn ($query) => $query->where('value', $imei))->sole();
+        app(RecordInspection::class)($this->owner, $store, $unit->id, UnitStatus::AVAILABLE, 0, InspectionOutcome::NEEDS_REPAIR, null, 'Screen flicker', 'inspect-'.$imei);
+
+        return $unit->fresh();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function correctionRequest(InventoryUnit $unit, Store $store, string $newValue, string $key): array
+    {
+        $identifier = $unit->identifiers()->sole();
+
+        return [
+            'operation' => 'correct_identifier',
+            'store_id' => $store->id,
+            'definition_id' => $unit->product_definition_id,
+            'unit_id' => $unit->id,
+            'identifier_id' => $identifier->id,
+            'expected_value' => $identifier->value,
+            'new_value' => $newValue,
+            'key' => $key,
+        ];
     }
 
     /**

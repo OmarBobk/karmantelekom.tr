@@ -5,7 +5,11 @@ declare(strict_types=1);
 namespace App\Enums;
 
 /**
- * Kinds of inventory movement supported before sales exist.
+ * Kinds of inventory movement.
+ *
+ * Stock movements change a quantity. Unit events record a used device's inspection,
+ * repair, cost, or identity history with a zero quantity; the database only accepts
+ * a zero quantity for these types.
  */
 enum MovementType: string
 {
@@ -13,6 +17,13 @@ enum MovementType: string
     case ADJUSTMENT_INCREASE = 'adjustment_increase';
     case ADJUSTMENT_DECREASE = 'adjustment_decrease';
     case PURCHASE_RECEIPT = 'purchase_receipt';
+    case INSPECTION = 'inspection';
+    case REPAIR_STARTED = 'repair_started';
+    case REPAIR_COMPLETED = 'repair_completed';
+    case REPAIR_CANCELLED = 'repair_cancelled';
+    case DEVICE_COST_RECORDED = 'device_cost_recorded';
+    case DEVICE_COST_REVERSED = 'device_cost_reversed';
+    case IDENTIFIER_CORRECTED = 'identifier_corrected';
 
     /**
      * Reasons that may accompany this movement type.
@@ -26,6 +37,10 @@ enum MovementType: string
             self::ADJUSTMENT_INCREASE => [AdjustmentReason::COUNT_CORRECTION, AdjustmentReason::FOUND],
             self::ADJUSTMENT_DECREASE => [AdjustmentReason::COUNT_CORRECTION, AdjustmentReason::DAMAGED, AdjustmentReason::LOST],
             self::PURCHASE_RECEIPT => [AdjustmentReason::PURCHASE],
+            self::INSPECTION => [AdjustmentReason::INSPECTION],
+            self::REPAIR_STARTED, self::REPAIR_COMPLETED, self::REPAIR_CANCELLED => [AdjustmentReason::REPAIR],
+            self::DEVICE_COST_RECORDED, self::DEVICE_COST_REVERSED => [AdjustmentReason::DEVICE_COST],
+            self::IDENTIFIER_CORRECTED => [AdjustmentReason::IDENTITY_CORRECTION],
         };
     }
 
@@ -37,6 +52,38 @@ enum MovementType: string
     public function requiresNote(): bool
     {
         return $this === self::ADJUSTMENT_DECREASE;
+    }
+
+    /**
+     * Zero-quantity events that never change stock.
+     */
+    public function isUnitEvent(): bool
+    {
+        return in_array($this, self::unitEvents(), true);
+    }
+
+    /**
+     * @return list<self>
+     */
+    public static function unitEvents(): array
+    {
+        return [
+            self::INSPECTION,
+            self::REPAIR_STARTED,
+            self::REPAIR_COMPLETED,
+            self::REPAIR_CANCELLED,
+            self::DEVICE_COST_RECORDED,
+            self::DEVICE_COST_REVERSED,
+            self::IDENTIFIER_CORRECTED,
+        ];
+    }
+
+    /**
+     * @return list<self>
+     */
+    public static function costEvents(): array
+    {
+        return [self::DEVICE_COST_RECORDED, self::DEVICE_COST_REVERSED];
     }
 
     public function label(): string
