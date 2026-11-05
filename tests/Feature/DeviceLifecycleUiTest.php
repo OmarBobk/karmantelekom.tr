@@ -4,16 +4,20 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Actions\Inventory\CloseRepair;
 use App\Actions\Inventory\DeviceCostInput;
 use App\Actions\Inventory\RecordDeviceCost;
 use App\Enums\InspectionOutcome;
+use App\Enums\RepairerType;
 use App\Enums\RepairStatus;
 use App\Enums\TrackingMode;
 use App\Enums\UnitStatus;
 use App\Livewire\Backend\Inventory\ProductInventory;
 use App\Livewire\Backend\Inventory\UnitDetail;
 use App\Models\DeviceCostEntry;
+use App\Models\DeviceInspection;
 use App\Models\DeviceRepair;
+use App\Models\InventoryMovement;
 use App\Models\InventoryUnit;
 use App\Models\ProductDefinition;
 use App\Models\Store;
@@ -136,7 +140,7 @@ class DeviceLifecycleUiTest extends TestCase
     }
 
     #[Test]
-    public function a_form_submitted_after_another_operator_changed_the_device_keeps_its_input_and_adopts_the_new_state(): void
+    public function a_stale_form_keeps_its_input_and_stays_bound_to_the_old_state_until_the_operator_continues(): void
     {
         $this->useEnglishLocale();
         $unit = $this->deviceNeedingRepair($this->owner, $this->store, $this->usedPhone, self::imei('35693803564380'));
@@ -150,17 +154,120 @@ class DeviceLifecycleUiTest extends TestCase
         $this->startDeviceRepair($this->owner, $unit);
         $this->closeDeviceRepair($this->owner, $unit, RepairStatus::CANCELLED);
 
-        $page->call('recordInspection')
-            ->assertHasErrors('inspectionOutcome')
-            ->assertSet('inspectionFindings', 'Looks fine now')
-            ->assertSet('inspectionCondition', 'a')
-            ->assertSet('expectedRevision', 3)
-            ->assertNotDispatched('close-dialog')
-            ->assertSee(['This device changed', 'Nothing was saved']);
+        foreach ([1, 2] as $attempt) {
+            $page->call('recordInspection')
+                ->assertHasErrors('inspectionOutcome')
+                ->assertSet('inspectionFindings', 'Looks fine now')
+                ->assertSet('inspectionCondition', 'a')
+                ->assertSet('expectedRevision', 1)
+                ->assertNotDispatched('close-dialog')
+                ->assertSee(['This device changed', 'Nothing was saved', 'Continue with current state']);
+        }
 
         $this->assertSame(UnitStatus::INSPECTION, $unit->fresh()->status);
+        $this->assertSame(1, DeviceInspection::count());
+
+        $page->call('refreshState')
+            ->assertSet('expectedRevision', 3)
+            ->assertSet('inspectionFindings', 'Looks fine now')
+            ->assertDontSee('This form was opened for an earlier state of the device');
 
         $page->call('recordInspection')->assertHasNoErrors()->assertSet('expectedStatus', 'available');
+    }
+
+    #[Test]
+    public function an_old_repair_completion_form_cannot_close_a_newer_repair_or_attach_costs_to_it(): void
+    {
+        $this->useEnglishLocale();
+        $unit = $this->deviceNeedingRepair($this->owner, $this->store, $this->usedPhone, self::imei('35693803564380'));
+        $this->startDeviceRepair($this->owner, $unit, RepairerType::EXTERNAL, 'First Shop');
+        $firstRepair = DeviceRepair::query()->sole();
+
+        $page = Livewire::actingAs($this->owner)
+            ->test(UnitDetail::class, ['store' => $this->store, 'unit' => $unit->fresh()])
+            ->set('completionWork', 'Replaced screen')
+            ->set('completionReturned', true)
+            ->set('partsMode', 'known')
+            ->set('partsAmount', '100')
+            ->set('partsCurrency', 'TRY')
+            ->set('partsDescription', 'Screen');
+
+        $this->closeDeviceRepair($this->owner, $unit);
+        $this->startDeviceRepair($this->owner, $unit, RepairerType::EXTERNAL, 'Second Shop');
+        $secondRepair = DeviceRepair::query()->whereKeyNot($firstRepair->id)->sole();
+
+        foreach ([1, 2] as $attempt) {
+            $page->call('completeRepair')
+                ->assertHasErrors('completionWork')
+                ->assertNotDispatched('close-dialog')
+                ->assertSet('expectedRevision', 2)
+                ->assertSet('completionWork', 'Replaced screen')
+                ->assertSet('partsAmount', '100')
+                ->assertSee(['This form was opened for an earlier state of the device', 'Current open repair: #'.$secondRepair->id, 'Second Shop']);
+        }
+
+        $this->assertSame(RepairStatus::OPEN, $secondRepair->fresh()->status);
+        $this->assertSame(UnitStatus::IN_REPAIR, $unit->fresh()->status);
+        $this->assertSame(4, $unit->fresh()->lifecycle_revision);
+        $this->assertSame(0, DeviceCostEntry::count());
+
+        $page->call('refreshState')
+            ->assertSet('expectedRevision', 4)
+            ->assertSet('completionReturned', false)
+            ->assertSet('completionWork', 'Replaced screen')
+            ->assertSet('partsAmount', '100')
+            ->call('completeRepair')
+            ->assertHasErrors('completionReturned');
+
+        $this->assertSame(RepairStatus::OPEN, $secondRepair->fresh()->status);
+
+        $page->set('completionReturned', true)
+            ->call('completeRepair')
+            ->assertHasNoErrors()
+            ->assertDispatched('close-dialog', id: 'complete-repair');
+
+        $this->assertSame(RepairStatus::COMPLETED, $secondRepair->fresh()->status);
+        $this->assertSame($secondRepair->id, DeviceCostEntry::query()->sole()->device_repair_id);
+    }
+
+    #[Test]
+    public function a_completion_whose_response_was_lost_is_replayed_instead_of_repeated(): void
+    {
+        $this->useEnglishLocale();
+        $unit = $this->deviceNeedingRepair($this->owner, $this->store, $this->usedPhone, self::imei('35693803564380'));
+        $this->startDeviceRepair($this->owner, $unit);
+
+        $page = Livewire::actingAs($this->owner)
+            ->test(UnitDetail::class, ['store' => $this->store, 'unit' => $unit->fresh()])
+            ->set('completionWork', 'Replaced screen')
+            ->set('completionReturned', true)
+            ->set('partsMode', 'known')
+            ->set('partsAmount', '100')
+            ->set('partsCurrency', 'TRY')
+            ->set('partsDescription', 'Screen');
+
+        app(CloseRepair::class)(
+            $this->owner,
+            $this->store,
+            $unit->id,
+            UnitStatus::IN_REPAIR,
+            2,
+            RepairStatus::COMPLETED,
+            'Replaced screen',
+            true,
+            [DeviceCostInput::fromInput('repair_parts', 'Screen', '100', 'TRY', false, 'parts_')],
+            $page->get('submissionKey'),
+        );
+
+        $page->call('completeRepair')
+            ->assertHasNoErrors()
+            ->assertDispatched('close-dialog', id: 'complete-repair')
+            ->assertDispatched('notify', fn (string $event, array $params): bool => ($params[0]['type'] ?? null) === 'info')
+            ->assertSet('expectedStatus', 'inspection');
+
+        $this->assertSame(RepairStatus::COMPLETED, DeviceRepair::query()->sole()->status);
+        $this->assertSame(1, DeviceCostEntry::count());
+        $this->assertSame(1, InventoryMovement::query()->where('type', 'repair_completed')->count());
     }
 
     #[Test]

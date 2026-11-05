@@ -530,8 +530,9 @@ The owner must approve the relevant cost-allocation rules before implementation.
   - The unit page timeline lists everything, paginated on the server.
 - **Stale forms.** Every lifecycle or condition change increments `lifecycle_revision`:
   - Forms submit the status and revision they were opened with, and both are checked under the unit lock, so a device that left and returned to the same status is still detected.
-  - A stale form writes nothing, explains the change, adopts the current state, and keeps the operator's input.
-  - A replay with the same key returns the original result before this check.
+  - A stale form writes nothing and keeps the operator's input. It stays bound to the old state, so resubmitting it is rejected again and can never act on a newer repair.
+  - The form shows the device's current status and open repair. The operator must choose "Continue with current state" (or reload the page) to adopt the new revision. Doing so clears the physical-return confirmations, which must be confirmed again for the current repair.
+  - A replay with the same key returns the original result before this check, so a successful submission whose response was lost is not repeated.
 - **Costs.** Parts, labor, additional acquisition, and other costs are separate entries:
   - Amounts are exact `DECIMAL(15,2)` values in TRY or USD, and each currency is totalled separately.
   - An unknown amount (`NULL`) is distinct from a recorded `0.00`.
@@ -591,6 +592,50 @@ Applied only to the local development database (`dev.store`) and the isolated te
    ```
 
 Existing units keep their status and start at revision 0. The migrations were verified on MariaDB 10.4, including rolling back all seven and re-applying them.
+
+### Phase 4 Rollback
+
+Rollback is supported only while no device lifecycle data has been recorded. Once any lifecycle history exists, fix forward with a new migration instead of rolling back.
+
+- **The guard.** Every Phase 4 `down()` first calls `DeviceLifecycleRollbackGuard` and refuses before any DDL runs, so no table, column, index, or constraint is dropped. Recorded data means any of:
+  - rows in the four history tables;
+  - unit event movements;
+  - units in `inspection` or `in_repair`;
+  - units with `lifecycle_revision` above 0.
+- **Covered commands.** The guard covers every path that calls `down()`:
+  - batch rollback (`migrate:rollback`, with or without `--batch`);
+  - `--step`;
+  - targeted `--path` rollbacks of a single migration;
+  - `migrate:reset` and `migrate:refresh`.
+- **Not covered.** `migrate:fresh` drops every table without calling `down()`. It must never be run on a database with real data.
+
+Procedure:
+
+1. Take a fresh database backup.
+2. Check for recorded lifecycle data. An empty array means rollback is allowed; any listed count means stop and fix forward.
+
+   ```bash
+   php artisan tinker --execute 'dump(app(App\Services\Inventory\DeviceLifecycleRollbackGuard::class)->recordedLifecycleData());'
+   ```
+
+3. Run `php artisan migrate:status` and note the batch that holds the seven Phase 4 migrations. Roll back that batch, limited to the Phase 4 files:
+
+   ```bash
+   php artisan migrate:rollback --force --batch=<phase-4-batch> --path=database/migrations/2026_11_05_180922_add_lifecycle_revision_to_inventory_units_table.php --path=database/migrations/2026_11_05_180923_allow_unit_events_in_inventory_movements_table.php --path=database/migrations/2026_11_05_180924_add_lookup_index_to_inventory_unit_identifiers_table.php --path=database/migrations/2026_11_05_180925_create_device_inspections_table.php --path=database/migrations/2026_11_05_180926_create_device_repairs_table.php --path=database/migrations/2026_11_05_180927_create_device_cost_entries_table.php --path=database/migrations/2026_11_05_180928_create_inventory_unit_identifier_corrections_table.php
+   ```
+
+4. To reapply, run step 2 of the setup above.
+
+Verified on an isolated MariaDB 10.4 database:
+
+- With an inspection, an open repair, and two unit events recorded, all of these were refused and left the schema, migration records, and history intact:
+  - `migrate:rollback`;
+  - `--batch`;
+  - targeted `--path` rollbacks of the first and second migrations;
+  - `--step=1`;
+  - `migrate:reset`;
+  - `migrate:refresh`.
+- On an empty schema, rolling back all seven and reapplying them succeeded.
 
 ### Acceptance Criteria
 

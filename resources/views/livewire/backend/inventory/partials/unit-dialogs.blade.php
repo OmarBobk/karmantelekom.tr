@@ -13,6 +13,7 @@
 @if ($canInspect)
     <x-operations.dialog id="record-inspection" :title="__('devices.inspection.title')" :direction="$textDirection">
         <form wire:submit="recordInspection" class="space-y-4" novalidate>
+            @include('livewire.backend.inventory.partials.stale-form-notice')
             <p class="{{ $effect }}" aria-live="polite">
                 <span x-show="$wire.inspectionOutcome === 'ready'">{{ __('devices.inspection.effect_ready', ['from' => $unit->status->label()]) }}</span>
                 <span x-show="$wire.inspectionOutcome === 'needs_repair'" x-cloak>{{ __('devices.inspection.effect_needs_repair', ['from' => $unit->status->label()]) }}</span>
@@ -70,6 +71,7 @@
 @if ($canStartRepair)
     <x-operations.dialog id="start-repair" :title="__('devices.repair.title')" :direction="$textDirection">
         <form wire:submit="startRepair" class="space-y-4" novalidate>
+            @include('livewire.backend.inventory.partials.stale-form-notice')
             <p class="{{ $effect }}">
                 {{ $unit->status->label() }} <span aria-hidden="true">{{ $arrow }}</span><span class="sr-only">{{ __('devices.to') }}</span> {{ \App\Enums\UnitStatus::IN_REPAIR->label() }}.
                 {{ __('devices.repair.effect') }}
@@ -117,6 +119,7 @@
 @if ($canCloseRepair)
     <x-operations.dialog id="complete-repair" :title="__('devices.complete.title')" :direction="$textDirection" class="max-w-2xl">
         <form wire:submit="completeRepair" class="space-y-4" novalidate>
+            @include('livewire.backend.inventory.partials.stale-form-notice')
             <p class="{{ $effect }}">
                 {{ $unit->status->label() }} <span aria-hidden="true">{{ $arrow }}</span><span class="sr-only">{{ __('devices.to') }}</span> {{ \App\Enums\UnitStatus::INSPECTION->label() }}.
                 {{ __('devices.complete.effect') }}
@@ -177,6 +180,7 @@
 
     <x-operations.dialog id="cancel-repair" :title="__('devices.cancel.title')" :direction="$textDirection">
         <form wire:submit="cancelRepair" class="space-y-4" novalidate>
+            @include('livewire.backend.inventory.partials.stale-form-notice')
             <p class="{{ $effect }}">
                 {{ $unit->status->label() }} <span aria-hidden="true">{{ $arrow }}</span><span class="sr-only">{{ __('devices.to') }}</span> {{ \App\Enums\UnitStatus::INSPECTION->label() }}.
                 {{ __('devices.cancel.effect') }}
@@ -355,6 +359,7 @@
 @if ($canRemove)
     <x-operations.dialog id="remove-unit" :title="__('inventory.remove.title')" :direction="$textDirection">
         <form wire:submit="remove" class="space-y-4" novalidate>
+            @include('livewire.backend.inventory.partials.stale-form-notice')
             <p class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-950 ring-1 ring-inset ring-red-200">
                 {{ $unit->status->label() }} <span aria-hidden="true">{{ $arrow }}</span><span class="sr-only">{{ __('devices.to') }}</span> {{ \App\Enums\UnitStatus::REMOVED->label() }}.
                 {{ __('inventory.remove.help') }}

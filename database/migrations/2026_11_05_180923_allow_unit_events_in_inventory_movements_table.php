@@ -1,5 +1,6 @@
 <?php
 
+use App\Services\Inventory\DeviceLifecycleRollbackGuard;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Support\Facades\DB;
 
@@ -38,10 +39,12 @@ return new class extends Migration
     }
 
     /**
-     * Reverse the migrations. Fails while zero-quantity unit events exist, by design.
+     * Reverse the migrations. Refused before any constraint is dropped while unit events exist.
      */
     public function down(): void
     {
+        app(DeviceLifecycleRollbackGuard::class)->assertNoRecordedLifecycleData();
+
         if (! in_array(DB::getDriverName(), ['mysql', 'mariadb'], true)) {
             return;
         }

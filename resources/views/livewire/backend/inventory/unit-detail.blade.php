@@ -23,10 +23,10 @@
                 <p class="text-sm font-semibold text-amber-900">{{ __('devices.stale.title') }}</p>
                 <p class="mt-0.5 text-sm text-amber-900">{{ $staleNotice ?? __('devices.stale.page', ['status' => $unit->status->label()]) }}</p>
             </div>
-            @if ($staleNotice)
-                <button type="button" wire:click="dismissStaleNotice" class="min-h-11 rounded-lg px-3 text-sm font-medium text-amber-900 hover:bg-amber-100">{{ __('devices.stale.dismiss') }}</button>
-            @else
+            @if ($isStale)
                 <button type="button" wire:click="refreshState" wire:loading.attr="disabled" wire:target="refreshState" class="min-h-11 rounded-lg bg-white px-3 text-sm font-medium text-amber-900 ring-1 ring-amber-300 hover:bg-amber-100">{{ __('devices.stale.refresh') }}</button>
+            @else
+                <button type="button" wire:click="dismissStaleNotice" class="min-h-11 rounded-lg px-3 text-sm font-medium text-amber-900 hover:bg-amber-100">{{ __('devices.stale.dismiss') }}</button>
             @endif
         </div>
     @endif

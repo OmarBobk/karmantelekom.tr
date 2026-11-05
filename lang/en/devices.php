@@ -180,11 +180,15 @@ return [
 
     'stale' => [
         'title' => 'This device changed',
-        'body' => 'Another operator changed this device first; it is now ":status". Nothing was saved. Your input is kept — review it and submit again.',
-        'page' => 'This device is now ":status". The available actions have been updated.',
-        'field' => 'Not saved: the device changed. Review and submit again.',
+        'body' => 'Another operator changed this device first; it is now ":status". Nothing was saved. Your input is kept. Review the current state, then choose "Continue with current state" before submitting again.',
+        'page' => 'This device is now ":status". Your open forms still refer to the earlier state; review it, then choose "Continue with current state".',
+        'field' => 'Not saved: the device changed. Review the current state and continue before submitting again.',
+        'form_title' => 'This form was opened for an earlier state of the device',
+        'form_current' => 'The device is now ":status".',
+        'form_repair' => 'Current open repair: #:id ·',
+        'form_help' => 'Nothing was saved and your text is kept. Continuing applies this form to the current state; any return confirmation must be given again.',
         'dismiss' => 'Dismiss',
-        'refresh' => 'Show current state',
+        'refresh' => 'Continue with current state',
     ],
 
     'lookup' => [

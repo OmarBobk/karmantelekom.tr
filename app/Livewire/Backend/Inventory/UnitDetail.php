@@ -49,8 +49,10 @@ use Livewire\WithPagination;
  * One unit's identity, location, service history, costs, and timeline; always loaded through its store.
  *
  * Every lifecycle form submits the status and lifecycle revision this page was showing. When
- * another operator changed the device first, nothing is written, the page explains the change,
- * adopts the current state, and keeps everything the operator typed.
+ * another operator changed the device first, nothing is written, the page shows the current
+ * device and repair state, and keeps everything the operator typed. The forms stay bound to
+ * the old revision, so resubmitting is rejected again, until the operator explicitly chooses
+ * to continue with the current state (refreshState), which also clears return confirmations.
  */
 class UnitDetail extends Component
 {
@@ -403,12 +405,16 @@ class UnitDetail extends Component
     }
 
     /**
-     * Adopt the device's current state after another operator changed it. Form input is kept.
+     * Rebind the forms to the device's current state after the operator reviewed it.
+     *
+     * Typed text is kept. A physical-return confirmation was given for the repair the form was
+     * opened for, so it is cleared and must be confirmed again for the current repair.
      */
     public function refreshState(): void
     {
         $this->authorize('viewInventory', $this->store);
         $this->adoptState($this->unitQuery()->firstOrFail());
+        $this->reset('completionReturned', 'cancelReturned');
         $this->staleNotice = null;
         $this->resetErrorBag();
     }
@@ -486,8 +492,9 @@ class UnitDetail extends Component
      * Run one recorded action with this form's key, mapping errors onto its fields.
      *
      * On success the form is cleared, its dialog closed, and the page adopts the new state.
-     * On a stale form nothing was written: the page adopts the current state, explains it,
-     * and keeps the operator's input so they can review and resubmit.
+     * On a stale form nothing was written: the page explains the change and keeps the
+     * operator's input, but the expected state is not adopted here, so the same form cannot
+     * silently apply to whatever the device became (for example a newer repair).
      *
      * @param  Closure(): InventoryMovement  $action
      * @param  array<string, string>  $errorMap
@@ -498,8 +505,6 @@ class UnitDetail extends Component
         try {
             $movement = $this->submitInventoryChange($action, ['unit' => $fallbackErrorKey, ...$errorMap], $fallbackErrorKey);
         } catch (StaleUnitStateException $exception) {
-            $this->expectedStatus = $exception->currentStatus->value;
-            $this->expectedRevision = $exception->currentRevision;
             $this->staleNotice = __('devices.stale.body', ['status' => $exception->currentStatus->label()]);
             $this->addError($fallbackErrorKey, __('devices.stale.field'));
 
