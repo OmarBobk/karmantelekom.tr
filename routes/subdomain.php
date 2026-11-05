@@ -6,6 +6,12 @@ use App\Livewire\Backend\Catalog\CatalogComponent;
 use App\Livewire\Backend\Categories\CategoryComponent;
 use App\Livewire\Backend\DashboardComponent;
 use App\Livewire\Backend\Errors\NotFound;
+use App\Livewire\Backend\Inventory\InventoryStores;
+use App\Livewire\Backend\Inventory\ProductInventory;
+use App\Livewire\Backend\Inventory\StoreInventory;
+use App\Livewire\Backend\Inventory\UnitDetail;
+use App\Livewire\Backend\OperationalCatalog\CatalogSettings;
+use App\Livewire\Backend\OperationalCatalog\DefinitionsIndex;
 use App\Livewire\Backend\Orders\OrdersManager;
 use App\Livewire\Backend\Products\ProductsComponent;
 use App\Livewire\Backend\Products\SectionComponent;
@@ -14,8 +20,12 @@ use App\Livewire\Backend\Shops\ShopComponent;
 use App\Livewire\Backend\Shops\ShopProfileComponent;
 use App\Livewire\Backend\Stores\StoreDetail;
 use App\Livewire\Backend\Stores\StoresIndex;
+use App\Livewire\Backend\Suppliers\SuppliersIndex;
 use App\Livewire\Backend\Tags\TagComponent;
 use App\Livewire\Backend\Users\UsersComponent;
+use App\Models\CatalogBrand;
+use App\Models\OperationalSupplier;
+use App\Models\ProductDefinition;
 use App\Models\Store;
 use Illuminate\Support\Facades\Route;
 
@@ -42,6 +52,32 @@ Route::get('stores', StoresIndex::class)
 Route::get('stores/{store}', StoreDetail::class)
     ->middleware('can:view,store')
     ->name('stores.show');
+
+// Operational catalog, suppliers, and store inventory (owner-only this milestone).
+Route::prefix('operations')->group(function () {
+    Route::get('catalog', DefinitionsIndex::class)
+        ->middleware('can:viewAny,'.ProductDefinition::class)
+        ->name('catalog.definitions');
+    Route::get('catalog/settings', CatalogSettings::class)
+        ->middleware('can:viewAny,'.CatalogBrand::class)
+        ->name('catalog.settings');
+    Route::get('suppliers', SuppliersIndex::class)
+        ->middleware('can:viewAny,'.OperationalSupplier::class)
+        ->name('suppliers');
+    Route::get('inventory', InventoryStores::class)
+        ->middleware('can:viewAnyInventory,'.Store::class)
+        ->name('inventory');
+    Route::get('inventory/{store}', StoreInventory::class)
+        ->middleware('can:viewInventory,store')
+        ->name('inventory.store');
+    Route::get('inventory/{store}/products/{productDefinition}', ProductInventory::class)
+        ->middleware('can:viewInventory,store')
+        ->name('inventory.product');
+    Route::get('inventory/{store}/units/{unit}', UnitDetail::class)
+        ->middleware('can:viewInventory,store')
+        ->scopeBindings()
+        ->name('inventory.unit');
+});
 
 // PDF Export Route
 Route::post('invoice_pdf/{orderId}', [OrdersManager::class, 'exportOrderToPdf'])->name('invoice_pdf');

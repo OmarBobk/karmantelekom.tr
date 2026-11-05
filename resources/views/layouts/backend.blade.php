@@ -172,11 +172,28 @@
                                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" class="w-5 h-5 transition duration-75 group-hover:text-blue-600" aria-hidden="true">
                                             <path fill-rule="evenodd" d="M4.5 2.25a.75.75 0 0 0 0 1.5v16.5h-.75a.75.75 0 0 0 0 1.5h16.5a.75.75 0 0 0 0-1.5h-.75V3.75a.75.75 0 0 0 0-1.5h-15ZM9 6a.75.75 0 0 0 0 1.5h1.5a.75.75 0 0 0 0-1.5H9Zm-.75 3.75A.75.75 0 0 1 9 9h1.5a.75.75 0 0 1 0 1.5H9a.75.75 0 0 1-.75-.75ZM9 12a.75.75 0 0 0 0 1.5h1.5a.75.75 0 0 0 0-1.5H9Zm3.75-5.25A.75.75 0 0 1 13.5 6H15a.75.75 0 0 1 0 1.5h-1.5a.75.75 0 0 1-.75-.75ZM13.5 9a.75.75 0 0 0 0 1.5H15A.75.75 0 0 0 15 9h-1.5Zm-.75 3.75a.75.75 0 0 1 .75-.75H15a.75.75 0 0 1 0 1.5h-1.5a.75.75 0 0 1-.75-.75ZM9 19.5v-2.25a.75.75 0 0 1 .75-.75h4.5a.75.75 0 0 1 .75.75v2.25a.75.75 0 0 1-.75.75h-4.5A.75.75 0 0 1 9 19.5Z" clip-rule="evenodd" />
                                         </svg>
-                                        @php($storeManagementLocale = \App\Livewire\Backend\Stores\StoreManagementLocale::resolve())
-                                        <span class="ml-3" lang="{{ $storeManagementLocale }}">{{ __('stores.navigation', [], $storeManagementLocale) }}</span>
+                                        @php($operationalLocale = \App\Livewire\Backend\OperationalLocale::resolve())
+                                        <span class="ml-3" lang="{{ $operationalLocale }}">{{ __('stores.navigation', [], $operationalLocale) }}</span>
                                     </a>
                                 </li>
                                 @endcan
+                                @php($operationalLocale = \App\Livewire\Backend\OperationalLocale::resolve())
+                                @foreach ([
+                                    ['ability' => ['viewAny', \App\Models\ProductDefinition::class], 'route' => 'subdomain.catalog.definitions', 'active' => 'subdomain.catalog.*', 'label' => 'catalog.navigation', 'icon' => 'M2.25 7.125C2.25 6.504 2.754 6 3.375 6h6c.621 0 1.125.504 1.125 1.125v3.75c0 .621-.504 1.125-1.125 1.125h-6a1.125 1.125 0 0 1-1.125-1.125v-3.75ZM14.25 8.625c0-.621.504-1.125 1.125-1.125h5.25c.621 0 1.125.504 1.125 1.125v8.25c0 .621-.504 1.125-1.125 1.125h-5.25a1.125 1.125 0 0 1-1.125-1.125v-8.25ZM3.75 16.125c0-.621.504-1.125 1.125-1.125h5.25c.621 0 1.125.504 1.125 1.125v2.25c0 .621-.504 1.125-1.125 1.125h-5.25a1.125 1.125 0 0 1-1.125-1.125v-2.25Z'],
+                                    ['ability' => ['viewAny', \App\Models\OperationalSupplier::class], 'route' => 'subdomain.suppliers', 'active' => 'subdomain.suppliers', 'label' => 'suppliers.navigation', 'icon' => 'M8.25 18.75a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h6m-9 0H3.375a1.125 1.125 0 0 1-1.125-1.125V14.25m17.25 4.5a1.5 1.5 0 0 1-3 0m3 0a1.5 1.5 0 0 0-3 0m3 0h1.125c.621 0 1.129-.504 1.09-1.124a17.902 17.902 0 0 0-3.213-9.193 2.056 2.056 0 0 0-1.58-.86H14.25M16.5 18.75h-2.25m0-11.177v-.958c0-.568-.422-1.048-.987-1.106a48.554 48.554 0 0 0-10.026 0 1.106 1.106 0 0 0-.987 1.106v7.635m12-6.677v6.677m0 4.5v-4.5m0 0h-12'],
+                                    ['ability' => ['viewAnyInventory', \App\Models\Store::class], 'route' => 'subdomain.inventory', 'active' => 'subdomain.inventory*', 'label' => 'inventory.navigation', 'icon' => 'm20.25 7.5-.625 10.632a2.25 2.25 0 0 1-2.247 2.118H6.622a2.25 2.25 0 0 1-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125Z'],
+                                ] as $operationsLink)
+                                    @can(...$operationsLink['ability'])
+                                    <li>
+                                        <a href="{{ route($operationsLink['route']) }}" @class(['flex items-center p-2 rounded-lg group transition-colors duration-200', 'bg-blue-50 text-blue-600' => request()->routeIs($operationsLink['active']), 'text-gray-700 hover:bg-blue-50 hover:text-blue-600' => ! request()->routeIs($operationsLink['active'])]) @if (request()->routeIs($operationsLink['active'])) aria-current="page" @endif>
+                                            <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="1.5" stroke="currentColor" class="w-5 h-5 transition duration-75 group-hover:text-blue-600" aria-hidden="true">
+                                                <path stroke-linecap="round" stroke-linejoin="round" d="{{ $operationsLink['icon'] }}" />
+                                            </svg>
+                                            <span class="ml-3" lang="{{ $operationalLocale }}">{{ __($operationsLink['label'], [], $operationalLocale) }}</span>
+                                        </a>
+                                    </li>
+                                    @endcan
+                                @endforeach
                                 @role('admin')
                                 <li>
                                     <a href="{{route('subdomain.users')}}" class="flex items-center p-2 rounded-lg text-gray-700 hover:bg-blue-50 hover:text-blue-600 group transition-colors duration-200">

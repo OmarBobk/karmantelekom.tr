@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Livewire\Backend\Stores;
 
+use App\Livewire\Backend\OperationalLocale;
 use App\Models\Store;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Facades\DB;
@@ -29,7 +30,7 @@ class StoresIndex extends Component
 
     public function boot(): void
     {
-        StoreManagementLocale::apply();
+        OperationalLocale::apply();
     }
 
     public function mount(): void
@@ -162,8 +163,8 @@ class StoresIndex extends Component
     {
         return view('livewire.backend.stores.stores-index', [
             'stores' => Store::query()->withCount('employees')->orderBy('code')->get(),
-            'locale' => StoreManagementLocale::resolve(),
-            'textDirection' => StoreManagementLocale::direction(),
+            'locale' => OperationalLocale::resolve(),
+            'textDirection' => OperationalLocale::direction(),
         ])->title(__('stores.title'));
     }
 }

@@ -11,6 +11,8 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Str;
 
 /**
@@ -27,6 +29,8 @@ use Illuminate\Support\Str;
  * @property bool $is_active
  * @property string|null $sku
  * @property string|null $barcode
+ * @property int|null $catalog_brand_id
+ * @property int|null $catalog_category_id
  */
 class ProductDefinition extends Model
 {
@@ -46,6 +50,8 @@ class ProductDefinition extends Model
         'is_active',
         'sku',
         'barcode',
+        'catalog_brand_id',
+        'catalog_category_id',
     ];
 
     /**
@@ -109,6 +115,76 @@ class ProductDefinition extends Model
     public function scopeActive(Builder $query): void
     {
         $query->where('is_active', true);
+    }
+
+    /**
+     * Match definitions whose name or model contains the term.
+     *
+     * @param  Builder<ProductDefinition>  $query
+     */
+    public function scopeSearch(Builder $query, ?string $term): void
+    {
+        $term = Str::trim((string) $term);
+
+        if ($term === '') {
+            return;
+        }
+
+        $pattern = '%'.addcslashes($term, '\\%_').'%';
+
+        $query->where(fn (Builder $matches) => $matches
+            ->where('name', 'like', $pattern)
+            ->orWhere('model', 'like', $pattern));
+    }
+
+    /**
+     * Whether any store holds stock records or movements for this definition.
+     */
+    public function hasInventoryHistory(): bool
+    {
+        return $this->movements()->exists()
+            || $this->balances()->exists()
+            || $this->units()->exists();
+    }
+
+    /**
+     * @return BelongsTo<CatalogBrand, $this>
+     */
+    public function brand(): BelongsTo
+    {
+        return $this->belongsTo(CatalogBrand::class, 'catalog_brand_id');
+    }
+
+    /**
+     * @return BelongsTo<CatalogCategory, $this>
+     */
+    public function category(): BelongsTo
+    {
+        return $this->belongsTo(CatalogCategory::class, 'catalog_category_id');
+    }
+
+    /**
+     * @return HasMany<InventoryBalance, $this>
+     */
+    public function balances(): HasMany
+    {
+        return $this->hasMany(InventoryBalance::class);
+    }
+
+    /**
+     * @return HasMany<InventoryUnit, $this>
+     */
+    public function units(): HasMany
+    {
+        return $this->hasMany(InventoryUnit::class);
+    }
+
+    /**
+     * @return HasMany<InventoryMovement, $this>
+     */
+    public function movements(): HasMany
+    {
+        return $this->hasMany(InventoryMovement::class);
     }
 
     /**

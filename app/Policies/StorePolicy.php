@@ -6,11 +6,13 @@ namespace App\Policies;
 
 use App\Models\Store;
 use App\Models\User;
+use App\Policies\Concerns\RequiresOwnerPermission;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class StorePolicy
 {
     use HandlesAuthorization;
+    use RequiresOwnerPermission;
 
     /**
      * Determine whether the user can view any models.
@@ -52,6 +54,32 @@ class StorePolicy
     public function access(User $user, Store $store): bool
     {
         return $store->isAccessibleBy($user);
+    }
+
+    /**
+     * Determine whether the user can open the inventory area (store picker).
+     */
+    public function viewAnyInventory(User $user): bool
+    {
+        return $this->ownerHas($user, 'view_inventory');
+    }
+
+    /**
+     * Determine whether the user can view this store's inventory, units, and movement history.
+     *
+     * Requires the feature permission and store access; neither implies the other.
+     */
+    public function viewInventory(User $user, Store $store): bool
+    {
+        return $this->ownerHas($user, 'view_inventory') && $store->isAccessibleBy($user);
+    }
+
+    /**
+     * Determine whether the user can record opening stock, adjustments, and unit changes in this store.
+     */
+    public function adjustInventory(User $user, Store $store): bool
+    {
+        return $this->ownerHas($user, 'adjust_inventory') && $store->isAccessibleBy($user);
     }
 
     /**
