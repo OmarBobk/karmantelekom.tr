@@ -6,7 +6,6 @@ namespace App\Livewire\Backend\Stores;
 
 use App\Models\Store;
 use Illuminate\Contracts\View\View;
-use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
@@ -30,7 +29,7 @@ class StoresIndex extends Component
 
     public function boot(): void
     {
-        App::setLocale('ar');
+        StoreManagementLocale::apply();
     }
 
     public function mount(): void
@@ -136,7 +135,7 @@ class StoresIndex extends Component
      */
     protected function validationAttributes(): array
     {
-        return __('stores.fields');
+        return __('stores.attributes');
     }
 
     /**
@@ -163,6 +162,8 @@ class StoresIndex extends Component
     {
         return view('livewire.backend.stores.stores-index', [
             'stores' => Store::query()->withCount('employees')->orderBy('code')->get(),
+            'locale' => StoreManagementLocale::resolve(),
+            'textDirection' => StoreManagementLocale::direction(),
         ])->title(__('stores.title'));
     }
 }

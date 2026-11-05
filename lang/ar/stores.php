@@ -14,6 +14,14 @@ return [
         'employee' => 'الموظف',
     ],
 
+    'attributes' => [
+        'code' => 'رمز الفرع',
+        'name' => 'اسم الفرع',
+        'phone' => 'الهاتف',
+        'address' => 'العنوان',
+        'employee' => 'الموظف',
+    ],
+
     'actions' => [
         'create' => 'إضافة فرع',
         'edit' => 'تعديل',

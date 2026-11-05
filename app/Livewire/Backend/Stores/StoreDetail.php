@@ -11,7 +11,6 @@ use App\Models\User;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Facades\App;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Locked;
@@ -29,7 +28,7 @@ class StoreDetail extends Component
 
     public function boot(): void
     {
-        App::setLocale('ar');
+        StoreManagementLocale::apply();
     }
 
     public function mount(Store $store): void
@@ -46,7 +45,7 @@ class StoreDetail extends Component
         $this->validate(
             ['selectedEmployeeId' => ['required', 'integer', 'exists:users,id']],
             __('stores.validation'),
-            ['selectedEmployeeId' => __('stores.fields.employee')],
+            ['selectedEmployeeId' => __('stores.attributes.employee')],
         );
 
         $employee = User::findOrFail($this->selectedEmployeeId);
@@ -132,6 +131,8 @@ class StoreDetail extends Component
             'employeeToRemove' => $this->employeeToRemoveId !== null
                 ? $employees->firstWhere('id', $this->employeeToRemoveId)
                 : null,
+            'locale' => StoreManagementLocale::resolve(),
+            'textDirection' => StoreManagementLocale::direction(),
         ])->title($this->store->name.' — '.__('stores.title'));
     }
 }

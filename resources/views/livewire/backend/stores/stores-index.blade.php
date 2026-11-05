@@ -1,4 +1,4 @@
-<div dir="rtl" lang="ar" class="mx-auto max-w-6xl space-y-6 text-start">
+<div dir="{{ $textDirection }}" lang="{{ $locale }}" class="mx-auto max-w-6xl space-y-6 text-start">
     <div class="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
             <h1 class="text-2xl font-bold text-gray-900">{{ __('stores.title') }}</h1>
@@ -110,7 +110,7 @@
         <div class="fixed inset-0 z-50 overflow-y-auto" role="dialog" aria-modal="true" aria-labelledby="store-form-title">
             <div class="fixed inset-0 bg-gray-900/50" wire:click="closeForm"></div>
             <div class="relative flex min-h-full items-center justify-center p-4">
-                <form wire:submit="save" dir="rtl" class="relative w-full max-w-lg space-y-5 rounded-xl bg-white p-6 text-start shadow-xl">
+                <form wire:submit="save" dir="{{ $textDirection }}" class="relative w-full max-w-lg space-y-5 rounded-xl bg-white p-6 text-start shadow-xl">
                     <h2 id="store-form-title" class="text-lg font-semibold text-gray-900">
                         {{ $editingStoreId ? __('stores.form.edit_title') : __('stores.form.create_title') }}
                     </h2>

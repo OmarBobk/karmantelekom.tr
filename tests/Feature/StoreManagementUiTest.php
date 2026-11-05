@@ -10,6 +10,7 @@ use App\Models\Store;
 use App\Models\User;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\App;
 use Livewire\Features\SupportLockedProperties\CannotUpdateLockedPropertyException;
 use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\DataProvider;
@@ -60,6 +61,7 @@ class StoreManagementUiTest extends TestCase
             ->get(route('subdomain.stores'))
             ->assertOk()
             ->assertSeeLivewire(StoresIndex::class)
+            ->assertSee('dir="rtl" lang="ar"', false)
             ->assertSee('الفروع')
             ->assertSee(['KT01', 'Karman Telekom — Store 1', '+90 212 000 0001', 'KT02']);
 
@@ -150,6 +152,46 @@ class StoreManagementUiTest extends TestCase
             ->assertSet('formOpen', true);
 
         $this->assertSame(2, Store::count());
+    }
+
+    #[Test]
+    public function store_pages_render_left_to_right_in_english_when_english_is_active(): void
+    {
+        $this->useEnglishLocale();
+        $this->storeOne->employees()->attach($this->employee);
+
+        $this->actingAs($this->owner)
+            ->get(route('subdomain.stores'))
+            ->assertOk()
+            ->assertSee('dir="ltr" lang="en"', false)
+            ->assertSee(['Stores', 'Add store', 'Store code', 'View details'])
+            ->assertDontSee('الفروع');
+
+        $this->actingAs($this->owner)
+            ->get(route('subdomain.stores.show', $this->storeOne))
+            ->assertOk()
+            ->assertSee('dir="ltr" lang="en"', false)
+            ->assertSee(['Assigned employees', 'Back to stores', 'Employee Ahmad']);
+    }
+
+    #[Test]
+    public function store_form_and_notifications_use_english_when_english_is_active(): void
+    {
+        $this->useEnglishLocale();
+
+        Livewire::actingAs($this->owner)
+            ->test(StoresIndex::class)
+            ->call('openCreateForm')
+            ->set('code', 'KT01')
+            ->call('save')
+            ->assertHasErrors(['code' => 'unique', 'name' => 'required'])
+            ->assertSee('This store code is already in use.')
+            ->assertSee('The store name field is required.')
+            ->set('code', 'KT03')
+            ->set('name', 'Karman Telekom — Store 3')
+            ->call('save')
+            ->assertHasNoErrors()
+            ->assertDispatched('notify', ['type' => 'success', 'message' => 'Store created successfully.']);
     }
 
     #[Test]
@@ -254,5 +296,11 @@ class StoreManagementUiTest extends TestCase
             ->test(StoresIndex::class)
             ->call('openEditForm', $this->storeOne->id)
             ->set('editingStoreId', $this->storeTwo->id);
+    }
+
+    private function useEnglishLocale(): void
+    {
+        config(['app.locale' => 'en']);
+        App::setLocale('en');
     }
 }
