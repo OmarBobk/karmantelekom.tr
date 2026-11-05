@@ -4,12 +4,14 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
-use App\Facades\Settings;
+use App\Models\PurchaseReceiptLine;
 use App\Models\User;
-use Illuminate\Support\Facades\Route;
-use Illuminate\Support\Facades\View;
-use Illuminate\Support\ServiceProvider;
 use App\Services\CurrencyService;
+use App\Services\NotificationRecipientsService;
+use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Relations\Relation;
+use Illuminate\Support\Facades\Route;
+use Illuminate\Support\ServiceProvider;
 use Spatie\Activitylog\Models\Activity;
 
 class AppServiceProvider extends ServiceProvider
@@ -20,11 +22,11 @@ class AppServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(CurrencyService::class, function ($app) {
-            return new CurrencyService();
+            return new CurrencyService;
         });
 
-        $this->app->singleton(\App\Services\NotificationRecipientsService::class, function ($app) {
-            return new \App\Services\NotificationRecipientsService();
+        $this->app->singleton(NotificationRecipientsService::class, function ($app) {
+            return new NotificationRecipientsService;
         });
     }
 
@@ -33,21 +35,23 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-        \Carbon\Carbon::setLocale(app()->getLocale());
-//        if (Str::startsWith(request()->uri()->host(), 'sub.') && !Auth::check()) {
-//            abort(Response::redirectTo(config('app.url') . '/404'));
-//        }
+        Carbon::setLocale(app()->getLocale());
+
+        Relation::morphMap([PurchaseReceiptLine::MORPH_ALIAS => PurchaseReceiptLine::class]);
+        //        if (Str::startsWith(request()->uri()->host(), 'sub.') && !Auth::check()) {
+        //            abort(Response::redirectTo(config('app.url') . '/404'));
+        //        }
 
         // Register event listeners
-//        $this->registerEventListeners();
+        //        $this->registerEventListeners();
 
-//        Activity::created(function ($activity) {
-//            $recipient = User::whereId(1)->first();
-//
-//            if ($recipient) {
-//                $recipient->notify(new \App\Notifications\NewActivityLogged($activity));
-//            }
-//        });
+        //        Activity::created(function ($activity) {
+        //            $recipient = User::whereId(1)->first();
+        //
+        //            if ($recipient) {
+        //                $recipient->notify(new \App\Notifications\NewActivityLogged($activity));
+        //            }
+        //        });
 
         if (app()->environment('local')) {
             config(['cache.default' => 'array']);
@@ -59,7 +63,7 @@ class AppServiceProvider extends ServiceProvider
             ->group(base_path('routes/subdomain.php'));
 
         // Force HTTPS in production
-        if (app()->environment('production') && !app()->environment('local')) {
+        if (app()->environment('production') && ! app()->environment('local')) {
             \URL::forceScheme('https');
         }
 
@@ -68,16 +72,16 @@ class AppServiceProvider extends ServiceProvider
     /**
      * Register event listeners for the application.
      */
-//    private function registerEventListeners(): void
-//    {
-//        \Illuminate\Support\Facades\Event::listen(
-//            \App\Events\OrderCreated::class,
-//            \App\Listeners\HandleOrderCreated::class
-//        );
-//
-//        \Illuminate\Support\Facades\Event::listen(
-//            \App\Events\OrderUpdated::class,
-//            \App\Listeners\HandleOrderUpdated::class
-//        );
-//    }
+    //    private function registerEventListeners(): void
+    //    {
+    //        \Illuminate\Support\Facades\Event::listen(
+    //            \App\Events\OrderCreated::class,
+    //            \App\Listeners\HandleOrderCreated::class
+    //        );
+    //
+    //        \Illuminate\Support\Facades\Event::listen(
+    //            \App\Events\OrderUpdated::class,
+    //            \App\Listeners\HandleOrderUpdated::class
+    //        );
+    //    }
 }

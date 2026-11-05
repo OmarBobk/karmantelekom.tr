@@ -50,6 +50,8 @@ class InventoryMovement extends Model
         'quantity_after',
         'unit_status_before',
         'unit_status_after',
+        'reference_type',
+        'reference_id',
         'user_id',
         'idempotency_key',
         'request_fingerprint',

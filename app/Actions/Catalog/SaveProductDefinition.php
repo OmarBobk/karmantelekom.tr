@@ -70,7 +70,7 @@ class SaveProductDefinition
             return DB::transaction(function () use ($definition, $attributes): ProductDefinition {
                 $locked = ProductDefinition::query()->whereKey($definition->id)->lockForUpdate()->firstOrFail();
 
-                if ($locked->tracking_mode->value !== $attributes['tracking_mode'] && $locked->hasInventoryHistory()) {
+                if ($locked->tracking_mode->value !== $attributes['tracking_mode'] && $locked->isTrackingModeLocked()) {
                     throw ValidationException::withMessages([
                         'tracking_mode' => __('catalog.errors.tracking_mode_locked'),
                     ]);

@@ -14,8 +14,12 @@ use App\Enums\UnitStatus;
 use App\Livewire\Backend\Concerns\SubmitsInventoryChanges;
 use App\Livewire\Backend\Concerns\UsesOperationalLocale;
 use App\Models\ProductDefinition;
+use App\Models\Purchase;
+use App\Models\PurchaseReceiptLine;
 use App\Models\Store;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
@@ -189,9 +193,13 @@ class ProductInventory extends Component
         $definition = $this->definition->refresh()->load(['brand:id,name', 'category:id,name']);
         $tracksUnits = $definition->tracking_mode->tracksIndividualItems();
 
+        $canViewPurchases = Gate::allows('viewAny', Purchase::class);
+
         $movements = $this->store->inventoryMovements()
             ->where('product_definition_id', $definition->id)
-            ->with(['actor:id,name', 'unit.identifiers'])
+            ->with(['actor:id,name', 'unit.identifiers', 'reference' => fn (MorphTo $reference) => $reference->morphWith([
+                PurchaseReceiptLine::class => ['receipt.purchase:id,supplier_invoice_number'],
+            ])])
             ->latest('occurred_at')
             ->latest('id')
             ->paginate(20, pageName: 'history');
@@ -220,7 +228,22 @@ class ProductInventory extends Component
             'canAdjust' => Gate::allows('adjustInventory', $this->store),
             'adjustmentReasons' => $type?->allowedReasons() ?? [],
             'conditions' => UnitCondition::allowedFor($definition->tracking_mode),
+            'canViewPurchases' => $canViewPurchases,
+            'lastPurchase' => $canViewPurchases ? $this->lastPurchaseLine($definition) : null,
             ...$this->localeViewData(),
         ])->title($definition->name.' — '.$this->store->code);
+    }
+
+    /**
+     * The most recent receipt line for this product into this store, with its invoice currency.
+     */
+    private function lastPurchaseLine(ProductDefinition $definition): ?PurchaseReceiptLine
+    {
+        return PurchaseReceiptLine::query()
+            ->where('product_definition_id', $definition->id)
+            ->whereHas('receipt', fn (Builder $receipt) => $receipt->where('store_id', $this->store->id))
+            ->with('receipt.purchase:id,supplier_invoice_number,currency')
+            ->latest('id')
+            ->first();
     }
 }

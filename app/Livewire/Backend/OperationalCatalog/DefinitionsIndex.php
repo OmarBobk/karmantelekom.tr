@@ -183,7 +183,7 @@ class DefinitionsIndex extends Component
             'trackingModes' => TrackingMode::cases(),
             'brands' => $this->formOpen ? $this->brandOptions() : collect(),
             'categories' => $this->formOpen ? $this->categoryOptions() : collect(),
-            'trackingModeLocked' => $editing?->hasInventoryHistory() ?? false,
+            'trackingModeLocked' => $editing?->isTrackingModeLocked() ?? false,
             'isFiltering' => $identifier !== null,
             ...$this->localeViewData(),
         ])->title(__('catalog.title'));

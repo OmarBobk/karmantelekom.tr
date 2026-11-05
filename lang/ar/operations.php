@@ -14,5 +14,9 @@ return [
         'in' => 'القيمة المحددة في :attribute غير صالحة.',
         'enum' => 'القيمة المحددة في :attribute غير صالحة.',
         'boolean' => 'القيمة المحددة في :attribute غير صالحة.',
+        'array' => 'القيمة المحددة في :attribute غير صالحة.',
+        'date_format' => 'يجب أن يكون :attribute تاريخًا صالحًا.',
+        'before_or_equal' => 'يجب ألا يكون :attribute بعد اليوم.',
+        'after_or_equal' => 'يجب ألا يكون :attribute قبل تاريخ الفاتورة.',
     ],
 ];

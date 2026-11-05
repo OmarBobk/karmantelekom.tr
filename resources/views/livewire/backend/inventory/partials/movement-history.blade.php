@@ -1,4 +1,4 @@
-{{-- Expects: $movements (iterable of InventoryMovement), $showUnit (bool) --}}
+{{-- Expects: $movements (iterable of InventoryMovement), $showUnit (bool); optional $canViewPurchases (bool) --}}
 @php($isPaginated = $movements instanceof \Illuminate\Contracts\Pagination\Paginator)
 <section aria-labelledby="movement-history-title" class="rounded-xl bg-white shadow-sm ring-1 ring-gray-200">
     <div class="border-b border-gray-100 px-4 py-3">
@@ -40,6 +40,15 @@
                                     <span aria-hidden="true">{{ $textDirection === 'rtl' ? '←' : '→' }}</span>
                                     {{ $movement->unit_status_after->label() }}
                                 </span>
+                            @endif
+                            @if ($movement->reference instanceof \App\Models\PurchaseReceiptLine && $movement->reference->receipt?->purchase)
+                                @php($receiptPurchase = $movement->reference->receipt->purchase)
+                                @php($receiptLabel = __('purchases.history.receipt_reference', ['number' => '<bdi dir="ltr" class="font-mono">'.e($receiptPurchase->supplier_invoice_number).'</bdi>']))
+                                @if ($canViewPurchases ?? false)
+                                    <a href="{{ route('subdomain.purchases.show', $receiptPurchase) }}" class="font-medium text-blue-600 hover:text-blue-800">{!! $receiptLabel !!}</a>
+                                @else
+                                    <span>{!! $receiptLabel !!}</span>
+                                @endif
                             @endif
                             @if ($showUnit && $movement->unit)
                                 <a href="{{ route('subdomain.inventory.unit', [$movement->store_id, $movement->unit]) }}" class="font-medium text-blue-600 hover:text-blue-800">

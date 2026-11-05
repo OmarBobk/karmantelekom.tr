@@ -380,6 +380,72 @@ The implementation must prevent duplicate stock receipts and duplicate payments.
 
 The exact treatment of purchase discounts, freight, taxes, and other additional costs must be documented before those rules are implemented.
 
+### Implemented Purchasing Scope
+
+- **Money.** Amounts are stored as `DECIMAL(15,2)` and calculated in integer minor units (`App\Services\Purchasing\Money`); floats are never used. Currencies are TRY and USD only, and each invoice, its payments, and its ledger entries share one currency. Unit prices go up to 99,999,999.99, invoice totals up to 9,999,999,999.99, and an invoice has at most 200 lines. Inputs accept Arabic digits and a decimal comma.
+- **Prices and charges.** A unit price is the price billed per unit after discount, and includes KDV when the invoice is marked "prices include KDV". Additional charges are only those the same supplier bills on the same invoice; they increase the supplier obligation and are not spread into item cost. Separate tax accounting, landed cost, and weighted-average valuation are deferred.
+- **Lifecycle.** An invoice is `draft`, `posted`, `cancelled`, or `reversed`:
+  - Drafts carry a revision number. Saving or posting with an older revision is rejected, so a stale tab cannot overwrite newer work; the saved revision is what posts.
+  - Posting requires a supplier invoice number, an invoice date, at least one line, and an active supplier. It snapshots the supplier name and tax number, locks the lines, and writes one `purchase_posted` ledger entry.
+  - Drafts can be cancelled. A posted invoice can be reversed only before receipt and with no active payments; reversal requires a reason and writes an opposite ledger entry.
+  - A reversed invoice can be copied to one open correction draft linked to it.
+  - Purchases, payments, receipts, and ledger entries are never deleted.
+- **Invoice numbers.** Numbers are trimmed and case-folded for comparison and are unique per supplier. A database claim table (`supplier_invoice_numbers`) holds each number for its correction chain, so only a correction of the reversed invoice can reuse it.
+- **Receiving.** A posted invoice is received once and in full (`purchase_receipts.purchase_id` is unique):
+  - Quantity lines increase store stock.
+  - Serialized and used-device lines create one unit per item, with identifiers validated by the Phase 2 rules, and record each unit's acquisition cost.
+  - Each line's movements use the type `purchase_receipt` and reference the receipt line.
+  - Everything runs in one transaction through `InventoryLedger`. Locks are taken in a fixed order (invoice, then product definitions by id, then balances), and any failure rolls back the whole receipt.
+  - Partial receipts and supplier returns are deferred.
+- **Payments.** A payment applies to one posted invoice, in the invoice currency, and cannot exceed the outstanding amount:
+  - Its reference is required and unique per invoice, including reversed payments.
+  - A retry with the same submission key or the same reference and details returns the original payment; a reference reused with different details is rejected without revealing the other payment.
+  - Reversal keeps the payment and writes an opposite ledger entry.
+- **Supplier balances.** `supplier_ledger_entries` is append-only, with at most one entry per event (a generated unique scope). A supplier's balance per currency and store is the ledger sum and must equal the outstanding total of its posted invoices; the account page shows both and flags any difference. The statement's running balance is ordered by entry time, then id.
+- **Inventory links.** Movement history links a receipt movement to its invoice, and a unit shows its acquisition price, for users allowed to view purchases. Stock value is shown as unavailable.
+- **Tracking modes.** A product's tracking mode is locked once it has inventory history or appears on a posted invoice.
+
+### Phase 3 Access
+
+- Screens under `/operations`: `purchases`, `purchases/{purchase}`, `purchases/{purchase}/edit`, `purchases/{purchase}/receive`, and `suppliers/{supplier}/account`.
+- Every route and Livewire action is owner-only (`admin` role) and requires store access plus:
+  - `manage_purchases` to create, edit, post, cancel, reverse, or copy;
+  - `receive_purchases` to receive;
+  - `pay_suppliers` to record or reverse payments.
+  Any of the three allows viewing invoices; the supplier account needs `manage_purchases` or `pay_suppliers`.
+- `OperationalStoreSetupSeeder` grants the three permissions to the existing `admin` role only. No employee permissions or assignment rules were added.
+- A user with purchases, receipts, payments, or supplier ledger entries cannot delete their account.
+
+### Phase 3 Setup on an Existing Database
+
+Not run against any application database. Run on the target server after review and deployment, with a fresh database backup. The Phase 1 and Phase 2 migrations and setup must already be applied.
+
+1. Run `php artisan migrate:status`. All Phase 2 migrations (`2026_11_05_104640` and `2026_11_05_110647` to `2026_11_05_110654`) must show `Ran`, and these eight must be pending:
+
+   - `2026_11_05_122656_create_purchases_table`
+   - `2026_11_05_122657_create_purchase_lines_table`
+   - `2026_11_05_122658_create_supplier_invoice_numbers_table`
+   - `2026_11_05_122659_create_purchase_receipts_table`
+   - `2026_11_05_122700_create_purchase_receipt_lines_table`
+   - `2026_11_05_122701_create_purchase_receipt_units_table`
+   - `2026_11_05_122702_create_supplier_payments_table`
+   - `2026_11_05_122703_create_supplier_ledger_entries_table`
+
+2. Preview, then apply only these migrations:
+
+   ```bash
+   php artisan migrate --pretend --path=database/migrations/2026_11_05_122656_create_purchases_table.php --path=database/migrations/2026_11_05_122657_create_purchase_lines_table.php --path=database/migrations/2026_11_05_122658_create_supplier_invoice_numbers_table.php --path=database/migrations/2026_11_05_122659_create_purchase_receipts_table.php --path=database/migrations/2026_11_05_122700_create_purchase_receipt_lines_table.php --path=database/migrations/2026_11_05_122701_create_purchase_receipt_units_table.php --path=database/migrations/2026_11_05_122702_create_supplier_payments_table.php --path=database/migrations/2026_11_05_122703_create_supplier_ledger_entries_table.php
+   php artisan migrate --force --path=database/migrations/2026_11_05_122656_create_purchases_table.php --path=database/migrations/2026_11_05_122657_create_purchase_lines_table.php --path=database/migrations/2026_11_05_122658_create_supplier_invoice_numbers_table.php --path=database/migrations/2026_11_05_122659_create_purchase_receipts_table.php --path=database/migrations/2026_11_05_122700_create_purchase_receipt_lines_table.php --path=database/migrations/2026_11_05_122701_create_purchase_receipt_units_table.php --path=database/migrations/2026_11_05_122702_create_supplier_payments_table.php --path=database/migrations/2026_11_05_122703_create_supplier_ledger_entries_table.php
+   ```
+
+3. Grant the new owner permissions with the targeted seeder (safe to rerun; it creates no users). Do not run `RolesAndPermissionsSeeder` or general seeders.
+
+   ```bash
+   php artisan db:seed --class=OperationalStoreSetupSeeder --force
+   ```
+
+The migrations need MySQL or MariaDB with generated-column, `CHECK` constraint, and window-function support (MariaDB 10.4 is verified).
+
 ### Acceptance Criteria
 
 - Purchases are linked to the correct supplier and store.

@@ -55,6 +55,9 @@
                                 @endif
                             </td>
                             <td class="whitespace-nowrap px-4 py-3 text-end text-sm">
+                                @can('viewAccount', $supplier)
+                                    <a href="{{ route('subdomain.suppliers.account', $supplier) }}" wire:navigate class="inline-flex min-h-11 items-center px-2 font-medium text-blue-600 hover:text-blue-800">{{ __('purchases.account.open') }}</a>
+                                @endcan
                                 <button type="button" wire:click="openEditForm({{ $supplier->id }})" class="min-h-11 px-2 font-medium text-blue-600 hover:text-blue-800">{{ __('suppliers.actions.edit') }}</button>
                             </td>
                         </tr>
@@ -76,7 +79,12 @@
                         <div class="flex gap-2"><dt class="text-gray-500">{{ __('suppliers.fields.contact_name') }}:</dt><dd><bdi>{{ $supplier->contact_name ?? '—' }}</bdi></dd></div>
                         <div class="flex gap-2"><dt class="text-gray-500">{{ __('suppliers.fields.phone') }}:</dt><dd dir="ltr">{{ $supplier->phone ?? '—' }}</dd></div>
                     </dl>
-                    <button type="button" wire:click="openEditForm({{ $supplier->id }})" class="mt-4 min-h-11 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">{{ __('suppliers.actions.edit') }}</button>
+                    <div class="mt-4 flex gap-2">
+                        @can('viewAccount', $supplier)
+                            <a href="{{ route('subdomain.suppliers.account', $supplier) }}" wire:navigate class="flex min-h-11 flex-1 items-center justify-center rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">{{ __('purchases.account.open') }}</a>
+                        @endcan
+                        <button type="button" wire:click="openEditForm({{ $supplier->id }})" class="min-h-11 flex-1 rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">{{ __('suppliers.actions.edit') }}</button>
+                    </div>
                 </li>
             @endforeach
         </ul>
@@ -95,13 +103,13 @@
 
                     <div class="grid gap-5 sm:grid-cols-2">
                         @foreach ([
-                            ['name', 'name', 'text', 'auto', 'sm:col-span-2'],
-                            ['contactName', 'contact_name', 'text', 'auto', ''],
-                            ['phone', 'phone', 'tel', 'ltr', ''],
-                            ['email', 'email', 'email', 'ltr', ''],
-                            ['taxNumber', 'tax_number', 'text', 'ltr', ''],
-                            ['address', 'address', 'text', 'auto', 'sm:col-span-2'],
-                        ] as [$property, $label, $type, $direction, $span])
+                            ['name', 'name', 'text', 'auto', 'sm:col-span-2', 'organization'],
+                            ['contactName', 'contact_name', 'text', 'auto', '', 'name'],
+                            ['phone', 'phone', 'tel', 'ltr', '', 'tel'],
+                            ['email', 'email', 'email', 'ltr', '', 'email'],
+                            ['taxNumber', 'tax_number', 'text', 'ltr', '', 'off'],
+                            ['address', 'address', 'text', 'auto', 'sm:col-span-2', 'street-address'],
+                        ] as [$property, $label, $type, $direction, $span, $autocomplete])
                             <div class="{{ $span }}">
                                 <label for="supplier-{{ $property }}" class="block text-sm font-medium text-gray-700">{{ __("suppliers.fields.{$label}") }}</label>
                                 <input
@@ -109,6 +117,8 @@
                                     type="{{ $type }}"
                                     wire:model="{{ $property }}"
                                     dir="{{ $direction }}"
+                                    autocomplete="{{ $autocomplete }}"
+                                    @if ($property === 'taxNumber') spellcheck="false" @endif
                                     @if ($property === 'name') x-init="$el.focus()" @endif
                                     @error($property) aria-invalid="true" aria-describedby="supplier-{{ $property }}-error" @enderror
                                     class="mt-1 block min-h-11 w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"

@@ -26,6 +26,20 @@
         </div>
     </div>
 
+    @if ($canViewPurchases)
+        <div class="flex flex-col gap-1 rounded-xl bg-gray-50 px-5 py-3 text-sm ring-1 ring-gray-200 sm:flex-row sm:items-center sm:justify-between">
+            <p>
+                <span class="font-medium text-gray-700">{{ __('purchases.valuation.unavailable') }}</span>
+                <span class="block text-xs text-gray-500">{{ __('purchases.valuation.help') }}</span>
+            </p>
+            @if ($lastPurchase?->receipt?->purchase)
+                <a href="{{ route('subdomain.purchases.show', $lastPurchase->receipt->purchase) }}" class="shrink-0 font-medium text-blue-600 hover:text-blue-800">{!! __('purchases.valuation.last_purchase', [
+                    'amount' => view('livewire.backend.purchases.partials.money', ['minor' => \App\Services\Purchasing\Money::fromDecimal($lastPurchase->unit_cost), 'currency' => $lastPurchase->receipt->purchase->currency])->render(),
+                ]) !!}</a>
+            @endif
+        </div>
+    @endif
+
     <div class="grid gap-6 lg:grid-cols-5">
         <div class="space-y-6 lg:col-span-2">
             @if (! $canAdjust)

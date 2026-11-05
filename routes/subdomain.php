@@ -15,6 +15,11 @@ use App\Livewire\Backend\OperationalCatalog\DefinitionsIndex;
 use App\Livewire\Backend\Orders\OrdersManager;
 use App\Livewire\Backend\Products\ProductsComponent;
 use App\Livewire\Backend\Products\SectionComponent;
+use App\Livewire\Backend\Purchases\PurchaseDraft;
+use App\Livewire\Backend\Purchases\PurchaseShow;
+use App\Livewire\Backend\Purchases\PurchasesIndex;
+use App\Livewire\Backend\Purchases\ReceivePurchaseForm;
+use App\Livewire\Backend\Purchases\SupplierAccountPage;
 use App\Livewire\Backend\Settings\SettingsComponent;
 use App\Livewire\Backend\Shops\ShopComponent;
 use App\Livewire\Backend\Shops\ShopProfileComponent;
@@ -26,6 +31,7 @@ use App\Livewire\Backend\Users\UsersComponent;
 use App\Models\CatalogBrand;
 use App\Models\OperationalSupplier;
 use App\Models\ProductDefinition;
+use App\Models\Purchase;
 use App\Models\Store;
 use Illuminate\Support\Facades\Route;
 
@@ -77,6 +83,21 @@ Route::prefix('operations')->group(function () {
         ->middleware('can:viewInventory,store')
         ->scopeBindings()
         ->name('inventory.unit');
+    Route::get('suppliers/{supplier}/account', SupplierAccountPage::class)
+        ->middleware('can:viewAccount,supplier')
+        ->name('suppliers.account');
+    Route::get('purchases', PurchasesIndex::class)
+        ->middleware('can:viewAny,'.Purchase::class)
+        ->name('purchases');
+    Route::get('purchases/{purchase}', PurchaseShow::class)
+        ->middleware('can:view,purchase')
+        ->name('purchases.show');
+    Route::get('purchases/{purchase}/edit', PurchaseDraft::class)
+        ->middleware('can:update,purchase')
+        ->name('purchases.edit');
+    Route::get('purchases/{purchase}/receive', ReceivePurchaseForm::class)
+        ->middleware('can:receive,purchase')
+        ->name('purchases.receive');
 });
 
 // PDF Export Route

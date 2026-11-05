@@ -40,6 +40,9 @@ class OperationalStoreSetupSeeder extends Seeder
         'manage_suppliers',
         'view_inventory',
         'adjust_inventory',
+        'manage_purchases',
+        'receive_purchases',
+        'pay_suppliers',
     ];
 
     public function run(): void

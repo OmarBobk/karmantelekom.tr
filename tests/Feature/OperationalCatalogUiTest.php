@@ -203,7 +203,7 @@ class OperationalCatalogUiTest extends TestCase
             ->set('trackingMode', 'used_device')
             ->call('save')
             ->assertHasErrors('tracking_mode')
-            ->assertSee('لا يمكن تغيير طريقة التتبع بعد تسجيل مخزون لهذا المنتج.')
+            ->assertSee('لا يمكن تغيير طريقة التتبع بعد تسجيل مخزون أو فاتورة شراء مُرحّلة لهذا المنتج.')
             ->assertViewHas('trackingModeLocked', true);
 
         $this->assertSame(TrackingMode::QUANTITY, $definition->fresh()->tracking_mode);
