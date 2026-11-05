@@ -1,0 +1,26 @@
+---
+alwaysApply: false
+---
+
+# Karman Telekom UI and UX
+
+## Understand the task
+
+- Read `DESIGN.md`, the relevant requirements in `PROJECT_SPEC.md` and `IMPLEMENTATION_PLAN.md` when present, and the closest existing view and components. Limit exploration to the requested screen and its workflow.
+- Identify the user's role, branch scope, primary task, and information needed to act. Use the project's documented permissions, terminology, and data semantics.
+- In a design review, recommend one direction in up to eight bullets. Explain the information hierarchy, primary action, typography, spacing, color roles, relevant states, and tablet behavior. If an unresolved product decision blocks the task, state the specific question. Return the review as text.
+
+## Design the screen
+
+- Make the main task easy to spot. Group information by what the user needs together, and place actions near the records they affect. Use the appropriate density for daily operations and preserve important content at smaller widths.
+- Use the type scale, spacing, and semantic colors in `DESIGN.md`. Choose size, weight, and line height by content role. Reserve the accent for actions, selection, and focus. Give status a readable label.
+- Use Arabic labels and RTL structure with logical alignment and spacing. Isolate Latin device names, branch codes, phone numbers, IMEIs, and numeric amounts from surrounding Arabic. Try representative long labels and mixed-direction values.
+- Treat Stitch exports and screenshots as visual references. Compare their layout, states, and values with the project requirements and running application.
+
+## Implement and verify
+
+- Reuse the project's Blade, Livewire, Alpine, and Tailwind components and tokens. Keep edits within the requested UI and use the existing server-backed actions, validation, and access rules. Surface any shared design-system change separately.
+- Cover the states relevant to the screen, such as loading, empty data, no filter matches, validation, failed requests, and success. Keep input recoverable, give fields clear labels, and make the keyboard focus and dialog behavior visible and predictable.
+- In the running app, check the requested screen at 1440px and 1024px, plus 390px when mobile is in scope. Inspect the actual Arabic font, text clipping and overflow, contrast of effective color pairs, focus order, and touch targets. Use synthetic data for previews.
+- Walk through the primary action and the highest-risk relevant state. For visual changes, use one screenshot per requested viewport when available. For an existing screen, compare against the original at a matching viewport when practical.
+- Report the route, viewport widths, actions checked, and remaining verification gaps. Distinguish browser observations from code inspection.
