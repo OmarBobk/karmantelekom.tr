@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\CatalogIdentifierType;
+use App\Enums\PurchaseStatus;
 use App\Enums\TrackingMode;
 use Database\Factories\ProductDefinitionFactory;
 use Illuminate\Database\Eloquent\Builder;
@@ -145,6 +146,18 @@ class ProductDefinition extends Model
         return $this->movements()->exists()
             || $this->balances()->exists()
             || $this->units()->exists();
+    }
+
+    /**
+     * The tracking mode is fixed once stock exists or a posted invoice relies on it for receiving.
+     */
+    public function isTrackingModeLocked(): bool
+    {
+        return $this->hasInventoryHistory()
+            || PurchaseLine::query()
+                ->where('product_definition_id', $this->id)
+                ->whereHas('purchase', fn ($purchase) => $purchase->where('status', PurchaseStatus::POSTED))
+                ->exists();
     }
 
     /**

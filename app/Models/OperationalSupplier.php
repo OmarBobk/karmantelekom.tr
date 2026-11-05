@@ -7,6 +7,7 @@ namespace App\Models;
 use Database\Factories\OperationalSupplierFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * A supplier Karman Telekom purchases operational stock from.
@@ -54,5 +55,21 @@ class OperationalSupplier extends Model
     protected function casts(): array
     {
         return ['is_active' => 'boolean'];
+    }
+
+    /**
+     * @return HasMany<Purchase, $this>
+     */
+    public function purchases(): HasMany
+    {
+        return $this->hasMany(Purchase::class);
+    }
+
+    /**
+     * @return HasMany<SupplierLedgerEntry, $this>
+     */
+    public function ledgerEntries(): HasMany
+    {
+        return $this->hasMany(SupplierLedgerEntry::class);
     }
 }

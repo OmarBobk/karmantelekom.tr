@@ -14,5 +14,9 @@ return [
         'in' => 'The selected :attribute is invalid.',
         'enum' => 'The selected :attribute is invalid.',
         'boolean' => 'The selected :attribute is invalid.',
+        'array' => 'The selected :attribute is invalid.',
+        'date_format' => 'The :attribute must be a valid date.',
+        'before_or_equal' => 'The :attribute cannot be in the future.',
+        'after_or_equal' => 'The :attribute cannot be before the invoice date.',
     ],
 ];

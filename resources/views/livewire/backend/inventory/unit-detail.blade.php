@@ -37,6 +37,22 @@
                             <dt class="text-xs font-medium text-gray-500">{{ __('inventory.fields.store') }}</dt>
                             <dd class="text-sm font-medium text-gray-900"><span dir="ltr" class="font-mono">{{ $store->code }}</span></dd>
                         </div>
+                        @if ($canViewPurchases)
+                            <div class="col-span-2">
+                                <dt class="text-xs font-medium text-gray-500">{{ __('purchases.fields.unit_cost') }}</dt>
+                                <dd class="text-sm text-gray-900">
+                                    @if ($unit->acquisition && $unit->acquisition->receiptLine->receipt->purchase)
+                                        @php($acquiredOn = $unit->acquisition->receiptLine->receipt->purchase)
+                                        <a href="{{ route('subdomain.purchases.show', $acquiredOn) }}" class="font-medium text-blue-600 hover:text-blue-800">{!! __('purchases.valuation.acquired', [
+                                            'number' => '<bdi dir="ltr" class="font-mono">'.e($acquiredOn->supplier_invoice_number).'</bdi>',
+                                            'amount' => view('livewire.backend.purchases.partials.money', ['minor' => $unit->acquisition->unitCostMinor(), 'currency' => $unit->acquisition->currency])->render(),
+                                        ]) !!}</a>
+                                    @else
+                                        <span class="text-gray-500">{{ __('purchases.valuation.no_acquisition') }}</span>
+                                    @endif
+                                </dd>
+                            </div>
+                        @endif
                         @if ($unit->removed_at)
                             <div class="col-span-2">
                                 <dt class="text-xs font-medium text-gray-500">{{ __('inventory.fields.removed_at') }}</dt>

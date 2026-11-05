@@ -14,6 +14,7 @@ enum AdjustmentReason: string
     case FOUND = 'found';
     case DAMAGED = 'damaged';
     case LOST = 'lost';
+    case PURCHASE = 'purchase';
 
     public function label(): string
     {

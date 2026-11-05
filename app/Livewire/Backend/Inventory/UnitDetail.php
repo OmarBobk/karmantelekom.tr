@@ -11,8 +11,11 @@ use App\Enums\UnitStatus;
 use App\Livewire\Backend\Concerns\SubmitsInventoryChanges;
 use App\Livewire\Backend\Concerns\UsesOperationalLocale;
 use App\Models\InventoryUnit;
+use App\Models\Purchase;
+use App\Models\PurchaseReceiptLine;
 use App\Models\Store;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
@@ -83,13 +86,23 @@ class UnitDetail extends Component
     {
         $this->authorize('viewInventory', $this->store);
 
+        $canViewPurchases = Gate::allows('viewAny', Purchase::class);
+
         $unit = $this->store->units()
             ->with(['identifiers', 'productDefinition'])
+            ->when($canViewPurchases, fn ($query) => $query->with('acquisition.receiptLine.receipt.purchase:id,supplier_invoice_number'))
             ->findOrFail($this->unitId);
 
         return view('livewire.backend.inventory.unit-detail', [
             'unit' => $unit,
-            'movements' => $unit->movements()->with('actor:id,name')->latest('occurred_at')->latest('id')->get(),
+            'movements' => $unit->movements()
+                ->with(['actor:id,name', 'reference' => fn (MorphTo $reference) => $reference->morphWith([
+                    PurchaseReceiptLine::class => ['receipt.purchase:id,supplier_invoice_number'],
+                ])])
+                ->latest('occurred_at')
+                ->latest('id')
+                ->get(),
+            'canViewPurchases' => $canViewPurchases,
             'canRemove' => $unit->status === UnitStatus::AVAILABLE && Gate::allows('adjustInventory', $this->store),
             'removalReasons' => MovementType::ADJUSTMENT_DECREASE->allowedReasons(),
             ...$this->localeViewData(),

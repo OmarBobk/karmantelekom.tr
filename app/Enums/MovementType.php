@@ -5,13 +5,14 @@ declare(strict_types=1);
 namespace App\Enums;
 
 /**
- * Kinds of inventory movement supported before purchasing and sales exist.
+ * Kinds of inventory movement supported before sales exist.
  */
 enum MovementType: string
 {
     case OPENING_BALANCE = 'opening_balance';
     case ADJUSTMENT_INCREASE = 'adjustment_increase';
     case ADJUSTMENT_DECREASE = 'adjustment_decrease';
+    case PURCHASE_RECEIPT = 'purchase_receipt';
 
     /**
      * Reasons that may accompany this movement type.
@@ -24,6 +25,7 @@ enum MovementType: string
             self::OPENING_BALANCE => [AdjustmentReason::OPENING_BALANCE],
             self::ADJUSTMENT_INCREASE => [AdjustmentReason::COUNT_CORRECTION, AdjustmentReason::FOUND],
             self::ADJUSTMENT_DECREASE => [AdjustmentReason::COUNT_CORRECTION, AdjustmentReason::DAMAGED, AdjustmentReason::LOST],
+            self::PURCHASE_RECEIPT => [AdjustmentReason::PURCHASE],
         };
     }
 

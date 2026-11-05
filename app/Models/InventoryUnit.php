@@ -10,6 +10,7 @@ use App\Enums\UnitStatus;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 
 /**
@@ -73,6 +74,16 @@ class InventoryUnit extends Model
     public function movements(): HasMany
     {
         return $this->hasMany(InventoryMovement::class);
+    }
+
+    /**
+     * The invoice price this unit was acquired at, when it arrived through a purchase receipt.
+     *
+     * @return HasOne<PurchaseReceiptUnit, $this>
+     */
+    public function acquisition(): HasOne
+    {
+        return $this->hasOne(PurchaseReceiptUnit::class);
     }
 
     public function primaryIdentifierValue(): ?string

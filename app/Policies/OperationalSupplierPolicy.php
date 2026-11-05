@@ -27,6 +27,14 @@ class OperationalSupplierPolicy
         return $this->ownerHas($user, 'manage_suppliers');
     }
 
+    /**
+     * View the supplier's balances and ledger. Amounts are limited to stores the user can access.
+     */
+    public function viewAccount(User $user, OperationalSupplier $operationalSupplier): bool
+    {
+        return $this->ownerHas($user, 'manage_purchases') || $this->ownerHas($user, 'pay_suppliers');
+    }
+
     public function delete(User $user, OperationalSupplier $operationalSupplier): bool
     {
         return false;

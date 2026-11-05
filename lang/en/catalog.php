@@ -93,7 +93,7 @@ return [
     ],
 
     'errors' => [
-        'tracking_mode_locked' => 'The tracking mode cannot change after stock has been recorded for this product.',
+        'tracking_mode_locked' => 'The tracking mode cannot change after stock or a posted purchase invoice has been recorded for this product.',
         'identifier_taken' => 'This identifier is already used by another product.',
     ],
 ];

@@ -22,6 +22,7 @@ return [
         'opening_balance' => 'Opening balance',
         'adjustment_increase' => 'Increase',
         'adjustment_decrease' => 'Decrease',
+        'purchase_receipt' => 'Purchase receipt',
     ],
 
     'reasons' => [
@@ -30,6 +31,7 @@ return [
         'found' => 'Found',
         'damaged' => 'Damaged',
         'lost' => 'Lost',
+        'purchase' => 'Purchase receipt',
     ],
 
     'identifier_types' => [

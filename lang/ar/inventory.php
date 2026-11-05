@@ -22,6 +22,7 @@ return [
         'opening_balance' => 'رصيد افتتاحي',
         'adjustment_increase' => 'زيادة',
         'adjustment_decrease' => 'نقص',
+        'purchase_receipt' => 'استلام مشتريات',
     ],
 
     'reasons' => [
@@ -30,6 +31,7 @@ return [
         'found' => 'تم العثور عليه',
         'damaged' => 'تالف',
         'lost' => 'مفقود',
+        'purchase' => 'استلام مشتريات',
     ],
 
     'identifier_types' => [
