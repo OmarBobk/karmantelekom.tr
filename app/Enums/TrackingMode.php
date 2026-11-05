@@ -33,10 +33,6 @@ enum TrackingMode: string
 
     public function label(): string
     {
-        return match ($this) {
-            self::QUANTITY => 'Quantity',
-            self::SERIALIZED => 'Serialized',
-            self::USED_DEVICE => 'Used device',
-        };
+        return __('catalog.tracking_modes.'.$this->value);
     }
 }

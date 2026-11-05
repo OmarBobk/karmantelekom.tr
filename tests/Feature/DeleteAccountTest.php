@@ -2,6 +2,10 @@
 
 namespace Tests\Feature;
 
+use App\Enums\AdjustmentReason;
+use App\Enums\MovementType;
+use App\Models\InventoryMovement;
+use App\Models\ProductDefinition;
 use App\Models\Store;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -80,5 +84,37 @@ class DeleteAccountTest extends TestCase
         $this->assertDatabaseHas('store_user', ['store_id' => $store->id, 'user_id' => $user->id]);
         $this->assertModelExists($token);
         Storage::disk(config('jetstream.profile_photo_disk', 'public'))->assertExists('profile-photos/avatar.jpg');
+    }
+
+    public function test_account_with_inventory_history_cannot_be_deleted(): void
+    {
+        if (! Features::hasAccountDeletionFeatures()) {
+            $this->markTestSkipped('Account deletion is not enabled.');
+        }
+
+        $user = User::factory()->create(['password' => 'correct-password']);
+        $token = $user->createToken('Test Token')->accessToken;
+        InventoryMovement::query()->create([
+            'store_id' => Store::factory()->create()->id,
+            'product_definition_id' => ProductDefinition::factory()->create()->id,
+            'type' => MovementType::OPENING_BALANCE,
+            'reason' => AdjustmentReason::OPENING_BALANCE,
+            'quantity_change' => 1,
+            'quantity_after' => 1,
+            'user_id' => $user->id,
+            'idempotency_key' => 'history',
+            'request_fingerprint' => str_repeat('0', 64),
+            'occurred_at' => now(),
+        ]);
+
+        $this->actingAs($user);
+
+        Livewire::test(DeleteUserForm::class)
+            ->set('password', 'correct-password')
+            ->call('deleteUser')
+            ->assertHasErrors(['password']);
+
+        $this->assertNotNull($user->fresh());
+        $this->assertModelExists($token);
     }
 }

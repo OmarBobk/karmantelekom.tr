@@ -16,9 +16,10 @@ use Spatie\Permission\PermissionRegistrar;
 /**
  * Repeatable operational-store setup for an existing database.
  *
- * Creates missing initial stores, the `employee` role and the `manage_stores`
- * permission, and grants only `manage_stores` to the existing `admin` role.
- * It never creates users or removes existing roles, permissions, or store details.
+ * Creates missing initial stores, the `employee` role and the owner permissions
+ * listed in OWNER_PERMISSIONS, and grants only those permissions to the existing
+ * `admin` role. It never creates users or removes existing roles, permissions,
+ * or store details.
  */
 class OperationalStoreSetupSeeder extends Seeder
 {
@@ -27,6 +28,19 @@ class OperationalStoreSetupSeeder extends Seeder
     public const EMPLOYEE_ROLE = 'employee';
 
     public const MANAGE_STORES_PERMISSION = 'manage_stores';
+
+    /**
+     * Operational permissions granted only to the owner role.
+     *
+     * @var list<string>
+     */
+    public const OWNER_PERMISSIONS = [
+        self::MANAGE_STORES_PERMISSION,
+        'manage_catalog',
+        'manage_suppliers',
+        'view_inventory',
+        'adjust_inventory',
+    ];
 
     public function run(): void
     {
@@ -52,9 +66,11 @@ class OperationalStoreSetupSeeder extends Seeder
             $this->call(StoreSeeder::class);
 
             Role::findOrCreate(self::EMPLOYEE_ROLE, $guard);
-            $manageStores = Permission::findOrCreate(self::MANAGE_STORES_PERMISSION, $guard);
 
-            $ownerRole->givePermissionTo($manageStores);
+            $ownerRole->givePermissionTo(array_map(
+                fn (string $permission): Permission => Permission::findOrCreate($permission, $guard),
+                self::OWNER_PERMISSIONS,
+            ));
         });
 
         $registrar->forgetCachedPermissions();

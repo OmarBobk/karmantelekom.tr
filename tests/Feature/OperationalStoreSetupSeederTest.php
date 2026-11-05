@@ -40,7 +40,9 @@ class OperationalStoreSetupSeederTest extends TestCase
 
         $this->assertSame(['KT01', 'KT02'], Store::orderBy('code')->pluck('code')->all());
         $this->assertTrue(Role::where('name', 'employee')->where('guard_name', 'web')->exists());
-        $this->assertTrue(Permission::where('name', 'manage_stores')->where('guard_name', 'web')->exists());
+        foreach (OperationalStoreSetupSeeder::OWNER_PERMISSIONS as $permission) {
+            $this->assertTrue(Permission::where('name', $permission)->where('guard_name', 'web')->exists());
+        }
 
         Store::where('code', 'KT02')->update(['name' => 'Kadıköy Branch', 'phone' => '+90 216 000 0002']);
         $counts = [Store::count(), Role::count(), Permission::count()];
@@ -53,7 +55,10 @@ class OperationalStoreSetupSeederTest extends TestCase
 
         app(PermissionRegistrar::class)->forgetCachedPermissions();
         $admin = Role::findByName('admin');
-        $this->assertEqualsCanonicalizing(['manage_users', 'manage_stores'], $admin->permissions->pluck('name')->all());
+        $this->assertEqualsCanonicalizing(
+            ['manage_users', 'manage_stores', 'manage_catalog', 'manage_suppliers', 'view_inventory', 'adjust_inventory'],
+            $admin->permissions->pluck('name')->all(),
+        );
         $this->assertTrue(Role::findByName('salesperson')->permissions->isEmpty());
         $this->assertTrue(Role::findByName('employee')->permissions->isEmpty());
         $this->assertTrue($owner->fresh()->hasRole('admin'));

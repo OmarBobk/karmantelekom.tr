@@ -25,7 +25,7 @@ class RolesAndPermissionsSeeder extends Seeder
             'customer_profile',
             'edit_orders',
             'delete_orders',
-            'manage_stores',
+            ...OperationalStoreSetupSeeder::OWNER_PERMISSIONS,
         ];
 
         // Create permissions

@@ -173,8 +173,8 @@ All store-access tests pass, and the authorization pattern is reusable across in
 `OperationalStoreSetupSeeder` prepares an existing database for operational stores. It is safe to run more than once:
 
 - creates `KT01` and `KT02` only if missing (via `StoreSeeder`), leaving edited store details untouched;
-- creates the `employee` role and the `manage_stores` permission for the default (`web`) guard if missing;
-- grants `manage_stores` to the existing `admin` role, without removing any of its other permissions;
+- creates the `employee` role and the owner permissions (`manage_stores`, plus the Phase 2 `manage_catalog`, `manage_suppliers`, `view_inventory`, and `adjust_inventory`) for the default (`web`) guard if missing;
+- grants those permissions to the existing `admin` role, without removing any of its other permissions;
 - creates no users and changes no existing role memberships or permissions.
 
 If the `admin` role does not exist, it aborts with an error before writing anything. Do not use `RolesAndPermissionsSeeder` or `DatabaseSeeder` on an existing database: they create users with fixed emails.
@@ -252,8 +252,92 @@ Create the product and inventory model on which purchasing, POS, used-device tra
 - A definition has a name, optional description and model, an active flag (default active), and a required `tracking_mode`: `quantity`, `serialized`, or `used_device` (`App\Enums\TrackingMode`).
 - SKU and barcode are optional strings. They are trimmed, blank values are stored as `NULL`, and barcodes keep leading zeros. Each is unique within its own column, enforced by the database with case-sensitive (binary) comparison; the same value may appear as one definition's SKU and another's barcode.
 - Lookups must name the identifier type: `ProductDefinition::findByIdentifier(CatalogIdentifierType::SKU, $value)` or `CatalogIdentifierType::BARCODE`. There is no "any identifier" lookup, so results are never ambiguous.
-- IMEI and serial numbers identify individual devices and belong to future device records, not to definitions.
-- Creating a definition never creates stock or inventory movements. Brands, categories, suppliers, UI, and inventory workflows are separate tasks.
+- IMEI and serial numbers identify individual units (`inventory_units`), not definitions.
+- Creating a definition never creates stock or inventory movements.
+- A definition may link to one operational brand and one flat operational category. Once any store has inventory history for a definition, its tracking mode can no longer change.
+
+### Operational Brands, Categories, and Suppliers
+
+- Operational brands (`catalog_brands`, `CatalogBrand`) and flat categories (`catalog_categories`, `CatalogCategory`) are separate from the e-commerce `Category` and the legacy brand fields. Names are unique; entries are deactivated rather than deleted. Dynamic category specifications are deferred.
+- Suppliers are `OperationalSupplier` (`operational_suppliers`): name, contact person, phone, email, tax number, address, notes, and an active flag. A tax number, when given, is unique. The stale legacy `App\Models\Supplier` reference is not reused. Purchasing and supplier balances are Phase 3.
+
+### Store Inventory Foundation
+
+- Quantity definitions keep one `inventory_balances` row per store and definition. Quantities are whole numbers and never go below zero (also enforced by an unsigned column).
+- Serialized and used-device definitions keep one `inventory_units` row per physical unit, with the status `available` or `removed`. Serialized units have the condition `new`; used devices use `a`, `b`, `c`, or `for_parts`. Further device lifecycle states belong to Phase 4.
+- Unit identifiers live in `inventory_unit_identifiers`:
+  - Every unit needs at least one IMEI or serial number. A second IMEI is accepted for dual-SIM devices.
+  - An IMEI is a 15-digit string with a valid Luhn check digit and is unique system-wide.
+  - A serial number is trimmed and unique within its product definition.
+  - Both rules are enforced by a unique index on a generated `uniqueness_scope` column with binary collation, so they include removed units and secondary IMEIs.
+  - Removal keeps the unit and its identifiers.
+- `inventory_movements` is append-only (the model rejects updates and deletes). Each row records the store, definition, unit (when applicable), actor, type, reason, note, time, signed quantity change, and either the quantity after the change or the unit status before and after.
+- Movement types and reasons:
+  - `opening_balance`: reason `opening_balance`.
+  - `adjustment_increase`: reason `count_correction` or `found`.
+  - `adjustment_decrease`: reason `count_correction`, `damaged`, or `lost`. A note is required.
+- Opening balance:
+  - Allowed once per store and quantity definition, and only before any stock history in that store. A unique generated `opening_balance_scope` column backs this rule.
+  - Registering a unit records an `opening_balance` movement of +1.
+  - Removing a unit records an `adjustment_decrease` of −1.
+- All stock changes go through `App\Actions\Inventory\InventoryLedger`:
+  - In one transaction, it locks the product definition row first, then the balance or unit row.
+  - Within that lock it rechecks the tracking mode and the inventory history.
+  - It recalculates the quantity from the locked row and writes the stock change and the movement together.
+  - Definition edits take the same definition-row lock, so a tracking-mode change cannot race a stock write.
+- Idempotency:
+  - Every stock form submits a stable `idempotency_key`, which is unique in `inventory_movements`.
+  - An identical retry by the same actor returns the original movement.
+  - Reusing a key with a different actor, store, operation, target, or normalized payload is rejected.
+  - A unique-key race is resolved after the losing transaction has rolled back.
+- Inventory costs and valuation, purchasing, POS, debts, transfers, and reservations are not part of this foundation.
+
+### Phase 2 Access
+
+- New screens live under `/operations` on the admin subdomain: `catalog`, `catalog/settings`, `suppliers`, `inventory`, `inventory/{store}`, `inventory/{store}/products/{productDefinition}`, and `inventory/{store}/units/{unit}`.
+- In this milestone every route and Livewire action is owner-only:
+  - It requires the `admin` role plus the relevant permission:
+    - `manage_catalog` for definitions, brands, and categories;
+    - `manage_suppliers` for suppliers;
+    - `view_inventory` to read stock;
+    - `adjust_inventory` to change it.
+  - Inventory access also requires the existing store access check.
+  - Livewire components re-authorize on every request.
+  - Units and movements are always loaded through their store, so a unit URL under a different store returns 404.
+- `OperationalStoreSetupSeeder` grants these four permissions, together with `manage_stores`, to the existing `admin` role only. Legacy admin middleware and routes are unchanged.
+- A user who has recorded inventory movements cannot delete their own account, because the history must be kept.
+
+### Phase 2 Setup on an Existing Database
+
+Run on the target server after review and deployment, with a fresh database backup. The Phase 1 store migrations and setup must already be applied.
+
+1. Run `php artisan migrate:status --pending`. These eight migrations should be pending:
+
+   - `2026_11_05_110647_create_catalog_brands_table`
+   - `2026_11_05_110648_create_catalog_categories_table`
+   - `2026_11_05_110649_create_operational_suppliers_table`
+   - `2026_11_05_110650_create_inventory_balances_table`
+   - `2026_11_05_110651_create_inventory_units_table`
+   - `2026_11_05_110652_create_inventory_unit_identifiers_table`
+   - `2026_11_05_110653_create_inventory_movements_table`
+   - `2026_11_05_110654_add_catalog_links_to_product_definitions_table`
+
+   The P2-01 migration `2026_11_05_104640_create_product_definitions_table` must already show `Ran`. If it is still pending, add its `--path` first in the commands below.
+
+2. Preview, then apply only these migrations:
+
+   ```bash
+   php artisan migrate --pretend --path=database/migrations/2026_11_05_110647_create_catalog_brands_table.php --path=database/migrations/2026_11_05_110648_create_catalog_categories_table.php --path=database/migrations/2026_11_05_110649_create_operational_suppliers_table.php --path=database/migrations/2026_11_05_110650_create_inventory_balances_table.php --path=database/migrations/2026_11_05_110651_create_inventory_units_table.php --path=database/migrations/2026_11_05_110652_create_inventory_unit_identifiers_table.php --path=database/migrations/2026_11_05_110653_create_inventory_movements_table.php --path=database/migrations/2026_11_05_110654_add_catalog_links_to_product_definitions_table.php
+   php artisan migrate --force --path=database/migrations/2026_11_05_110647_create_catalog_brands_table.php --path=database/migrations/2026_11_05_110648_create_catalog_categories_table.php --path=database/migrations/2026_11_05_110649_create_operational_suppliers_table.php --path=database/migrations/2026_11_05_110650_create_inventory_balances_table.php --path=database/migrations/2026_11_05_110651_create_inventory_units_table.php --path=database/migrations/2026_11_05_110652_create_inventory_unit_identifiers_table.php --path=database/migrations/2026_11_05_110653_create_inventory_movements_table.php --path=database/migrations/2026_11_05_110654_add_catalog_links_to_product_definitions_table.php
+   ```
+
+3. Grant the new owner permissions with the targeted seeder (safe to rerun; it creates no users):
+
+   ```bash
+   php artisan db:seed --class=OperationalStoreSetupSeeder --force
+   ```
+
+The migrations require MySQL or MariaDB with generated-column and `CHECK` constraint support (MariaDB 10.4 is verified).
 
 ### Acceptance Criteria
 

@@ -2,15 +2,15 @@
 
 declare(strict_types=1);
 
-namespace App\Livewire\Backend\Stores;
+namespace App\Livewire\Backend;
 
 use Illuminate\Support\Facades\App;
 
 /**
- * Store management screens are translated into Arabic and English only;
- * any other active locale falls back to Arabic.
+ * Operational screens (stores, catalog, suppliers, inventory) are translated into
+ * Arabic and English only; any other active locale falls back to Arabic.
  */
-final class StoreManagementLocale
+final class OperationalLocale
 {
     public const FALLBACK = 'ar';
 

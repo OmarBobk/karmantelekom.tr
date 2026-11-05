@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * An operational Karman Telekom store location.
@@ -40,6 +41,34 @@ class Store extends Model
     public function employees(): BelongsToMany
     {
         return $this->belongsToMany(User::class)->withTimestamps();
+    }
+
+    /**
+     * Quantity balances held by this store.
+     *
+     * @return HasMany<InventoryBalance, $this>
+     */
+    public function inventoryBalances(): HasMany
+    {
+        return $this->hasMany(InventoryBalance::class);
+    }
+
+    /**
+     * Individually tracked units held by this store. Named for scoped route bindings ({unit}).
+     *
+     * @return HasMany<InventoryUnit, $this>
+     */
+    public function units(): HasMany
+    {
+        return $this->hasMany(InventoryUnit::class);
+    }
+
+    /**
+     * @return HasMany<InventoryMovement, $this>
+     */
+    public function inventoryMovements(): HasMany
+    {
+        return $this->hasMany(InventoryMovement::class);
     }
 
     /**

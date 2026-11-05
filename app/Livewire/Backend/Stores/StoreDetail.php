@@ -6,6 +6,7 @@ namespace App\Livewire\Backend\Stores;
 
 use App\Actions\Stores\AssignEmployeeToStore;
 use App\Actions\Stores\RemoveEmployeeFromStore;
+use App\Livewire\Backend\OperationalLocale;
 use App\Models\Store;
 use App\Models\User;
 use Illuminate\Contracts\View\View;
@@ -28,7 +29,7 @@ class StoreDetail extends Component
 
     public function boot(): void
     {
-        StoreManagementLocale::apply();
+        OperationalLocale::apply();
     }
 
     public function mount(Store $store): void
@@ -131,8 +132,8 @@ class StoreDetail extends Component
             'employeeToRemove' => $this->employeeToRemoveId !== null
                 ? $employees->firstWhere('id', $this->employeeToRemoveId)
                 : null,
-            'locale' => StoreManagementLocale::resolve(),
-            'textDirection' => StoreManagementLocale::direction(),
+            'locale' => OperationalLocale::resolve(),
+            'textDirection' => OperationalLocale::direction(),
         ])->title($this->store->name.' — '.__('stores.title'));
     }
 }
