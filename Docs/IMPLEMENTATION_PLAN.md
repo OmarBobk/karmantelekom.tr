@@ -168,6 +168,50 @@ All store-access tests pass, and the authorization pattern is reusable across in
 - Use `Store::query()->accessibleTo($user)` to list or look up stores, and `$user->can('access', $store)` (`StorePolicy::access`) to authorize a single store. Never trust a submitted store ID without one of these checks.
 - No global scope or middleware applies these checks. Every future store-owned workflow (inventory, purchasing, POS, cashbox, expenses, reporting) must explicitly scope queries and authorize actions with them, and add its own tests.
 
+### Operational Store Setup on an Existing Database
+
+`OperationalStoreSetupSeeder` prepares an existing database for operational stores. It is safe to run more than once:
+
+- creates `KT01` and `KT02` only if missing (via `StoreSeeder`), leaving edited store details untouched;
+- creates the `employee` role and the `manage_stores` permission for the default (`web`) guard if missing;
+- grants `manage_stores` to the existing `admin` role, without removing any of its other permissions;
+- creates no users and changes no existing role memberships or permissions.
+
+If the `admin` role does not exist, it aborts with an error before writing anything. Do not use `RolesAndPermissionsSeeder` or `DatabaseSeeder` on an existing database: they create users with fixed emails.
+
+Run these steps on the target server after the change is reviewed and deployed. Take a database backup first.
+
+1. Check migration status:
+
+   ```bash
+   php artisan migrate:status
+   php artisan migrate:status --pending
+   ```
+
+   The store migrations are:
+
+   - `2026_11_04_183446_create_stores_table`
+   - `2026_11_04_191024_create_store_user_table`
+
+   Both should be listed as `Pending`. Any other migration in the `--pending` output is unrelated to this setup. Do not run a plain `php artisan migrate` until those have been reviewed separately, because it would apply them too.
+
+2. Preview, then apply only the store migrations:
+
+   ```bash
+   php artisan migrate --pretend --path=database/migrations/2026_11_04_183446_create_stores_table.php --path=database/migrations/2026_11_04_191024_create_store_user_table.php
+   php artisan migrate --force --path=database/migrations/2026_11_04_183446_create_stores_table.php --path=database/migrations/2026_11_04_191024_create_store_user_table.php
+   ```
+
+   Run `php artisan migrate:status` again and confirm both store migrations show `Ran` and nothing else changed.
+
+3. Run the targeted setup seeder:
+
+   ```bash
+   php artisan db:seed --class=OperationalStoreSetupSeeder --force
+   ```
+
+   `--force` is only needed when `APP_ENV=production`. The seeder clears the Spatie permission cache itself.
+
 ---
 
 ## 6. Phase 2 — Product Catalog, Suppliers, and Inventory Foundations
