@@ -531,6 +531,7 @@ The owner must approve the relevant cost-allocation rules before implementation.
 - **Stale forms.** Every lifecycle or condition change increments `lifecycle_revision`:
   - Forms submit the status and revision they were opened with, and both are checked under the unit lock, so a device that left and returned to the same status is still detected.
   - A stale form writes nothing and keeps the operator's input. It stays bound to the old state, so resubmitting it is rejected again and can never act on a newer repair.
+  - Cost writes, cost corrections, and identifier corrections never rebind lifecycle forms. A successful lifecycle action adopts only the state its own movement produced, not a fresh read of the device.
   - The form shows the device's current status and open repair. The operator must choose "Continue with current state" (or reload the page) to adopt the new revision. Doing so clears the physical-return confirmations, which must be confirmed again for the current repair.
   - A replay with the same key returns the original result before this check, so a successful submission whose response was lost is not repeated.
 - **Costs.** Parts, labor, additional acquisition, and other costs are separate entries:

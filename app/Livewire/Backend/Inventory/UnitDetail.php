@@ -331,6 +331,7 @@ class UnitDetail extends Component
             'costCategory',
             'record-cost',
             ['costCategory', 'costDescription', 'costMode', 'costAmount', 'costRepairId'],
+            advancesLifecycle: false,
         );
     }
 
@@ -368,6 +369,7 @@ class UnitDetail extends Component
             'reversalReason',
             'reverse-cost',
             ['reversingEntryId', 'reversalReason', 'replacementMode', 'replacementAmount', 'replacementDescription'],
+            advancesLifecycle: false,
         );
     }
 
@@ -395,6 +397,7 @@ class UnitDetail extends Component
             'newIdentifierValue',
             'correct-identifier',
             ['correctingIdentifierId', 'correctionExpectedValue', 'newIdentifierValue', 'correctionReason', 'correctionConfirmed'],
+            advancesLifecycle: false,
         );
     }
 
@@ -491,17 +494,23 @@ class UnitDetail extends Component
     /**
      * Run one recorded action with this form's key, mapping errors onto its fields.
      *
-     * On success the form is cleared, its dialog closed, and the page adopts the new state.
-     * On a stale form nothing was written: the page explains the change and keeps the
-     * operator's input, but the expected state is not adopted here, so the same form cannot
-     * silently apply to whatever the device became (for example a newer repair).
+     * On success the form is cleared and its dialog closed. A lifecycle action adopts exactly the
+     * state its own movement produced (the submitted revision plus one), never a re-read of the
+     * unit, so a concurrent change stays detectable. Cost and identifier writes do not advance the
+     * revision and leave the reviewed state untouched, so a pending stale lifecycle form cannot be
+     * rebound by them.
+     *
+     * On a stale form nothing was written: the page explains the change and keeps the operator's
+     * input, but the expected state is only adopted through refreshState().
      *
      * @param  Closure(): InventoryMovement  $action
      * @param  array<string, string>  $errorMap
      * @param  list<string>  $resetOnSuccess
      */
-    private function runLifecycleAction(Closure $action, array $errorMap, string $fallbackErrorKey, string $dialog, array $resetOnSuccess): void
+    private function runLifecycleAction(Closure $action, array $errorMap, string $fallbackErrorKey, string $dialog, array $resetOnSuccess, bool $advancesLifecycle = true): void
     {
+        $submittedRevision = $this->expectedRevision;
+
         try {
             $movement = $this->submitInventoryChange($action, ['unit' => $fallbackErrorKey, ...$errorMap], $fallbackErrorKey);
         } catch (StaleUnitStateException $exception) {
@@ -516,8 +525,14 @@ class UnitDetail extends Component
         }
 
         $this->reset($resetOnSuccess);
-        $this->staleNotice = null;
-        $this->adoptState($this->unitQuery()->firstOrFail());
+
+        if ($advancesLifecycle) {
+            $this->expectedStatus = $movement->unit_status_after->value;
+            $this->expectedRevision = $submittedRevision + 1;
+            $this->reset('completionReturned', 'cancelReturned');
+            $this->staleNotice = null;
+        }
+
         $this->resetPage('timeline');
         $this->dispatch('close-dialog', id: $dialog);
     }
