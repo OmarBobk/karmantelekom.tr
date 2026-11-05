@@ -113,6 +113,9 @@ class PurchaseDraft extends Component
 
     /**
      * Enter in the product box adds the product with exactly this SKU or barcode.
+     *
+     * One value may be the SKU of one definition and the barcode of another; then nothing
+     * is added and the operator picks from the listed matches.
      */
     public function addExactMatch(): void
     {
@@ -120,18 +123,25 @@ class PurchaseDraft extends Component
 
         $identifier = ProductDefinition::normalizeIdentifier($this->productSearch);
 
-        $definition = $identifier === null ? null : ProductDefinition::query()
+        $definitionIds = $identifier === null ? collect() : ProductDefinition::query()
             ->active()
             ->where(fn (Builder $matches) => $matches->where('sku', $identifier)->orWhere('barcode', $identifier))
-            ->first(['id']);
+            ->limit(2)
+            ->pluck('id');
 
-        if ($definition === null) {
+        if ($definitionIds->isEmpty()) {
             $this->addError('productSearch', __('purchases.draft.exact_not_found'));
 
             return;
         }
 
-        $this->appendLine($definition->id);
+        if ($definitionIds->count() > 1) {
+            $this->addError('productSearch', __('purchases.draft.exact_ambiguous', ['code' => $identifier]));
+
+            return;
+        }
+
+        $this->appendLine($definitionIds->sole());
     }
 
     public function removeLine(int $index): void
@@ -241,6 +251,7 @@ class PurchaseDraft extends Component
             'purchase' => $purchase,
             'definitions' => $definitions,
             'productMatches' => $this->productMatches(),
+            'searchIdentifier' => ProductDefinition::normalizeIdentifier($this->productSearch),
             'lineTotals' => $this->previewLineTotals(),
             'previewTotal' => $this->previewTotal(),
             'stores' => Store::query()->accessibleTo(auth()->user())->orderBy('code')->get(['id', 'code', 'name']),
@@ -299,9 +310,10 @@ class PurchaseDraft extends Component
         return ProductDefinition::query()
             ->active()
             ->where(fn (Builder $matches) => $matches->search($term)->orWhere('sku', $term)->orWhere('barcode', $term))
+            ->orderByRaw('CASE WHEN sku = ? OR barcode = ? THEN 0 ELSE 1 END', [$term, $term])
             ->orderBy('name')
             ->limit(8)
-            ->get(['id', 'name', 'model', 'sku', 'tracking_mode']);
+            ->get(['id', 'name', 'model', 'sku', 'barcode', 'tracking_mode']);
     }
 
     /**

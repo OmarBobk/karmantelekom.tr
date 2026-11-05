@@ -141,6 +141,82 @@ class PurchasingUiTest extends TestCase
         $this->assertSame('Counted at the door', $purchase->refresh()->notes);
     }
 
+    #[Test]
+    public function enter_on_a_code_shared_by_two_products_adds_neither_until_the_operator_chooses(): void
+    {
+        $this->useEnglishLocale();
+        $skuOwner = ProductDefinition::factory()->create(['name' => 'Charger 20W', 'model' => 'CH-20', 'sku' => '0042']);
+        $barcodeOwner = ProductDefinition::factory()->create(['name' => 'Screen Guard', 'model' => 'SG-13', 'barcode' => '0042']);
+        $purchase = $this->draftPurchase($this->owner, $this->storeOne, $this->supplier, [[$this->cable, 1, '12.50']]);
+
+        $draft = Livewire::actingAs($this->owner)
+            ->test(PurchaseDraft::class, ['purchase' => $purchase])
+            ->set('productSearch', '0042')
+            ->call('addExactMatch')
+            ->assertHasErrors(['productSearch' => __('purchases.draft.exact_ambiguous', ['code' => '0042'])])
+            ->assertNotDispatched('purchase-line-added')
+            ->assertCount('lines', 1)
+            ->assertSet('productSearch', '0042')
+            ->assertSeeInOrder(['Charger 20W', 'CH-20', 'SKU', '0042'])
+            ->assertSeeInOrder(['Screen Guard', 'SG-13', 'Barcode', '0042']);
+
+        $draft->call('addProduct', $barcodeOwner->id)
+            ->assertHasNoErrors()
+            ->assertDispatched('purchase-line-added', index: 1)
+            ->assertSet('lines.1.product_definition_id', $barcodeOwner->id)
+            ->assertSet('productSearch', '');
+
+        $this->assertNotSame($skuOwner->id, $draft->get('lines.1.product_definition_id'));
+    }
+
+    /**
+     * @return array<string, array{array<string, string>, array<string, string>, string, bool}>
+     */
+    public static function exactCodeLookups(): array
+    {
+        return [
+            'one product with the code as both SKU and barcode' => [['sku' => '0042', 'barcode' => '0042'], [], '0042', true],
+            'the other holder of the code is inactive' => [['sku' => '0042'], ['barcode' => '0042'], '0042', true],
+            'leading zeros are part of the code' => [['sku' => '0042'], [], '042', false],
+        ];
+    }
+
+    /**
+     * @param  array<string, string>  $identifiers
+     * @param  array<string, string>  $inactiveIdentifiers
+     */
+    #[Test]
+    #[DataProvider('exactCodeLookups')]
+    public function enter_adds_a_single_exact_match_and_nothing_else(array $identifiers, array $inactiveIdentifiers, string $scanned, bool $adds): void
+    {
+        $this->useEnglishLocale();
+        $definition = ProductDefinition::factory()->create(['name' => 'Charger 20W', ...$identifiers]);
+
+        if ($inactiveIdentifiers !== []) {
+            ProductDefinition::factory()->inactive()->create(['name' => 'Retired Charger', ...$inactiveIdentifiers]);
+        }
+
+        $purchase = $this->draftPurchase($this->owner, $this->storeOne, $this->supplier, [[$this->cable, 1, '12.50']]);
+
+        $draft = Livewire::actingAs($this->owner)
+            ->test(PurchaseDraft::class, ['purchase' => $purchase])
+            ->set('productSearch', $scanned)
+            ->call('addExactMatch');
+
+        if ($adds) {
+            $draft->assertHasNoErrors()
+                ->assertDispatched('purchase-line-added', index: 1)
+                ->assertCount('lines', 2)
+                ->assertSet('lines.1.product_definition_id', $definition->id);
+
+            return;
+        }
+
+        $draft->assertHasErrors(['productSearch' => __('purchases.draft.exact_not_found')])
+            ->assertNotDispatched('purchase-line-added')
+            ->assertCount('lines', 1);
+    }
+
     /**
      * @return array<string, array{?string, list<string>, int}>
      */

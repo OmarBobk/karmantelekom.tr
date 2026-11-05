@@ -92,7 +92,11 @@
                     <div>
                         <label for="draft-product-search" class="block text-sm font-medium text-gray-700">{{ __('purchases.draft.find_product') }}</label>
                         <div class="relative">
-                            <input id="draft-product-search" type="search" wire:model.live.debounce.300ms="productSearch" wire:keydown.enter.prevent="addExactMatch" autocomplete="off" spellcheck="false" placeholder="{{ __('purchases.draft.find_product_placeholder') }}" aria-describedby="draft-product-search-help @error('productSearch') draft-product-search-error @enderror" @error('productSearch') aria-invalid="true" @enderror @class([$field, $invalid => $errors->has('productSearch')])>
+                            <input id="draft-product-search" type="search" wire:model="productSearch"
+                                x-data="{ searchTimer: null }"
+                                x-on:input="clearTimeout(searchTimer); searchTimer = setTimeout(() => $wire.$commit(), 300)"
+                                x-on:keydown.enter.prevent="clearTimeout(searchTimer); $wire.addExactMatch()"
+                                x-on:keydown.down.prevent="document.querySelector('#draft-product-matches button')?.focus()" autocomplete="off" spellcheck="false" placeholder="{{ __('purchases.draft.find_product_placeholder') }}" aria-describedby="draft-product-search-help @error('productSearch') draft-product-search-error @enderror" @error('productSearch') aria-invalid="true" @enderror @class([$field, $invalid => $errors->has('productSearch')])>
                             <div wire:loading.flex wire:target="productSearch,addExactMatch,addProduct" class="pointer-events-none absolute inset-y-0 end-3 mt-1 items-center" aria-hidden="true">
                                 <svg class="h-4 w-4 animate-spin text-gray-400" viewBox="0 0 24 24" fill="none"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 0 1 8-8v4a4 4 0 0 0-4 4H4Z"></path></svg>
                             </div>
@@ -104,14 +108,29 @@
                         @if ($productMatches->isEmpty())
                             <p class="rounded-lg bg-gray-50 px-3 py-3 text-sm text-gray-600" role="status">{{ __('purchases.draft.no_product_matches') }}</p>
                         @else
-                            <ul class="divide-y divide-gray-100 rounded-lg ring-1 ring-gray-200">
+                            <ul id="draft-product-matches" aria-label="{{ __('purchases.draft.matches_label') }}" class="divide-y divide-gray-100 rounded-lg ring-1 ring-gray-200"
+                                x-on:keydown.down.prevent="$event.target.closest('li')?.nextElementSibling?.querySelector('button')?.focus()"
+                                x-on:keydown.up.prevent="($event.target.closest('li')?.previousElementSibling?.querySelector('button') ?? document.getElementById('draft-product-search')).focus()">
                                 @foreach ($productMatches as $match)
                                     <li wire:key="product-match-{{ $match->id }}">
-                                        <button type="button" wire:click="addProduct({{ $match->id }})" class="flex min-h-11 w-full flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-start hover:bg-blue-50 focus-visible:bg-blue-50">
+                                        <button type="button" wire:click="addProduct({{ $match->id }})" class="flex min-h-11 w-full flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-start hover:bg-blue-50 focus-visible:bg-blue-50 focus-visible:outline-2 focus-visible:-outline-offset-2 focus-visible:outline-blue-600">
                                             <span class="font-medium text-gray-900">{{ $match->name }}</span>
                                             @if ($match->model)<bdi class="text-sm text-gray-500">{{ $match->model }}</bdi>@endif
                                             <span class="text-xs text-gray-500">{{ $match->tracking_mode->label() }}</span>
-                                            @if ($match->sku)<span dir="ltr" class="ms-auto font-mono text-xs text-gray-500">{{ $match->sku }}</span>@endif
+                                            <span class="ms-auto flex flex-wrap items-center gap-x-3 gap-y-1 text-xs text-gray-500">
+                                                @foreach (['sku', 'barcode'] as $identifierField)
+                                                    @if ($match->{$identifierField})
+                                                        @php
+                                                            $isExact = $searchIdentifier !== null && mb_strtolower($match->{$identifierField}) === mb_strtolower($searchIdentifier);
+                                                        @endphp
+                                                        <span @class(['rounded px-1.5 py-0.5', 'bg-amber-50 font-semibold text-amber-900 ring-1 ring-amber-200' => $isExact])>
+                                                            {{ __('catalog.fields.'.$identifierField) }}
+                                                            <bdi dir="ltr" class="font-mono">{{ $match->{$identifierField} }}</bdi>
+                                                            @if ($isExact)<span class="sr-only">({{ __('purchases.draft.exact_match') }})</span>@endif
+                                                        </span>
+                                                    @endif
+                                                @endforeach
+                                            </span>
                                         </button>
                                     </li>
                                 @endforeach
