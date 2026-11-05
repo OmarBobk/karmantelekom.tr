@@ -246,6 +246,15 @@ Create the product and inventory model on which purchasing, POS, used-device tra
 - Product attributes must be maintainable without turning every product field into an unrelated special case.
 - Inventory history must not depend solely on a manually editable quantity field.
 
+### Operational Catalog Definitions
+
+- Operational catalog entries are `ProductDefinition` (`product_definitions`), shared by all stores and separate from the e-commerce `Product`, which is unchanged.
+- A definition has a name, optional description and model, an active flag (default active), and a required `tracking_mode`: `quantity`, `serialized`, or `used_device` (`App\Enums\TrackingMode`).
+- SKU and barcode are optional strings. They are trimmed, blank values are stored as `NULL`, and barcodes keep leading zeros. Each is unique within its own column, enforced by the database with case-sensitive (binary) comparison; the same value may appear as one definition's SKU and another's barcode.
+- Lookups must name the identifier type: `ProductDefinition::findByIdentifier(CatalogIdentifierType::SKU, $value)` or `CatalogIdentifierType::BARCODE`. There is no "any identifier" lookup, so results are never ambiguous.
+- IMEI and serial numbers identify individual devices and belong to future device records, not to definitions.
+- Creating a definition never creates stock or inventory movements. Brands, categories, suppliers, UI, and inventory workflows are separate tasks.
+
 ### Acceptance Criteria
 
 - Products can be created, searched, and reused.
