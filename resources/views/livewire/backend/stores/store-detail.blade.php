@@ -52,6 +52,9 @@
             <h2 id="assigned-employees-title" class="text-base font-semibold text-gray-900">{{ __('stores.employees.title') }}</h2>
             <span class="inline-flex items-center rounded-full bg-blue-50 px-2.5 py-0.5 text-sm font-medium text-blue-700">{{ $employees->count() }}</span>
         </div>
+        @if ($canManagePos && $employees->isNotEmpty())
+            <p id="pos-access-scope-note" class="border-b border-gray-100 bg-amber-50 px-5 py-2 text-sm text-amber-900">{{ __('pos.access.scope_note') }}</p>
+        @endif
 
         @if ($employees->isEmpty())
             <div class="px-6 py-10 text-center">
@@ -77,14 +80,84 @@
                                 @endforelse
                             </p>
                         </div>
-                        <button type="button" wire:click="confirmRemoval({{ $employee->id }})" class="self-start rounded-lg border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50 sm:self-center">
-                            {{ __('stores.actions.remove') }}
-                        </button>
+                        <div class="flex flex-wrap items-center gap-2 self-start sm:self-center">
+                            @if ($canManagePos)
+                                @php($hasPos = $employee->permissions->contains('name', $posPermission))
+                                <button
+                                    type="button"
+                                    role="switch"
+                                    aria-checked="{{ $hasPos ? 'true' : 'false' }}"
+                                    aria-describedby="pos-access-scope-note"
+                                    wire:click="setPosAccess({{ $employee->id }}, {{ $hasPos ? 'false' : 'true' }})"
+                                    wire:loading.attr="disabled"
+                                    wire:target="setPosAccess"
+                                    @if ($hasPos) wire:confirm="{{ __('pos.access.revoke_confirm', ['name' => $employee->name]) }}" @endif
+                                    @class([
+                                        'inline-flex min-h-10 items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium ring-1 disabled:opacity-60',
+                                        'bg-emerald-50 text-emerald-800 ring-emerald-300 hover:bg-emerald-100' => $hasPos,
+                                        'bg-white text-gray-700 ring-gray-300 hover:bg-gray-50' => ! $hasPos,
+                                    ])
+                                >
+                                    <span @class(['h-2.5 w-2.5 rounded-full', 'bg-emerald-600' => $hasPos, 'bg-gray-300' => ! $hasPos]) aria-hidden="true"></span>
+                                    {{ __('pos.access.toggle_label') }}: {{ $hasPos ? __('pos.access.on') : __('pos.access.off') }}
+                                </button>
+                            @endif
+                            <button type="button" wire:click="confirmRemoval({{ $employee->id }})" class="rounded-lg border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50">
+                                {{ __('stores.actions.remove') }}
+                            </button>
+                        </div>
                     </li>
                 @endforeach
             </ul>
         @endif
     </section>
+
+    @if ($canManagePos)
+        <section class="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-200" aria-labelledby="card-terminals-title">
+            <div class="border-b border-gray-200 px-5 py-4">
+                <h2 id="card-terminals-title" class="text-base font-semibold text-gray-900">{{ __('pos.terminals.title') }}</h2>
+                <p class="mt-1 text-sm text-gray-600">{{ __('pos.terminals.help') }}</p>
+            </div>
+
+            @if ($terminals->isNotEmpty())
+                <ul class="divide-y divide-gray-100">
+                    @foreach ($terminals as $terminal)
+                        <li wire:key="terminal-{{ $terminal->id }}" class="flex flex-wrap items-center justify-between gap-3 px-5 py-3">
+                            <div>
+                                <p class="font-medium text-gray-900">{{ $terminal->label }}</p>
+                                <p class="text-sm text-gray-600">
+                                    {{ __('pos.terminals.fields.merchant_number') }}: <bdi dir="ltr" class="font-mono">{{ $terminal->merchant_number }}</bdi>
+                                    · {{ __('pos.terminals.fields.terminal_number') }}: <bdi dir="ltr" class="font-mono">{{ $terminal->terminal_number }}</bdi>
+                                </p>
+                            </div>
+                            <button type="button" wire:click="setTerminalActive({{ $terminal->id }}, {{ $terminal->is_active ? 'false' : 'true' }})" class="rounded-lg px-3 py-1.5 text-sm font-medium ring-1 ring-gray-300 hover:bg-gray-50">
+                                {{ $terminal->is_active ? __('pos.terminals.deactivate') : __('pos.terminals.activate') }}
+                            </button>
+                        </li>
+                    @endforeach
+                </ul>
+            @endif
+
+            <form wire:submit="addTerminal" class="grid gap-3 border-t border-gray-100 px-5 py-4 sm:grid-cols-4 sm:items-end">
+                <div>
+                    <label for="terminal-label" class="block text-sm font-medium text-gray-700">{{ __('pos.terminals.fields.label') }}</label>
+                    <input id="terminal-label" type="text" maxlength="100" wire:model="terminalLabel" class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    @error('label') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                </div>
+                <div>
+                    <label for="terminal-merchant" class="block text-sm font-medium text-gray-700">{{ __('pos.terminals.fields.merchant_number') }}</label>
+                    <input id="terminal-merchant" type="text" dir="ltr" maxlength="32" wire:model="terminalMerchantNumber" class="mt-1 block w-full rounded-lg border-gray-300 font-mono shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    @error('merchant_number') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                </div>
+                <div>
+                    <label for="terminal-number" class="block text-sm font-medium text-gray-700">{{ __('pos.terminals.fields.terminal_number') }}</label>
+                    <input id="terminal-number" type="text" dir="ltr" maxlength="32" wire:model="terminalNumber" class="mt-1 block w-full rounded-lg border-gray-300 font-mono shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    @error('terminal_number') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                </div>
+                <button type="submit" wire:loading.attr="disabled" wire:target="addTerminal" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60">{{ __('pos.terminals.add') }}</button>
+            </form>
+        </section>
+    @endif
 
     @if ($employeeToRemove)
         <div class="fixed inset-0 z-50 overflow-y-auto" role="alertdialog" aria-modal="true" aria-labelledby="remove-employee-title" aria-describedby="remove-employee-body">

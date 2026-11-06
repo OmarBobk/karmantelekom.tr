@@ -10,6 +10,7 @@ return [
         'inspection' => 'بانتظار الفحص',
         'in_repair' => 'قيد الصيانة',
         'removed' => 'مُزال',
+        'sold' => 'مُباع',
     ],
 
     'conditions' => [
@@ -32,6 +33,7 @@ return [
         'device_cost_recorded' => 'تسجيل تكلفة',
         'device_cost_reversed' => 'تصحيح تكلفة',
         'identifier_corrected' => 'تصحيح معرّف',
+        'sale' => 'بيع',
     ],
 
     'reasons' => [
@@ -45,6 +47,7 @@ return [
         'repair' => 'صيانة',
         'device_cost' => 'تكلفة جهاز',
         'identity_correction' => 'تصحيح معرّف',
+        'sale' => 'بيع',
     ],
 
     'identifier_types' => [
@@ -157,6 +160,7 @@ return [
             'available' => 'المتاحة',
             'in_service' => 'الفحص والصيانة',
             'removed' => 'المُزالة',
+            'sold' => 'المُباعة',
             'all' => 'الكل',
         ],
         'empty' => 'لا توجد وحدات في هذا العرض.',

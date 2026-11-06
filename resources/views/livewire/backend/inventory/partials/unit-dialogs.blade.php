@@ -389,3 +389,20 @@
         </form>
     </x-operations.dialog>
 @endif
+
+@if ($canSetUnitPrice)
+    <x-operations.dialog id="unit-price" :title="__('pos.pricing.set_unit_price')" :direction="$textDirection">
+        <form wire:submit="saveSellingPrice" class="space-y-4" novalidate>
+            <p class="{{ $effect }}">{{ __('pos.pricing.unit_help') }}</p>
+            <div>
+                <label for="unit-selling-price" class="{{ $label }}">{{ __('pos.pricing.unit_price') }} (TRY)</label>
+                <input id="unit-selling-price" type="text" inputmode="decimal" dir="ltr" autocomplete="off" wire:model="unitSellingPrice" @error('selling_price') aria-invalid="true" aria-describedby="unit-selling-price-error" @enderror @class([$field, 'font-mono', $invalid => $errors->has('selling_price')])>
+                @error('selling_price') <p id="unit-selling-price-error" class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
+            </div>
+            <div class="flex flex-wrap justify-end gap-2 border-t border-gray-100 pt-4">
+                <button type="button" x-on:click="{{ $closeDialog }}" class="{{ $secondaryButton }}">{{ __('devices.actions.close') }}</button>
+                <button type="submit" wire:loading.attr="disabled" wire:target="saveSellingPrice" class="{{ $primaryButton }}">{{ __('pos.pricing.save') }}</button>
+            </div>
+        </form>
+    </x-operations.dialog>
+@endif

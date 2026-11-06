@@ -701,6 +701,129 @@ The system must validate current stock and device availability when completing t
 - Completed sales cannot be silently edited or deleted.
 - Tests cover concurrent sales, discounts, payment allocation, and corrections.
 
+### Implemented Point of Sale Scope
+
+- **Records.** Phase 5 adds `card_terminals`, `checkout_attempts`, `card_approvals`, `sale_number_sequences`, `sales`, `sale_lines`, and `sale_payments`, plus a nullable `selling_price` on `product_definitions` and `inventory_units`:
+  - Sales, lines, and payments are append-only; the models refuse updates and deletes.
+  - Lines snapshot the product name, model, SKU, barcode, device identifier and condition, list price, sold price, discount, and adjustment reason.
+  - Sale numbers are per store (`KT01-000001`), issued under a locked per-store sequence row.
+  - Costs and profit are never stored on, or shown with, sales, receipts, or counter screens.
+- **Prices.** The owner sets one shared price on quantity and serialized definitions from the catalog form:
+  - Used-device definitions never carry a price; each used device needs its own unit price, set on the device page. There is no fallback to the definition.
+  - Unpriced items can be scanned but not reviewed.
+  - Prices are read on the server at review and checked again at completion; a changed price rejects the sale before anything is written.
+  - Only the owner can lower a line price at the counter, and must give a reason. Raising a price above the list is refused.
+  - Price changes are logged (`selling_price`). Setting a unit price does not advance `lifecycle_revision`.
+- **Money.** TRY only, integer minor units throughout:
+  - Payments are cash, card, or both. Allocations always equal the total.
+  - Change is computed against cash only. Tendering cash when the card covers the total is refused.
+  - Card means an external terminal approval: the cashier records the approved amount and the terminal's reference. No card data is entered. A reference that looks like a card number (13 to 19 digits passing the Luhn check) is refused.
+- **Durable checkout.** "Review and take payment" persists a checkout attempt (stable key, revision, reviewed lines, totals) before any payment:
+  - Recording a card approval freezes the attempt. After that the cart, cancel, and "New sale" are blocked.
+  - A reference is unique per terminal (merchant number plus terminal number). The approval row is kept separately from the final payments and is linked to at most one payment.
+  - Recording the same approval again returns it; a different approval on the same attempt, or a reference already used on that terminal, is refused.
+  - Completing with the same attempt, revision, and cash returns the original sale. Changing the cash on a retry is an idempotency conflict.
+  - A failed completion records why (`unavailable`, `price_changed`, `system_error`) and leaves the attempt open with its approval visible: amount, reference, and "do not charge the card again".
+  - From there the cashier retries once the item can be sold, or the owner records an externally confirmed terminal void (void reference plus note), which closes the attempt without a sale and is logged (`checkout_resolution`).
+  - The cashier's cart and attempt key live in the session per user and store. On reload, a completed attempt shows the sale and an open one returns to payment.
+  - Unresolved attempts are listed on the counter even without the session: the cashier's own, or every attempt in the store for the owner. Only the cashier who opened an attempt can resume it.
+  - In the browser, a lost or failed completion response shows a "result not confirmed" banner with a status check that reads the attempt under lock. A missing response never means "charge again".
+- **Completion transaction.** One transaction, retried up to three times on deadlock, with this lock order:
+  1. attempt;
+  2. approval (by primary key; no gap locks);
+  3. definitions (ascending);
+  4. existing balances;
+  5. units (ascending);
+  6. sale sequence.
+
+  Under these locks it rechecks each definition (active, same tracking mode), cumulative stock, device status `available`, device revision, and list price. It then writes the sale, lines, `sale` movements (quantity decrease, or `available` to `sold` with the revision advanced), payments, the captured approval, and the completed attempt. Any failure rolls all of it back. The balance column is unsigned, so stock can never go negative.
+- **Counter UX.** Arabic RTL and English LTR, chosen per session from the header:
+  - Scanner Enter submits the exact typed value even while a name search is pending.
+  - A barcode, SKU, IMEI, or serial that matches several items opens an explicit chooser. Both IMEI slots match, and the line shows the primary IMEI.
+  - The cart survives errors.
+  - Receipts are an internal 80 mm slip (not a tax receipt) with a print action.
+  - History searches by sale number, either device IMEI or serial, product, SKU, barcode, or terminal reference, with a date filter in Istanbul time.
+- **Statuses.** `sold` is a final unit status alongside Phase 4's. Sold devices link to their sale from the device page and timeline.
+- **Deferred.** Returns, refunds, exchanges, post-sale corrections, customer credit, cashbox movements, and fiscal receipts.
+
+### Phase 5 Access
+
+- Screens: `/pos` (branch picker; opens the counter directly when the user has one store), `/pos/{store}` (counter), `/pos/{store}/sales` (history), and `/pos/{store}/sales/{sale}` (slip) on the operations subdomain. These sit in their own `web` + `auth` route group with their own layout; the legacy admin group is unchanged and still refuses employees.
+- Counter use needs the `use_pos` permission and current access to the store, both rechecked on every request and every Livewire action:
+  - The owner holds `use_pos` through the `admin` role.
+  - An employee needs a direct `use_pos` grant plus a store assignment. The grant belongs to the employee, so it applies in every store they are assigned to.
+  - Salespeople and unassigned users are refused.
+- The owner grants or revokes counter access per employee on the store management page. Each change is logged (`employee_permission`) with the employee's store codes.
+- Employees see only their own sales, receipts, and attempts. The owner sees every sale and attempt in accessible stores.
+- Owner-only actions: lowering a line price (with a reason), recording a terminal void, setting unit prices (`set_selling_prices`), and managing card terminals.
+- `OperationalStoreSetupSeeder` grants `use_pos` and `set_selling_prices` to the existing `admin` role only.
+- An employee who signs in is sent back to the counter URL they opened. There is no automatic redirect to `/pos` after login.
+
+### Phase 5 Setup on an Existing Database
+
+Applied only to the isolated test and browser databases; the development database (`dev.store`) was not migrated. Before running on a target server, review and deploy the code and take a fresh database backup. The Phase 1 to Phase 4 migrations and setup must already be applied.
+
+1. Run `php artisan migrate:status`. All Phase 4 migrations (`2026_11_05_180922` to `2026_11_05_180928`) must show `Ran`, and these nine must be pending. All are additive. No existing constraint changes; a `sale` movement already satisfies the Phase 4 movement `CHECK` constraints.
+
+   - `2026_11_06_190001_add_selling_price_to_product_definitions_table`
+   - `2026_11_06_190002_add_selling_price_to_inventory_units_table`
+   - `2026_11_06_190003_create_card_terminals_table`
+   - `2026_11_06_190004_create_checkout_attempts_table`
+   - `2026_11_06_190005_create_card_approvals_table`
+   - `2026_11_06_190006_create_sale_number_sequences_table`
+   - `2026_11_06_190007_create_sales_table`
+   - `2026_11_06_190008_create_sale_lines_table`
+   - `2026_11_06_190009_create_sale_payments_table`
+
+2. Preview, then apply only these migrations:
+
+   ```bash
+   php artisan migrate --pretend --path=database/migrations/2026_11_06_190001_add_selling_price_to_product_definitions_table.php --path=database/migrations/2026_11_06_190002_add_selling_price_to_inventory_units_table.php --path=database/migrations/2026_11_06_190003_create_card_terminals_table.php --path=database/migrations/2026_11_06_190004_create_checkout_attempts_table.php --path=database/migrations/2026_11_06_190005_create_card_approvals_table.php --path=database/migrations/2026_11_06_190006_create_sale_number_sequences_table.php --path=database/migrations/2026_11_06_190007_create_sales_table.php --path=database/migrations/2026_11_06_190008_create_sale_lines_table.php --path=database/migrations/2026_11_06_190009_create_sale_payments_table.php
+   php artisan migrate --force --path=database/migrations/2026_11_06_190001_add_selling_price_to_product_definitions_table.php --path=database/migrations/2026_11_06_190002_add_selling_price_to_inventory_units_table.php --path=database/migrations/2026_11_06_190003_create_card_terminals_table.php --path=database/migrations/2026_11_06_190004_create_checkout_attempts_table.php --path=database/migrations/2026_11_06_190005_create_card_approvals_table.php --path=database/migrations/2026_11_06_190006_create_sale_number_sequences_table.php --path=database/migrations/2026_11_06_190007_create_sales_table.php --path=database/migrations/2026_11_06_190008_create_sale_lines_table.php --path=database/migrations/2026_11_06_190009_create_sale_payments_table.php
+   ```
+
+3. Grant the new owner permissions with the targeted seeder (safe to rerun; it creates no users). Do not run `RolesAndPermissionsSeeder` or general seeders.
+
+   ```bash
+   php artisan db:seed --class=OperationalStoreSetupSeeder --force
+   ```
+
+4. Rebuild frontend assets (`npm run build`) so the counter's Tailwind classes are compiled.
+5. Operational setup in the app, by the owner:
+   - add each store's card terminals (label, merchant number, terminal number) on the store management page;
+   - set selling prices on definitions and on each used device;
+   - grant counter access to employees on the store management page.
+
+### Phase 5 Rollback
+
+Rollback is supported only while no POS data exists. Once any sale, attempt, terminal, or price has been recorded, fix forward with a new migration instead of rolling back.
+
+- **The guard.** Every Phase 5 `down()` first calls `PosRollbackGuard` and refuses before any DDL runs. Recorded data means any of:
+  - rows in any Phase 5 table;
+  - `sale` movements;
+  - `sold` units;
+  - a non-null `selling_price` on a definition or unit.
+- **Covered commands.** Same as Phase 4: batch, `--step`, targeted `--path`, `migrate:reset`, and `migrate:refresh`. `migrate:fresh` is not covered and must never be run on a database with real data.
+
+Procedure:
+
+1. Take a fresh database backup.
+2. Check for recorded POS data. An empty array means rollback is allowed:
+
+   ```bash
+   php artisan tinker --execute 'dump(app(App\Services\Pos\PosRollbackGuard::class)->recordedPosData());'
+   ```
+
+3. Roll back the batch holding the nine Phase 5 migrations, limited to the Phase 5 files:
+
+   ```bash
+   php artisan migrate:rollback --force --batch=<phase-5-batch> --path=database/migrations/2026_11_06_190001_add_selling_price_to_product_definitions_table.php --path=database/migrations/2026_11_06_190002_add_selling_price_to_inventory_units_table.php --path=database/migrations/2026_11_06_190003_create_card_terminals_table.php --path=database/migrations/2026_11_06_190004_create_checkout_attempts_table.php --path=database/migrations/2026_11_06_190005_create_card_approvals_table.php --path=database/migrations/2026_11_06_190006_create_sale_number_sequences_table.php --path=database/migrations/2026_11_06_190007_create_sales_table.php --path=database/migrations/2026_11_06_190008_create_sale_lines_table.php --path=database/migrations/2026_11_06_190009_create_sale_payments_table.php
+   ```
+
+4. To reapply, run step 2 of the setup above.
+
+The guard test refuses each of the nine `down()` methods with a recorded sale and leaves the schema unchanged.
+
 ---
 
 ## 10. Phase 6 — Customers, Debts, Cashbox, and Expenses

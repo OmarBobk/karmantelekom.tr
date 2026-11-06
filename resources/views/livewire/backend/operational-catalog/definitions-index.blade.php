@@ -68,6 +68,7 @@
                         <th scope="col" class="px-4 py-3 text-start text-xs font-semibold text-gray-600">{{ __('catalog.fields.brand') }} / {{ __('catalog.fields.category') }}</th>
                         <th scope="col" class="px-4 py-3 text-start text-xs font-semibold text-gray-600">{{ __('catalog.fields.tracking_mode') }}</th>
                         <th scope="col" class="px-4 py-3 text-start text-xs font-semibold text-gray-600">{{ __('catalog.fields.sku') }} / {{ __('catalog.fields.barcode') }}</th>
+                        <th scope="col" class="px-4 py-3 text-start text-xs font-semibold text-gray-600">{{ __('pos.pricing.price_column') }}</th>
                         <th scope="col" class="px-4 py-3 text-start text-xs font-semibold text-gray-600">{{ __('catalog.fields.status') }}</th>
                         <th scope="col" class="px-4 py-3"><span class="sr-only">{{ __('catalog.actions.edit') }}</span></th>
                     </tr>
@@ -90,6 +91,9 @@
                             <td class="px-4 py-3 font-mono text-xs text-gray-600">
                                 <span dir="ltr" class="block">{{ $definition->sku ?? '—' }}</span>
                                 <span dir="ltr" class="block">{{ $definition->barcode ?? '—' }}</span>
+                            </td>
+                            <td class="whitespace-nowrap px-4 py-3 text-sm text-gray-700">
+                                @include('livewire.backend.operational-catalog.partials.definition-price', ['definition' => $definition])
                             </td>
                             <td class="whitespace-nowrap px-4 py-3 text-sm">
                                 @if ($definition->is_active)
@@ -122,6 +126,7 @@
                     <dl class="mt-3 space-y-1 text-sm text-gray-600">
                         <div class="flex gap-2"><dt class="text-gray-500">{{ __('catalog.fields.sku') }}:</dt><dd dir="ltr" class="font-mono">{{ $definition->sku ?? '—' }}</dd></div>
                         <div class="flex gap-2"><dt class="text-gray-500">{{ __('catalog.fields.barcode') }}:</dt><dd dir="ltr" class="font-mono">{{ $definition->barcode ?? '—' }}</dd></div>
+                        <div class="flex gap-2"><dt class="text-gray-500">{{ __('pos.pricing.price_column') }}:</dt><dd>@include('livewire.backend.operational-catalog.partials.definition-price', ['definition' => $definition])</dd></div>
                     </dl>
                     <button type="button" wire:click="openEditForm({{ $definition->id }})" class="mt-4 min-h-11 w-full rounded-lg border border-gray-300 px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">{{ __('catalog.actions.edit') }}</button>
                 </li>
@@ -199,6 +204,18 @@
                             <input id="definition-barcode" type="text" wire:model="barcode" dir="ltr" autocomplete="off" inputmode="numeric" @error('barcode') aria-invalid="true" @enderror class="mt-1 block min-h-11 w-full rounded-lg border-gray-300 font-mono shadow-sm focus:border-blue-500 focus:ring-blue-500">
                             @error('barcode') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                         </div>
+
+                        @if ($canSetPrice)
+                            <div class="sm:col-span-2">
+                                <label for="definition-price" class="block text-sm font-medium text-gray-700">{{ __('pos.pricing.definition_price') }} <span class="text-gray-500">(TRY)</span></label>
+                                <p x-show="$wire.trackingMode === 'used_device'" x-cloak class="mt-1 rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-700 ring-1 ring-gray-200">{{ __('pos.pricing.used_device_help') }}</p>
+                                <div x-show="$wire.trackingMode !== 'used_device'">
+                                    <input id="definition-price" type="text" inputmode="decimal" wire:model="sellingPrice" dir="ltr" autocomplete="off" aria-describedby="definition-price-help" @error('selling_price') aria-invalid="true" @enderror class="mt-1 block min-h-11 w-full rounded-lg border-gray-300 font-mono shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:max-w-xs">
+                                    <p id="definition-price-help" class="mt-1 text-xs text-gray-500">{{ __('pos.pricing.definition_help') }}</p>
+                                </div>
+                                @error('selling_price') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                            </div>
+                        @endif
 
                         <div class="sm:col-span-2">
                             <label for="definition-description" class="block text-sm font-medium text-gray-700">{{ __('catalog.fields.description') }}</label>

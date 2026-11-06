@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Actions\Catalog;
 
+use App\Actions\Pos\SellingPrice;
 use App\Enums\TrackingMode;
 use App\Models\ProductDefinition;
 use App\Models\User;
+use App\Services\Purchasing\Money;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\DB;
@@ -35,6 +37,15 @@ class SaveProductDefinition
             ? Gate::forUser($actor)->authorize('create', ProductDefinition::class)
             : Gate::forUser($actor)->authorize('update', $definition);
 
+        $setsPrice = array_key_exists('selling_price', $input);
+
+        if ($setsPrice) {
+            Gate::forUser($actor)->authorize('setSellingPrice', ProductDefinition::class);
+        }
+
+        $sellingPriceMinor = $setsPrice ? SellingPrice::parse(is_scalar($input['selling_price']) ? (string) $input['selling_price'] : null, 'selling_price') : null;
+        unset($input['selling_price']);
+
         $input['name'] = Str::trim((string) ($input['name'] ?? ''));
         $input['model'] = self::nullableTrim($input['model'] ?? null);
         $input['description'] = self::nullableTrim($input['description'] ?? null);
@@ -62,12 +73,26 @@ class SaveProductDefinition
             'catalog_category_id' => __('catalog.fields.category'),
         ])->validate();
 
+        $isUsedDevice = $attributes['tracking_mode'] === TrackingMode::USED_DEVICE->value;
+
+        if ($setsPrice && $isUsedDevice && $sellingPriceMinor !== null) {
+            throw ValidationException::withMessages(['selling_price' => __('pos.errors.used_device_definition_price')]);
+        }
+
+        if ($setsPrice || $isUsedDevice) {
+            $attributes['selling_price'] = $sellingPriceMinor === null ? null : Money::toDecimal($sellingPriceMinor);
+        }
+
         try {
             if ($definition === null) {
-                return ProductDefinition::query()->create($attributes);
+                $created = ProductDefinition::query()->create($attributes);
+                $this->logPriceChange($actor, $created, null);
+
+                return $created;
             }
 
-            return DB::transaction(function () use ($definition, $attributes): ProductDefinition {
+            // Checkout reads prices under this same definition lock, so a price change and a sale serialize.
+            return DB::transaction(function () use ($actor, $definition, $attributes): ProductDefinition {
                 $locked = ProductDefinition::query()->whereKey($definition->id)->lockForUpdate()->firstOrFail();
 
                 if ($locked->tracking_mode->value !== $attributes['tracking_mode'] && $locked->isTrackingModeLocked()) {
@@ -76,13 +101,29 @@ class SaveProductDefinition
                     ]);
                 }
 
+                $previousPrice = $locked->selling_price;
                 $locked->update($attributes);
+                $this->logPriceChange($actor, $locked, $previousPrice);
 
                 return $locked;
             });
         } catch (UniqueConstraintViolationException) {
             throw ValidationException::withMessages(['sku' => __('catalog.errors.identifier_taken')]);
         }
+    }
+
+    private function logPriceChange(User $actor, ProductDefinition $definition, ?string $previousPrice): void
+    {
+        if ($definition->selling_price === $previousPrice) {
+            return;
+        }
+
+        activity('selling_price')
+            ->performedOn($definition)
+            ->causedBy($actor)
+            ->event('definition_price_set')
+            ->withProperties(['old' => $previousPrice, 'new' => $definition->selling_price, 'currency' => 'TRY'])
+            ->log("Selling price of {$definition->name} set to ".($definition->selling_price ?? 'not priced'));
     }
 
     private static function nullableTrim(mixed $value): ?string

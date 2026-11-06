@@ -11,6 +11,7 @@ use App\Livewire\Backend\Concerns\UsesOperationalLocale;
 use App\Models\CatalogBrand;
 use App\Models\CatalogCategory;
 use App\Models\ProductDefinition;
+use App\Services\Purchasing\Money;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Attributes\Layout;
@@ -55,6 +56,8 @@ class DefinitionsIndex extends Component
 
     public bool $isActive = true;
 
+    public string $sellingPrice = '';
+
     public function mount(): void
     {
         $this->authorize('viewAny', ProductDefinition::class);
@@ -94,6 +97,8 @@ class DefinitionsIndex extends Component
         $this->brandId = $definition->catalog_brand_id;
         $this->categoryId = $definition->catalog_category_id;
         $this->isActive = $definition->is_active;
+        $priceMinor = $definition->sellingPriceMinor();
+        $this->sellingPrice = $priceMinor === null ? '' : Money::input($priceMinor);
         $this->formOpen = true;
     }
 
@@ -109,7 +114,7 @@ class DefinitionsIndex extends Component
             ? ProductDefinition::query()->findOrFail($this->editingDefinitionId)
             : null;
 
-        $saveProductDefinition(auth()->user(), $definition, [
+        $input = [
             'name' => $this->name,
             'model' => $this->model,
             'description' => $this->description,
@@ -119,7 +124,13 @@ class DefinitionsIndex extends Component
             'catalog_brand_id' => $this->brandId,
             'catalog_category_id' => $this->categoryId,
             'is_active' => $this->isActive,
-        ]);
+        ];
+
+        if (auth()->user()->can('setSellingPrice', ProductDefinition::class)) {
+            $input['selling_price'] = $this->trackingMode === TrackingMode::USED_DEVICE->value ? '' : $this->sellingPrice;
+        }
+
+        $saveProductDefinition(auth()->user(), $definition, $input);
 
         $this->closeForm();
         $this->dispatch('notify', [
@@ -132,7 +143,7 @@ class DefinitionsIndex extends Component
     {
         $this->reset([
             'editingDefinitionId', 'name', 'model', 'description', 'trackingMode',
-            'sku', 'barcode', 'brandId', 'categoryId', 'isActive',
+            'sku', 'barcode', 'brandId', 'categoryId', 'isActive', 'sellingPrice',
         ]);
         $this->resetErrorBag();
     }
@@ -185,6 +196,7 @@ class DefinitionsIndex extends Component
             'categories' => $this->formOpen ? $this->categoryOptions() : collect(),
             'trackingModeLocked' => $editing?->isTrackingModeLocked() ?? false,
             'isFiltering' => $identifier !== null,
+            'canSetPrice' => auth()->user()->can('setSellingPrice', ProductDefinition::class),
             ...$this->localeViewData(),
         ])->title(__('catalog.title'));
     }

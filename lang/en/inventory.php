@@ -10,6 +10,7 @@ return [
         'inspection' => 'Awaiting inspection',
         'in_repair' => 'In repair',
         'removed' => 'Removed',
+        'sold' => 'Sold',
     ],
 
     'conditions' => [
@@ -32,6 +33,7 @@ return [
         'device_cost_recorded' => 'Cost recorded',
         'device_cost_reversed' => 'Cost corrected',
         'identifier_corrected' => 'Identifier corrected',
+        'sale' => 'Sale',
     ],
 
     'reasons' => [
@@ -45,6 +47,7 @@ return [
         'repair' => 'Repair',
         'device_cost' => 'Device cost',
         'identity_correction' => 'Identity correction',
+        'sale' => 'Sale',
     ],
 
     'identifier_types' => [
@@ -157,6 +160,7 @@ return [
             'available' => 'Available',
             'in_service' => 'Inspection & repair',
             'removed' => 'Removed',
+            'sold' => 'Sold',
             'all' => 'All',
         ],
         'empty' => 'No units in this view.',

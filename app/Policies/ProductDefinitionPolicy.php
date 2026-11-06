@@ -32,6 +32,14 @@ class ProductDefinitionPolicy
         return $this->ownerHas($user, 'manage_catalog');
     }
 
+    /**
+     * Shared selling prices are owner-only and need both catalog access and the pricing permission.
+     */
+    public function setSellingPrice(User $user): bool
+    {
+        return $this->ownerHas($user, 'manage_catalog') && $this->ownerHas($user, 'set_selling_prices');
+    }
+
     public function delete(User $user, ProductDefinition $productDefinition): bool
     {
         return false;

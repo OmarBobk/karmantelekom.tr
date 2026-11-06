@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace App\Livewire\Backend\Stores;
 
+use App\Actions\Pos\SaveCardTerminal;
 use App\Actions\Stores\AssignEmployeeToStore;
 use App\Actions\Stores\RemoveEmployeeFromStore;
+use App\Actions\Stores\SetEmployeePosAccess;
 use App\Livewire\Backend\OperationalLocale;
 use App\Models\Store;
 use App\Models\User;
+use Database\Seeders\OperationalStoreSetupSeeder;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -26,6 +29,12 @@ class StoreDetail extends Component
 
     #[Locked]
     public ?int $employeeToRemoveId = null;
+
+    public string $terminalLabel = '';
+
+    public string $terminalMerchantNumber = '';
+
+    public string $terminalNumber = '';
 
     public function boot(): void
     {
@@ -97,12 +106,53 @@ class StoreDetail extends Component
     }
 
     /**
+     * Grant or revoke the counter permission. It is held by the user, so it applies in every
+     * store the employee is assigned to.
+     */
+    public function setPosAccess(SetEmployeePosAccess $setEmployeePosAccess, int $userId, bool $grant): void
+    {
+        $this->authorize('managePosAccess', Store::class);
+
+        $employee = $this->store->employees()->whereKey($userId)->firstOrFail();
+        $changed = $setEmployeePosAccess(auth()->user(), $employee, $grant);
+
+        $this->dispatch('notify', [
+            'type' => $changed ? 'success' : 'info',
+            'message' => __($grant ? 'pos.access.granted' : 'pos.access.revoked', ['name' => $employee->name]),
+        ]);
+    }
+
+    public function addTerminal(SaveCardTerminal $saveCardTerminal): void
+    {
+        $this->authorize('manageCardTerminals', $this->store);
+
+        $saveCardTerminal->create(auth()->user(), $this->store, [
+            'label' => $this->terminalLabel,
+            'merchant_number' => $this->terminalMerchantNumber,
+            'terminal_number' => $this->terminalNumber,
+        ]);
+
+        $this->reset('terminalLabel', 'terminalMerchantNumber', 'terminalNumber');
+        $this->dispatch('notify', ['type' => 'success', 'message' => __('pos.terminals.added')]);
+    }
+
+    public function setTerminalActive(SaveCardTerminal $saveCardTerminal, int $terminalId, bool $active): void
+    {
+        $this->authorize('manageCardTerminals', $this->store);
+
+        $saveCardTerminal->setActive(auth()->user(), $this->store, $terminalId, $active);
+    }
+
+    /**
      * @return Collection<int, User>
      */
     private function assignedEmployees(): Collection
     {
         return $this->store->employees()
-            ->with(['stores' => fn ($stores) => $stores->whereKeyNot($this->store->id)->orderBy('code')])
+            ->with([
+                'stores' => fn ($stores) => $stores->whereKeyNot($this->store->id)->orderBy('code'),
+                'permissions:id,name',
+            ])
             ->orderBy('name')
             ->get();
     }
@@ -132,6 +182,9 @@ class StoreDetail extends Component
             'employeeToRemove' => $this->employeeToRemoveId !== null
                 ? $employees->firstWhere('id', $this->employeeToRemoveId)
                 : null,
+            'canManagePos' => auth()->user()->can('managePosAccess', Store::class),
+            'terminals' => $this->store->cardTerminals()->orderByDesc('is_active')->orderBy('label')->get(),
+            'posPermission' => OperationalStoreSetupSeeder::USE_POS_PERMISSION,
             'locale' => OperationalLocale::resolve(),
             'textDirection' => OperationalLocale::direction(),
         ])->title($this->store->name.' — '.__('stores.title'));
