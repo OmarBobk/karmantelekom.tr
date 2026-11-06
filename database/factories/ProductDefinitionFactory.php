@@ -45,4 +45,9 @@ class ProductDefinitionFactory extends Factory
     {
         return $this->state(['is_active' => false]);
     }
+
+    public function priced(string $sellingPrice): static
+    {
+        return $this->state(['selling_price' => $sellingPrice]);
+    }
 }

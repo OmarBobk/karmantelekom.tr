@@ -80,6 +80,30 @@ class Store extends Model
     }
 
     /**
+     * @return HasMany<Sale, $this>
+     */
+    public function sales(): HasMany
+    {
+        return $this->hasMany(Sale::class);
+    }
+
+    /**
+     * @return HasMany<CardTerminal, $this>
+     */
+    public function cardTerminals(): HasMany
+    {
+        return $this->hasMany(CardTerminal::class);
+    }
+
+    /**
+     * @return HasMany<CheckoutAttempt, $this>
+     */
+    public function checkoutAttempts(): HasMany
+    {
+        return $this->hasMany(CheckoutAttempt::class);
+    }
+
+    /**
      * Limit the query to stores the user may operate in.
      *
      * Admins reach every store; employees reach only stores they are assigned to;

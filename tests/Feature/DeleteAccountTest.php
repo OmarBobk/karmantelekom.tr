@@ -3,13 +3,16 @@
 namespace Tests\Feature;
 
 use App\Enums\AdjustmentReason;
+use App\Enums\CheckoutAttemptStatus;
 use App\Enums\MovementType;
+use App\Models\CheckoutAttempt;
 use App\Models\InventoryMovement;
 use App\Models\ProductDefinition;
 use App\Models\Store;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 use Laravel\Jetstream\Features;
 use Laravel\Jetstream\Http\Livewire\DeleteUserForm;
 use Livewire\Livewire;
@@ -116,5 +119,40 @@ class DeleteAccountTest extends TestCase
 
         $this->assertNotNull($user->fresh());
         $this->assertModelExists($token);
+    }
+
+    public function test_account_with_checkout_history_cannot_be_deleted(): void
+    {
+        if (! Features::hasAccountDeletionFeatures()) {
+            $this->markTestSkipped('Account deletion is not enabled.');
+        }
+
+        $user = User::factory()->create(['password' => 'correct-password']);
+        CheckoutAttempt::query()->create([
+            'key' => (string) Str::uuid(),
+            'store_id' => Store::factory()->create()->id,
+            'user_id' => $user->id,
+            'status' => CheckoutAttemptStatus::CANCELLED,
+            'revision' => 1,
+            'currency' => 'TRY',
+            'lines' => [],
+            'subtotal' => '10.00',
+            'discount_total' => '0.00',
+            'total' => '10.00',
+            'payload_hash' => str_repeat('0', 64),
+        ]);
+
+        $this->actingAs($user);
+
+        $component = Livewire::test(DeleteUserForm::class)
+            ->set('password', 'correct-password')
+            ->call('deleteUser')
+            ->assertHasErrors(['password']);
+
+        $this->assertSame(
+            __('Your account has recorded sales or checkout history, which must be kept. Please ask the owner to deactivate your account instead.'),
+            $component->errors()->first('password'),
+        );
+        $this->assertNotNull($user->fresh());
     }
 }

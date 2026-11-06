@@ -18,8 +18,9 @@ use Spatie\Permission\PermissionRegistrar;
  *
  * Creates missing initial stores, the `employee` role and the owner permissions
  * listed in OWNER_PERMISSIONS, and grants only those permissions to the existing
- * `admin` role. It never creates users or removes existing roles, permissions,
- * or store details.
+ * `admin` role. `use_pos` is also granted to individual employees by the owner, and so is
+ * `give_pos_discounts`, which no role holds. It never
+ * creates users or removes existing roles, permissions, or store details.
  */
 class OperationalStoreSetupSeeder extends Seeder
 {
@@ -46,7 +47,21 @@ class OperationalStoreSetupSeeder extends Seeder
         'service_devices',
         'manage_device_costs',
         'correct_unit_identity',
+        self::USE_POS_PERMISSION,
+        'set_selling_prices',
     ];
+
+    /**
+     * Counter access. The owner holds it through the admin role; employees only receive it
+     * directly from the owner, never through the employee role.
+     */
+    public const USE_POS_PERMISSION = 'use_pos';
+
+    /**
+     * Counter discounts for employees, always paired with an owner-set maximum percentage.
+     * Only granted directly to employees; the owner's own price override does not use it.
+     */
+    public const POS_DISCOUNT_PERMISSION = 'give_pos_discounts';
 
     public function run(): void
     {
@@ -77,6 +92,8 @@ class OperationalStoreSetupSeeder extends Seeder
                 fn (string $permission): Permission => Permission::findOrCreate($permission, $guard),
                 self::OWNER_PERMISSIONS,
             ));
+
+            Permission::findOrCreate(self::POS_DISCOUNT_PERMISSION, $guard);
         });
 
         $registrar->forgetCachedPermissions();

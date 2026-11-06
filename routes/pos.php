@@ -1,0 +1,27 @@
+<?php
+
+declare(strict_types=1);
+
+use App\Http\Controllers\Pos\PosLocaleController;
+use App\Http\Controllers\Pos\SaleReceiptController;
+use App\Livewire\Pos\PosCounter;
+use App\Livewire\Pos\PosHome;
+use App\Livewire\Pos\SalesHistory;
+use Illuminate\Support\Facades\Route;
+
+// Every page and action re-checks use_pos and store membership; see StorePolicy::usePos.
+Route::get('/', PosHome::class)->name('home');
+Route::post('locale', PosLocaleController::class)->name('locale');
+Route::get('{store}', PosCounter::class)
+    ->middleware('can:usePos,store')
+    ->whereNumber('store')
+    ->name('counter');
+Route::get('{store}/sales', SalesHistory::class)
+    ->middleware('can:usePos,store')
+    ->whereNumber('store')
+    ->name('sales');
+Route::get('{store}/sales/{sale}', SaleReceiptController::class)
+    ->middleware(['can:usePos,store', 'can:view,sale'])
+    ->whereNumber(['store', 'sale'])
+    ->scopeBindings()
+    ->name('sales.show');

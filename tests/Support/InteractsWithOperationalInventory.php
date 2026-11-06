@@ -26,6 +26,8 @@ trait InteractsWithOperationalInventory
             $admin->givePermissionTo(Permission::create(['name' => $permission]));
         }
 
+        Permission::create(['name' => OperationalStoreSetupSeeder::POS_DISCOUNT_PERMISSION]);
+
         foreach (['employee', 'salesperson'] as $role) {
             Role::create(['name' => $role]);
         }

@@ -77,6 +77,8 @@
                     <dd class="font-medium text-gray-900">
                         @if ($unit->status === \App\Enums\UnitStatus::REMOVED)
                             {{ __('devices.location.removed') }}
+                        @elseif ($unit->status === \App\Enums\UnitStatus::SOLD)
+                            {{ __('pos.unit.location_sold') }}
                         @elseif ($openRepair?->isExternal())
                             {!! __('devices.location.external', ['name' => '<bdi>'.e($openRepair->repairer_name).'</bdi>']) !!}
                         @elseif ($openRepair)
@@ -116,6 +118,38 @@
                     <div class="col-span-2">
                         <dt class="text-xs font-medium text-gray-600">{{ __('inventory.fields.removed_at') }}</dt>
                         <dd dir="ltr" class="text-start text-gray-900">{{ $unit->removed_at->format('Y-m-d H:i') }}</dd>
+                    </div>
+                @endif
+                @if ($soldOn)
+                    <div class="col-span-2">
+                        <dt class="text-xs font-medium text-gray-600">{{ __('pos.unit.sold_on') }}</dt>
+                        <dd class="text-gray-900">
+                            @php($soldLabel = __('pos.history.sale_reference', ['number' => '<bdi dir="ltr" class="font-mono">'.e($soldOn->number).'</bdi>']))
+                            @can('view', $soldOn)
+                                <a href="{{ route('pos.sales.show', [$soldOn->store_id, $soldOn->id]) }}" class="font-medium text-blue-700 hover:text-blue-900">{!! $soldLabel !!}</a>
+                            @else
+                                {!! $soldLabel !!}
+                            @endcan
+                            · <time dir="ltr" datetime="{{ $soldOn->completed_at->toIso8601String() }}">{{ \App\Models\Sale::displayTime($soldOn->completed_at) }}</time>
+                        </dd>
+                    </div>
+                @endif
+                @if ($isUsedDevice)
+                    <div class="col-span-2">
+                        <dt class="text-xs font-medium text-gray-600">{{ __('pos.pricing.unit_price') }}</dt>
+                        <dd class="text-gray-900">
+                            @if ($unit->sellingPriceMinor() === null)
+                                <span class="inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800 ring-1 ring-amber-200">{{ __('pos.pricing.not_priced') }}</span>
+                            @else
+                                <span dir="ltr" class="font-mono font-semibold tabular-nums">{{ \App\Services\Purchasing\Money::format($unit->sellingPriceMinor()) }} TRY</span>
+                                @if ($unit->minimumSellingPriceMinor() !== null)
+                                    <span class="ms-2 text-xs text-gray-600">{{ __('pos.pricing.minimum_price') }}: <bdi dir="ltr" class="font-mono tabular-nums">{{ \App\Services\Purchasing\Money::format($unit->minimumSellingPriceMinor()) }} TRY</bdi></span>
+                                @endif
+                            @endif
+                            @if ($canSetUnitPrice)
+                                <button type="button" x-on:click="$dispatch('open-dialog', { id: 'unit-price' })" class="ms-2 min-h-11 rounded-lg px-3 text-sm font-medium text-blue-700 hover:bg-blue-50">{{ __('pos.pricing.set_unit_price') }}</button>
+                            @endif
+                        </dd>
                     </div>
                 @endif
             </dl>
