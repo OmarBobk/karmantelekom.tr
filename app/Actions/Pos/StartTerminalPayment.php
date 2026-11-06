@@ -6,6 +6,7 @@ namespace App\Actions\Pos;
 
 use App\Exceptions\Purchasing\InvalidAmountException;
 use App\Models\CheckoutAttempt;
+use App\Models\ProductDefinition;
 use App\Models\Store;
 use App\Models\User;
 use App\Services\Purchasing\Money;
@@ -85,6 +86,8 @@ class StartTerminalPayment
                 throw ValidationException::withMessages(['card_amount' => __('pos.errors.card_amount_above_total')]);
             }
 
+            self::assertReviewedPricesCurrent($actor, $locked);
+
             $now = now();
 
             $locked->update([
@@ -99,5 +102,41 @@ class StartTerminalPayment
 
             return new TerminalPaymentStart($locked, isNewStart: true);
         }, FinalizeCheckout::DEADLOCK_ATTEMPTS);
+    }
+
+    /**
+     * Refuse to freeze a cart whose list prices or discount limits changed since review.
+     *
+     * Once the start is saved the charged total is final, so this is the last point where a
+     * stricter limit or a new price can send the cashier back to review instead of charging.
+     *
+     * @throws ValidationException
+     */
+    private static function assertReviewedPricesCurrent(User $actor, CheckoutAttempt $attempt): void
+    {
+        /** @var list<array<string, mixed>> $lines */
+        $lines = $attempt->lines;
+        $store = $attempt->store;
+        $definitions = ProductDefinition::query()->whereKey(array_map(fn (array $line): int => (int) $line['definition_id'], $lines))->get()->keyBy('id');
+        $units = $store->units()->whereKey(array_filter(array_map(fn (array $line): ?int => $line['unit_id'] === null ? null : (int) $line['unit_id'], $lines)))->get()->keyBy('id');
+        $authority = DiscountAuthority::for($actor, $store);
+        $errors = [];
+
+        foreach ($lines as $line) {
+            $definition = $definitions->get((int) $line['definition_id']);
+            $unit = $line['unit_id'] === null ? null : $units->get((int) $line['unit_id']);
+            $listPrice = (int) $line['list_unit_price'];
+            $unitPrice = (int) $line['unit_price'];
+
+            if ($definition === null || SellingPrice::listPriceMinor($definition, $unit) !== $listPrice) {
+                $errors["lines.{$line['key']}.price"] = __('pos.errors.price_changed', ['name' => $line['name']]);
+            } elseif ($unitPrice < $listPrice && $authority->refusal($listPrice, $unitPrice, $unit) !== null) {
+                $errors["lines.{$line['key']}.adjusted_price"] = __('pos.errors.discount_changed', ['name' => $line['name']]);
+            }
+        }
+
+        if ($errors !== []) {
+            throw ValidationException::withMessages(['attempt' => __('pos.errors.review_again_before_payment'), ...$errors]);
+        }
     }
 }

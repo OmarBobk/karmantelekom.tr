@@ -399,6 +399,12 @@
                 <input id="unit-selling-price" type="text" inputmode="decimal" dir="ltr" autocomplete="off" wire:model="unitSellingPrice" @error('selling_price') aria-invalid="true" aria-describedby="unit-selling-price-error" @enderror @class([$field, 'font-mono', $invalid => $errors->has('selling_price')])>
                 @error('selling_price') <p id="unit-selling-price-error" class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
             </div>
+            <div>
+                <label for="unit-minimum-price" class="{{ $label }}">{{ __('pos.pricing.minimum_price') }} (TRY)</label>
+                <input id="unit-minimum-price" type="text" inputmode="decimal" dir="ltr" autocomplete="off" wire:model="unitMinimumPrice" aria-describedby="unit-minimum-price-help @error('minimum_selling_price') unit-minimum-price-error @enderror" @error('minimum_selling_price') aria-invalid="true" @enderror @class([$field, 'font-mono', $invalid => $errors->has('minimum_selling_price')])>
+                <p id="unit-minimum-price-help" class="mt-1 text-xs text-gray-600">{{ __('pos.pricing.minimum_help') }}</p>
+                @error('minimum_selling_price') <p id="unit-minimum-price-error" class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
+            </div>
             <div class="flex flex-wrap justify-end gap-2 border-t border-gray-100 pt-4">
                 <button type="button" x-on:click="{{ $closeDialog }}" class="{{ $secondaryButton }}">{{ __('devices.actions.close') }}</button>
                 <button type="submit" wire:loading.attr="disabled" wire:target="saveSellingPrice" class="{{ $primaryButton }}">{{ __('pos.pricing.save') }}</button>

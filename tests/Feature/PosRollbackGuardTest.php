@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Exceptions\Pos\PosRollbackBlockedException;
+use App\Models\PosDiscountGrant;
 use App\Services\Pos\PosRollbackGuard;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -35,6 +36,8 @@ class PosRollbackGuardTest extends TestCase
             '2026_11_06_190007_create_sales_table',
             '2026_11_06_190008_create_sale_lines_table',
             '2026_11_06_190009_create_sale_payments_table',
+            '2026_11_06_190010_add_terminal_payment_identity_to_checkout_attempts_table',
+            '2026_11_06_190011_add_employee_discounts_to_pos_tables',
         ])->mapWithKeys(fn (string $migration): array => [$migration => [$migration]])->all();
     }
 
@@ -73,6 +76,18 @@ class PosRollbackGuardTest extends TestCase
         DB::table('inventory_units')->update(['selling_price' => null]);
 
         $this->assertSame(['product_definitions (selling price set)' => 1], app(PosRollbackGuard::class)->recordedPosData());
+    }
+
+    #[Test]
+    public function a_discount_grant_alone_blocks_a_rollback(): void
+    {
+        $this->setUpCounter();
+        DB::table('inventory_units')->update(['selling_price' => null]);
+        DB::table('product_definitions')->update(['selling_price' => null]);
+        $cashier = $this->createCashier();
+        PosDiscountGrant::query()->create(['user_id' => $cashier->id, 'max_discount_basis_points' => 1000, 'granted_by' => $this->owner->id]);
+
+        $this->assertSame(['pos_discount_grants' => 1], app(PosRollbackGuard::class)->recordedPosData());
     }
 
     private function migration(string $name): Migration

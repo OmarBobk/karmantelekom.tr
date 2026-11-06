@@ -705,15 +705,33 @@ The system must validate current stock and device availability when completing t
 
 - **Records.** Phase 5 adds `card_terminals`, `checkout_attempts`, `card_approvals`, `sale_number_sequences`, `sales`, `sale_lines`, and `sale_payments`, plus a nullable `selling_price` on `product_definitions` and `inventory_units`:
   - Sales, lines, and payments are append-only; the models refuse updates and deletes.
-  - Lines snapshot the product name, model, SKU, barcode, device identifier and condition, list price, sold price, discount, and adjustment reason.
+  - Lines snapshot the product name, model, SKU, barcode, device identifier and condition, list price, sold price, the line discount, and for a discounted line its per-unit discount, reason, actor (`discounted_by`), the limit that applied (`owner`, `percentage`, or `device_minimum`), the granted percentage, and the lowest price it allowed.
+  - Phase 5 also adds `pos_discount_grants` (one per employee) and a nullable `minimum_selling_price` on `inventory_units`.
   - Sale numbers are per store (`KT01-000001`), issued under a locked per-store sequence row.
   - Costs and profit are never stored on, or shown with, sales, receipts, or counter screens.
 - **Prices.** The owner sets one shared price on quantity and serialized definitions from the catalog form:
   - Used-device definitions never carry a price; each used device needs its own unit price, set on the device page. There is no fallback to the definition.
   - Unpriced items can be scanned but not reviewed.
   - Prices are read on the server at review and checked again at completion; a changed price rejects the sale before anything is written.
-  - Only the owner can lower a line price at the counter, and must give a reason. Raising a price above the list is refused.
   - Price changes are logged (`selling_price`). Setting a unit price does not advance `lifecycle_revision`.
+- **Line discounts.** Each cart line has a "Discount" action:
+  - The cashier enters the final unit price and a required reason. The dialog shows the original unit price, the discount, and the lowest allowed unit price.
+  - A price within the limit applies at once. A lower one is refused with the lowest allowed price. There is no approval step.
+  - Discounts only lower a price; anything above the list price is refused.
+  - "Remove discount" restores the list price and needs no discount permission.
+  - Acquisition cost never appears in the dialog, the line data, or the attempt.
+- **Discount limits.** All limits are computed on the server in TRY minor units:
+  - Owner: down to 0.01, with a reason, as before.
+  - Employee: needs the `give_pos_discounts` permission and a discount grant (maximum percentage in basis points, up to two decimals). The lowest price is the list price minus that percentage, rounded up to the kuruş (49.90 at 10% gives 44.91).
+  - Device minimum: on a used device, the owner may set a minimum selling price (at or below its selling price). For an employee with the discount permission, that minimum replaces the percentage for that device, whether it is lower or higher (500 with a 400 minimum allows 400 and refuses 390).
+  - An employee without both the permission and a grant cannot discount, and the grant applies only in stores where they can use the counter.
+- **Discounts through checkout.**
+  - Review stores each line's limit, the granted percentage, the lowest allowed price, and the actor, and includes them in the reviewed payload hash.
+  - "Start card payment" first checks list prices and the discount policy again. If either changed, it refuses with "review again before payment" and the line that changed, and nothing is frozen.
+  - Completing a checkout without a started card payment rechecks the discount policy. If the policy became stricter, the attempt is refused with `discount_changed`, which is recorded on the attempt.
+  - After a card payment starts, the reviewed cart, discounts, and total stay frozen. A later grant or minimum change never reprices that checkout during recovery or completion. The discount dialog is refused while a payment is started.
+  - Replaying the same attempt returns the same sale.
+- **Discount audit.** The slip shows the list price, the discount per line, the subtotal, and the total. The owner's view of a sale also shows a "Discount audit" section, which is not printed, with the original, discount, final and lowest prices, the limit, who gave it, and the reason.
 - **Money.** TRY only, integer minor units throughout:
   - Payments are cash, card, or both. Allocations always equal the total.
   - Change is computed against cash only. Tendering cash when the card covers the total is refused.
@@ -729,7 +747,7 @@ The system must validate current stock and device availability when completing t
   - A reference is unique per terminal (merchant number plus terminal number). The approval row is kept separately from the final payments and is linked to at most one payment.
   - Recording the same approval again returns it; a different approval on the same attempt, or a reference already used on that terminal, is refused.
   - Completing with the same attempt, revision, and cash returns the original sale. Changing the cash on a retry is an idempotency conflict.
-  - A failed completion records why (`unavailable`, `price_changed`, `system_error`) and leaves the attempt open with its approval visible: amount, reference, and "do not charge the card again".
+  - A failed completion records why (`unavailable`, `price_changed`, `discount_changed`, `system_error`) and leaves the attempt open with its approval visible: amount, reference, and "do not charge the card again".
   - From there the cashier retries once the item can be sold, or the owner records an externally confirmed terminal void (void reference plus note), which closes the attempt without a sale and is logged (`checkout_resolution`).
   - The cashier's cart and attempt key live in the session per user and store. On reload, a completed attempt shows the sale and an open one returns to payment.
   - Unresolved attempts are listed on the counter even without the session: the cashier's own, or every attempt in the store for the owner. Only the cashier who opened an attempt can resume it.
@@ -761,46 +779,87 @@ The system must validate current stock and device availability when completing t
   - Salespeople and unassigned users are refused.
 - The owner grants or revokes counter access per employee on the store management page. Each change is logged (`employee_permission`) with the employee's store codes.
 - Employees see only their own sales, receipts, and attempts. The owner sees every sale and attempt in accessible stores.
-- Owner-only actions: lowering a line price (with a reason), recording a terminal void, resolving an unverified terminal payment, setting unit prices (`set_selling_prices`), and managing card terminals.
-- `OperationalStoreSetupSeeder` grants `use_pos` and `set_selling_prices` to the existing `admin` role only.
+- Owner-only actions: recording a terminal void, resolving an unverified terminal payment, setting unit prices and device minimums (`set_selling_prices`), managing card terminals, and discounting without a limit.
+- Employee discounts are a separate grant from `use_pos`. On the store management page, the owner sets each employee's maximum discount percentage ("Discounts: up to X%"); leaving it blank revokes it. Saving grants or revokes the `give_pos_discounts` permission together with the grant row, and each change is logged (`employee_permission`: `pos_discount_granted`, `pos_discount_changed`, `pos_discount_revoked`, with old and new basis points). Like `use_pos`, the grant belongs to the employee and applies in every store where they can use the counter.
+- `OperationalStoreSetupSeeder` grants `use_pos` and `set_selling_prices` to the existing `admin` role only, and creates `give_pos_discounts` without granting it to any role.
 - An employee who signs in is sent back to the counter URL they opened. There is no automatic redirect to `/pos` after login.
 
 ### Phase 5 Setup on an Existing Database
 
-Applied only to the isolated test and browser databases; the development database (`dev.store`) was not migrated. Before running on a target server, review and deploy the code and take a fresh database backup. The Phase 1 to Phase 4 migrations and setup must already be applied.
+The development database (`dev.store`) was not migrated. Before running on a target server, review and deploy the code and take a fresh database backup. The Phase 1 to Phase 4 migrations and setup must already be applied.
 
-1. Run `php artisan migrate:status`. All Phase 4 migrations (`2026_11_05_180922` to `2026_11_05_180928`) must show `Ran`, and these nine must be pending. All are additive. No existing constraint changes; a `sale` movement already satisfies the Phase 4 movement `CHECK` constraints.
+Phase 5 has eleven migrations. The first nine are the original Phase 5 schema, unchanged since they were first installed. The last two bring an installed copy forward in place, keeping every sale and checkout record:
 
-   - `2026_11_06_190001_add_selling_price_to_product_definitions_table`
-   - `2026_11_06_190002_add_selling_price_to_inventory_units_table`
-   - `2026_11_06_190003_create_card_terminals_table`
-   - `2026_11_06_190004_create_checkout_attempts_table`
-   - `2026_11_06_190005_create_card_approvals_table`
-   - `2026_11_06_190006_create_sale_number_sequences_table`
-   - `2026_11_06_190007_create_sales_table`
-   - `2026_11_06_190008_create_sale_lines_table`
-   - `2026_11_06_190009_create_sale_payments_table`
+- `2026_11_06_190001_add_selling_price_to_product_definitions_table`
+- `2026_11_06_190002_add_selling_price_to_inventory_units_table`
+- `2026_11_06_190003_create_card_terminals_table`
+- `2026_11_06_190004_create_checkout_attempts_table`
+- `2026_11_06_190005_create_card_approvals_table`
+- `2026_11_06_190006_create_sale_number_sequences_table`
+- `2026_11_06_190007_create_sales_table`
+- `2026_11_06_190008_create_sale_lines_table`
+- `2026_11_06_190009_create_sale_payments_table`
+- `2026_11_06_190010_add_terminal_payment_identity_to_checkout_attempts_table`:
+  - Adds `terminal_payment_key` (unique), `terminal_payment_request_key`, and `terminal_payment_cleared_key` to `checkout_attempts`, and `terminal_payment_key` to `card_approvals`.
+  - Backfill: an attempt whose card start is still set gets a new start key and request key, and its approval is bound to that key. An approval whose start was already cleared gets its own key.
+  - Then replaces `checkout_attempts_terminal_payment_check`, so the start, key, request key, terminal, amount, and actor are all empty or all set, the amount is from 0.01 up to the total, and a start always freezes the cart.
+  - A legacy start retried after the upgrade is refused like any second start, because its attempt is already frozen.
+- `2026_11_06_190011_add_employee_discounts_to_pos_tables`:
+  - Creates `pos_discount_grants`.
+  - Adds `inventory_units.minimum_selling_price`, and on `sale_lines` adds `unit_discount`, `discount_limit`, `discount_basis_points`, `discount_lowest_unit_price`, and `discounted_by`.
+  - Backfill: `unit_discount` is the list price minus the unit price. A line that was already discounted is recorded as an owner override (`discount_limit = owner`, `discounted_by` = the sale's cashier), the only discount the earlier counter allowed.
+  - Adds `CHECK` constraints:
+    - the grant is from 1 to 10000 basis points;
+    - a minimum price needs a selling price and lies between 0.01 and that price;
+    - a line's discount equals the list price minus the unit price, and a discounted line always has an actor and a limit.
 
-   `2026_11_06_190004` also holds the started terminal payment (`terminal_payment_key` (unique), `terminal_payment_request_key`, `terminal_payment_terminal_id`, `terminal_payment_amount`, `terminal_payment_started_by`, `terminal_payment_started_at`) and `terminal_payment_cleared_key` (the last resolved start, for safe retries). A `CHECK` constraint requires the six start columns to be either all empty or all set, the amount to be from 0.01 up to the total, and a started payment to always freeze the cart. `2026_11_06_190005` stores the answered start on each approval (`card_approvals.terminal_payment_key`). These columns were added to the unmerged migration in place. A database that already ran an earlier copy of the Phase 5 migrations (only the isolated test and browser databases) must re-run them.
+Phase 4 constraints are not touched, and a `sale` movement already satisfies the Phase 4 movement `CHECK` constraints.
 
-2. Preview, then apply only these migrations:
+**Database that already ran the first nine (`dev.store`).** It keeps its sales, payments, checkout attempts, and approvals:
+
+1. Take a backup, for example `mysqldump --single-transaction --routines --triggers <database> > phase5-before-discounts.sql`.
+2. Run `php artisan migrate:status`. `2026_11_06_190001` to `2026_11_06_190009` must show `Ran`, and only `190010` and `190011` may be pending. A database that ran the unmerged `b392747` copy of `190004` or `190005`, which already had the payment-key columns, must be rebuilt instead. That applied only to the isolated test and browser databases.
+3. Preview, then apply only the two new migrations:
 
    ```bash
-   php artisan migrate --pretend --path=database/migrations/2026_11_06_190001_add_selling_price_to_product_definitions_table.php --path=database/migrations/2026_11_06_190002_add_selling_price_to_inventory_units_table.php --path=database/migrations/2026_11_06_190003_create_card_terminals_table.php --path=database/migrations/2026_11_06_190004_create_checkout_attempts_table.php --path=database/migrations/2026_11_06_190005_create_card_approvals_table.php --path=database/migrations/2026_11_06_190006_create_sale_number_sequences_table.php --path=database/migrations/2026_11_06_190007_create_sales_table.php --path=database/migrations/2026_11_06_190008_create_sale_lines_table.php --path=database/migrations/2026_11_06_190009_create_sale_payments_table.php
-   php artisan migrate --force --path=database/migrations/2026_11_06_190001_add_selling_price_to_product_definitions_table.php --path=database/migrations/2026_11_06_190002_add_selling_price_to_inventory_units_table.php --path=database/migrations/2026_11_06_190003_create_card_terminals_table.php --path=database/migrations/2026_11_06_190004_create_checkout_attempts_table.php --path=database/migrations/2026_11_06_190005_create_card_approvals_table.php --path=database/migrations/2026_11_06_190006_create_sale_number_sequences_table.php --path=database/migrations/2026_11_06_190007_create_sales_table.php --path=database/migrations/2026_11_06_190008_create_sale_lines_table.php --path=database/migrations/2026_11_06_190009_create_sale_payments_table.php
+   php artisan migrate --pretend --path=database/migrations/2026_11_06_190010_add_terminal_payment_identity_to_checkout_attempts_table.php --path=database/migrations/2026_11_06_190011_add_employee_discounts_to_pos_tables.php
+   php artisan migrate --force --path=database/migrations/2026_11_06_190010_add_terminal_payment_identity_to_checkout_attempts_table.php --path=database/migrations/2026_11_06_190011_add_employee_discounts_to_pos_tables.php
    ```
 
-3. Grant the new owner permissions with the targeted seeder (safe to rerun; it creates no users). Do not run `RolesAndPermissionsSeeder` or general seeders.
+4. Create the discount permission, which is safe to rerun and creates no users, then clear the permission cache. Do not run `RolesAndPermissionsSeeder` or general seeders.
 
    ```bash
    php artisan db:seed --class=OperationalStoreSetupSeeder --force
+   php artisan permission:cache-reset
    ```
 
-4. Rebuild frontend assets (`npm run build`) so the counter's Tailwind classes are compiled.
-5. Operational setup in the app, by the owner:
-   - add each store's card terminals (label, merchant number, terminal number) on the store management page;
-   - set selling prices on definitions and on each used device;
-   - grant counter access to employees on the store management page.
+5. Verify:
+   - every started attempt has both keys: `select count(*) from checkout_attempts where terminal_payment_started_at is not null and (terminal_payment_key is null or terminal_payment_request_key is null)` returns 0;
+   - every approval has a key, matching its attempt's key while that start is open;
+   - discounted lines are backfilled: `select count(*) from sale_lines where unit_price < list_unit_price and (discounted_by is null or discount_limit is null)` returns 0;
+   - the four constraints exist: `select constraint_name from information_schema.check_constraints where constraint_schema = database() and constraint_name in ('checkout_attempts_terminal_payment_check', 'pos_discount_grants_basis_points_check', 'inventory_units_minimum_selling_price_check', 'sale_lines_discount_check')`;
+   - `give_pos_discounts` exists in `permissions` and is not attached to any role.
+6. Run `npm run build`.
+
+**Fresh install.** Run `php artisan migrate --force` (all eleven run in order), then `php artisan db:seed --class=OperationalStoreSetupSeeder --force` and `npm run build`. The isolated browser database was rebuilt this way.
+
+**Operational setup in the app, by the owner:**
+
+- add each store's card terminals (label, merchant number, terminal number) on the store management page;
+- set selling prices on definitions and on each used device, and optionally a minimum price per used device;
+- on the store management page, grant counter access to employees and, separately, their maximum discount percentage.
+
+**Upgrade rehearsal (2026-11-06).** Rehearsed on `dev_store_upgrade`, built from a `mysqldump --single-transaction` of `dev.store` (2 sales, 3 attempts, 1 approval, including an owner-discounted cash sale). Three attempts in the legacy shape were added: one started without an approval, one started and approved, and one voided.
+
+- After the migration, every pre-existing column value was identical.
+- Open starts and their approvals shared new keys, and the voided approval got its own key.
+- The discounted line was backfilled as `owner` by its cashier.
+- All four constraints were present.
+- Replays of both legacy sales returned the original sales.
+- Both open card attempts completed under the new code, one after recording its approval against the backfilled key.
+- A new 10% employee discount refused 629.99 and accepted 630.00 on a 700.00 item.
+- `migrate:rollback` was refused by the guard with no schema change.
+- `dev.store` checksums for the Phase 5 tables, `inventory_units`, and `migrations` were identical before and after the work.
 
 ### Phase 5 Rollback
 
@@ -810,7 +869,9 @@ Rollback is supported only while no POS data exists. Once any sale, attempt, ter
   - rows in any Phase 5 table;
   - `sale` movements;
   - `sold` units;
-  - a non-null `selling_price` on a definition or unit.
+  - a non-null `selling_price` on a definition or unit;
+  - a non-null `minimum_selling_price` on a unit;
+  - an employee discount grant.
 - **Covered commands.** Same as Phase 4: batch, `--step`, targeted `--path`, `migrate:reset`, and `migrate:refresh`. `migrate:fresh` is not covered and must never be run on a database with real data.
 
 Procedure:
@@ -822,15 +883,16 @@ Procedure:
    php artisan tinker --execute 'dump(app(App\Services\Pos\PosRollbackGuard::class)->recordedPosData());'
    ```
 
-3. Roll back the batch holding the nine Phase 5 migrations, limited to the Phase 5 files:
+3. Roll back the Phase 5 batches, newest first, limited to the Phase 5 files. On a database upgraded in place, `190010` and `190011` are in a later batch than the first nine:
 
    ```bash
+   php artisan migrate:rollback --force --batch=<discount-batch> --path=database/migrations/2026_11_06_190010_add_terminal_payment_identity_to_checkout_attempts_table.php --path=database/migrations/2026_11_06_190011_add_employee_discounts_to_pos_tables.php
    php artisan migrate:rollback --force --batch=<phase-5-batch> --path=database/migrations/2026_11_06_190001_add_selling_price_to_product_definitions_table.php --path=database/migrations/2026_11_06_190002_add_selling_price_to_inventory_units_table.php --path=database/migrations/2026_11_06_190003_create_card_terminals_table.php --path=database/migrations/2026_11_06_190004_create_checkout_attempts_table.php --path=database/migrations/2026_11_06_190005_create_card_approvals_table.php --path=database/migrations/2026_11_06_190006_create_sale_number_sequences_table.php --path=database/migrations/2026_11_06_190007_create_sales_table.php --path=database/migrations/2026_11_06_190008_create_sale_lines_table.php --path=database/migrations/2026_11_06_190009_create_sale_payments_table.php
    ```
 
-4. To reapply, run step 2 of the setup above.
+4. To reapply, follow the fresh install steps above.
 
-The guard test refuses each of the nine `down()` methods with a recorded sale and leaves the schema unchanged.
+The guard test refuses each of the eleven `down()` methods with a recorded sale and leaves the schema unchanged.
 
 ---
 

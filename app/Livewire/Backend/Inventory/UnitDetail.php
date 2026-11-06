@@ -156,6 +156,8 @@ class UnitDetail extends Component
 
     public string $unitSellingPrice = '';
 
+    public string $unitMinimumPrice = '';
+
     public function mount(Store $store, InventoryUnit $unit): void
     {
         $this->authorize('viewInventory', $store);
@@ -166,6 +168,8 @@ class UnitDetail extends Component
 
         $priceMinor = $unit->sellingPriceMinor();
         $this->unitSellingPrice = $priceMinor === null ? '' : Money::input($priceMinor);
+        $minimumMinor = $unit->minimumSellingPriceMinor();
+        $this->unitMinimumPrice = $minimumMinor === null ? '' : Money::input($minimumMinor);
     }
 
     public function remove(RemoveUnit $removeUnit): void
@@ -413,9 +417,9 @@ class UnitDetail extends Component
     {
         $this->authorize('setUnitSellingPrices', $this->store);
 
-        $setUnitSellingPrice(auth()->user(), $this->store, $this->unitId, $this->unitSellingPrice);
+        $setUnitSellingPrice(auth()->user(), $this->store, $this->unitId, $this->unitSellingPrice, $this->unitMinimumPrice);
 
-        $this->resetErrorBag('selling_price');
+        $this->resetErrorBag(['selling_price', 'minimum_selling_price']);
         $this->dispatch('close-dialog', id: 'unit-price');
         $this->dispatch('notify', ['type' => 'success', 'message' => __('pos.pricing.unit_price_saved')]);
     }

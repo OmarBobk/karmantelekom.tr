@@ -24,6 +24,7 @@ class PosRollbackGuard
         'card_approvals',
         'checkout_attempts',
         'card_terminals',
+        'pos_discount_grants',
     ];
 
     /**
@@ -60,6 +61,10 @@ class PosRollbackGuard
             if ($schema->hasColumn($table, 'selling_price')) {
                 $counts["{$table} (selling price set)"] = $connection->table($table)->whereNotNull('selling_price')->count();
             }
+        }
+
+        if ($schema->hasColumn('inventory_units', 'minimum_selling_price')) {
+            $counts['inventory_units (minimum selling price set)'] = $connection->table('inventory_units')->whereNotNull('minimum_selling_price')->count();
         }
 
         return array_filter($counts, fn (int $count): bool => $count > 0);

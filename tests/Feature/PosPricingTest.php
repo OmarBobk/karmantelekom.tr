@@ -114,16 +114,16 @@ class PosPricingTest extends TestCase
     {
         $cashier = $this->createCashier();
 
-        $this->expectAuthorizationFailure(fn () => app(SetUnitSellingPrice::class)($cashier, $this->store, $this->phone->id, '100'));
+        $this->expectAuthorizationFailure(fn () => app(SetUnitSellingPrice::class)($cashier, $this->store, $this->phone->id, '100', null));
 
         $this->finalize($cashier, $this->review($cashier, $this->phoneLine()), '12500');
 
-        $this->expectValidationError(fn () => app(SetUnitSellingPrice::class)($this->owner, $this->store, $this->phone->id, '100'), 'selling_price');
+        $this->expectValidationError(fn () => app(SetUnitSellingPrice::class)($this->owner, $this->store, $this->phone->id, '100', null), 'selling_price');
         $this->assertSame('12500.00', $this->phone->fresh()->selling_price);
 
         $headset = ProductDefinition::factory()->priced('1500')->create(['tracking_mode' => TrackingMode::SERIALIZED]);
         $unit = $this->registerDevice($this->owner, $this->store, $headset, null, 'HS-9', condition: UnitCondition::NEW);
-        $this->expectValidationError(fn () => app(SetUnitSellingPrice::class)($this->owner, $this->store, $unit->id, '100'), 'selling_price');
+        $this->expectValidationError(fn () => app(SetUnitSellingPrice::class)($this->owner, $this->store, $unit->id, '100', null), 'selling_price');
     }
 
     private function expectValidationError(callable $callback, string $field): void

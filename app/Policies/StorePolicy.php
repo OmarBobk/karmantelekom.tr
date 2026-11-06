@@ -134,6 +134,21 @@ class StorePolicy
     }
 
     /**
+     * Determine whether an employee can discount counter lines in this store.
+     *
+     * Needs counter access to the store, the direct discount permission, and an owner-set
+     * maximum percentage; without the percentage the permission alone allows nothing. The
+     * owner discounts through adjustSalePrices instead.
+     */
+    public function giveDiscounts(User $user, Store $store): bool
+    {
+        return ! $user->hasRole('admin')
+            && $this->usePos($user, $store)
+            && $user->checkPermissionTo('give_pos_discounts')
+            && $user->posDiscountGrant()->exists();
+    }
+
+    /**
      * Determine whether the user can record the resolution of a voided terminal approval (owner only).
      */
     public function resolveCheckoutAttempts(User $user, Store $store): bool
@@ -150,7 +165,7 @@ class StorePolicy
     }
 
     /**
-     * Determine whether the user can grant or revoke counter access for employees.
+     * Determine whether the user can grant or revoke counter access and discount limits for employees.
      */
     public function managePosAccess(User $user): bool
     {

@@ -142,7 +142,7 @@ class FinalizeCheckout
         $balances = $this->lockBalances($store, $lines, $definitions);
         $units = $this->lockUnits($store, $lines);
 
-        $this->revalidate($lines, $definitions, $balances, $units);
+        $this->revalidate($lines, $definitions, $balances, $units, $locked->isFrozen() ? null : DiscountAuthority::for($actor, $store));
 
         $now = now();
         $sequence = $this->nextSequence($store);
@@ -167,6 +167,7 @@ class FinalizeCheckout
         foreach ($ordered as $index => $line) {
             $definition = $definitions->get((int) $line['definition_id']);
             $unit = $line['unit_id'] === null ? null : $units->get((int) $line['unit_id']);
+            $isDiscounted = (int) $line['unit_price'] < (int) $line['list_unit_price'];
 
             $saleLine = SaleLine::query()->create([
                 'sale_id' => $sale->id,
@@ -183,9 +184,14 @@ class FinalizeCheckout
                 'quantity' => $line['quantity'],
                 'list_unit_price' => Money::toDecimal($line['list_unit_price']),
                 'unit_price' => Money::toDecimal($line['unit_price']),
+                'unit_discount' => Money::toDecimal((int) $line['list_unit_price'] - (int) $line['unit_price']),
                 'discount_amount' => Money::toDecimal($line['discount']),
                 'line_total' => Money::toDecimal($line['line_total']),
                 'adjustment_reason' => $line['adjustment_reason'],
+                'discount_limit' => $isDiscounted ? ($line['discount_limit'] ?? DiscountAuthority::OWNER) : null,
+                'discount_basis_points' => $isDiscounted ? ($line['discount_basis_points'] ?? null) : null,
+                'discount_lowest_unit_price' => $isDiscounted && isset($line['lowest_unit_price']) ? Money::toDecimal((int) $line['lowest_unit_price']) : null,
+                'discounted_by' => $isDiscounted ? ($line['discounted_by'] ?? $locked->user_id) : null,
             ]);
 
             $movement = [
@@ -339,13 +345,16 @@ class FinalizeCheckout
      * @param  Collection<int, ProductDefinition>  $definitions
      * @param  Collection<int, InventoryBalance>  $balances
      * @param  Collection<int, InventoryUnit>  $units
+     * @param  DiscountAuthority|null  $authority  The finalizing cashier's current discount limits; null once a
+     *                                             terminal payment started, because the charged total is final.
      *
      * @throws CheckoutItemsChangedException
      */
-    private function revalidate(array $lines, Collection $definitions, Collection $balances, Collection $units): void
+    private function revalidate(array $lines, Collection $definitions, Collection $balances, Collection $units, ?DiscountAuthority $authority): void
     {
         $unavailable = [];
         $priceChanged = [];
+        $discountChanged = [];
         $requested = [];
 
         foreach ($lines as $line) {
@@ -384,6 +393,13 @@ class FinalizeCheckout
 
             if (SellingPrice::listPriceMinor($definition, $unit) !== (int) $line['list_unit_price']) {
                 $priceChanged["{$field}.price"] = __('pos.errors.price_changed', ['name' => $line['name']]);
+
+                continue;
+            }
+
+            if ($authority !== null && (int) $line['unit_price'] < (int) $line['list_unit_price']
+                && $authority->refusal((int) $line['list_unit_price'], (int) $line['unit_price'], $unit) !== null) {
+                $discountChanged["{$field}.adjusted_price"] = __('pos.errors.discount_changed', ['name' => $line['name']]);
             }
         }
 
@@ -393,6 +409,10 @@ class FinalizeCheckout
 
         if ($priceChanged !== []) {
             throw CheckoutItemsChangedException::because(CheckoutItemsChangedException::PRICE_CHANGED, $priceChanged);
+        }
+
+        if ($discountChanged !== []) {
+            throw CheckoutItemsChangedException::because(CheckoutItemsChangedException::DISCOUNT_CHANGED, $discountChanged);
         }
     }
 

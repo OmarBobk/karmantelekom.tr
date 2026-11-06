@@ -475,6 +475,7 @@ class PosCheckoutTest extends TestCase
         $sale = $this->finalize($this->owner, $attempt, '80');
         $line = $sale->lines->first();
         $this->assertSame(['49.90', '40.00', '19.80', '80.00', 'Loyal customer'], [$line->list_unit_price, $line->unit_price, $line->discount_amount, $line->line_total, $line->adjustment_reason]);
+        $this->assertSame(['9.90', 'owner', null, '0.01', $this->owner->id], [$line->unit_discount, $line->discount_limit, $line->discount_basis_points, $line->discount_lowest_unit_price, $line->discounted_by]);
     }
 
     #[Test]

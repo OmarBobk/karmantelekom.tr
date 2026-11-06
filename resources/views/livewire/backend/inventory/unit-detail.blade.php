@@ -142,6 +142,9 @@
                                 <span class="inline-flex rounded-full bg-amber-50 px-2 py-0.5 text-xs font-medium text-amber-800 ring-1 ring-amber-200">{{ __('pos.pricing.not_priced') }}</span>
                             @else
                                 <span dir="ltr" class="font-mono font-semibold tabular-nums">{{ \App\Services\Purchasing\Money::format($unit->sellingPriceMinor()) }} TRY</span>
+                                @if ($unit->minimumSellingPriceMinor() !== null)
+                                    <span class="ms-2 text-xs text-gray-600">{{ __('pos.pricing.minimum_price') }}: <bdi dir="ltr" class="font-mono tabular-nums">{{ \App\Services\Purchasing\Money::format($unit->minimumSellingPriceMinor()) }} TRY</bdi></span>
+                                @endif
                             @endif
                             @if ($canSetUnitPrice)
                                 <button type="button" x-on:click="$dispatch('open-dialog', { id: 'unit-price' })" class="ms-2 min-h-11 rounded-lg px-3 text-sm font-medium text-blue-700 hover:bg-blue-50">{{ __('pos.pricing.set_unit_price') }}</button>

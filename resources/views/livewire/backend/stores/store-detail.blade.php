@@ -101,6 +101,24 @@
                                     <span @class(['h-2.5 w-2.5 rounded-full', 'bg-emerald-600' => $hasPos, 'bg-gray-300' => ! $hasPos]) aria-hidden="true"></span>
                                     {{ __('pos.access.toggle_label') }}: {{ $hasPos ? __('pos.access.on') : __('pos.access.off') }}
                                 </button>
+                                @php($discountGrant = $employee->permissions->contains('name', $discountPermission) ? $employee->posDiscountGrant : null)
+                                <button
+                                    type="button"
+                                    wire:click="openDiscountGrant({{ $employee->id }})"
+                                    aria-haspopup="dialog"
+                                    @class([
+                                        'inline-flex min-h-10 items-center gap-2 rounded-lg px-3 py-1.5 text-sm font-medium ring-1',
+                                        'bg-blue-50 text-blue-800 ring-blue-300 hover:bg-blue-100' => $discountGrant,
+                                        'bg-white text-gray-700 ring-gray-300 hover:bg-gray-50' => ! $discountGrant,
+                                    ])
+                                >
+                                    {{ __('pos.access.discount_label') }}:
+                                    @if ($discountGrant)
+                                        {{ __('pos.access.discount_up_to', ['percent' => $discountGrant->percentLabel()]) }}
+                                    @else
+                                        {{ __('pos.access.off') }}
+                                    @endif
+                                </button>
                             @endif
                             <button type="button" wire:click="confirmRemoval({{ $employee->id }})" class="rounded-lg border border-red-200 px-3 py-1.5 text-sm font-medium text-red-600 hover:bg-red-50">
                                 {{ __('stores.actions.remove') }}
@@ -157,6 +175,27 @@
                 <button type="submit" wire:loading.attr="disabled" wire:target="addTerminal" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60">{{ __('pos.terminals.add') }}</button>
             </form>
         </section>
+    @endif
+
+    @if ($canManagePos)
+        <x-operations.dialog :id="\App\Livewire\Backend\Stores\StoreDetail::DISCOUNT_DIALOG" :title="__('pos.access.discount_title', ['name' => $discountEmployee?->name ?? ''])" :direction="$textDirection">
+            <form wire:submit="saveDiscountGrant" class="space-y-4">
+                <p class="text-sm text-gray-600">{{ __('pos.access.discount_help') }}</p>
+                <div>
+                    <label for="discount-percent" class="block text-sm font-medium text-gray-700">{{ __('pos.access.discount_percent') }}</label>
+                    <div class="mt-1 flex items-center gap-2">
+                        <input id="discount-percent" type="text" inputmode="decimal" dir="ltr" maxlength="6" wire:model="discountPercent" aria-describedby="discount-percent-help" @error('discountPercent') aria-invalid="true" @enderror class="block w-32 rounded-lg border-gray-300 font-mono shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                        <span class="text-sm text-gray-600" aria-hidden="true">%</span>
+                    </div>
+                    <p id="discount-percent-help" class="mt-1 text-xs text-gray-500">{{ __('pos.access.discount_percent_help') }}</p>
+                    @error('discountPercent') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                </div>
+                <div class="flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                    <button type="button" x-on:click="$el.closest('dialog').close()" class="rounded-lg border border-gray-300 px-4 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50">{{ __('stores.actions.cancel') }}</button>
+                    <button type="submit" wire:loading.attr="disabled" wire:target="saveDiscountGrant" class="rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60">{{ __('pos.access.discount_save') }}</button>
+                </div>
+            </form>
+        </x-operations.dialog>
     @endif
 
     @if ($employeeToRemove)

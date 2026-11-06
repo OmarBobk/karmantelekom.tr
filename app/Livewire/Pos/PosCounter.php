@@ -6,6 +6,7 @@ namespace App\Livewire\Pos;
 
 use App\Actions\Pos\CancelCheckoutAttempt;
 use App\Actions\Pos\CheckCheckoutStatus;
+use App\Actions\Pos\DiscountAuthority;
 use App\Actions\Pos\FinalizeCheckout;
 use App\Actions\Pos\RecordCardApproval;
 use App\Actions\Pos\ResolveCounterCode;
@@ -25,6 +26,7 @@ use App\Models\ProductDefinition;
 use App\Models\Sale;
 use App\Models\Store;
 use App\Services\Purchasing\Money;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Collection;
@@ -47,7 +49,7 @@ class PosCounter extends Component
 
     public const CHOOSER_DIALOG = 'pos-choose';
 
-    public const ADJUST_DIALOG = 'pos-adjust';
+    public const DISCOUNT_DIALOG = 'pos-discount';
 
     public const RESOLVE_DIALOG = 'pos-resolve';
 
@@ -102,11 +104,22 @@ class PosCounter extends Component
     public string $cashTendered = '';
 
     #[Locked]
-    public string $adjustLineKey = '';
+    public string $discountLineKey = '';
 
-    public string $adjustedPrice = '';
+    /** The line's list price when the dialog opened, in minor units; display only. */
+    #[Locked]
+    public ?int $discountListPrice = null;
 
-    public string $adjustmentReason = '';
+    /** The lowest unit price the cashier's limit allowed when the dialog opened; display only. */
+    #[Locked]
+    public ?int $discountLowestPrice = null;
+
+    #[Locked]
+    public string $discountLimit = '';
+
+    public string $discountPrice = '';
+
+    public string $discountReason = '';
 
     #[Locked]
     public string $resolveAttemptKey = '';
@@ -266,51 +279,108 @@ class PosCounter extends Component
         $this->cartChanged();
     }
 
-    public function openAdjustment(string $key): void
+    /**
+     * Open the discount dialog with the line's current list price and the lowest price the
+     * cashier's limit allows. Never shows acquisition cost.
+     */
+    public function openDiscount(string $key): void
     {
         $store = $this->authorizeCounter();
-        $this->authorize('adjustSalePrices', $store);
+        $authority = $this->discountAuthority($store);
 
         if (! isset($this->cart[$key]) || ! $this->ensureCartEditable()) {
             return;
         }
 
-        $this->resetValidation();
-        $this->adjustLineKey = $key;
-        $this->adjustedPrice = $this->cart[$key]['adjusted_price'];
-        $this->adjustmentReason = $this->cart[$key]['adjustment_reason'];
-        $this->dispatch('open-dialog', id: self::ADJUST_DIALOG);
-    }
+        [$listPrice, $unit] = $this->currentListPrice($store, $this->cart[$key]);
 
-    public function saveAdjustment(): void
-    {
-        $store = $this->authorizeCounter();
-        $this->authorize('adjustSalePrices', $store);
+        if ($listPrice === null) {
+            $this->notify('error', __('pos.errors.not_priced'));
 
-        if (! isset($this->cart[$this->adjustLineKey]) || ! $this->ensureCartEditable()) {
             return;
         }
 
-        $this->resetValidation(['adjustedPrice', 'adjustmentReason']);
-        $price = Str::trim($this->adjustedPrice);
-        $reason = Str::trim($this->adjustmentReason);
+        $limit = $authority->limitFor($listPrice, $unit);
 
-        if ($price !== '') {
-            try {
-                Money::parse($price, Money::MAX_UNIT_AMOUNT);
-            } catch (InvalidAmountException) {
-                throw ValidationException::withMessages(['adjustedPrice' => __('pos.errors.price_invalid', ['max' => Money::format(Money::MAX_UNIT_AMOUNT)])]);
-            }
+        $this->resetValidation();
+        $this->discountLineKey = $key;
+        $this->discountListPrice = $listPrice;
+        $this->discountLowestPrice = $limit['lowest'] ?? null;
+        $this->discountLimit = $limit['limit'] ?? '';
+        $this->discountPrice = $this->cart[$key]['adjusted_price'];
+        $this->discountReason = $this->cart[$key]['adjustment_reason'];
+        $this->dispatch('open-dialog', id: self::DISCOUNT_DIALOG);
+    }
 
-            if ($reason === '' || mb_strlen($reason) > ReviewCheckout::MAX_REASON_LENGTH) {
-                throw ValidationException::withMessages(['adjustmentReason' => __('pos.errors.adjustment_reason_required', ['max' => ReviewCheckout::MAX_REASON_LENGTH])]);
-            }
+    /**
+     * Apply the cashier's final unit price at once when it is within their limit; otherwise
+     * reject it with the lowest allowed price. Review checks the same limit again.
+     */
+    public function applyDiscount(): void
+    {
+        $store = $this->authorizeCounter();
+        $authority = $this->discountAuthority($store);
+        $key = $this->discountLineKey;
+
+        if (! isset($this->cart[$key]) || ! $this->ensureCartEditable()) {
+            return;
         }
 
-        $this->cart[$this->adjustLineKey]['adjusted_price'] = $price;
-        $this->cart[$this->adjustLineKey]['adjustment_reason'] = $price === '' ? '' : $reason;
-        $this->cartChanged();
-        $this->dispatch('close-dialog', id: self::ADJUST_DIALOG);
+        $this->resetValidation(['discountPrice', 'discountReason']);
+        $price = Str::trim($this->discountPrice);
+        $reason = Str::trim($this->discountReason);
+
+        if ($price === '') {
+            $this->setLineDiscount($key, '', '');
+
+            return;
+        }
+
+        [$listPrice, $unit] = $this->currentListPrice($store, $this->cart[$key]);
+
+        if ($listPrice === null) {
+            throw ValidationException::withMessages(['discountPrice' => __('pos.errors.not_priced')]);
+        }
+
+        try {
+            $priceMinor = Money::parse($price, Money::MAX_UNIT_AMOUNT);
+        } catch (InvalidAmountException) {
+            throw ValidationException::withMessages(['discountPrice' => __('pos.errors.price_invalid', ['max' => Money::format(Money::MAX_UNIT_AMOUNT)])]);
+        }
+
+        if ($priceMinor === $listPrice) {
+            $this->setLineDiscount($key, '', '');
+
+            return;
+        }
+
+        $refusal = $authority->refusal($listPrice, $priceMinor, $unit);
+
+        if ($refusal !== null) {
+            throw ValidationException::withMessages(['discountPrice' => $refusal]);
+        }
+
+        if ($reason === '' || mb_strlen($reason) > ReviewCheckout::MAX_REASON_LENGTH) {
+            throw ValidationException::withMessages(['discountReason' => __('pos.errors.adjustment_reason_required', ['max' => ReviewCheckout::MAX_REASON_LENGTH])]);
+        }
+
+        $this->setLineDiscount($key, Money::input($priceMinor), $reason);
+        $this->notify('success', __('pos.cart.discount_applied', ['name' => $this->cart[$key]['name'], 'price' => Money::format($priceMinor)]));
+    }
+
+    /**
+     * Remove a line's discount. Needs no discount permission, so a cashier whose limit was
+     * lowered can still bring the cart back within it.
+     */
+    public function removeDiscount(string $key): void
+    {
+        $this->authorizeCounter();
+
+        if (! isset($this->cart[$key]) || ! $this->ensureCartEditable()) {
+            return;
+        }
+
+        $this->setLineDiscount($key, '', '');
     }
 
     public function review(ReviewCheckout $review): void
@@ -612,7 +682,7 @@ class PosCounter extends Component
         $store = $this->authorizeCounter();
         $user = auth()->user();
         $attempt = $this->activeAttempt()?->load(['cardApproval.terminal', 'terminalPaymentTerminal']);
-        $cartLines = $this->cartLinesWithCurrentPrices();
+        $cartLines = $attempt?->isOpen() && $attempt->isFrozen() ? self::reviewedCartLines($attempt) : $this->cartLinesWithCurrentPrices();
         $terminalPending = $attempt !== null && $attempt->isOpen() && $attempt->hasPendingTerminalPayment();
 
         return view('livewire.pos.pos-counter', [
@@ -630,7 +700,7 @@ class PosCounter extends Component
             'terminals' => $store->cardTerminals()->active()->orderBy('label')->get(),
             'recoverable' => $this->recoverableAttempts($store),
             'lastSale' => $this->lastSaleId === null ? null : Sale::query()->visibleTo($user, $store)->find($this->lastSaleId),
-            'canAdjust' => $user->can('adjustSalePrices', $store),
+            'canDiscount' => DiscountAuthority::for($user, $store)->canDiscount(),
             'canResolve' => $user->can('resolveCheckoutAttempts', $store),
             ...$this->localeViewData(),
         ])->layout('layouts.pos', ['posStore' => $store])->title(__('pos.counter.title', ['store' => $store->code]));
@@ -949,6 +1019,56 @@ class PosCounter extends Component
         }
 
         return $lines;
+    }
+
+    /**
+     * The reviewed lines of a frozen attempt, exactly as the cashier is charging them; today's
+     * prices and limits never reprice a cart after a terminal payment started.
+     *
+     * @return list<array<string, mixed>>
+     */
+    private static function reviewedCartLines(CheckoutAttempt $attempt): array
+    {
+        $cart = self::cartFromAttempt($attempt);
+
+        return array_map(fn (array $line): array => [
+            ...$cart[$line['key']],
+            'key' => (string) $line['key'],
+            'tracking_mode' => TrackingMode::from($line['tracking_mode']),
+            'list_price' => (int) $line['list_unit_price'],
+            'unit_price' => (int) $line['unit_price'],
+            'line_total' => (int) $line['line_total'],
+        ], $attempt->lines);
+    }
+
+    /**
+     * @return array{0: ?int, 1: ?InventoryUnit} The line's current list price and its device, if any.
+     */
+    private function currentListPrice(Store $store, array $line): array
+    {
+        $definition = ProductDefinition::query()->find($line['definition_id']);
+        $unit = $line['unit_id'] === null ? null : $store->units()->whereKey($line['unit_id'])->first();
+
+        return [$definition === null ? null : SellingPrice::listPriceMinor($definition, $unit), $unit];
+    }
+
+    private function discountAuthority(Store $store): DiscountAuthority
+    {
+        $authority = DiscountAuthority::for(auth()->user(), $store);
+
+        if (! $authority->canDiscount()) {
+            throw new AuthorizationException(__('pos.errors.discount_not_allowed'));
+        }
+
+        return $authority;
+    }
+
+    private function setLineDiscount(string $key, string $price, string $reason): void
+    {
+        $this->cart[$key]['adjusted_price'] = $price;
+        $this->cart[$key]['adjustment_reason'] = $reason;
+        $this->cartChanged();
+        $this->dispatch('close-dialog', id: self::DISCOUNT_DIALOG);
     }
 
     /**

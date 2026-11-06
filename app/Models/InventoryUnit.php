@@ -27,6 +27,7 @@ use Illuminate\Support\Carbon;
  * @property UnitCondition $condition
  * @property int $lifecycle_revision
  * @property string|null $selling_price Individual TRY price of a used device; NULL when not priced.
+ * @property string|null $minimum_selling_price Lowest price an employee discount may reach for this device; NULL uses their percentage.
  * @property Carbon|null $removed_at
  */
 class InventoryUnit extends Model
@@ -34,11 +35,16 @@ class InventoryUnit extends Model
     /**
      * @var list<string>
      */
-    protected $fillable = ['store_id', 'product_definition_id', 'status', 'condition', 'lifecycle_revision', 'selling_price', 'removed_at'];
+    protected $fillable = ['store_id', 'product_definition_id', 'status', 'condition', 'lifecycle_revision', 'selling_price', 'minimum_selling_price', 'removed_at'];
 
     public function sellingPriceMinor(): ?int
     {
         return $this->selling_price === null ? null : Money::fromDecimal($this->selling_price);
+    }
+
+    public function minimumSellingPriceMinor(): ?int
+    {
+        return $this->minimum_selling_price === null ? null : Money::fromDecimal($this->minimum_selling_price);
     }
 
     /**

@@ -7,6 +7,7 @@ namespace App\Livewire\Backend\Stores;
 use App\Actions\Pos\SaveCardTerminal;
 use App\Actions\Stores\AssignEmployeeToStore;
 use App\Actions\Stores\RemoveEmployeeFromStore;
+use App\Actions\Stores\SetEmployeeDiscountGrant;
 use App\Actions\Stores\SetEmployeePosAccess;
 use App\Livewire\Backend\OperationalLocale;
 use App\Models\Store;
@@ -35,6 +36,13 @@ class StoreDetail extends Component
     public string $terminalMerchantNumber = '';
 
     public string $terminalNumber = '';
+
+    public const DISCOUNT_DIALOG = 'employee-discount';
+
+    #[Locked]
+    public ?int $discountEmployeeId = null;
+
+    public string $discountPercent = '';
 
     public function boot(): void
     {
@@ -122,6 +130,51 @@ class StoreDetail extends Component
         ]);
     }
 
+    public function openDiscountGrant(int $userId): void
+    {
+        $this->authorize('managePosAccess', Store::class);
+
+        $employee = $this->store->employees()->with('posDiscountGrant')->whereKey($userId)->firstOrFail();
+
+        $this->discountEmployeeId = $employee->id;
+        $this->discountPercent = $employee->hasDirectPermission(OperationalStoreSetupSeeder::POS_DISCOUNT_PERMISSION)
+            ? (string) $employee->posDiscountGrant?->percentLabel()
+            : '';
+        $this->resetErrorBag('discountPercent');
+        $this->dispatch('open-dialog', id: self::DISCOUNT_DIALOG);
+    }
+
+    /**
+     * Set the employee's maximum counter discount, or revoke it when the percentage is blank.
+     * Like counter access, it is held by the user and applies where they may use the counter.
+     */
+    public function saveDiscountGrant(SetEmployeeDiscountGrant $setEmployeeDiscountGrant): void
+    {
+        $this->authorize('managePosAccess', Store::class);
+
+        if ($this->discountEmployeeId === null) {
+            return;
+        }
+
+        $this->resetErrorBag('discountPercent');
+
+        $employee = $this->store->employees()->whereKey($this->discountEmployeeId)->firstOrFail();
+
+        try {
+            $changed = $setEmployeeDiscountGrant(auth()->user(), $employee, $this->discountPercent);
+        } catch (ValidationException $exception) {
+            throw ValidationException::withMessages(['discountPercent' => collect($exception->errors())->flatten()->first()]);
+        }
+
+        $revoked = trim($this->discountPercent) === '';
+        $this->reset('discountEmployeeId', 'discountPercent');
+        $this->dispatch('close-dialog', id: self::DISCOUNT_DIALOG);
+        $this->dispatch('notify', [
+            'type' => $changed ? 'success' : 'info',
+            'message' => __($revoked ? 'pos.access.discount_revoked' : 'pos.access.discount_saved', ['name' => $employee->name]),
+        ]);
+    }
+
     public function addTerminal(SaveCardTerminal $saveCardTerminal): void
     {
         $this->authorize('manageCardTerminals', $this->store);
@@ -152,6 +205,7 @@ class StoreDetail extends Component
             ->with([
                 'stores' => fn ($stores) => $stores->whereKeyNot($this->store->id)->orderBy('code'),
                 'permissions:id,name',
+                'posDiscountGrant',
             ])
             ->orderBy('name')
             ->get();
@@ -185,6 +239,8 @@ class StoreDetail extends Component
             'canManagePos' => auth()->user()->can('managePosAccess', Store::class),
             'terminals' => $this->store->cardTerminals()->orderByDesc('is_active')->orderBy('label')->get(),
             'posPermission' => OperationalStoreSetupSeeder::USE_POS_PERMISSION,
+            'discountPermission' => OperationalStoreSetupSeeder::POS_DISCOUNT_PERMISSION,
+            'discountEmployee' => $this->discountEmployeeId !== null ? $employees->firstWhere('id', $this->discountEmployeeId) : null,
             'locale' => OperationalLocale::resolve(),
             'textDirection' => OperationalLocale::direction(),
         ])->title($this->store->name.' — '.__('stores.title'));

@@ -92,6 +92,37 @@
             </footer>
         </article>
 
+        @if ($discountAudit->isNotEmpty())
+            <section class="mx-auto mb-6 max-w-sm rounded-lg bg-white p-4 text-sm shadow-sm ring-1 ring-gray-200 print:hidden" aria-labelledby="discount-audit-title">
+                <h2 id="discount-audit-title" class="font-semibold text-gray-900">{{ __('pos.discount.audit_title') }}</h2>
+                <p class="text-xs text-gray-600">{{ __('pos.discount.audit_help') }}</p>
+                <ul class="mt-2 divide-y divide-gray-100">
+                    @foreach ($discountAudit as $line)
+                        <li class="py-2">
+                            <p class="font-medium text-gray-900">{{ $line->product_name }}@if ($line->unit_identifier) · <bdi dir="ltr">{{ $line->unit_identifier }}</bdi>@endif</p>
+                            <dl class="mt-1 grid grid-cols-2 gap-x-2 gap-y-0.5 text-gray-700">
+                                <dt>{{ __('pos.discount.original_price') }}</dt>
+                                <dd dir="ltr" class="text-end tabular-nums">{{ $money($line->list_unit_price) }}</dd>
+                                <dt>{{ __('pos.discount.amount') }}</dt>
+                                <dd dir="ltr" class="text-end tabular-nums">-{{ $money($line->unit_discount) }}</dd>
+                                <dt>{{ __('pos.discount.final_price') }}</dt>
+                                <dd dir="ltr" class="text-end font-semibold tabular-nums text-gray-900">{{ $money($line->unit_price) }}</dd>
+                                @if ($line->discount_lowest_unit_price !== null)
+                                    <dt>{{ __('pos.discount.lowest_price') }}</dt>
+                                    <dd dir="ltr" class="text-end tabular-nums">{{ $money($line->discount_lowest_unit_price) }}</dd>
+                                @endif
+                                <dt>{{ __('pos.discount.limit') }}</dt>
+                                <dd class="text-end">{{ __('pos.discount.limit_'.$line->discount_limit, ['percent' => \App\Models\PosDiscountGrant::formatBasisPoints((int) $line->discount_basis_points)]) }}</dd>
+                                <dt>{{ __('pos.discount.given_by') }}</dt>
+                                <dd class="text-end">{{ $line->discountedBy?->name }}</dd>
+                            </dl>
+                            <p class="mt-1 text-gray-800">{{ __('pos.fields.adjustment_reason') }}: {{ $line->adjustment_reason }}</p>
+                        </li>
+                    @endforeach
+                </ul>
+            </section>
+        @endif
+
         @if ($autoPrint)
             <script>window.addEventListener('load', () => window.print());</script>
         @endif

@@ -140,9 +140,10 @@
                                         <p class="mt-0.5 text-sm text-gray-700">
                                             @if ($line['list_price'] === null)
                                                 <span class="rounded bg-red-50 px-1.5 py-0.5 text-xs font-semibold text-red-800 ring-1 ring-red-200">{{ __('pos.cart.not_priced') }}</span>
-                                            @elseif ($line['adjusted_price'] !== '')
+                                            @elseif ($line['adjusted_price'] !== '' && $line['unit_price'] < $line['list_price'])
                                                 <s class="text-gray-500" dir="ltr">{{ $money($line['list_price']) }}</s>
                                                 <span dir="ltr" class="font-semibold text-gray-900">{{ $money($line['unit_price']) }}</span>
+                                                <span class="rounded bg-emerald-50 px-1.5 py-0.5 text-xs font-medium text-emerald-800 ring-1 ring-emerald-200">{{ __('pos.cart.discount_each', ['amount' => $money($line['list_price'] - $line['unit_price'])]) }}</span>
                                                 <span class="text-xs text-gray-600">· {{ $line['adjustment_reason'] }}</span>
                                             @else
                                                 <span dir="ltr">{{ $money($line['unit_price']) }}</span>
@@ -168,8 +169,11 @@
                                 </div>
 
                                 <div class="mt-2 flex flex-wrap gap-2">
-                                    @if ($canAdjust)
-                                        <button type="button" wire:click="openAdjustment('{{ $line['key'] }}')" @disabled(! $cartEditable) class="{{ $secondaryButton }}">{{ __('pos.cart.adjust_price') }}</button>
+                                    @if ($canDiscount && $line['list_price'] !== null)
+                                        <button type="button" wire:click="openDiscount('{{ $line['key'] }}')" @disabled(! $cartEditable) aria-haspopup="dialog" class="{{ $secondaryButton }}">{{ __('pos.cart.discount') }}</button>
+                                    @endif
+                                    @if ($line['adjusted_price'] !== '')
+                                        <button type="button" wire:click="removeDiscount('{{ $line['key'] }}')" @disabled(! $cartEditable) class="{{ $secondaryButton }}">{{ __('pos.cart.remove_discount') }}</button>
                                     @endif
                                     <button type="button" wire:click="removeLine('{{ $line['key'] }}')" @disabled(! $cartEditable) class="{{ $secondaryButton }} text-red-700">{{ __('pos.cart.remove') }}</button>
                                 </div>
@@ -427,21 +431,47 @@
         </ul>
     </x-operations.dialog>
 
-    @if ($canAdjust)
-        <x-operations.dialog :id="PosCounter::ADJUST_DIALOG" :title="__('pos.cart.adjust_title')" :direction="$textDirection">
-            <form wire:submit="saveAdjustment" class="space-y-3">
-                <p class="text-sm text-gray-700">{{ __('pos.cart.adjust_help') }}</p>
+    @if ($canDiscount)
+        <x-operations.dialog :id="PosCounter::DISCOUNT_DIALOG" :title="__('pos.cart.discount_title')" :direction="$textDirection">
+            {{-- The discount preview is presentation only; applyDiscount checks the price on the server. --}}
+            <form
+                wire:submit="applyDiscount"
+                class="space-y-3"
+                x-data="{
+                    get finalMinor() {
+                        const value = String($wire.discountPrice ?? '').trim().replace(',', '.');
+                        return /^\d+(\.\d{1,2})?$/.test(value) ? Math.round(parseFloat(value) * 100) : null;
+                    },
+                    get discountMinor() {
+                        const list = $wire.discountListPrice;
+                        return this.finalMinor === null || list === null || this.finalMinor > list ? null : list - this.finalMinor;
+                    },
+                    format(minor) { return (minor / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); },
+                }"
+            >
+                <p class="font-medium text-gray-900">{{ $cart[$discountLineKey]['name'] ?? '' }}</p>
+                <dl class="grid grid-cols-2 gap-x-4 gap-y-2 rounded-lg bg-gray-50 p-3 text-sm">
+                    <dt class="text-gray-700">{{ __('pos.discount.original_price') }}</dt>
+                    <dd dir="ltr" class="text-end font-mono font-semibold tabular-nums text-gray-900">{{ $money($discountListPrice) }} TRY</dd>
+                    <dt class="text-gray-700">{{ __('pos.discount.lowest_price') }}</dt>
+                    <dd dir="ltr" class="text-end font-mono font-semibold tabular-nums text-gray-900">{{ $money($discountLowestPrice) }} TRY</dd>
+                    <dt class="text-gray-700">{{ __('pos.discount.amount') }}</dt>
+                    <dd dir="ltr" class="text-end font-mono tabular-nums text-emerald-800" aria-live="polite" x-text="discountMinor === null ? '—' : '-' + format(discountMinor) + ' TRY'">—</dd>
+                </dl>
+                @if ($discountLimit !== '')
+                    <p class="text-xs text-gray-600">{{ __('pos.discount.limits.'.$discountLimit) }}</p>
+                @endif
                 <div>
-                    <label for="pos-adjusted-price" class="block text-sm font-medium text-gray-800">{{ __('pos.fields.adjusted_price') }}</label>
-                    <input id="pos-adjusted-price" type="text" inputmode="decimal" dir="ltr" wire:model="adjustedPrice" class="{{ $inputClass }} mt-1 font-mono">
-                    @error('adjustedPrice') <p class="mt-1 text-sm text-red-700" role="alert">{{ $message }}</p> @enderror
+                    <label for="pos-discount-price" class="block text-sm font-medium text-gray-800">{{ __('pos.discount.final_price') }}</label>
+                    <input id="pos-discount-price" type="text" inputmode="decimal" dir="ltr" autocomplete="off" wire:model="discountPrice" @error('discountPrice') aria-invalid="true" aria-describedby="pos-discount-price-error" @enderror class="{{ $inputClass }} mt-1 font-mono">
+                    @error('discountPrice') <p id="pos-discount-price-error" class="mt-1 text-sm text-red-700" role="alert">{{ $message }}</p> @enderror
                 </div>
                 <div>
-                    <label for="pos-adjustment-reason" class="block text-sm font-medium text-gray-800">{{ __('pos.fields.adjustment_reason') }}</label>
-                    <textarea id="pos-adjustment-reason" dir="auto" rows="2" maxlength="500" wire:model="adjustmentReason" class="{{ $inputClass }} mt-1"></textarea>
-                    @error('adjustmentReason') <p class="mt-1 text-sm text-red-700" role="alert">{{ $message }}</p> @enderror
+                    <label for="pos-discount-reason" class="block text-sm font-medium text-gray-800">{{ __('pos.discount.reason') }}</label>
+                    <textarea id="pos-discount-reason" dir="auto" rows="2" maxlength="500" wire:model="discountReason" @error('discountReason') aria-invalid="true" aria-describedby="pos-discount-reason-error" @enderror class="{{ $inputClass }} mt-1"></textarea>
+                    @error('discountReason') <p id="pos-discount-reason-error" class="mt-1 text-sm text-red-700" role="alert">{{ $message }}</p> @enderror
                 </div>
-                <button type="submit" class="{{ $primaryButton }} w-full">{{ __('pos.cart.save_adjustment') }}</button>
+                <button type="submit" wire:loading.attr="disabled" wire:target="applyDiscount" class="{{ $primaryButton }} w-full">{{ __('pos.discount.apply') }}</button>
             </form>
         </x-operations.dialog>
     @endif

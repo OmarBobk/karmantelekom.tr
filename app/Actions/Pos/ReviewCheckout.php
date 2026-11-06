@@ -132,7 +132,8 @@ class ReviewCheckout
     }
 
     /**
-     * Fingerprint of everything the cashier reviewed: items, revisions, quantities, and prices.
+     * Fingerprint of everything the cashier reviewed: items, revisions, quantities, prices, and
+     * the discount limit each discounted line was checked against.
      *
      * @param  list<array<string, mixed>>  $lines
      */
@@ -143,6 +144,8 @@ class ReviewCheckout
             'lines' => array_map(fn (array $line): array => [
                 $line['key'], $line['definition_id'], $line['unit_id'], $line['unit_revision'],
                 $line['quantity'], $line['list_unit_price'], $line['unit_price'], $line['adjustment_reason'],
+                $line['discount_limit'] ?? null, $line['discount_basis_points'] ?? null,
+                $line['lowest_unit_price'] ?? null, $line['discounted_by'] ?? null,
             ], $lines),
         ]);
     }
@@ -164,7 +167,7 @@ class ReviewCheckout
         }
 
         ksort($cart, SORT_STRING);
-        $canAdjust = Gate::forUser($actor)->allows('adjustSalePrices', $store);
+        $authority = DiscountAuthority::for($actor, $store);
 
         $definitionIds = collect($cart)->pluck('definition_id')->map(fn ($id) => (int) $id)->unique()->values()->all();
         $unitIds = collect($cart)->pluck('unit_id')->filter()->map(fn ($id) => (int) $id)->unique()->values()->all();
@@ -230,7 +233,7 @@ class ReviewCheckout
                 continue;
             }
 
-            [$unitPrice, $reason, $lineErrors] = $this->adjustment($input, $listPrice, $canAdjust, $field);
+            [$unitPrice, $reason, $discount, $lineErrors] = $this->discount($input, $listPrice, $unit, $authority, $field);
 
             if ($lineErrors !== []) {
                 $errors += $lineErrors;
@@ -266,6 +269,10 @@ class ReviewCheckout
                 'discount' => $gross - $lineTotal,
                 'line_total' => $lineTotal,
                 'adjustment_reason' => $reason,
+                'discount_limit' => $discount['limit'] ?? null,
+                'discount_basis_points' => $discount['basis_points'] ?? null,
+                'lowest_unit_price' => $discount['lowest'] ?? null,
+                'discounted_by' => $discount === null ? null : $actor->id,
             ];
         }
 
@@ -288,42 +295,45 @@ class ReviewCheckout
     }
 
     /**
-     * An owner-only lower price for one line, which always needs a reason.
+     * A lower final unit price for one line within the actor's discount limit, which always
+     * needs a reason. The limit is snapshotted so finalization can check it is still current.
      *
      * @param  array<string, mixed>  $input
-     * @return array{0: int, 1: ?string, 2: array<string, string>}
+     * @return array{0: int, 1: ?string, 2: array{limit: string, lowest: int, basis_points: int|null}|null, 3: array<string, string>}
      */
-    private function adjustment(array $input, int $listPrice, bool $canAdjust, string $field): array
+    private function discount(array $input, int $listPrice, ?InventoryUnit $unit, DiscountAuthority $authority, string $field): array
     {
         $rawPrice = is_scalar($input['adjusted_price'] ?? null) ? Str::trim((string) $input['adjusted_price']) : '';
         $reason = is_scalar($input['adjustment_reason'] ?? null) ? Str::trim((string) $input['adjustment_reason']) : '';
 
         if ($rawPrice === '') {
-            return [$listPrice, null, []];
+            return [$listPrice, null, null, []];
         }
 
-        if (! $canAdjust) {
-            return [$listPrice, null, ["{$field}.adjusted_price" => __('pos.errors.adjustment_not_allowed')]];
+        if (! $authority->canDiscount()) {
+            return [$listPrice, null, null, ["{$field}.adjusted_price" => __('pos.errors.discount_not_allowed')]];
         }
 
         try {
             $price = Money::parse($rawPrice, Money::MAX_UNIT_AMOUNT);
         } catch (InvalidAmountException) {
-            return [$listPrice, null, ["{$field}.adjusted_price" => __('pos.errors.price_invalid', ['max' => Money::format(Money::MAX_UNIT_AMOUNT)])]];
+            return [$listPrice, null, null, ["{$field}.adjusted_price" => __('pos.errors.price_invalid', ['max' => Money::format(Money::MAX_UNIT_AMOUNT)])]];
         }
 
         if ($price === $listPrice) {
-            return [$listPrice, null, []];
+            return [$listPrice, null, null, []];
         }
 
-        if ($price > $listPrice) {
-            return [$listPrice, null, ["{$field}.adjusted_price" => __('pos.errors.adjustment_above_list')]];
+        $refusal = $authority->refusal($listPrice, $price, $unit);
+
+        if ($refusal !== null) {
+            return [$listPrice, null, null, ["{$field}.adjusted_price" => $refusal]];
         }
 
         if ($reason === '' || mb_strlen($reason) > self::MAX_REASON_LENGTH) {
-            return [$listPrice, null, ["{$field}.adjustment_reason" => __('pos.errors.adjustment_reason_required', ['max' => self::MAX_REASON_LENGTH])]];
+            return [$listPrice, null, null, ["{$field}.adjustment_reason" => __('pos.errors.adjustment_reason_required', ['max' => self::MAX_REASON_LENGTH])]];
         }
 
-        return [$price, $reason, []];
+        return [$price, $reason, $authority->limitFor($listPrice, $unit), []];
     }
 }

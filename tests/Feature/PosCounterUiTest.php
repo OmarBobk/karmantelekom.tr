@@ -163,7 +163,7 @@ class PosCounterUiTest extends TestCase
     }
 
     #[Test]
-    public function quantity_cannot_exceed_stock_and_only_the_owner_can_adjust_prices(): void
+    public function quantity_cannot_exceed_stock_and_only_a_granted_cashier_or_the_owner_can_discount(): void
     {
         $key = 'd'.$this->cable->id;
 
@@ -173,17 +173,20 @@ class PosCounterUiTest extends TestCase
             ->assertSet("cart.{$key}.quantity", 1)
             ->call('setQuantity', $key, 10)
             ->assertSet("cart.{$key}.quantity", 10)
-            ->call('openAdjustment', $key)
+            ->assertDontSee(__('pos.cart.discount'))
+            ->call('openDiscount', $key)
             ->assertForbidden();
 
         Livewire::actingAs($this->owner)->test(PosCounter::class, ['store' => $this->store])
             ->call('scan', $this->cable->barcode)
-            ->call('openAdjustment', $key)
-            ->set('adjustedPrice', '45')
-            ->call('saveAdjustment')
-            ->assertHasErrors('adjustmentReason')
-            ->set('adjustmentReason', 'Bundle')
-            ->call('saveAdjustment')
+            ->call('openDiscount', $key)
+            ->assertSet('discountListPrice', 4990)
+            ->assertSet('discountLowestPrice', 1)
+            ->set('discountPrice', '45')
+            ->call('applyDiscount')
+            ->assertHasErrors('discountReason')
+            ->set('discountReason', 'Bundle')
+            ->call('applyDiscount')
             ->assertHasNoErrors()
             ->call('review')
             ->assertSet('step', 'payment')

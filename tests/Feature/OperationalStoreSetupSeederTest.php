@@ -40,7 +40,7 @@ class OperationalStoreSetupSeederTest extends TestCase
 
         $this->assertSame(['KT01', 'KT02'], Store::orderBy('code')->pluck('code')->all());
         $this->assertTrue(Role::where('name', 'employee')->where('guard_name', 'web')->exists());
-        foreach (OperationalStoreSetupSeeder::OWNER_PERMISSIONS as $permission) {
+        foreach ([...OperationalStoreSetupSeeder::OWNER_PERMISSIONS, OperationalStoreSetupSeeder::POS_DISCOUNT_PERMISSION] as $permission) {
             $this->assertTrue(Permission::where('name', $permission)->where('guard_name', 'web')->exists());
         }
 
