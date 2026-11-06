@@ -14,6 +14,7 @@
     x-data="{
         code: '',
         timer: null,
+        pendingScans: 0,
         uncertain: false,
         init() {
             $wire.$intercept('finalize', ({ onSend, onFailure, onError, onSuccess }) => {
@@ -39,7 +40,8 @@
             const value = this.code;
             this.code = '';
             if (value.trim() === '') { return; }
-            $wire.scan(value);
+            this.pendingScans++;
+            $wire.scan(value).finally(() => { this.pendingScans--; });
             this.$refs.code.focus();
         },
         async checkStatus() {
@@ -92,6 +94,8 @@
                     </div>
                 </fieldset>
 
+                {{-- A search sent before the scan answers first; hide it until the scan replaces it. --}}
+                <div x-show="pendingScans === 0">
                 @if ($searchResults !== [])
                     <div class="mt-3" aria-live="polite">
                         <p class="text-xs font-medium text-gray-600">{{ __('pos.scan.search_results', ['term' => $searchTerm]) }}</p>
@@ -104,6 +108,7 @@
                 @elseif ($searchTerm !== '')
                     <p class="mt-3 text-sm text-gray-600" aria-live="polite">{{ __('pos.scan.no_search_results', ['term' => $searchTerm]) }}</p>
                 @endif
+                </div>
             </form>
 
             <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-200">

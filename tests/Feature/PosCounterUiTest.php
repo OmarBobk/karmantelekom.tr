@@ -95,6 +95,33 @@ class PosCounterUiTest extends TestCase
     }
 
     #[Test]
+    public function a_scan_queued_behind_a_name_search_adds_one_unit_and_replaces_the_search_feedback(): void
+    {
+        $noMatch = __('pos.scan.no_search_results', ['term' => $this->cable->barcode]);
+
+        $this->counter()
+            ->call('search', $this->cable->barcode)
+            ->assertSee($noMatch)
+            ->call('scan', $this->cable->barcode)
+            ->assertSet('cart.d'.$this->cable->id.'.quantity', 1)
+            ->assertSet('searchTerm', '')
+            ->assertDontSee($noMatch)
+            ->assertSeeHtml('x-show="pendingScans === 0"')
+            ->assertNotDispatched('notify', fn (string $event, array $params): bool => ($params[0]['type'] ?? null) === 'error');
+    }
+
+    #[Test]
+    public function an_unknown_barcode_scanned_after_a_name_search_still_reports_it_was_not_found(): void
+    {
+        $this->counter()
+            ->call('search', '8690000099999')
+            ->call('scan', '8690000099999')
+            ->assertSet('cart', [])
+            ->assertSet('searchTerm', '')
+            ->assertDispatched('notify', fn (string $event, array $params): bool => ($params[0]['message'] ?? '') === __('pos.scan.not_found', ['code' => '8690000099999']));
+    }
+
+    #[Test]
     public function a_competing_cashier_cannot_add_or_sell_a_phone_that_was_already_sold(): void
     {
         $rival = $this->createCashier(name: 'Rival');

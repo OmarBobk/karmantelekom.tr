@@ -762,7 +762,7 @@ The system must validate current stock and device availability when completing t
 
   Under these locks it rechecks each definition (active, same tracking mode), cumulative stock, device status `available`, device revision, and list price. It then writes the sale, lines, `sale` movements (quantity decrease, or `available` to `sold` with the revision advanced), payments, the captured approval, and the completed attempt. Any failure rolls all of it back. The balance column is unsigned, so stock can never go negative.
 - **Counter UX.** Arabic RTL and English LTR, chosen per session from the header:
-  - Scanner Enter submits the exact typed value even while a name search is pending.
+  - Scanner Enter submits the exact typed value even while a name search is pending. That search's "No sellable product matches" feedback stays hidden until the scan answers. Unknown barcodes still get the not-found error.
   - A barcode, SKU, IMEI, or serial that matches several items opens an explicit chooser. Both IMEI slots match, and the line shows the primary IMEI.
   - The cart survives errors.
   - Receipts are an internal 80 mm slip (not a tax receipt) with a print action.
