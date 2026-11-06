@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Actions\Pos\ResolveTerminalPayment;
 use App\Enums\CheckoutAttemptStatus;
 use App\Enums\InspectionOutcome;
 use App\Enums\TrackingMode;
@@ -376,7 +377,9 @@ class PosCounterUiTest extends TestCase
             ->assertSet('attemptKey', $attempt->key)
             ->assertSet('step', 'payment')
             ->assertSet('cart.u'.$this->phone->id.'.identifier', $this->phoneImei)
-            ->assertSee(__('pos.payment.terminal_pending_title'))
+            ->assertSee(__('pos.payment.terminal_verify_title'))
+            ->assertSee(__('pos.payment.do_not_charge_again'))
+            ->assertDontSee(__('pos.payment.terminal_pending_title'))
             ->assertDontSee(__('pos.payment.complete'))
             ->call('cancelAttempt')
             ->assertHasErrors('attempt')
@@ -415,6 +418,79 @@ class PosCounterUiTest extends TestCase
     }
 
     #[Test]
+    public function only_a_confirmed_new_start_says_charge_and_reload_status_or_another_tab_say_check_the_terminal(): void
+    {
+        $terminal = $this->createTerminal();
+        $chargeNow = __('pos.payment.terminal_pending_detail', ['amount' => Money::format(4990), 'terminal' => $terminal->displayName()]);
+
+        $this->counter()
+            ->call('scan', $this->cable->barcode)
+            ->call('review')
+            ->set('cardTerminalId', $terminal->id)
+            ->set('cardAmount', '49.90')
+            ->call('startTerminalPayment')
+            ->assertSee($chargeNow)
+            ->assertSeeHtml('data-terminal-payment="charge"')
+            ->call('checkStatus')
+            ->assertDontSee($chargeNow)
+            ->assertSeeHtml('data-terminal-payment="verify"');
+
+        $this->counter()
+            ->assertSet('step', 'payment')
+            ->assertSee(__('pos.payment.terminal_verify_title'))
+            ->assertSee(__('pos.payment.do_not_charge_again'))
+            ->assertDontSee($chargeNow)
+            ->set('cardTerminalId', $terminal->id)
+            ->set('cardAmount', '49.90')
+            ->call('startTerminalPayment')
+            ->assertHasErrors('attempt')
+            ->assertSeeHtml('data-terminal-payment="verify"')
+            ->assertSeeHtml('<fieldset class="mt-2 min-w-0" disabled>')
+            ->assertDontSee($chargeNow);
+
+        $this->assertNotNull(CheckoutAttempt::query()->sole()->terminal_payment_key);
+    }
+
+    #[Test]
+    public function an_approval_form_showing_a_cleared_start_cannot_answer_the_next_start(): void
+    {
+        $terminal = $this->createTerminal();
+        $staleCounter = $this->counter()
+            ->call('scan', $this->cable->barcode)
+            ->call('review')
+            ->set('cardTerminalId', $terminal->id)
+            ->set('cardAmount', '49.90')
+            ->call('startTerminalPayment');
+        $attempt = CheckoutAttempt::query()->sole();
+        $startA = $attempt->terminal_payment_key;
+
+        app(ResolveTerminalPayment::class)($this->owner, $this->store, $attempt->key, $startA, 'no_charge', null, 'Terminal declined');
+
+        $this->counter()
+            ->set('cardTerminalId', $terminal->id)
+            ->set('cardAmount', '49.90')
+            ->call('startTerminalPayment')
+            ->assertSeeHtml('data-terminal-payment="charge"');
+        $startB = $attempt->fresh()->terminal_payment_key;
+        $this->assertNotSame($startA, $startB);
+
+        $staleCounter->assertSet('displayedPaymentKey', $startA)
+            ->set('cardReference', 'FOR-A')
+            ->call('recordCardApproval')
+            ->assertHasErrors('attempt')
+            ->assertSet('displayedPaymentKey', $startB)
+            ->assertSeeHtml('data-terminal-payment="verify"');
+
+        $this->assertSame($startB, $attempt->fresh()->terminal_payment_key);
+        $this->assertTrue($attempt->fresh()->hasPendingTerminalPayment());
+
+        $staleCounter->set('cardReference', 'FOR-B')->call('recordCardApproval')->assertHasNoErrors()
+            ->call('finalize')->assertSet('step', 'done')
+            ->call('newSale')->assertSeeHtml('<fieldset class="mt-2 min-w-0"')->assertDontSeeHtml('<fieldset class="mt-2 min-w-0" disabled>');
+        $this->assertSame('FOR-B', Sale::query()->sole()->payments->sole()->terminal_reference);
+    }
+
+    #[Test]
     public function the_owner_resolves_an_unverified_terminal_payment_from_the_counter(): void
     {
         $terminal = $this->createTerminal();
@@ -432,6 +508,8 @@ class PosCounterUiTest extends TestCase
             ->assertSee(__('pos.recovery.resolve_terminal'))
             ->call('openResolveTerminal', $attempt->key)
             ->assertDispatched('open-dialog', id: PosCounter::RESOLVE_TERMINAL_DIALOG)
+            ->assertSet('resolvePaymentKey', $attempt->terminal_payment_key)
+            ->assertSee(Money::format(4990).' TRY')
             ->set('terminalOutcome', 'no_charge')
             ->call('resolveTerminalPayment')
             ->assertHasErrors('void_note')

@@ -69,27 +69,28 @@
             <form role="search" x-on:submit.prevent="submit()" class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-200">
                 <label for="pos-code" class="block text-sm font-semibold text-gray-900">{{ __('pos.scan.label') }}</label>
                 <p id="pos-code-help" class="mt-0.5 text-xs text-gray-600">{{ __('pos.scan.help') }}</p>
-                <div class="mt-2 flex gap-2" wire:ignore>
-                    <input
-                        x-ref="code"
-                        x-model="code"
-                        x-on:input="typed()"
-                        id="pos-code"
-                        type="text"
-                        inputmode="text"
-                        enterkeyhint="go"
-                        maxlength="80"
-                        autocomplete="off"
-                        autocapitalize="off"
-                        spellcheck="false"
-                        data-scan
-                        aria-describedby="pos-code-help"
-                        placeholder="{{ __('pos.scan.placeholder') }}"
-                        @disabled(! $cartEditable)
-                        class="block min-h-12 min-w-0 flex-1 rounded-lg border-gray-300 text-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100"
-                    >
-                    <button type="submit" class="{{ $primaryButton }}" @disabled(! $cartEditable)>{{ __('pos.scan.submit') }}</button>
-                </div>
+                <fieldset class="mt-2 min-w-0" @disabled(! $cartEditable)>
+                    <div class="flex gap-2" wire:ignore>
+                        <input
+                            x-ref="code"
+                            x-model="code"
+                            x-on:input="typed()"
+                            id="pos-code"
+                            type="text"
+                            inputmode="text"
+                            enterkeyhint="go"
+                            maxlength="80"
+                            autocomplete="off"
+                            autocapitalize="off"
+                            spellcheck="false"
+                            data-scan
+                            aria-describedby="pos-code-help"
+                            placeholder="{{ __('pos.scan.placeholder') }}"
+                            class="block min-h-12 min-w-0 flex-1 rounded-lg border-gray-300 text-lg shadow-sm focus:border-blue-500 focus:ring-blue-500 disabled:bg-gray-100"
+                        >
+                        <button type="submit" class="{{ $primaryButton }}">{{ __('pos.scan.submit') }}</button>
+                    </div>
+                </fieldset>
 
                 @if ($searchResults !== [])
                     <div class="mt-3" aria-live="polite">
@@ -261,12 +262,31 @@
                         </dl>
 
                         @if ($terminalPending)
-                            <div class="rounded-lg bg-sky-50 p-3 text-sm text-sky-950 ring-2 ring-sky-500" role="status" aria-live="polite">
-                                <p class="text-base font-semibold">{{ __('pos.payment.terminal_pending_title') }}</p>
-                                <p class="mt-1">{{ __('pos.payment.terminal_pending_detail', [
+                            @php
+                                $pendingPayment = [
                                     'amount' => $money($attempt->terminalPaymentAmountMinor()),
                                     'terminal' => $attempt->terminalPaymentTerminal?->displayName(),
-                                ]) }}</p>
+                                ];
+                            @endphp
+                            <div
+                                wire:key="terminal-payment-{{ $attempt->terminal_payment_key }}"
+                                data-terminal-payment="{{ $chargeNow ? 'charge' : 'verify' }}"
+                                @class([
+                                    'rounded-lg p-3 text-sm ring-2',
+                                    'bg-sky-50 text-sky-950 ring-sky-500' => $chargeNow,
+                                    'bg-amber-50 text-amber-950 ring-amber-500' => ! $chargeNow,
+                                ])
+                                role="status"
+                                aria-live="polite"
+                            >
+                                @if ($chargeNow)
+                                    <p class="text-base font-semibold">{{ __('pos.payment.terminal_pending_title') }}</p>
+                                    <p class="mt-1">{{ __('pos.payment.terminal_pending_detail', $pendingPayment) }}</p>
+                                @else
+                                    <p class="text-base font-semibold">{{ __('pos.payment.terminal_verify_title') }}</p>
+                                    <p class="mt-1">{{ __('pos.payment.terminal_verify_detail', $pendingPayment) }}</p>
+                                    <p class="mt-1 font-semibold">{{ __('pos.payment.do_not_charge_again') }}</p>
+                                @endif
                                 <p class="mt-1">{{ __('pos.payment.terminal_pending_help') }}</p>
                                 <div class="mt-3">
                                     <label for="pos-card-reference" class="block text-sm font-medium text-gray-800">{{ __('pos.fields.card_reference') }}</label>
@@ -448,6 +468,9 @@
         <x-operations.dialog :id="PosCounter::RESOLVE_TERMINAL_DIALOG" :title="__('pos.recovery.resolve_terminal_title')" :direction="$textDirection">
             <form wire:submit="resolveTerminalPayment" class="space-y-3" x-data="{ outcome: $wire.entangle('terminalOutcome') }">
                 <p class="text-sm text-gray-700">{{ __('pos.recovery.resolve_terminal_help') }}</p>
+                @if ($resolvePaymentSummary !== '')
+                    <p class="rounded-lg bg-gray-50 px-3 py-2 text-sm font-semibold text-gray-900 ring-1 ring-gray-200">{{ $resolvePaymentSummary }}</p>
+                @endif
                 @error('attempt') <p class="text-sm text-red-700" role="alert">{{ $message }}</p> @enderror
                 <fieldset>
                     <legend class="block text-sm font-medium text-gray-800">{{ __('pos.fields.terminal_outcome') }}</legend>

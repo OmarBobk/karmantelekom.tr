@@ -117,9 +117,32 @@ class PosCounter extends Component
 
     public string $terminalOutcome = '';
 
+    /**
+     * Request key of the next terminal payment start, issued before the request is sent so a
+     * retry from the same page replays instead of starting again. Renewed after each confirmed start.
+     */
+    #[Locked]
+    public string $startRequestKey = '';
+
+    /** The terminal payment start the approval form shows and is bound to. */
+    #[Locked]
+    public ?string $displayedPaymentKey = null;
+
+    /** The one start this page confirmed as new; only then may the cashier be told to charge. */
+    #[Locked]
+    public ?string $chargeInstructedFor = null;
+
+    /** The terminal payment start the owner's resolution dialog shows and is bound to. */
+    #[Locked]
+    public ?string $resolvePaymentKey = null;
+
+    #[Locked]
+    public string $resolvePaymentSummary = '';
+
     public function mount(Store $store): void
     {
         $this->storeId = $store->id;
+        $this->startRequestKey = (string) Str::uuid();
         $this->authorizeCounter();
         $this->restoreWorkingState();
         $this->syncActiveAttempt();
@@ -335,11 +358,28 @@ class PosCounter extends Component
             return;
         }
 
-        $attempt = $start(auth()->user(), $store, $this->attemptKey, $this->attemptRevision, (int) $this->cardTerminalId, $this->cardAmount);
+        try {
+            $result = $start(auth()->user(), $store, $this->attemptKey, $this->attemptRevision, $this->startRequestKey, (int) $this->cardTerminalId, $this->cardAmount);
+        } catch (ValidationException $exception) {
+            $this->syncActiveAttempt();
+
+            throw $exception;
+        }
 
         $this->resetValidation();
-        $this->cart = self::cartFromAttempt($attempt);
-        $this->notify('info', __('pos.payment.terminal_started', ['amount' => Money::format((int) $attempt->terminalPaymentAmountMinor())]));
+        $this->startRequestKey = (string) Str::uuid();
+        $this->cart = self::cartFromAttempt($result->attempt);
+        $this->displayedPaymentKey = $result->paymentKey();
+
+        if ($result->isNewStart) {
+            $this->chargeInstructedFor = $result->paymentKey();
+            $this->notify('info', __('pos.payment.terminal_started', ['amount' => Money::format((int) $result->attempt->terminalPaymentAmountMinor())]));
+
+            return;
+        }
+
+        $this->chargeInstructedFor = null;
+        $this->notify('warning', __('pos.payment.terminal_start_replayed'));
     }
 
     public function recordCardApproval(RecordCardApproval $record): void
@@ -351,16 +391,23 @@ class PosCounter extends Component
             return;
         }
 
-        if (! $attempt->hasStartedTerminalPayment()) {
+        if (! $attempt->hasStartedTerminalPayment() || $this->displayedPaymentKey === null) {
+            $this->syncActiveAttempt();
             $this->notify('error', __('pos.errors.terminal_payment_not_started'));
 
             return;
         }
 
-        $record(
-            auth()->user(), $store, $attempt->key, $this->attemptRevision,
-            (int) $attempt->terminal_payment_terminal_id, $this->cardReference, (string) $attempt->terminal_payment_amount,
-        );
+        try {
+            $record(
+                auth()->user(), $store, $attempt->key, $this->attemptRevision, $this->displayedPaymentKey,
+                (int) $attempt->terminal_payment_terminal_id, $this->cardReference, (string) $attempt->terminal_payment_amount,
+            );
+        } catch (ValidationException $exception) {
+            $this->syncActiveAttempt();
+
+            throw $exception;
+        }
 
         $this->resetValidation();
         $this->notify('success', __('pos.payment.card_recorded'));
@@ -411,6 +458,8 @@ class PosCounter extends Component
 
         if ($attempt->status === CheckoutAttemptStatus::OPEN) {
             $this->attemptRevision = $attempt->revision;
+            $this->displayedPaymentKey = $attempt->terminal_payment_key;
+            $this->chargeInstructedFor = null;
             $this->step = 'payment';
         }
     }
@@ -474,6 +523,8 @@ class PosCounter extends Component
         $this->cart = self::cartFromAttempt($attempt);
         $this->attemptKey = $attempt->key;
         $this->attemptRevision = $attempt->revision;
+        $this->displayedPaymentKey = $attempt->terminal_payment_key;
+        $this->chargeInstructedFor = null;
         $this->lastSaleId = null;
         $this->step = 'payment';
         $this->resetPaymentFields();
@@ -513,8 +564,20 @@ class PosCounter extends Component
         $attempt = $store->checkoutAttempts()->where('key', $key)->firstOrFail();
         $this->authorize('resolve', $attempt);
 
+        if (! $attempt->hasPendingTerminalPayment()) {
+            $this->notify('error', __('pos.errors.no_terminal_payment'));
+
+            return;
+        }
+
         $this->resetValidation();
         $this->resolveAttemptKey = $attempt->key;
+        $this->resolvePaymentKey = $attempt->terminal_payment_key;
+        $this->resolvePaymentSummary = __('pos.recovery.resolve_terminal_payment', [
+            'amount' => Money::format((int) $attempt->terminalPaymentAmountMinor()),
+            'terminal' => $attempt->terminalPaymentTerminal?->displayName(),
+            'time' => Sale::displayTime($attempt->terminal_payment_started_at),
+        ]);
         $this->terminalOutcome = '';
         $this->voidReference = '';
         $this->voidNote = '';
@@ -525,13 +588,21 @@ class PosCounter extends Component
     {
         $store = $this->authorizeCounter();
 
-        $attempt = $resolve(auth()->user(), $store, $this->resolveAttemptKey, $this->terminalOutcome, $this->voidReference, $this->voidNote);
+        if ($this->resolvePaymentKey === null) {
+            return;
+        }
+
+        $attempt = $resolve(auth()->user(), $store, $this->resolveAttemptKey, $this->resolvePaymentKey, $this->terminalOutcome, $this->voidReference, $this->voidNote);
 
         if ($attempt->key === $this->attemptKey) {
             $this->attemptRevision = $attempt->revision;
+            $this->displayedPaymentKey = $attempt->terminal_payment_key;
+            $this->chargeInstructedFor = null;
         }
 
         $this->resolveAttemptKey = '';
+        $this->resolvePaymentKey = null;
+        $this->resolvePaymentSummary = '';
         $this->dispatch('close-dialog', id: self::RESOLVE_TERMINAL_DIALOG);
         $this->notify('success', __('pos.recovery.terminal_cleared'));
     }
@@ -542,11 +613,16 @@ class PosCounter extends Component
         $user = auth()->user();
         $attempt = $this->activeAttempt()?->load(['cardApproval.terminal', 'terminalPaymentTerminal']);
         $cartLines = $this->cartLinesWithCurrentPrices();
+        $terminalPending = $attempt !== null && $attempt->isOpen() && $attempt->hasPendingTerminalPayment();
 
         return view('livewire.pos.pos-counter', [
             'store' => $store,
             'attempt' => $attempt,
-            'terminalPending' => $attempt !== null && $attempt->isOpen() && $attempt->hasPendingTerminalPayment(),
+            'terminalPending' => $terminalPending,
+            'chargeNow' => $terminalPending
+                && $this->chargeInstructedFor !== null
+                && $this->chargeInstructedFor === $attempt->terminal_payment_key
+                && $this->displayedPaymentKey === $attempt->terminal_payment_key,
             'cartLines' => $cartLines,
             'cartTotal' => array_sum(array_column($cartLines, 'line_total')),
             'cartEditable' => ! ($attempt?->isOpen() && $attempt->isFrozen()),
@@ -672,6 +748,8 @@ class PosCounter extends Component
         $this->cart = [];
         $this->attemptKey = null;
         $this->attemptRevision = null;
+        $this->displayedPaymentKey = null;
+        $this->chargeInstructedFor = null;
         $this->lastSaleId = $sale->id;
         $this->step = 'done';
         $this->resetPaymentFields();
@@ -705,6 +783,8 @@ class PosCounter extends Component
     {
         $this->attemptKey = null;
         $this->attemptRevision = null;
+        $this->displayedPaymentKey = null;
+        $this->chargeInstructedFor = null;
         $this->step = 'cart';
     }
 
@@ -752,6 +832,11 @@ class PosCounter extends Component
 
         $this->attemptRevision = $attempt->revision;
         $this->step = 'payment';
+        $this->displayedPaymentKey = $attempt->terminal_payment_key;
+
+        if ($this->chargeInstructedFor !== $attempt->terminal_payment_key) {
+            $this->chargeInstructedFor = null;
+        }
 
         if ($attempt->isFrozen() || $this->cart === []) {
             $this->cart = self::cartFromAttempt($attempt);

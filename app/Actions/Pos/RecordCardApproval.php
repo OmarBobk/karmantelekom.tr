@@ -21,8 +21,9 @@ use Illuminate\Validation\ValidationException;
 /**
  * Record a card payment that an external terminal has already approved.
  *
- * The approval belongs to the terminal payment started on the attempt (StartTerminalPayment)
- * and must match its terminal and amount; the terminal may have been deactivated since. It is
+ * The approval belongs to the terminal payment currently started on the attempt
+ * (StartTerminalPayment): it must name that start's key, so a form showing an earlier start is
+ * refused, and match its terminal and amount; the terminal may have been deactivated since. It is
  * stored independently of the sale. The reference must be unique within its terminal;
  * recording the same approval twice returns the original, while a different approval for the
  * same attempt or a reused reference is rejected. No card data is processed or stored.
@@ -35,7 +36,7 @@ class RecordCardApproval
      * @throws AuthorizationException
      * @throws ValidationException
      */
-    public function __invoke(User $actor, Store $store, string $attemptKey, int $expectedRevision, int $terminalId, ?string $reference, ?string $amount): CardApproval
+    public function __invoke(User $actor, Store $store, string $attemptKey, int $expectedRevision, string $terminalPaymentKey, int $terminalId, ?string $reference, ?string $amount): CardApproval
     {
         Gate::forUser($actor)->authorize('usePos', $store);
 
@@ -65,12 +66,12 @@ class RecordCardApproval
         }
 
         try {
-            return DB::transaction(function () use ($actor, $attempt, $expectedRevision, $terminal, $reference, $amountMinor): CardApproval {
+            return DB::transaction(function () use ($actor, $attempt, $expectedRevision, $terminalPaymentKey, $terminal, $reference, $amountMinor): CardApproval {
                 $locked = CheckoutAttempt::query()->whereKey($attempt->id)->lockForUpdate()->firstOrFail();
                 $existing = $locked->lockCardApproval();
 
                 if ($existing !== null) {
-                    return self::replay($existing, $actor, $terminal->id, $reference, $amountMinor);
+                    return self::replay($existing, $actor, $terminalPaymentKey, $terminal->id, $reference, $amountMinor);
                 }
 
                 ReviewCheckout::assertOpen($locked);
@@ -83,6 +84,10 @@ class RecordCardApproval
                     throw ValidationException::withMessages(['attempt' => __('pos.errors.terminal_payment_not_started')]);
                 }
 
+                if (! hash_equals((string) $locked->terminal_payment_key, $terminalPaymentKey)) {
+                    throw ValidationException::withMessages(['attempt' => __('pos.errors.terminal_payment_stale')]);
+                }
+
                 if ($locked->terminal_payment_terminal_id !== $terminal->id) {
                     throw ValidationException::withMessages(['card_terminal' => __('pos.errors.terminal_payment_terminal_mismatch')]);
                 }
@@ -93,6 +98,7 @@ class RecordCardApproval
 
                 $approval = CardApproval::query()->create([
                     'checkout_attempt_id' => $locked->id,
+                    'terminal_payment_key' => $locked->terminal_payment_key,
                     'store_id' => $locked->store_id,
                     'card_terminal_id' => $terminal->id,
                     'reference' => $reference,
@@ -109,7 +115,7 @@ class RecordCardApproval
             $existing = $attempt->cardApproval()->first();
 
             if ($existing !== null) {
-                return self::replay($existing, $actor, $terminal->id, $reference, $amountMinor);
+                return self::replay($existing, $actor, $terminalPaymentKey, $terminal->id, $reference, $amountMinor);
             }
 
             throw ValidationException::withMessages(['card_reference' => __('pos.errors.reference_used')]);
@@ -151,9 +157,10 @@ class RecordCardApproval
     /**
      * @throws ValidationException
      */
-    private static function replay(CardApproval $existing, User $actor, int $terminalId, string $reference, int $amountMinor): CardApproval
+    private static function replay(CardApproval $existing, User $actor, string $terminalPaymentKey, int $terminalId, string $reference, int $amountMinor): CardApproval
     {
         $isSameApproval = $existing->recorded_by === $actor->id
+            && hash_equals($existing->terminal_payment_key, $terminalPaymentKey)
             && $existing->card_terminal_id === $terminalId
             && $existing->reference === $reference
             && $existing->amountMinor() === $amountMinor;

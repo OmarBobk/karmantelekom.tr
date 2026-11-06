@@ -59,14 +59,14 @@ try {
             return ['status' => 'ok', 'sale_id' => $sale->id, 'number' => $sale->number];
         })(),
         'approve' => (function () use ($actor, $store, $payload): array {
-            $approval = app(RecordCardApproval::class)($actor, $store, $payload['attempt_key'], $payload['revision'], $payload['terminal_id'], $payload['reference'], $payload['amount']);
+            $approval = app(RecordCardApproval::class)($actor, $store, $payload['attempt_key'], $payload['revision'], $payload['payment_key'], $payload['terminal_id'], $payload['reference'], $payload['amount']);
 
             return ['status' => 'ok', 'approval_id' => $approval->id];
         })(),
         'start' => (function () use ($actor, $store, $payload): array {
-            app(StartTerminalPayment::class)($actor, $store, $payload['attempt_key'], $payload['revision'], $payload['terminal_id'], $payload['amount']);
+            $start = app(StartTerminalPayment::class)($actor, $store, $payload['attempt_key'], $payload['revision'], $payload['request_key'], $payload['terminal_id'], $payload['amount']);
 
-            return ['status' => 'ok'];
+            return ['status' => 'ok', 'payment_key' => $start->paymentKey(), 'new_start' => $start->isNewStart];
         })(),
         'inspect' => (function () use ($actor, $store, $payload): array {
             app(RecordInspection::class)(

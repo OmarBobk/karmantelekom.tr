@@ -21,14 +21,15 @@ class ResolveTerminalPayment
      *
      * Owner only, after checking the terminal: either it shows no charge, or the charge was
      * voided there (its void reference is then required). A note is always required and the
-     * resolution is logged. The attempt stays open with its reviewed cart unfrozen, so the
+     * resolution is logged. It names the start it resolves: a dialog showing an earlier start is
+     * refused, while a retry of the resolution that cleared this start returns the attempt. The attempt stays open with its reviewed cart unfrozen, so the
      * cashier can take another payment, edit, or cancel. A started payment with a recorded
      * approval is resolved through ResolveVoidedApproval instead.
      *
      * @throws AuthorizationException
      * @throws ValidationException
      */
-    public function __invoke(User $actor, Store $store, string $attemptKey, ?string $outcome, ?string $voidReference, ?string $note): CheckoutAttempt
+    public function __invoke(User $actor, Store $store, string $attemptKey, string $terminalPaymentKey, ?string $outcome, ?string $voidReference, ?string $note): CheckoutAttempt
     {
         Gate::forUser($actor)->authorize('usePos', $store);
 
@@ -56,7 +57,7 @@ class ResolveTerminalPayment
             throw ValidationException::withMessages($errors);
         }
 
-        return DB::transaction(function () use ($actor, $store, $attempt, $outcome, $voidReference, $note): CheckoutAttempt {
+        return DB::transaction(function () use ($actor, $store, $attempt, $terminalPaymentKey, $outcome, $voidReference, $note): CheckoutAttempt {
             $locked = CheckoutAttempt::query()->whereKey($attempt->id)->lockForUpdate()->firstOrFail();
             ReviewCheckout::assertOpen($locked);
 
@@ -65,7 +66,15 @@ class ResolveTerminalPayment
             }
 
             if (! $locked->hasStartedTerminalPayment()) {
+                if ($locked->terminal_payment_cleared_key !== null && hash_equals($locked->terminal_payment_cleared_key, $terminalPaymentKey)) {
+                    return $locked;
+                }
+
                 throw ValidationException::withMessages(['attempt' => __('pos.errors.no_terminal_payment')]);
+            }
+
+            if (! hash_equals((string) $locked->terminal_payment_key, $terminalPaymentKey)) {
+                throw ValidationException::withMessages(['attempt' => __('pos.errors.terminal_payment_stale')]);
             }
 
             activity('checkout_resolution')
@@ -74,6 +83,7 @@ class ResolveTerminalPayment
                 ->event('terminal_payment_cleared')
                 ->withProperties([
                     'store_id' => $store->id,
+                    'terminal_payment_key' => $locked->terminal_payment_key,
                     'outcome' => $outcome->value,
                     'terminal_id' => $locked->terminal_payment_terminal_id,
                     'amount' => $locked->terminal_payment_amount,
@@ -86,6 +96,9 @@ class ResolveTerminalPayment
 
             $locked->update([
                 'frozen_at' => null,
+                'terminal_payment_cleared_key' => $locked->terminal_payment_key,
+                'terminal_payment_key' => null,
+                'terminal_payment_request_key' => null,
                 'terminal_payment_terminal_id' => null,
                 'terminal_payment_amount' => null,
                 'terminal_payment_started_by' => null,

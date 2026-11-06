@@ -12,6 +12,7 @@ use App\Services\Purchasing\Money;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
@@ -20,8 +21,11 @@ use Illuminate\Validation\ValidationException;
  * Saved before the counter tells the cashier to charge, so the interval between charging and
  * recording the approval is durable: the reviewed cart freezes, and until the matching approval
  * is recorded or the owner confirms on the terminal that nothing was charged, the attempt can be
- * neither edited, cancelled, nor completed with cash only. Starting the same payment again
- * returns the attempt unchanged; a different terminal or amount is refused.
+ * neither edited, cancelled, nor completed with cash only.
+ *
+ * Every new start gets its own key, which approvals and resolutions must name. The caller's
+ * request key makes a retried request a replay (not a new start); any other start while one is
+ * current is refused.
  */
 class StartTerminalPayment
 {
@@ -29,12 +33,16 @@ class StartTerminalPayment
      * @throws AuthorizationException
      * @throws ValidationException
      */
-    public function __invoke(User $actor, Store $store, string $attemptKey, int $expectedRevision, int $terminalId, ?string $amount): CheckoutAttempt
+    public function __invoke(User $actor, Store $store, string $attemptKey, int $expectedRevision, string $requestKey, int $terminalId, ?string $amount): TerminalPaymentStart
     {
         Gate::forUser($actor)->authorize('usePos', $store);
 
         $attempt = ReviewCheckout::findAttempt($store, $attemptKey);
         Gate::forUser($actor)->authorize('operate', $attempt);
+
+        if (! Str::isUuid($requestKey)) {
+            throw ValidationException::withMessages(['attempt' => __('pos.errors.attempt_changed')]);
+        }
 
         try {
             $amountMinor = Money::parse((string) $amount, Money::MAX_TOTAL_AMOUNT);
@@ -48,20 +56,21 @@ class StartTerminalPayment
             throw ValidationException::withMessages(['card_terminal' => __('pos.errors.terminal_unavailable')]);
         }
 
-        return DB::transaction(function () use ($actor, $attempt, $expectedRevision, $terminal, $amountMinor): CheckoutAttempt {
+        return DB::transaction(function () use ($actor, $attempt, $expectedRevision, $requestKey, $terminal, $amountMinor): TerminalPaymentStart {
             $locked = CheckoutAttempt::query()->whereKey($attempt->id)->lockForUpdate()->firstOrFail();
 
             ReviewCheckout::assertOpen($locked);
 
             if ($locked->hasStartedTerminalPayment()) {
-                $isSamePayment = $locked->terminal_payment_terminal_id === $terminal->id
+                $isSameRequest = $locked->terminal_payment_request_key === $requestKey
+                    && $locked->terminal_payment_terminal_id === $terminal->id
                     && $locked->terminalPaymentAmountMinor() === $amountMinor;
 
-                if (! $isSamePayment) {
+                if (! $isSameRequest) {
                     throw ValidationException::withMessages(['attempt' => __('pos.errors.terminal_payment_already_started')]);
                 }
 
-                return $locked;
+                return new TerminalPaymentStart($locked, isNewStart: false);
             }
 
             if ($locked->cardApproval()->exists()) {
@@ -80,13 +89,15 @@ class StartTerminalPayment
 
             $locked->update([
                 'frozen_at' => $locked->frozen_at ?? $now,
+                'terminal_payment_key' => (string) Str::uuid(),
+                'terminal_payment_request_key' => $requestKey,
                 'terminal_payment_terminal_id' => $terminal->id,
                 'terminal_payment_amount' => Money::toDecimal($amountMinor),
                 'terminal_payment_started_by' => $actor->id,
                 'terminal_payment_started_at' => $now,
             ]);
 
-            return $locked;
+            return new TerminalPaymentStart($locked, isNewStart: true);
         }, FinalizeCheckout::DEADLOCK_ATTEMPTS);
     }
 }

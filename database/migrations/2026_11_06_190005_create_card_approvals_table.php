@@ -12,8 +12,9 @@ return new class extends Migration
      * Run the migrations.
      *
      * An external terminal approval recorded on a checkout attempt, independently of the sale.
-     * One approval per attempt, and each reference is unique within its terminal, so the same
-     * approval can never back two attempts or two sales.
+     * One approval per attempt, bound to the terminal payment start it answers, and each
+     * reference is unique within its terminal, so the same approval can never back two attempts
+     * or two sales.
      */
     public function up(): void
     {
@@ -22,6 +23,7 @@ return new class extends Migration
         Schema::create('card_approvals', function (Blueprint $table) use ($exactCollation) {
             $table->id();
             $table->foreignId('checkout_attempt_id')->unique()->constrained()->restrictOnDelete();
+            $table->char('terminal_payment_key', 36);
             $table->foreignId('store_id')->constrained()->restrictOnDelete();
             $table->foreignId('card_terminal_id')->constrained()->restrictOnDelete();
             $table->string('reference', 40)->collation($exactCollation);

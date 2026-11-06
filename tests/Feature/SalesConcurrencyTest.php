@@ -19,6 +19,7 @@ use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\Test;
 use RuntimeException;
 use Tests\Support\InteractsWithPos;
@@ -194,17 +195,32 @@ class SalesConcurrencyTest extends TestCase
         $terminal = $this->createTerminal();
         $first = $this->review($this->cashier, $this->cableLine(1));
         $second = $this->review($this->rival, $this->phoneLine());
-        $this->startTerminalPayment($this->cashier, $first, $terminal, '49.90');
-        $this->startTerminalPayment($this->rival, $second, $terminal, '49.90');
+        $firstPayment = $this->startTerminalPayment($this->cashier, $first, $terminal, '49.90')->terminal_payment_key;
+        $secondPayment = $this->startTerminalPayment($this->rival, $second, $terminal, '49.90')->terminal_payment_key;
 
         $results = $this->raceWhileLocked(CheckoutAttempt::query()->whereKey([$first->id, $second->id]), [
-            ['operation' => 'approve', 'actor_id' => $this->cashier->id, 'store_id' => $this->store->id, 'attempt_key' => $first->key, 'revision' => $first->revision, 'terminal_id' => $terminal->id, 'reference' => 'SAME-1', 'amount' => '49.90'],
-            ['operation' => 'approve', 'actor_id' => $this->rival->id, 'store_id' => $this->store->id, 'attempt_key' => $second->key, 'revision' => $second->revision, 'terminal_id' => $terminal->id, 'reference' => 'SAME-1', 'amount' => '49.90'],
+            ['operation' => 'approve', 'actor_id' => $this->cashier->id, 'store_id' => $this->store->id, 'attempt_key' => $first->key, 'revision' => $first->revision, 'payment_key' => $firstPayment, 'terminal_id' => $terminal->id, 'reference' => 'SAME-1', 'amount' => '49.90'],
+            ['operation' => 'approve', 'actor_id' => $this->rival->id, 'store_id' => $this->store->id, 'attempt_key' => $second->key, 'revision' => $second->revision, 'payment_key' => $secondPayment, 'terminal_id' => $terminal->id, 'reference' => 'SAME-1', 'amount' => '49.90'],
         ]);
 
         $this->assertEqualsCanonicalizing(['ok', 'validation'], array_column($results, 'status'), json_encode($results));
         $this->assertSame(1, CardApproval::query()->count());
         $this->assertSame(1, CheckoutAttempt::query()->pendingTerminalPayment()->count());
+    }
+
+    #[Test]
+    public function the_same_start_request_sent_twice_at_once_starts_one_payment_and_replays_it(): void
+    {
+        $terminal = $this->createTerminal();
+        $attempt = $this->review($this->cashier, $this->cableLine(1));
+        $request = ['operation' => 'start', 'actor_id' => $this->cashier->id, 'store_id' => $this->store->id, 'attempt_key' => $attempt->key, 'revision' => $attempt->revision, 'request_key' => (string) Str::uuid(), 'terminal_id' => $terminal->id, 'amount' => '49.90'];
+
+        $results = $this->raceWhileLocked(CheckoutAttempt::query()->whereKey($attempt->id), [$request, $request]);
+
+        $this->assertSame(['ok', 'ok'], array_column($results, 'status'), json_encode($results));
+        $this->assertEqualsCanonicalizing([true, false], array_column($results, 'new_start'));
+        $this->assertSame($results[0]['payment_key'], $results[1]['payment_key']);
+        $this->assertSame($results[0]['payment_key'], $attempt->fresh()->terminal_payment_key);
     }
 
     #[Test]
@@ -215,7 +231,7 @@ class SalesConcurrencyTest extends TestCase
 
         $results = $this->raceWhileLocked(CheckoutAttempt::query()->whereKey($attempt->id), [
             $this->finalizeRequest($this->cashier, $attempt, '50'),
-            ['operation' => 'start', 'actor_id' => $this->cashier->id, 'store_id' => $this->store->id, 'attempt_key' => $attempt->key, 'revision' => $attempt->revision, 'terminal_id' => $terminal->id, 'amount' => '49.90'],
+            ['operation' => 'start', 'actor_id' => $this->cashier->id, 'store_id' => $this->store->id, 'attempt_key' => $attempt->key, 'revision' => $attempt->revision, 'request_key' => (string) Str::uuid(), 'terminal_id' => $terminal->id, 'amount' => '49.90'],
         ]);
 
         $this->assertEqualsCanonicalizing(['ok', 'validation'], array_column($results, 'status'), json_encode($results));

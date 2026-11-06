@@ -108,21 +108,20 @@ trait InteractsWithPos
         return app(ReviewCheckout::class)($actor, $store ?? $this->store, $cart, $attempt?->key, $attempt?->revision);
     }
 
-    protected function startTerminalPayment(User $actor, CheckoutAttempt $attempt, CardTerminal $terminal, string $amount): CheckoutAttempt
+    protected function startTerminalPayment(User $actor, CheckoutAttempt $attempt, CardTerminal $terminal, string $amount, ?string $requestKey = null): CheckoutAttempt
     {
-        return app(StartTerminalPayment::class)($actor, $attempt->store, $attempt->key, $attempt->revision, $terminal->id, $amount);
+        return app(StartTerminalPayment::class)($actor, $attempt->store, $attempt->key, $attempt->revision, $requestKey ?? (string) Str::uuid(), $terminal->id, $amount)->attempt;
     }
 
     /**
-     * Start the terminal payment unless one is already started, then record its approval.
+     * Start the terminal payment unless one is already started, then record its approval for that start.
      */
     protected function approveCard(User $actor, CheckoutAttempt $attempt, CardTerminal $terminal, string $amount, string $reference = 'A12345'): CardApproval
     {
-        if (! $attempt->fresh()->hasStartedTerminalPayment()) {
-            $this->startTerminalPayment($actor, $attempt, $terminal, $amount);
-        }
+        $paymentKey = $attempt->fresh()->terminal_payment_key
+            ?? $this->startTerminalPayment($actor, $attempt, $terminal, $amount)->terminal_payment_key;
 
-        return app(RecordCardApproval::class)($actor, $attempt->store, $attempt->key, $attempt->revision, $terminal->id, $reference, $amount);
+        return app(RecordCardApproval::class)($actor, $attempt->store, $attempt->key, $attempt->revision, $paymentKey, $terminal->id, $reference, $amount);
     }
 
     protected function finalize(User $actor, CheckoutAttempt $attempt, ?string $cash = null): Sale

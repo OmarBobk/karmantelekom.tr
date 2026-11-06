@@ -31,6 +31,9 @@ use Illuminate\Support\Carbon;
  * @property string $total
  * @property string $payload_hash
  * @property Carbon|null $frozen_at
+ * @property string|null $terminal_payment_key
+ * @property string|null $terminal_payment_request_key
+ * @property string|null $terminal_payment_cleared_key
  * @property int|null $terminal_payment_terminal_id
  * @property string|null $terminal_payment_amount
  * @property int|null $terminal_payment_started_by
@@ -53,6 +56,7 @@ class CheckoutAttempt extends Model
     protected $fillable = [
         'key', 'store_id', 'user_id', 'status', 'revision', 'currency', 'lines',
         'subtotal', 'discount_total', 'total', 'payload_hash', 'frozen_at',
+        'terminal_payment_key', 'terminal_payment_request_key', 'terminal_payment_cleared_key',
         'terminal_payment_terminal_id', 'terminal_payment_amount', 'terminal_payment_started_by',
         'terminal_payment_started_at', 'finalize_fingerprint', 'failure_code', 'failure_message', 'failed_at',
         'completed_at', 'cancelled_at', 'resolved_by', 'resolved_at', 'resolution_note',

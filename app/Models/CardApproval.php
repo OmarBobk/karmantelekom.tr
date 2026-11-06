@@ -17,6 +17,7 @@ use Illuminate\Support\Carbon;
  *
  * @property int $id
  * @property int $checkout_attempt_id
+ * @property string $terminal_payment_key
  * @property int $store_id
  * @property int $card_terminal_id
  * @property string $reference
@@ -36,7 +37,7 @@ class CardApproval extends Model
      * @var list<string>
      */
     protected $fillable = [
-        'checkout_attempt_id', 'store_id', 'card_terminal_id', 'reference', 'currency', 'amount',
+        'checkout_attempt_id', 'terminal_payment_key', 'store_id', 'card_terminal_id', 'reference', 'currency', 'amount',
         'status', 'recorded_by', 'recorded_at', 'void_reference', 'void_note', 'voided_by', 'voided_at',
     ];
 
