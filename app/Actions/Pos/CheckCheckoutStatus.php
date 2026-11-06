@@ -31,7 +31,7 @@ class CheckCheckoutStatus
 
         return DB::transaction(function () use ($attempt): CheckoutAttempt {
             $locked = CheckoutAttempt::query()->whereKey($attempt->id)->lockForUpdate()->firstOrFail();
-            $locked->load(['cardApproval.terminal', 'sale']);
+            $locked->load(['cardApproval.terminal', 'terminalPaymentTerminal', 'sale']);
 
             return $locked;
         });

@@ -21,10 +21,11 @@ use Illuminate\Validation\ValidationException;
 /**
  * Record a card payment that an external terminal has already approved.
  *
- * The approval is stored on the checkout attempt independently of the sale, and freezes the
- * attempt's reviewed payload. The reference must be unique within its terminal; recording the
- * same approval twice returns the original, while a different approval for the same attempt
- * or a reused reference is rejected. No card data is processed or stored.
+ * The approval belongs to the terminal payment started on the attempt (StartTerminalPayment)
+ * and must match its terminal and amount; the terminal may have been deactivated since. It is
+ * stored independently of the sale. The reference must be unique within its terminal;
+ * recording the same approval twice returns the original, while a different approval for the
+ * same attempt or a reused reference is rejected. No card data is processed or stored.
  */
 class RecordCardApproval
 {
@@ -57,7 +58,7 @@ class RecordCardApproval
             throw ValidationException::withMessages(['card_amount' => __('pos.errors.card_amount_invalid')]);
         }
 
-        $terminal = $store->cardTerminals()->active()->whereKey($terminalId)->first();
+        $terminal = $store->cardTerminals()->whereKey($terminalId)->first();
 
         if ($terminal === null) {
             throw ValidationException::withMessages(['card_terminal' => __('pos.errors.terminal_unavailable')]);
@@ -78,8 +79,16 @@ class RecordCardApproval
                     throw ValidationException::withMessages(['attempt' => __('pos.errors.attempt_changed')]);
                 }
 
-                if ($amountMinor > $locked->totalMinor()) {
-                    throw ValidationException::withMessages(['card_amount' => __('pos.errors.card_amount_above_total')]);
+                if (! $locked->hasStartedTerminalPayment()) {
+                    throw ValidationException::withMessages(['attempt' => __('pos.errors.terminal_payment_not_started')]);
+                }
+
+                if ($locked->terminal_payment_terminal_id !== $terminal->id) {
+                    throw ValidationException::withMessages(['card_terminal' => __('pos.errors.terminal_payment_terminal_mismatch')]);
+                }
+
+                if ($locked->terminalPaymentAmountMinor() !== $amountMinor) {
+                    throw ValidationException::withMessages(['card_amount' => __('pos.errors.terminal_payment_amount_mismatch', ['amount' => Money::format((int) $locked->terminalPaymentAmountMinor())])]);
                 }
 
                 $approval = CardApproval::query()->create([
@@ -93,8 +102,6 @@ class RecordCardApproval
                     'recorded_by' => $actor->id,
                     'recorded_at' => now(),
                 ]);
-
-                $locked->update(['frozen_at' => now()]);
 
                 return $approval;
             }, FinalizeCheckout::DEADLOCK_ATTEMPTS);

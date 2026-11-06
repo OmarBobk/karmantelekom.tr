@@ -16,6 +16,7 @@ use App\Models\CheckoutAttempt;
 use App\Models\ProductDefinition;
 use App\Models\Sale;
 use App\Models\User;
+use App\Services\Purchasing\Money;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
@@ -56,6 +57,10 @@ class PosCounterUiTest extends TestCase
             ->assertSet('step', 'payment')
             ->set('cardTerminalId', $terminal->id)
             ->set('cardAmount', '10000')
+            ->call('startTerminalPayment')
+            ->assertHasNoErrors()
+            ->assertSee(__('pos.payment.terminal_pending_title'))
+            ->assertDontSee(__('pos.payment.complete'))
             ->set('cardReference', 'A12345')
             ->call('recordCardApproval')
             ->assertHasNoErrors()
@@ -226,6 +231,7 @@ class PosCounterUiTest extends TestCase
             ->call('review')
             ->set('cardTerminalId', $this->createTerminal()->id)
             ->set('cardAmount', '12500')
+            ->call('startTerminalPayment')
             ->set('cardReference', 'APP-12')
             ->call('recordCardApproval');
 
@@ -253,6 +259,7 @@ class PosCounterUiTest extends TestCase
             ->call('review')
             ->set('cardTerminalId', $terminal->id)
             ->set('cardAmount', '12500')
+            ->call('startTerminalPayment')
             ->set('cardReference', 'APP-9')
             ->call('recordCardApproval');
 
@@ -280,6 +287,7 @@ class PosCounterUiTest extends TestCase
             ->call('review')
             ->set('cardTerminalId', $terminal->id)
             ->set('cardAmount', '12500')
+            ->call('startTerminalPayment')
             ->set('cardReference', 'APP-10')
             ->call('recordCardApproval');
         $attempt = CheckoutAttempt::query()->sole();
@@ -311,6 +319,7 @@ class PosCounterUiTest extends TestCase
             ->call('review')
             ->set('cardTerminalId', $terminal->id)
             ->set('cardAmount', '12500')
+            ->call('startTerminalPayment')
             ->set('cardReference', 'APP-11')
             ->call('recordCardApproval');
         $attempt = CheckoutAttempt::query()->sole();
@@ -332,6 +341,111 @@ class PosCounterUiTest extends TestCase
         $this->counter()->assertSet('attemptKey', null)->assertDontSee('APP-11');
 
         $this->counter()->call('openResolve', $attempt->key)->assertForbidden();
+    }
+
+    #[Test]
+    public function a_terminal_payment_whose_approval_never_reached_the_app_is_recovered_in_a_fresh_session_and_sold_once(): void
+    {
+        $terminal = $this->createTerminal();
+
+        $this->counter()
+            ->call('scan', $this->cable->barcode)
+            ->call('scan', $this->phoneImei)
+            ->call('review')
+            ->set('cardTerminalId', $terminal->id)
+            ->set('cardAmount', '12549.90')
+            ->call('startTerminalPayment')
+            ->assertHasNoErrors()
+            ->assertSee(__('pos.payment.terminal_pending_title'));
+
+        // The card is charged on the terminal (approval TRM-88), but the request recording the
+        // approval never reaches the app and the browser session is lost.
+        $attempt = CheckoutAttempt::query()->sole();
+        session()->flush();
+
+        $pendingNotice = __('pos.recovery.open_terminal_pending', ['amount' => Money::format(1254990), 'terminal' => $terminal->displayName()]);
+
+        $counter = $this->counter()
+            ->assertSet('attemptKey', null)
+            ->assertSee($pendingNotice)
+            ->call('scan', $this->cable->barcode)
+            ->call('review')
+            ->assertHasErrors('cart')
+            ->assertSet('step', 'cart')
+            ->call('resumeAttempt', $attempt->key)
+            ->assertSet('attemptKey', $attempt->key)
+            ->assertSet('step', 'payment')
+            ->assertSet('cart.u'.$this->phone->id.'.identifier', $this->phoneImei)
+            ->assertSee(__('pos.payment.terminal_pending_title'))
+            ->assertDontSee(__('pos.payment.complete'))
+            ->call('cancelAttempt')
+            ->assertHasErrors('attempt')
+            ->call('newSale')
+            ->assertDispatched('notify', fn (string $event, array $params): bool => ($params[0]['message'] ?? '') === __('pos.errors.new_sale_blocked'))
+            ->assertSet('attemptKey', $attempt->key)
+            ->call('removeLine', 'u'.$this->phone->id)
+            ->assertSet('cart.u'.$this->phone->id.'.identifier', $this->phoneImei)
+            ->set('cashTendered', '12549.90')
+            ->call('finalize')
+            ->assertHasErrors('attempt')
+            ->assertSet('step', 'payment');
+
+        $this->assertSame(CheckoutAttemptStatus::OPEN, $attempt->fresh()->status);
+        $this->assertSame(1, CheckoutAttempt::query()->count());
+        $this->assertSame(0, Sale::query()->count());
+        $this->assertSame(10, $this->cableStock());
+        $this->assertSame(UnitStatus::AVAILABLE, $this->phone->fresh()->status);
+
+        $counter->set('cashTendered', '')
+            ->set('cardReference', 'TRM-88')
+            ->call('recordCardApproval')
+            ->assertHasNoErrors()
+            ->assertSee(__('pos.payment.do_not_charge_again'))
+            ->call('finalize')
+            ->assertHasNoErrors()
+            ->assertSet('step', 'done');
+
+        $sale = Sale::query()->sole();
+        $this->assertSame('12549.90', $sale->total);
+        $this->assertSame([['card', '12549.90', 'TRM-88']], $sale->payments->map(fn ($payment): array => [$payment->method->value, $payment->amount, $payment->terminal_reference])->all());
+        $this->assertSame($sale->id, $this->finalize($this->cashier, $attempt->fresh())->id);
+        $this->assertSame(1, Sale::query()->count());
+        $this->assertSame(9, $this->cableStock());
+        $this->assertSame(UnitStatus::SOLD, $this->phone->fresh()->status);
+    }
+
+    #[Test]
+    public function the_owner_resolves_an_unverified_terminal_payment_from_the_counter(): void
+    {
+        $terminal = $this->createTerminal();
+        $this->counter()
+            ->call('scan', $this->cable->barcode)
+            ->call('review')
+            ->set('cardTerminalId', $terminal->id)
+            ->set('cardAmount', '49.90')
+            ->call('startTerminalPayment');
+        $attempt = CheckoutAttempt::query()->sole();
+
+        $this->counter()->call('openResolveTerminal', $attempt->key)->assertForbidden();
+
+        Livewire::actingAs($this->owner)->test(PosCounter::class, ['store' => $this->store])
+            ->assertSee(__('pos.recovery.resolve_terminal'))
+            ->call('openResolveTerminal', $attempt->key)
+            ->assertDispatched('open-dialog', id: PosCounter::RESOLVE_TERMINAL_DIALOG)
+            ->set('terminalOutcome', 'no_charge')
+            ->call('resolveTerminalPayment')
+            ->assertHasErrors('void_note')
+            ->set('voidNote', 'Terminal shows the card was declined')
+            ->call('resolveTerminalPayment')
+            ->assertHasNoErrors();
+
+        $this->assertFalse($attempt->fresh()->hasStartedTerminalPayment());
+
+        $this->counter()
+            ->assertDontSee(__('pos.payment.terminal_pending_title'))
+            ->set('cashTendered', '50')
+            ->call('finalize')
+            ->assertSet('step', 'done');
     }
 
     #[Test]

@@ -31,6 +31,10 @@ use Illuminate\Support\Carbon;
  * @property string $total
  * @property string $payload_hash
  * @property Carbon|null $frozen_at
+ * @property int|null $terminal_payment_terminal_id
+ * @property string|null $terminal_payment_amount
+ * @property int|null $terminal_payment_started_by
+ * @property Carbon|null $terminal_payment_started_at
  * @property string|null $finalize_fingerprint
  * @property string|null $failure_code
  * @property string|null $failure_message
@@ -49,7 +53,8 @@ class CheckoutAttempt extends Model
     protected $fillable = [
         'key', 'store_id', 'user_id', 'status', 'revision', 'currency', 'lines',
         'subtotal', 'discount_total', 'total', 'payload_hash', 'frozen_at',
-        'finalize_fingerprint', 'failure_code', 'failure_message', 'failed_at',
+        'terminal_payment_terminal_id', 'terminal_payment_amount', 'terminal_payment_started_by',
+        'terminal_payment_started_at', 'finalize_fingerprint', 'failure_code', 'failure_message', 'failed_at',
         'completed_at', 'cancelled_at', 'resolved_by', 'resolved_at', 'resolution_note',
     ];
 
@@ -64,6 +69,7 @@ class CheckoutAttempt extends Model
             'lines' => 'array',
             'revision' => 'integer',
             'frozen_at' => 'datetime',
+            'terminal_payment_started_at' => 'datetime',
             'failed_at' => 'datetime',
             'completed_at' => 'datetime',
             'cancelled_at' => 'datetime',
@@ -79,6 +85,16 @@ class CheckoutAttempt extends Model
         $query->where('status', CheckoutAttemptStatus::OPEN);
     }
 
+    /**
+     * @param  Builder<CheckoutAttempt>  $query
+     */
+    public function scopePendingTerminalPayment(Builder $query): void
+    {
+        $query->where('status', CheckoutAttemptStatus::OPEN)
+            ->whereNotNull('terminal_payment_started_at')
+            ->whereDoesntHave('cardApproval');
+    }
+
     public function isOpen(): bool
     {
         return $this->status === CheckoutAttemptStatus::OPEN;
@@ -87,6 +103,29 @@ class CheckoutAttempt extends Model
     public function isFrozen(): bool
     {
         return $this->frozen_at !== null;
+    }
+
+    public function hasStartedTerminalPayment(): bool
+    {
+        return $this->terminal_payment_started_at !== null;
+    }
+
+    /**
+     * The cashier was told to charge the card, but no approval has reached the app yet: the card
+     * may or may not have been charged, so the attempt can be neither discarded nor paid in cash.
+     */
+    public function hasPendingTerminalPayment(): bool
+    {
+        if (! $this->hasStartedTerminalPayment()) {
+            return false;
+        }
+
+        return $this->relationLoaded('cardApproval') ? $this->cardApproval === null : ! $this->cardApproval()->exists();
+    }
+
+    public function terminalPaymentAmountMinor(): ?int
+    {
+        return $this->terminal_payment_amount === null ? null : Money::fromDecimal($this->terminal_payment_amount);
     }
 
     public function totalMinor(): int
@@ -136,6 +175,14 @@ class CheckoutAttempt extends Model
     public function resolver(): BelongsTo
     {
         return $this->belongsTo(User::class, 'resolved_by');
+    }
+
+    /**
+     * @return BelongsTo<CardTerminal, $this>
+     */
+    public function terminalPaymentTerminal(): BelongsTo
+    {
+        return $this->belongsTo(CardTerminal::class, 'terminal_payment_terminal_id');
     }
 
     /**

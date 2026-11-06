@@ -194,6 +194,8 @@ class SalesConcurrencyTest extends TestCase
         $terminal = $this->createTerminal();
         $first = $this->review($this->cashier, $this->cableLine(1));
         $second = $this->review($this->rival, $this->phoneLine());
+        $this->startTerminalPayment($this->cashier, $first, $terminal, '49.90');
+        $this->startTerminalPayment($this->rival, $second, $terminal, '49.90');
 
         $results = $this->raceWhileLocked(CheckoutAttempt::query()->whereKey([$first->id, $second->id]), [
             ['operation' => 'approve', 'actor_id' => $this->cashier->id, 'store_id' => $this->store->id, 'attempt_key' => $first->key, 'revision' => $first->revision, 'terminal_id' => $terminal->id, 'reference' => 'SAME-1', 'amount' => '49.90'],
@@ -202,7 +204,33 @@ class SalesConcurrencyTest extends TestCase
 
         $this->assertEqualsCanonicalizing(['ok', 'validation'], array_column($results, 'status'), json_encode($results));
         $this->assertSame(1, CardApproval::query()->count());
-        $this->assertSame(1, CheckoutAttempt::query()->whereNotNull('frozen_at')->count());
+        $this->assertSame(1, CheckoutAttempt::query()->pendingTerminalPayment()->count());
+    }
+
+    #[Test]
+    public function a_cash_completion_racing_a_terminal_payment_start_never_sells_with_an_unverified_charge(): void
+    {
+        $terminal = $this->createTerminal();
+        $attempt = $this->review($this->cashier, $this->cableLine(1));
+
+        $results = $this->raceWhileLocked(CheckoutAttempt::query()->whereKey($attempt->id), [
+            $this->finalizeRequest($this->cashier, $attempt, '50'),
+            ['operation' => 'start', 'actor_id' => $this->cashier->id, 'store_id' => $this->store->id, 'attempt_key' => $attempt->key, 'revision' => $attempt->revision, 'terminal_id' => $terminal->id, 'amount' => '49.90'],
+        ]);
+
+        $this->assertEqualsCanonicalizing(['ok', 'validation'], array_column($results, 'status'), json_encode($results));
+        $attempt->refresh();
+
+        if ($results[0]['status'] === 'ok') {
+            $this->assertSame(CheckoutAttemptStatus::COMPLETED, $attempt->status);
+            $this->assertFalse($attempt->hasStartedTerminalPayment());
+            $this->assertSame(0, $this->cableStock());
+        } else {
+            $this->assertSame(CheckoutAttemptStatus::OPEN, $attempt->status);
+            $this->assertTrue($attempt->hasPendingTerminalPayment());
+            $this->assertSame(0, Sale::query()->count());
+            $this->assertSame(1, $this->cableStock());
+        }
     }
 
     #[Test]

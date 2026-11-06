@@ -719,7 +719,10 @@ The system must validate current stock and device availability when completing t
   - Change is computed against cash only. Tendering cash when the card covers the total is refused.
   - Card means an external terminal approval: the cashier records the approved amount and the terminal's reference. No card data is entered. A reference that looks like a card number (13 to 19 digits passing the Luhn check) is refused.
 - **Durable checkout.** "Review and take payment" persists a checkout attempt (stable key, revision, reviewed lines, totals) before any payment:
-  - Recording a card approval freezes the attempt. After that the cart, cancel, and "New sale" are blocked.
+  - Card payment has two server-confirmed steps. "Start card payment" first saves the chosen terminal and amount on the attempt and freezes its cart; only then does the counter tell the cashier to charge. The approval reference is recorded afterwards and must match that terminal and amount, even if the terminal was deactivated in between.
+  - While a started payment has no approval ("awaiting terminal verification"), the attempt cannot be edited, cancelled (also by the owner), or completed, including as cash only. "New sale" is blocked, and the cashier cannot open a new attempt in that store. All of these checks run under the attempt row lock, and the attempt is listed for recovery in any new session.
+  - The owner resolves an unverified payment after checking the terminal. The outcome is either "no charge" or "charged, then voided", and the void also needs its reference; a note is always required, and the resolution is logged (`checkout_resolution`, `terminal_payment_cleared`). This clears the started payment and unlocks the cart, so the same checkout continues.
+  - After an approval is recorded, the cart, cancel, and "New sale" stay blocked.
   - A reference is unique per terminal (merchant number plus terminal number). The approval row is kept separately from the final payments and is linked to at most one payment.
   - Recording the same approval again returns it; a different approval on the same attempt, or a reference already used on that terminal, is refused.
   - Completing with the same attempt, revision, and cash returns the original sale. Changing the cash on a retry is an idempotency conflict.
@@ -755,7 +758,7 @@ The system must validate current stock and device availability when completing t
   - Salespeople and unassigned users are refused.
 - The owner grants or revokes counter access per employee on the store management page. Each change is logged (`employee_permission`) with the employee's store codes.
 - Employees see only their own sales, receipts, and attempts. The owner sees every sale and attempt in accessible stores.
-- Owner-only actions: lowering a line price (with a reason), recording a terminal void, setting unit prices (`set_selling_prices`), and managing card terminals.
+- Owner-only actions: lowering a line price (with a reason), recording a terminal void, resolving an unverified terminal payment, setting unit prices (`set_selling_prices`), and managing card terminals.
 - `OperationalStoreSetupSeeder` grants `use_pos` and `set_selling_prices` to the existing `admin` role only.
 - An employee who signs in is sent back to the counter URL they opened. There is no automatic redirect to `/pos` after login.
 
@@ -774,6 +777,8 @@ Applied only to the isolated test and browser databases; the development databas
    - `2026_11_06_190007_create_sales_table`
    - `2026_11_06_190008_create_sale_lines_table`
    - `2026_11_06_190009_create_sale_payments_table`
+
+   `2026_11_06_190004` also holds the started terminal payment (`terminal_payment_terminal_id`, `terminal_payment_amount`, `terminal_payment_started_by`, `terminal_payment_started_at`) with a `CHECK` constraint: the four are either all empty or all set, the amount is from 0.01 up to the total, and a started payment always freezes the cart. These columns were added to the unmerged migration in place. A database that already ran an earlier copy of the Phase 5 migrations (only the isolated test and browser databases) must re-run them.
 
 2. Preview, then apply only these migrations:
 

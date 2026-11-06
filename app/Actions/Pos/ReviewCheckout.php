@@ -26,8 +26,9 @@ use Illuminate\Validation\ValidationException;
 /**
  * Price and check a cart on the server and persist it as a checkout attempt before payment.
  *
- * A new attempt gets a stable key. Reviewing an existing open attempt replaces its cart and
- * advances its revision, but only while no card approval has been recorded; after that the
+ * A new attempt gets a stable key, and is refused while the cashier has a terminal payment in
+ * this store awaiting verification. Reviewing an existing open attempt replaces its cart and
+ * advances its revision, but only until a terminal payment is started; after that the
  * reviewed payload is frozen. Availability is read without locks here and checked again under
  * locks when the sale is finalized.
  */
@@ -59,17 +60,29 @@ class ReviewCheckout
         $payloadHash = self::payloadHash($store, $lines);
 
         if ($existing === null) {
-            return CheckoutAttempt::query()->create([
-                'key' => (string) Str::uuid(),
-                'store_id' => $store->id,
-                'user_id' => $actor->id,
-                'status' => CheckoutAttemptStatus::OPEN,
-                'revision' => 1,
-                'currency' => Currency::TRY,
-                'lines' => $lines,
-                ...$totals,
-                'payload_hash' => $payloadHash,
-            ]);
+            return DB::transaction(function () use ($actor, $store, $lines, $totals, $payloadHash): CheckoutAttempt {
+                $hasPendingTerminalPayment = $store->checkoutAttempts()
+                    ->where('user_id', $actor->id)
+                    ->pendingTerminalPayment()
+                    ->lockForUpdate()
+                    ->exists();
+
+                if ($hasPendingTerminalPayment) {
+                    throw ValidationException::withMessages(['cart' => __('pos.errors.terminal_payment_pending_elsewhere')]);
+                }
+
+                return CheckoutAttempt::query()->create([
+                    'key' => (string) Str::uuid(),
+                    'store_id' => $store->id,
+                    'user_id' => $actor->id,
+                    'status' => CheckoutAttemptStatus::OPEN,
+                    'revision' => 1,
+                    'currency' => Currency::TRY,
+                    'lines' => $lines,
+                    ...$totals,
+                    'payload_hash' => $payloadHash,
+                ]);
+            });
         }
 
         return DB::transaction(function () use ($existing, $expectedRevision, $lines, $totals, $payloadHash): CheckoutAttempt {

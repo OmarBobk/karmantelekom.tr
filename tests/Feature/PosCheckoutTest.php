@@ -7,6 +7,8 @@ namespace Tests\Feature;
 use App\Actions\Pos\CancelCheckoutAttempt;
 use App\Actions\Pos\CheckCheckoutStatus;
 use App\Actions\Pos\FinalizeCheckout;
+use App\Actions\Pos\RecordCardApproval;
+use App\Actions\Pos\ResolveTerminalPayment;
 use App\Actions\Pos\ResolveVoidedApproval;
 use App\Enums\AdjustmentReason;
 use App\Enums\CardApprovalStatus;
@@ -17,6 +19,7 @@ use App\Enums\SalePaymentMethod;
 use App\Enums\UnitStatus;
 use App\Exceptions\Inventory\IdempotencyConflictException;
 use App\Exceptions\Pos\CheckoutItemsChangedException;
+use App\Models\CardApproval;
 use App\Models\CheckoutAttempt;
 use App\Models\InventoryMovement;
 use App\Models\Sale;
@@ -30,6 +33,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 use PHPUnit\Framework\Attributes\Test;
 use RuntimeException;
+use Spatie\Activitylog\Models\Activity;
 use Tests\Support\InteractsWithPos;
 use Tests\TestCase;
 
@@ -145,23 +149,142 @@ class PosCheckoutTest extends TestCase
     }
 
     #[Test]
-    public function a_card_approval_cannot_exceed_the_total_and_needs_a_valid_reference_and_active_terminal(): void
+    public function a_terminal_payment_cannot_exceed_the_total_and_needs_an_active_terminal_of_the_store(): void
     {
         $cashier = $this->createCashier();
         $attempt = $this->review($cashier, $this->cableLine(1));
         $terminal = $this->createTerminal();
+        $inactive = $this->createTerminal();
+        $inactive->update(['is_active' => false]);
+        $otherStoreTerminal = $this->createTerminal(Store::factory()->create());
 
-        $this->assertValidationError(fn () => $this->approveCard($cashier, $attempt, $terminal, '49.91'), 'card_amount');
-        $this->assertValidationError(fn () => $this->approveCard($cashier, $attempt, $terminal, '10', '  '), 'card_reference');
-        $this->assertValidationError(fn () => $this->approveCard($cashier, $attempt, $terminal, '10', str_repeat('A', 41)), 'card_reference');
-        $this->assertValidationError(fn () => $this->approveCard($cashier, $attempt, $terminal, '10', '4111 1111 1111 1111'), 'card_reference');
+        $this->assertValidationError(fn () => $this->startTerminalPayment($cashier, $attempt, $terminal, '49.91'), 'card_amount');
+        $this->assertValidationError(fn () => $this->startTerminalPayment($cashier, $attempt, $terminal, '0'), 'card_amount');
+        $this->assertValidationError(fn () => $this->startTerminalPayment($cashier, $attempt, $inactive, '10'), 'card_terminal');
+        $this->assertValidationError(fn () => $this->startTerminalPayment($cashier, $attempt, $otherStoreTerminal, '10'), 'card_terminal');
+        $this->assertNull($attempt->fresh()->frozen_at);
+        $this->assertFalse($attempt->fresh()->hasStartedTerminalPayment());
+    }
+
+    #[Test]
+    public function an_approval_needs_a_valid_reference_and_must_match_the_started_payment(): void
+    {
+        $cashier = $this->createCashier();
+        $attempt = $this->review($cashier, $this->cableLine(2));
+        $terminal = $this->createTerminal();
+        $otherTerminal = $this->createTerminal();
+
+        $this->assertValidationError(fn () => app(RecordCardApproval::class)($cashier, $this->store, $attempt->key, $attempt->revision, $terminal->id, 'A1', '10'), 'attempt');
+
+        $this->startTerminalPayment($cashier, $attempt, $terminal, '50');
+
+        $this->assertValidationError(fn () => $this->approveCard($cashier, $attempt, $terminal, '50', '  '), 'card_reference');
+        $this->assertValidationError(fn () => $this->approveCard($cashier, $attempt, $terminal, '50', str_repeat('A', 41)), 'card_reference');
+        $this->assertValidationError(fn () => $this->approveCard($cashier, $attempt, $terminal, '50', '4111 1111 1111 1111'), 'card_reference');
+        $this->assertValidationError(fn () => $this->approveCard($cashier, $attempt, $otherTerminal, '50'), 'card_terminal');
+        $this->assertValidationError(fn () => $this->approveCard($cashier, $attempt, $terminal, '49.99'), 'card_amount');
+        $this->assertSame(0, CardApproval::query()->count());
 
         $terminal->update(['is_active' => false]);
-        $this->assertValidationError(fn () => $this->approveCard($cashier, $attempt, $terminal, '10'), 'card_terminal');
+        $approval = $this->approveCard($cashier, $attempt, $terminal, '50', 'A1');
+        $this->assertSame('50.00', $approval->amount);
+    }
 
-        $otherStoreTerminal = $this->createTerminal(Store::factory()->create());
-        $this->assertValidationError(fn () => $this->approveCard($cashier, $attempt, $otherStoreTerminal, '10'), 'card_terminal');
-        $this->assertNull($attempt->fresh()->frozen_at);
+    #[Test]
+    public function starting_the_same_terminal_payment_again_is_a_replay_and_a_different_one_is_refused(): void
+    {
+        $cashier = $this->createCashier();
+        $attempt = $this->review($cashier, $this->cableLine(2));
+        $terminal = $this->createTerminal();
+
+        $started = $this->startTerminalPayment($cashier, $attempt, $terminal, '50');
+        $again = $this->startTerminalPayment($cashier, $attempt, $terminal, '50.00');
+
+        $this->assertSame($started->terminal_payment_started_at->toIso8601String(), $again->terminal_payment_started_at->toIso8601String());
+        $this->assertSame('50.00', $again->terminal_payment_amount);
+        $this->assertSame($cashier->id, $again->terminal_payment_started_by);
+        $this->assertValidationError(fn () => $this->startTerminalPayment($cashier, $attempt, $terminal, '60'), 'attempt');
+        $this->assertValidationError(fn () => $this->startTerminalPayment($cashier, $attempt, $this->createTerminal(), '50'), 'attempt');
+        $this->expectAuthorizationFailure(fn () => $this->startTerminalPayment($this->createCashier(name: 'Other'), $attempt, $terminal, '50'));
+    }
+
+    #[Test]
+    public function a_started_terminal_payment_without_approval_blocks_edits_cancel_cash_completion_and_new_sales(): void
+    {
+        $cashier = $this->createCashier();
+        $attempt = $this->review($cashier, $this->cableLine(2));
+        $this->startTerminalPayment($cashier, $attempt, $this->createTerminal(), '99.80');
+
+        $pending = $attempt->fresh();
+        $this->assertNotNull($pending->frozen_at);
+        $this->assertTrue($pending->hasPendingTerminalPayment());
+        $this->assertSame(1, CheckoutAttempt::query()->pendingTerminalPayment()->count());
+
+        $this->assertValidationError(fn () => $this->review($cashier, $this->cableLine(3), $pending), 'attempt');
+        $this->assertValidationError(fn () => app(CancelCheckoutAttempt::class)($cashier, $this->store, $attempt->key), 'attempt');
+        $this->assertValidationError(fn () => app(CancelCheckoutAttempt::class)($this->owner, $this->store, $attempt->key), 'attempt');
+        $this->assertValidationError(fn () => $this->finalize($cashier, $pending, '100'), 'attempt');
+        $this->assertValidationError(fn () => $this->finalize($cashier, $pending), 'attempt');
+        $this->assertValidationError(fn () => $this->review($cashier, $this->cableLine(1)), 'cart');
+
+        $this->assertSame(CheckoutAttemptStatus::OPEN, $attempt->fresh()->status);
+        $this->assertNull($attempt->fresh()->failure_code);
+        $this->assertSame(0, Sale::query()->count());
+        $this->assertSame(10, $this->cableStock());
+
+        $this->assertSame(1, $this->review($this->createCashier(name: 'Other'), $this->cableLine(1))->revision);
+    }
+
+    #[Test]
+    public function the_owner_clears_an_unverified_terminal_payment_with_an_audited_outcome_and_the_checkout_continues(): void
+    {
+        $cashier = $this->createCashier();
+        $attempt = $this->review($cashier, $this->cableLine(2));
+        $terminal = $this->createTerminal();
+        $this->startTerminalPayment($cashier, $attempt, $terminal, '99.80');
+        $resolve = app(ResolveTerminalPayment::class);
+
+        $this->expectAuthorizationFailure(fn () => $resolve($cashier, $this->store, $attempt->key, 'no_charge', null, 'Declined'));
+        $this->assertValidationError(fn () => $resolve($this->owner, $this->store, $attempt->key, 'maybe', null, 'x'), 'terminal_outcome');
+        $this->assertValidationError(fn () => $resolve($this->owner, $this->store, $attempt->key, 'voided', '', 'Voided'), 'void_reference');
+        $this->assertValidationError(fn () => $resolve($this->owner, $this->store, $attempt->key, 'no_charge', null, ' '), 'void_note');
+
+        $resolved = $resolve($this->owner, $this->store, $attempt->key, 'no_charge', null, 'Terminal shows the card was declined');
+
+        $this->assertSame(CheckoutAttemptStatus::OPEN, $resolved->status);
+        $this->assertNull($resolved->frozen_at);
+        $this->assertFalse($resolved->hasStartedTerminalPayment());
+
+        $log = Activity::query()->where('log_name', 'checkout_resolution')->where('event', 'terminal_payment_cleared')->sole();
+        $this->assertTrue($this->owner->is($log->causer));
+        $this->assertSame('no_charge', $log->properties['outcome']);
+        $this->assertSame('99.80', $log->properties['amount']);
+        $this->assertSame($terminal->id, $log->properties['terminal_id']);
+
+        $this->assertValidationError(fn () => $resolve($this->owner, $this->store, $attempt->key, 'no_charge', null, 'Again'), 'attempt');
+
+        $sale = $this->finalize($cashier, $attempt->fresh(), '100');
+        $this->assertSame([SalePaymentMethod::CASH], $sale->payments->pluck('method')->all());
+        $this->assertSame(8, $this->cableStock());
+    }
+
+    #[Test]
+    public function a_voided_terminal_charge_needs_its_reference_and_a_recorded_approval_uses_the_void_resolution_instead(): void
+    {
+        $cashier = $this->createCashier();
+        $terminal = $this->createTerminal();
+        $attempt = $this->review($cashier, $this->cableLine(1));
+        $this->startTerminalPayment($cashier, $attempt, $terminal, '49.90');
+
+        app(ResolveTerminalPayment::class)($this->owner, $this->store, $attempt->key, 'voided', 'v 77', 'Wrong amount keyed; voided on terminal');
+
+        $log = Activity::query()->where('event', 'terminal_payment_cleared')->sole();
+        $this->assertSame('voided', $log->properties['outcome']);
+        $this->assertSame('V77', $log->properties['void_reference']);
+
+        $this->approveCard($cashier, $attempt->fresh(), $terminal, '49.90', 'OK-1');
+        $this->assertValidationError(fn () => app(ResolveTerminalPayment::class)($this->owner, $this->store, $attempt->key, 'no_charge', null, 'x'), 'attempt');
+        $this->assertSame(CheckoutAttemptStatus::OPEN, $attempt->fresh()->status);
     }
 
     #[Test]
@@ -189,10 +312,13 @@ class PosCheckoutTest extends TestCase
 
         $this->approveCard($cashier, $this->review($cashier, $this->cableLine(1)), $terminal, '49.90', 'R1');
 
-        $second = $this->review($cashier, $this->cableLine(1));
-        $this->assertValidationError(fn () => $this->approveCard($cashier, $second, $terminal, '49.90', 'R1'), 'card_reference');
+        $other = $this->createCashier(name: 'Other');
+        $second = $this->review($other, $this->cableLine(1));
+        $this->assertValidationError(fn () => $this->approveCard($other, $second, $terminal, '49.90', 'R1'), 'card_reference');
+        $this->assertSame('R2', $this->approveCard($other, $second, $terminal, '49.90', 'R2')->reference);
 
-        $this->assertSame('R1', $this->approveCard($cashier, $second, $otherTerminal, '49.90', 'R1')->reference);
+        $third = $this->review($other, $this->cableLine(1));
+        $this->assertSame('R1', $this->approveCard($other, $third, $otherTerminal, '49.90', 'R1')->reference);
     }
 
     #[Test]

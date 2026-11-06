@@ -48,6 +48,9 @@ use Throwable;
  * Everything reviewed is checked again under those locks; the sale, its lines, its final
  * payments, the stock movements, and sold unit states are written together or not at all.
  *
+ * A started terminal payment without a recorded approval blocks completion: the card may have
+ * been charged, so the sale cannot be taken as cash only.
+ *
  * An identical retry of a completed attempt returns its sale. When the items changed or the
  * transaction failed, the attempt stays open with the failure recorded, so an approved card
  * payment remains visible and is never taken again.
@@ -124,6 +127,11 @@ class FinalizeCheckout
         }
 
         $approval = $locked->lockCardApproval();
+
+        if ($approval === null && $locked->hasStartedTerminalPayment()) {
+            throw ValidationException::withMessages(['attempt' => __('pos.errors.terminal_payment_pending')]);
+        }
+
         $cardMinor = $approval !== null && $approval->status === CardApprovalStatus::APPROVED ? $approval->amountMinor() : 0;
         $totalMinor = $locked->totalMinor();
         [$cashDue, $changeMinor] = self::cashSplit($totalMinor, $cardMinor, $tenderedMinor);

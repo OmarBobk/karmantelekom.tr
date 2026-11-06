@@ -14,6 +14,7 @@ use App\Actions\Inventory\AdjustQuantity;
 use App\Actions\Inventory\RecordInspection;
 use App\Actions\Pos\FinalizeCheckout;
 use App\Actions\Pos\RecordCardApproval;
+use App\Actions\Pos\StartTerminalPayment;
 use App\Enums\AdjustmentReason;
 use App\Enums\InspectionOutcome;
 use App\Enums\MovementType;
@@ -61,6 +62,11 @@ try {
             $approval = app(RecordCardApproval::class)($actor, $store, $payload['attempt_key'], $payload['revision'], $payload['terminal_id'], $payload['reference'], $payload['amount']);
 
             return ['status' => 'ok', 'approval_id' => $approval->id];
+        })(),
+        'start' => (function () use ($actor, $store, $payload): array {
+            app(StartTerminalPayment::class)($actor, $store, $payload['attempt_key'], $payload['revision'], $payload['terminal_id'], $payload['amount']);
+
+            return ['status' => 'ok'];
         })(),
         'inspect' => (function () use ($actor, $store, $payload): array {
             app(RecordInspection::class)(

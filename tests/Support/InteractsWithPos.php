@@ -8,6 +8,7 @@ use App\Actions\Inventory\RecordOpeningBalance;
 use App\Actions\Pos\FinalizeCheckout;
 use App\Actions\Pos\RecordCardApproval;
 use App\Actions\Pos\ReviewCheckout;
+use App\Actions\Pos\StartTerminalPayment;
 use App\Enums\TrackingMode;
 use App\Models\CardApproval;
 use App\Models\CardTerminal;
@@ -107,8 +108,20 @@ trait InteractsWithPos
         return app(ReviewCheckout::class)($actor, $store ?? $this->store, $cart, $attempt?->key, $attempt?->revision);
     }
 
+    protected function startTerminalPayment(User $actor, CheckoutAttempt $attempt, CardTerminal $terminal, string $amount): CheckoutAttempt
+    {
+        return app(StartTerminalPayment::class)($actor, $attempt->store, $attempt->key, $attempt->revision, $terminal->id, $amount);
+    }
+
+    /**
+     * Start the terminal payment unless one is already started, then record its approval.
+     */
     protected function approveCard(User $actor, CheckoutAttempt $attempt, CardTerminal $terminal, string $amount, string $reference = 'A12345'): CardApproval
     {
+        if (! $attempt->fresh()->hasStartedTerminalPayment()) {
+            $this->startTerminalPayment($actor, $attempt, $terminal, $amount);
+        }
+
         return app(RecordCardApproval::class)($actor, $attempt->store, $attempt->key, $attempt->revision, $terminal->id, $reference, $amount);
     }
 

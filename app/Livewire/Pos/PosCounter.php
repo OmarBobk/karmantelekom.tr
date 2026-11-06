@@ -9,9 +9,11 @@ use App\Actions\Pos\CheckCheckoutStatus;
 use App\Actions\Pos\FinalizeCheckout;
 use App\Actions\Pos\RecordCardApproval;
 use App\Actions\Pos\ResolveCounterCode;
+use App\Actions\Pos\ResolveTerminalPayment;
 use App\Actions\Pos\ResolveVoidedApproval;
 use App\Actions\Pos\ReviewCheckout;
 use App\Actions\Pos\SellingPrice;
+use App\Actions\Pos\StartTerminalPayment;
 use App\Enums\CheckoutAttemptStatus;
 use App\Enums\TrackingMode;
 use App\Exceptions\Inventory\IdempotencyConflictException;
@@ -48,6 +50,8 @@ class PosCounter extends Component
     public const ADJUST_DIALOG = 'pos-adjust';
 
     public const RESOLVE_DIALOG = 'pos-resolve';
+
+    public const RESOLVE_TERMINAL_DIALOG = 'pos-resolve-terminal';
 
     #[Locked]
     public int $storeId;
@@ -110,6 +114,8 @@ class PosCounter extends Component
     public string $voidReference = '';
 
     public string $voidNote = '';
+
+    public string $terminalOutcome = '';
 
     public function mount(Store $store): void
     {
@@ -318,7 +324,10 @@ class PosCounter extends Component
         $this->step = 'cart';
     }
 
-    public function recordCardApproval(RecordCardApproval $record): void
+    /**
+     * Persist the terminal and amount before the cashier is told to charge the card.
+     */
+    public function startTerminalPayment(StartTerminalPayment $start): void
     {
         $store = $this->authorizeCounter();
 
@@ -326,7 +335,32 @@ class PosCounter extends Component
             return;
         }
 
-        $record(auth()->user(), $store, $this->attemptKey, $this->attemptRevision, (int) $this->cardTerminalId, $this->cardReference, $this->cardAmount);
+        $attempt = $start(auth()->user(), $store, $this->attemptKey, $this->attemptRevision, (int) $this->cardTerminalId, $this->cardAmount);
+
+        $this->resetValidation();
+        $this->cart = self::cartFromAttempt($attempt);
+        $this->notify('info', __('pos.payment.terminal_started', ['amount' => Money::format((int) $attempt->terminalPaymentAmountMinor())]));
+    }
+
+    public function recordCardApproval(RecordCardApproval $record): void
+    {
+        $store = $this->authorizeCounter();
+        $attempt = $this->activeAttempt();
+
+        if ($attempt === null || $this->attemptRevision === null) {
+            return;
+        }
+
+        if (! $attempt->hasStartedTerminalPayment()) {
+            $this->notify('error', __('pos.errors.terminal_payment_not_started'));
+
+            return;
+        }
+
+        $record(
+            auth()->user(), $store, $attempt->key, $this->attemptRevision,
+            (int) $attempt->terminal_payment_terminal_id, $this->cardReference, (string) $attempt->terminal_payment_amount,
+        );
 
         $this->resetValidation();
         $this->notify('success', __('pos.payment.card_recorded'));
@@ -364,9 +398,14 @@ class PosCounter extends Component
 
         match ($attempt->status) {
             CheckoutAttemptStatus::COMPLETED => $this->completed($attempt->sale),
-            CheckoutAttemptStatus::OPEN => $this->notify('warning', $attempt->cardApproval !== null
-                ? __('pos.recovery.open_with_card', ['amount' => Money::format($attempt->cardApproval->amountMinor()), 'reference' => $attempt->cardApproval->reference])
-                : __('pos.recovery.open_without_payment')),
+            CheckoutAttemptStatus::OPEN => $this->notify('warning', match (true) {
+                $attempt->cardApproval !== null => __('pos.recovery.open_with_card', ['amount' => Money::format($attempt->cardApproval->amountMinor()), 'reference' => $attempt->cardApproval->reference]),
+                $attempt->hasStartedTerminalPayment() => __('pos.recovery.open_terminal_pending', [
+                    'amount' => Money::format((int) $attempt->terminalPaymentAmountMinor()),
+                    'terminal' => $attempt->terminalPaymentTerminal?->displayName(),
+                ]),
+                default => __('pos.recovery.open_without_payment'),
+            }),
             default => $this->forgetAttempt(),
         };
 
@@ -394,14 +433,15 @@ class PosCounter extends Component
         $store = $this->authorizeCounter();
         $attempt = $this->activeAttempt();
 
-        if ($attempt?->isOpen() && $attempt->cardApproval()->exists()) {
-            $this->notify('error', __('pos.errors.new_sale_blocked'));
-
-            return;
-        }
-
         if ($attempt?->isOpen()) {
-            $cancel(auth()->user(), $store, $attempt->key);
+            try {
+                $cancel(auth()->user(), $store, $attempt->key);
+            } catch (ValidationException) {
+                $this->syncActiveAttempt();
+                $this->notify('error', __('pos.errors.new_sale_blocked'));
+
+                return;
+            }
         }
 
         $this->cart = [];
@@ -425,7 +465,7 @@ class PosCounter extends Component
 
         $active = $this->activeAttempt();
 
-        if ($active !== null && $active->id !== $attempt->id && $active->isOpen() && $active->cardApproval()->exists()) {
+        if ($active !== null && $active->id !== $attempt->id && $active->isOpen() && ($active->hasStartedTerminalPayment() || $active->cardApproval()->exists())) {
             $this->notify('error', __('pos.errors.new_sale_blocked'));
 
             return;
@@ -467,16 +507,46 @@ class PosCounter extends Component
         $this->notify('success', __('pos.recovery.voided'));
     }
 
+    public function openResolveTerminal(string $key): void
+    {
+        $store = $this->authorizeCounter();
+        $attempt = $store->checkoutAttempts()->where('key', $key)->firstOrFail();
+        $this->authorize('resolve', $attempt);
+
+        $this->resetValidation();
+        $this->resolveAttemptKey = $attempt->key;
+        $this->terminalOutcome = '';
+        $this->voidReference = '';
+        $this->voidNote = '';
+        $this->dispatch('open-dialog', id: self::RESOLVE_TERMINAL_DIALOG);
+    }
+
+    public function resolveTerminalPayment(ResolveTerminalPayment $resolve): void
+    {
+        $store = $this->authorizeCounter();
+
+        $attempt = $resolve(auth()->user(), $store, $this->resolveAttemptKey, $this->terminalOutcome, $this->voidReference, $this->voidNote);
+
+        if ($attempt->key === $this->attemptKey) {
+            $this->attemptRevision = $attempt->revision;
+        }
+
+        $this->resolveAttemptKey = '';
+        $this->dispatch('close-dialog', id: self::RESOLVE_TERMINAL_DIALOG);
+        $this->notify('success', __('pos.recovery.terminal_cleared'));
+    }
+
     public function render(): View
     {
         $store = $this->authorizeCounter();
         $user = auth()->user();
-        $attempt = $this->activeAttempt()?->load(['cardApproval.terminal']);
+        $attempt = $this->activeAttempt()?->load(['cardApproval.terminal', 'terminalPaymentTerminal']);
         $cartLines = $this->cartLinesWithCurrentPrices();
 
         return view('livewire.pos.pos-counter', [
             'store' => $store,
             'attempt' => $attempt,
+            'terminalPending' => $attempt !== null && $attempt->isOpen() && $attempt->hasPendingTerminalPayment(),
             'cartLines' => $cartLines,
             'cartTotal' => array_sum(array_column($cartLines, 'line_total')),
             'cartEditable' => ! ($attempt?->isOpen() && $attempt->isFrozen()),
@@ -802,7 +872,7 @@ class PosCounter extends Component
     private function paymentPreview(CheckoutAttempt $attempt): array
     {
         $total = $attempt->totalMinor();
-        $card = $attempt->approvedCardMinor();
+        $card = $attempt->hasPendingTerminalPayment() ? (int) $attempt->terminalPaymentAmountMinor() : $attempt->approvedCardMinor();
         $cashDue = max(0, $total - $card);
         $change = null;
 
@@ -831,7 +901,7 @@ class PosCounter extends Component
             ->unresolved()
             ->when(! $user->can('viewAllSales', $store), fn ($query) => $query->where('user_id', $user->id))
             ->when($this->attemptKey !== null, fn ($query) => $query->where('key', '!=', $this->attemptKey))
-            ->with(['cardApproval.terminal', 'cashier:id,name'])
+            ->with(['cardApproval.terminal', 'terminalPaymentTerminal', 'cashier:id,name'])
             ->latest('updated_at')
             ->limit(20)
             ->get();

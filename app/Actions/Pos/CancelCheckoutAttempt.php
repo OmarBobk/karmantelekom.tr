@@ -18,8 +18,8 @@ class CancelCheckoutAttempt
     /**
      * Cancel an open attempt on which no payment was recorded.
      *
-     * An attempt with a card approval cannot be cancelled: it stays open until the sale is
-     * completed or the owner records an externally confirmed terminal void.
+     * An attempt with a started terminal payment or a card approval cannot be cancelled: it
+     * stays open until the sale is completed or the owner records what the terminal confirms.
      *
      * @throws AuthorizationException
      * @throws ValidationException
@@ -45,6 +45,10 @@ class CancelCheckoutAttempt
 
             if ($locked->cardApproval()->exists()) {
                 throw ValidationException::withMessages(['attempt' => __('pos.errors.cancel_with_approval')]);
+            }
+
+            if ($locked->hasStartedTerminalPayment()) {
+                throw ValidationException::withMessages(['attempt' => __('pos.errors.cancel_with_terminal_payment')]);
             }
 
             $locked->update([

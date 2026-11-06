@@ -260,7 +260,24 @@
                             <dd dir="ltr" class="text-end text-lg font-semibold tabular-nums">{{ $money($payment['cash_due']) }}</dd>
                         </dl>
 
-                        @if (! $attempt->cardApproval)
+                        @if ($terminalPending)
+                            <div class="rounded-lg bg-sky-50 p-3 text-sm text-sky-950 ring-2 ring-sky-500" role="status" aria-live="polite">
+                                <p class="text-base font-semibold">{{ __('pos.payment.terminal_pending_title') }}</p>
+                                <p class="mt-1">{{ __('pos.payment.terminal_pending_detail', [
+                                    'amount' => $money($attempt->terminalPaymentAmountMinor()),
+                                    'terminal' => $attempt->terminalPaymentTerminal?->displayName(),
+                                ]) }}</p>
+                                <p class="mt-1">{{ __('pos.payment.terminal_pending_help') }}</p>
+                                <div class="mt-3">
+                                    <label for="pos-card-reference" class="block text-sm font-medium text-gray-800">{{ __('pos.fields.card_reference') }}</label>
+                                    <input id="pos-card-reference" type="text" dir="ltr" autocomplete="off" maxlength="40" wire:model="cardReference" class="{{ $inputClass }} mt-1 font-mono uppercase">
+                                    @error('card_reference') <p class="mt-1 text-sm text-red-700" role="alert">{{ $message }}</p> @enderror
+                                    @error('card_terminal') <p class="mt-1 text-sm text-red-700" role="alert">{{ $message }}</p> @enderror
+                                    @error('card_amount') <p class="mt-1 text-sm text-red-700" role="alert">{{ $message }}</p> @enderror
+                                </div>
+                                <button type="button" wire:click="recordCardApproval" wire:loading.attr="disabled" wire:target="recordCardApproval" class="{{ $primaryButton }} mt-3 w-full">{{ __('pos.payment.record_card') }}</button>
+                            </div>
+                        @elseif (! $attempt->cardApproval)
                             <fieldset class="rounded-lg p-3 ring-1 ring-gray-200">
                                 <legend class="px-1 text-sm font-semibold text-gray-900">{{ __('pos.payment.card_title') }}</legend>
                                 <p class="text-xs text-gray-600">{{ __('pos.payment.card_help') }}</p>
@@ -278,23 +295,18 @@
                                             </select>
                                             @error('card_terminal') <p class="mt-1 text-sm text-red-700" role="alert">{{ $message }}</p> @enderror
                                         </div>
-                                        <div>
-                                            <label for="pos-card-amount" class="block text-sm font-medium text-gray-800">{{ __('pos.fields.card_amount') }}</label>
+                                        <div class="sm:col-span-2">
+                                            <label for="pos-card-amount" class="block text-sm font-medium text-gray-800">{{ __('pos.fields.card_charge_amount') }}</label>
                                             <input id="pos-card-amount" type="text" inputmode="decimal" dir="ltr" wire:model="cardAmount" placeholder="{{ \App\Services\Purchasing\Money::input($payment['total']) }}" class="{{ $inputClass }} mt-1 font-mono">
                                             @error('card_amount') <p class="mt-1 text-sm text-red-700" role="alert">{{ $message }}</p> @enderror
                                         </div>
-                                        <div>
-                                            <label for="pos-card-reference" class="block text-sm font-medium text-gray-800">{{ __('pos.fields.card_reference') }}</label>
-                                            <input id="pos-card-reference" type="text" dir="ltr" autocomplete="off" maxlength="40" wire:model="cardReference" class="{{ $inputClass }} mt-1 font-mono uppercase">
-                                            @error('card_reference') <p class="mt-1 text-sm text-red-700" role="alert">{{ $message }}</p> @enderror
-                                        </div>
                                     </div>
-                                    <button type="button" wire:click="recordCardApproval" wire:loading.attr="disabled" wire:target="recordCardApproval" class="{{ $secondaryButton }} mt-3 w-full">{{ __('pos.payment.record_card') }}</button>
+                                    <button type="button" wire:click="startTerminalPayment" wire:loading.attr="disabled" wire:target="startTerminalPayment" class="{{ $secondaryButton }} mt-3 w-full">{{ __('pos.payment.start_card') }}</button>
                                 @endif
                             </fieldset>
                         @endif
 
-                        @if ($payment['cash_due'] > 0)
+                        @if ($payment['cash_due'] > 0 && ! $terminalPending)
                             <div>
                                 <label for="pos-cash-tendered" class="block text-sm font-semibold text-gray-900">{{ __('pos.fields.cash_tendered') }}</label>
                                 <input id="pos-cash-tendered" type="text" inputmode="decimal" dir="ltr" wire:model.blur="cashTendered" placeholder="{{ \App\Services\Purchasing\Money::input($payment['cash_due']) }}" class="{{ $inputClass }} mt-1 font-mono text-lg">
@@ -305,17 +317,21 @@
                             </div>
                         @endif
 
-                        <button type="button" wire:click="finalize" wire:loading.attr="disabled" wire:target="finalize" class="{{ $primaryButton }} w-full bg-emerald-600 hover:bg-emerald-700">
-                            <span wire:loading.remove wire:target="finalize">{{ __('pos.payment.complete') }}</span>
-                            <span wire:loading wire:target="finalize">{{ __('pos.payment.completing') }}</span>
-                        </button>
+                        @unless ($terminalPending)
+                            <button type="button" wire:click="finalize" wire:loading.attr="disabled" wire:target="finalize" class="{{ $primaryButton }} w-full bg-emerald-600 hover:bg-emerald-700">
+                                <span wire:loading.remove wire:target="finalize">{{ __('pos.payment.complete') }}</span>
+                                <span wire:loading wire:target="finalize">{{ __('pos.payment.completing') }}</span>
+                            </button>
+                        @endunless
 
                         <div class="flex flex-wrap gap-2">
                             <button type="button" x-on:click="checkStatus()" class="{{ $secondaryButton }}">{{ __('pos.recovery.check_status') }}</button>
                             @if (! $attempt->isFrozen())
                                 <button type="button" wire:click="backToCart" class="{{ $secondaryButton }}">{{ __('pos.payment.edit_cart') }}</button>
                                 <button type="button" wire:click="cancelAttempt" wire:confirm="{{ __('pos.payment.cancel_confirm') }}" class="{{ $secondaryButton }} text-red-700">{{ __('pos.payment.cancel') }}</button>
-                            @elseif ($canResolve)
+                            @elseif ($canResolve && $terminalPending)
+                                <button type="button" wire:click="openResolveTerminal('{{ $attempt->key }}')" class="{{ $secondaryButton }} text-red-700">{{ __('pos.recovery.resolve_terminal') }}</button>
+                            @elseif ($canResolve && $attempt->cardApproval)
                                 <button type="button" wire:click="openResolve('{{ $attempt->key }}')" class="{{ $secondaryButton }} text-red-700">{{ __('pos.recovery.resolve_void') }}</button>
                             @endif
                         </div>
@@ -355,6 +371,11 @@
                                         'terminal' => $open->cardApproval->terminal?->displayName(),
                                         'reference' => $open->cardApproval->reference,
                                     ]) }} {{ __('pos.payment.do_not_charge_again') }}</p>
+                                @elseif ($open->hasPendingTerminalPayment())
+                                    <p class="mt-1 font-semibold text-sky-900">{{ __('pos.recovery.open_terminal_pending', [
+                                        'amount' => $money($open->terminalPaymentAmountMinor()),
+                                        'terminal' => $open->terminalPaymentTerminal?->displayName(),
+                                    ]) }}</p>
                                 @endif
                                 @if ($open->failure_code)
                                     <p class="mt-1 text-red-800">{{ __('pos.recovery.failures.'.$open->failure_code) }}</p>
@@ -365,6 +386,8 @@
                                     @endif
                                     @if ($canResolve && $open->cardApproval)
                                         <button type="button" wire:click="openResolve('{{ $open->key }}')" class="{{ $secondaryButton }} text-red-700">{{ __('pos.recovery.resolve_void') }}</button>
+                                    @elseif ($canResolve && $open->hasPendingTerminalPayment())
+                                        <button type="button" wire:click="openResolveTerminal('{{ $open->key }}')" class="{{ $secondaryButton }} text-red-700">{{ __('pos.recovery.resolve_terminal') }}</button>
                                     @endif
                                 </div>
                             </li>
@@ -419,6 +442,36 @@
                     @error('void_note') <p class="mt-1 text-sm text-red-700" role="alert">{{ $message }}</p> @enderror
                 </div>
                 <button type="submit" class="{{ $primaryButton }} w-full bg-red-700 hover:bg-red-800">{{ __('pos.recovery.confirm_void') }}</button>
+            </form>
+        </x-operations.dialog>
+
+        <x-operations.dialog :id="PosCounter::RESOLVE_TERMINAL_DIALOG" :title="__('pos.recovery.resolve_terminal_title')" :direction="$textDirection">
+            <form wire:submit="resolveTerminalPayment" class="space-y-3" x-data="{ outcome: $wire.entangle('terminalOutcome') }">
+                <p class="text-sm text-gray-700">{{ __('pos.recovery.resolve_terminal_help') }}</p>
+                @error('attempt') <p class="text-sm text-red-700" role="alert">{{ $message }}</p> @enderror
+                <fieldset>
+                    <legend class="block text-sm font-medium text-gray-800">{{ __('pos.fields.terminal_outcome') }}</legend>
+                    <div class="mt-1 space-y-2">
+                        @foreach (\App\Enums\TerminalPaymentOutcome::cases() as $outcome)
+                            <label wire:key="outcome-{{ $outcome->value }}" class="flex min-h-11 items-center gap-2 rounded-lg px-3 ring-1 ring-gray-200">
+                                <input type="radio" name="terminal-outcome" value="{{ $outcome->value }}" x-model="outcome" class="text-blue-600 focus:ring-blue-500">
+                                <span class="text-sm text-gray-900">{{ $outcome->label() }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                    @error('terminal_outcome') <p class="mt-1 text-sm text-red-700" role="alert">{{ $message }}</p> @enderror
+                </fieldset>
+                <div x-show="outcome === '{{ \App\Enums\TerminalPaymentOutcome::VOIDED->value }}'" x-cloak>
+                    <label for="pos-terminal-void-reference" class="block text-sm font-medium text-gray-800">{{ __('pos.fields.void_reference') }}</label>
+                    <input id="pos-terminal-void-reference" type="text" dir="ltr" maxlength="40" autocomplete="off" wire:model="voidReference" class="{{ $inputClass }} mt-1 font-mono uppercase">
+                    @error('void_reference') <p class="mt-1 text-sm text-red-700" role="alert">{{ $message }}</p> @enderror
+                </div>
+                <div>
+                    <label for="pos-terminal-note" class="block text-sm font-medium text-gray-800">{{ __('pos.fields.void_note') }}</label>
+                    <textarea id="pos-terminal-note" dir="auto" rows="2" maxlength="500" wire:model="voidNote" class="{{ $inputClass }} mt-1"></textarea>
+                    @error('void_note') <p class="mt-1 text-sm text-red-700" role="alert">{{ $message }}</p> @enderror
+                </div>
+                <button type="submit" class="{{ $primaryButton }} w-full bg-red-700 hover:bg-red-800">{{ __('pos.recovery.confirm_terminal') }}</button>
             </form>
         </x-operations.dialog>
     @endif
