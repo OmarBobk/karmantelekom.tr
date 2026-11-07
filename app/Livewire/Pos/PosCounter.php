@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Livewire\Pos;
 
+use App\Actions\Customers\FindCounterCustomers;
+use App\Actions\Customers\SaveCounterCustomer;
 use App\Actions\Pos\CancelCheckoutAttempt;
 use App\Actions\Pos\CheckCheckoutStatus;
 use App\Actions\Pos\DiscountAuthority;
@@ -21,6 +23,7 @@ use App\Exceptions\Inventory\IdempotencyConflictException;
 use App\Exceptions\Purchasing\InvalidAmountException;
 use App\Livewire\Pos\Concerns\UsesPosLocale;
 use App\Models\CheckoutAttempt;
+use App\Models\Customer;
 use App\Models\InventoryUnit;
 use App\Models\ProductDefinition;
 use App\Models\Sale;
@@ -56,8 +59,29 @@ class PosCounter extends Component
 
     public const RESOLVE_TERMINAL_DIALOG = 'pos-resolve-terminal';
 
+    public const CUSTOMER_DIALOG = 'pos-customer';
+
     #[Locked]
     public int $storeId;
+
+    /** The sale's customer, or null for a walk-in. Review checks it belongs to this store. */
+    #[Locked]
+    public ?int $customerId = null;
+
+    public string $customerSearch = '';
+
+    /**
+     * @var list<array{id: int, name: string, phone: string}>
+     */
+    #[Locked]
+    public array $customerResults = [];
+
+    #[Locked]
+    public string $customerSearchedFor = '';
+
+    public string $newCustomerName = '';
+
+    public string $newCustomerPhone = '';
 
     /**
      * @var array<string, array{definition_id: int, unit_id: ?int, quantity: int, name: string, model: ?string, identifier: ?string, condition: ?string, adjusted_price: string, adjustment_reason: string}>
@@ -170,6 +194,7 @@ class PosCounter extends Component
     {
         session()->put($this->sessionKey(), [
             'cart' => $this->cart,
+            'customer_id' => $this->customerId,
             'attempt_key' => $this->attemptKey,
             'last_sale_id' => $this->lastSaleId,
         ]);
@@ -384,12 +409,90 @@ class PosCounter extends Component
         $this->setLineDiscount($key, '', '');
     }
 
+    public function openCustomer(): void
+    {
+        $this->authorizeCounter();
+
+        if (! $this->ensureCartEditable()) {
+            return;
+        }
+
+        $this->resetValidation(['customerSearch', 'customer_name', 'customer_phone']);
+        $this->reset('customerSearch', 'customerResults', 'customerSearchedFor', 'newCustomerName', 'newCustomerPhone');
+        $this->dispatch('open-dialog', id: self::CUSTOMER_DIALOG);
+    }
+
+    /**
+     * A complete phone number finds its customer exactly; text finds customers by name. Both
+     * stay within this store. The new-customer form is prefilled from the term.
+     */
+    public function searchCustomers(FindCounterCustomers $find): void
+    {
+        $store = $this->authorizeCounter();
+        $term = mb_substr(Str::squish($this->customerSearch), 0, 80);
+
+        $this->customerResults = $find(auth()->user(), $store, $term)
+            ->map(fn (Customer $customer): array => ['id' => $customer->id, 'name' => $customer->name, 'phone' => $customer->maskedPhone()])
+            ->values()
+            ->all();
+        $this->customerSearchedFor = $term;
+
+        if ($this->customerResults === [] && $term !== '') {
+            if (preg_match('/\p{L}/u', $term) === 1) {
+                $this->newCustomerName = $term;
+            } else {
+                $this->newCustomerPhone = $term;
+            }
+        }
+    }
+
+    public function selectCustomer(int $customerId): void
+    {
+        $store = $this->authorizeCounter();
+        $customer = $store->customers()->find($customerId);
+
+        if ($customer === null) {
+            $this->notify('error', __('pos.customer.errors.unavailable'));
+
+            return;
+        }
+
+        $this->chooseCustomer($customer);
+    }
+
+    public function createCustomer(SaveCounterCustomer $save): void
+    {
+        $store = $this->authorizeCounter();
+
+        if (! $this->ensureCartEditable()) {
+            return;
+        }
+
+        $this->resetValidation(['customer_name', 'customer_phone']);
+        $customer = $save(auth()->user(), $store, $this->newCustomerName, $this->newCustomerPhone);
+
+        $this->chooseCustomer($customer, $customer->wasRecentlyCreated ? 'pos.customer.created' : 'pos.customer.already_exists');
+    }
+
+    public function clearCustomer(): void
+    {
+        $this->authorizeCounter();
+
+        if ($this->customerId === null || ! $this->ensureCartEditable()) {
+            return;
+        }
+
+        $this->customerId = null;
+        $this->cartChanged();
+        $this->notify('info', __('pos.customer.cleared'));
+    }
+
     public function review(ReviewCheckout $review): void
     {
         $store = $this->authorizeCounter();
 
         try {
-            $attempt = $review(auth()->user(), $store, $this->cartInput(), $this->attemptKey, $this->attemptKey === null ? null : $this->attemptRevision);
+            $attempt = $review(auth()->user(), $store, $this->cartInput(), $this->attemptKey, $this->attemptKey === null ? null : $this->attemptRevision, $this->customerId);
         } catch (ModelNotFoundException) {
             $this->forgetAttempt();
             $this->notify('error', __('pos.errors.attempt_missing'));
@@ -429,6 +532,7 @@ class PosCounter extends Component
             return;
         }
 
+        $this->assertCustomerReviewed();
         $amount = self::canonicalAmount($this->cardAmount, 'card_amount');
 
         try {
@@ -442,6 +546,7 @@ class PosCounter extends Component
         $this->resetValidation();
         $this->startRequestKey = (string) Str::uuid();
         $this->cart = self::cartFromAttempt($result->attempt);
+        $this->customerId = $result->attempt->customer_id;
         $this->displayedPaymentKey = $result->paymentKey();
 
         if ($result->isNewStart) {
@@ -494,6 +599,7 @@ class PosCounter extends Component
             return;
         }
 
+        $this->assertCustomerReviewed();
         $cashTendered = self::canonicalAmount($this->cashTendered, 'cash_tendered');
 
         try {
@@ -535,7 +641,7 @@ class PosCounter extends Component
             $this->attemptRevision = $attempt->revision;
             $this->displayedPaymentKey = $attempt->terminal_payment_key;
             $this->chargeInstructedFor = null;
-            $this->step = 'payment';
+            $this->step = $this->hasUnreviewedCustomer($attempt) ? 'cart' : 'payment';
         }
     }
 
@@ -569,6 +675,7 @@ class PosCounter extends Component
         }
 
         $this->cart = [];
+        $this->customerId = null;
         $this->lastSaleId = null;
         $this->forgetAttempt();
         $this->resetPaymentFields();
@@ -596,6 +703,7 @@ class PosCounter extends Component
         }
 
         $this->cart = self::cartFromAttempt($attempt);
+        $this->customerId = $attempt->customer_id;
         $this->attemptKey = $attempt->key;
         $this->attemptRevision = $attempt->revision;
         $this->displayedPaymentKey = $attempt->terminal_payment_key;
@@ -686,7 +794,7 @@ class PosCounter extends Component
     {
         $store = $this->authorizeCounter();
         $user = auth()->user();
-        $attempt = $this->activeAttempt()?->load(['cardApproval.terminal', 'terminalPaymentTerminal']);
+        $attempt = $this->activeAttempt()?->load(['cardApproval.terminal', 'terminalPaymentTerminal', 'customer']);
         $cartLines = $attempt?->isOpen() && $attempt->isFrozen() ? self::reviewedCartLines($attempt) : $this->cartLinesWithCurrentPrices();
         $terminalPending = $attempt !== null && $attempt->isOpen() && $attempt->hasPendingTerminalPayment();
 
@@ -699,6 +807,7 @@ class PosCounter extends Component
                 && $this->chargeInstructedFor === $attempt->terminal_payment_key
                 && $this->displayedPaymentKey === $attempt->terminal_payment_key,
             'cartLines' => $cartLines,
+            'selectedCustomer' => $this->customerId === null ? null : $store->customers()->find($this->customerId),
             'cartTotal' => array_sum(array_column($cartLines, 'line_total')),
             'cartEditable' => ! ($attempt?->isOpen() && $attempt->isFrozen()),
             'payment' => $attempt?->isOpen() ? $this->paymentPreview($attempt) : null,
@@ -842,6 +951,7 @@ class PosCounter extends Component
         }
 
         $this->cart = [];
+        $this->customerId = null;
         $this->attemptKey = null;
         $this->attemptRevision = null;
         $this->displayedPaymentKey = null;
@@ -851,6 +961,24 @@ class PosCounter extends Component
         $this->resetPaymentFields();
         $this->resetValidation();
         $this->dispatch('pos-sale-completed', url: route('pos.sales.show', [$this->storeId, $sale->id]));
+    }
+
+    /**
+     * Choosing a customer changes what was reviewed, so the cart must be reviewed again.
+     */
+    private function chooseCustomer(Customer $customer, string $message = 'pos.customer.selected'): void
+    {
+        if (! $this->ensureCartEditable()) {
+            return;
+        }
+
+        if ($this->customerId !== $customer->id) {
+            $this->customerId = $customer->id;
+            $this->cartChanged();
+        }
+
+        $this->dispatch('close-dialog', id: self::CUSTOMER_DIALOG);
+        $this->notify('success', __($message, ['name' => $customer->name]));
     }
 
     private function ensureCartEditable(): bool
@@ -927,7 +1055,6 @@ class PosCounter extends Component
         }
 
         $this->attemptRevision = $attempt->revision;
-        $this->step = 'payment';
         $this->displayedPaymentKey = $attempt->terminal_payment_key;
 
         if ($this->chargeInstructedFor !== $attempt->terminal_payment_key) {
@@ -936,6 +1063,45 @@ class PosCounter extends Component
 
         if ($attempt->isFrozen() || $this->cart === []) {
             $this->cart = self::cartFromAttempt($attempt);
+            $this->customerId = $attempt->customer_id;
+        }
+
+        $this->step = $this->hasUnreviewedCustomer($attempt) ? 'cart' : 'payment';
+    }
+
+    /**
+     * The selection was changed after this open attempt was reviewed. A frozen attempt is
+     * charged as reviewed, so only an editable one can be out of date.
+     */
+    private function hasUnreviewedCustomer(CheckoutAttempt $attempt): bool
+    {
+        return $attempt->isOpen() && ! $attempt->isFrozen() && $this->customerId !== $attempt->customer_id;
+    }
+
+    /**
+     * Payment is taken only for the customer that was reviewed. A frozen attempt keeps its
+     * reviewed customer; a completed one is left to finalize, which replays its sale.
+     *
+     * @throws ValidationException
+     */
+    private function assertCustomerReviewed(): void
+    {
+        $attempt = $this->activeAttempt();
+
+        if ($attempt === null || ! $attempt->isOpen()) {
+            return;
+        }
+
+        if ($attempt->isFrozen()) {
+            $this->customerId = $attempt->customer_id;
+
+            return;
+        }
+
+        if ($this->customerId !== $attempt->customer_id) {
+            $this->step = 'cart';
+
+            throw ValidationException::withMessages(['customer' => __('pos.customer.errors.review_again')]);
         }
     }
 
@@ -948,6 +1114,7 @@ class PosCounter extends Component
         }
 
         $this->cart = is_array($state['cart'] ?? null) ? $state['cart'] : [];
+        $this->customerId = is_int($state['customer_id'] ?? null) ? $state['customer_id'] : null;
         $this->attemptKey = is_string($state['attempt_key'] ?? null) ? $state['attempt_key'] : null;
         $this->lastSaleId = is_int($state['last_sale_id'] ?? null) ? $state['last_sale_id'] : null;
     }

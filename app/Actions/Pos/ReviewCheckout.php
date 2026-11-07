@@ -32,6 +32,9 @@ use Illuminate\Validation\ValidationException;
  * advances its revision, but only until a terminal payment is started; after that the
  * reviewed payload is frozen. Availability is read without locks here and checked again under
  * locks when the sale is finalized.
+ *
+ * The optional customer is part of the reviewed payload: it must be one of the store's counter
+ * customers, choosing another one advances the revision, and it is frozen with the cart.
  */
 class ReviewCheckout
 {
@@ -47,7 +50,7 @@ class ReviewCheckout
      * @throws AuthorizationException
      * @throws ValidationException
      */
-    public function __invoke(User $actor, Store $store, array $cart, ?string $attemptKey = null, ?int $expectedRevision = null): CheckoutAttempt
+    public function __invoke(User $actor, Store $store, array $cart, ?string $attemptKey = null, ?int $expectedRevision = null, ?int $customerId = null): CheckoutAttempt
     {
         Gate::forUser($actor)->authorize('usePos', $store);
 
@@ -57,11 +60,15 @@ class ReviewCheckout
             Gate::forUser($actor)->authorize('operate', $existing);
         }
 
+        if ($customerId !== null && ! $store->customers()->whereKey($customerId)->exists()) {
+            throw ValidationException::withMessages(['customer' => __('pos.customer.errors.unavailable')]);
+        }
+
         [$lines, $totals] = $this->priceCart($actor, $store, $cart);
-        $payloadHash = self::payloadHash($store, $lines);
+        $payloadHash = self::payloadHash($store, $lines, $customerId);
 
         if ($existing === null) {
-            return DB::transaction(function () use ($actor, $store, $lines, $totals, $payloadHash): CheckoutAttempt {
+            return DB::transaction(function () use ($actor, $store, $lines, $totals, $payloadHash, $customerId): CheckoutAttempt {
                 $hasPendingTerminalPayment = $store->checkoutAttempts()
                     ->where('user_id', $actor->id)
                     ->pendingTerminalPayment()
@@ -76,6 +83,7 @@ class ReviewCheckout
                     'key' => (string) Str::uuid(),
                     'store_id' => $store->id,
                     'user_id' => $actor->id,
+                    'customer_id' => $customerId,
                     'status' => CheckoutAttemptStatus::OPEN,
                     'revision' => 1,
                     'currency' => Currency::TRY,
@@ -86,7 +94,7 @@ class ReviewCheckout
             });
         }
 
-        return DB::transaction(function () use ($existing, $expectedRevision, $lines, $totals, $payloadHash): CheckoutAttempt {
+        return DB::transaction(function () use ($existing, $expectedRevision, $lines, $totals, $payloadHash, $customerId): CheckoutAttempt {
             $attempt = CheckoutAttempt::query()->whereKey($existing->id)->lockForUpdate()->firstOrFail();
 
             self::assertOpen($attempt);
@@ -104,6 +112,7 @@ class ReviewCheckout
             }
 
             $attempt->update([
+                'customer_id' => $customerId,
                 'lines' => $lines,
                 ...$totals,
                 'payload_hash' => $payloadHash,
@@ -134,13 +143,14 @@ class ReviewCheckout
 
     /**
      * Fingerprint of everything the cashier reviewed: items, revisions, quantities, prices, and
-     * the discount limit each discounted line was checked against.
+     * the discount limit each discounted line was checked against, and the customer when one was
+     * chosen. A walk-in payload hashes exactly as it did before customers existed.
      *
      * @param  list<array<string, mixed>>  $lines
      */
-    public static function payloadHash(Store $store, array $lines): string
+    public static function payloadHash(Store $store, array $lines, ?int $customerId = null): string
     {
-        return Idempotency::fingerprint([
+        $payload = [
             'store_id' => $store->id,
             'lines' => array_map(fn (array $line): array => [
                 $line['key'], $line['definition_id'], $line['unit_id'], $line['unit_revision'],
@@ -148,7 +158,13 @@ class ReviewCheckout
                 $line['discount_limit'] ?? null, $line['discount_basis_points'] ?? null,
                 $line['lowest_unit_price'] ?? null, $line['discounted_by'] ?? null,
             ], $lines),
-        ]);
+        ];
+
+        if ($customerId !== null) {
+            $payload['customer_id'] = $customerId;
+        }
+
+        return Idempotency::fingerprint($payload);
     }
 
     /**

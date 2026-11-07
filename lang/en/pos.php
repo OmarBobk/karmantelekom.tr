@@ -20,6 +20,33 @@ return [
         'title' => 'Counter :store',
     ],
 
+    'customer' => [
+        'title' => 'Customer',
+        'walk_in' => 'Walk-in customer',
+        'choose' => 'Add customer',
+        'change' => 'Change customer',
+        'remove' => 'Remove customer',
+        'dialog_title' => 'Customer for this sale',
+        'search_label' => 'Find a customer',
+        'search_help' => 'Type the full phone number, or at least 2 letters of the name.',
+        'search' => 'Search',
+        'no_results' => 'No customer in this branch matches “:term”. Add them below.',
+        'new_title' => 'New customer',
+        'name' => 'Name',
+        'phone' => 'Phone',
+        'save' => 'Save and select',
+        'selected' => ':name is the customer for this sale.',
+        'created' => ':name was added and selected.',
+        'already_exists' => 'This phone number already belongs to :name, who is now selected. Their details were not changed.',
+        'cleared' => 'This sale is now a walk-in sale.',
+        'errors' => [
+            'name_required' => 'Enter the customer’s name (up to :max characters).',
+            'phone_invalid' => 'Enter a valid phone number, for example 0532 123 45 67 or +90 532 123 45 67.',
+            'unavailable' => 'This customer is not available in this branch. Choose another customer or sell as walk-in.',
+            'review_again' => 'The customer changed after this sale was reviewed. Review the sale again before taking payment.',
+        ],
+    ],
+
     'scan' => [
         'label' => 'Scan or type a barcode, SKU, IMEI, or serial',
         'help' => 'Press Enter to add the exact code. Typing a name shows matching products.',
