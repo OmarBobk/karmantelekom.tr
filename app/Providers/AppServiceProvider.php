@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Providers;
 
 use App\Models\PurchaseReceiptLine;
+use App\Models\SaleLine;
 use App\Models\User;
 use App\Services\CurrencyService;
 use App\Services\NotificationRecipientsService;
@@ -37,7 +38,10 @@ class AppServiceProvider extends ServiceProvider
     {
         Carbon::setLocale(app()->getLocale());
 
-        Relation::morphMap([PurchaseReceiptLine::MORPH_ALIAS => PurchaseReceiptLine::class]);
+        Relation::morphMap([
+            PurchaseReceiptLine::MORPH_ALIAS => PurchaseReceiptLine::class,
+            SaleLine::MORPH_ALIAS => SaleLine::class,
+        ]);
         //        if (Str::startsWith(request()->uri()->host(), 'sub.') && !Auth::check()) {
         //            abort(Response::redirectTo(config('app.url') . '/404'));
         //        }
@@ -56,6 +60,13 @@ class AppServiceProvider extends ServiceProvider
         if (app()->environment('local')) {
             config(['cache.default' => 'array']);
         }
+
+        // The counter is open to assigned employees, so it must stay outside the legacy admin group below.
+        Route::domain(config('app.subdomain'))
+            ->middleware(['web', 'auth'])
+            ->prefix('pos')
+            ->name('pos.')
+            ->group(base_path('routes/pos.php'));
 
         Route::domain(config('app.subdomain'))
             ->middleware(['web', 'auth', 'role.redirect'])

@@ -50,6 +50,7 @@
                                     <span>{!! $receiptLabel !!}</span>
                                 @endif
                             @endif
+                            @include('livewire.backend.inventory.partials.sale-reference', ['movement' => $movement])
                             @if ($showUnit && $movement->unit)
                                 <a href="{{ route('subdomain.inventory.unit', [$movement->store_id, $movement->unit]) }}" class="font-medium text-blue-600 hover:text-blue-800">
                                     <span dir="ltr" class="font-mono">{{ $movement->unit->primaryIdentifierValue() ?? '#'.$movement->unit->id }}</span>

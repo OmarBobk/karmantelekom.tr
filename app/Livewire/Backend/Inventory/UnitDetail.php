@@ -13,6 +13,7 @@ use App\Actions\Inventory\RemoveUnit;
 use App\Actions\Inventory\ReverseDeviceCost;
 use App\Actions\Inventory\StartRepair;
 use App\Actions\Inventory\UnitLifecycle;
+use App\Actions\Pos\SetUnitSellingPrice;
 use App\Enums\AdjustmentReason;
 use App\Enums\Currency;
 use App\Enums\DeviceCostCategory;
@@ -31,7 +32,9 @@ use App\Models\InventoryMovement;
 use App\Models\InventoryUnit;
 use App\Models\Purchase;
 use App\Models\PurchaseReceiptLine;
+use App\Models\SaleLine;
 use App\Models\Store;
+use App\Services\Purchasing\Money;
 use Closure;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
@@ -151,6 +154,10 @@ class UnitDetail extends Component
 
     public bool $correctionConfirmed = false;
 
+    public string $unitSellingPrice = '';
+
+    public string $unitMinimumPrice = '';
+
     public function mount(Store $store, InventoryUnit $unit): void
     {
         $this->authorize('viewInventory', $store);
@@ -158,6 +165,11 @@ class UnitDetail extends Component
         $this->store = $store;
         $this->unitId = $unit->id;
         $this->adoptState($unit);
+
+        $priceMinor = $unit->sellingPriceMinor();
+        $this->unitSellingPrice = $priceMinor === null ? '' : Money::input($priceMinor);
+        $minimumMinor = $unit->minimumSellingPriceMinor();
+        $this->unitMinimumPrice = $minimumMinor === null ? '' : Money::input($minimumMinor);
     }
 
     public function remove(RemoveUnit $removeUnit): void
@@ -401,6 +413,17 @@ class UnitDetail extends Component
         );
     }
 
+    public function saveSellingPrice(SetUnitSellingPrice $setUnitSellingPrice): void
+    {
+        $this->authorize('setUnitSellingPrices', $this->store);
+
+        $setUnitSellingPrice(auth()->user(), $this->store, $this->unitId, $this->unitSellingPrice, $this->unitMinimumPrice);
+
+        $this->resetErrorBag(['selling_price', 'minimum_selling_price']);
+        $this->dispatch('close-dialog', id: 'unit-price');
+        $this->dispatch('notify', ['type' => 'success', 'message' => __('pos.pricing.unit_price_saved')]);
+    }
+
     public function dismissStaleNotice(): void
     {
         $this->authorize('viewInventory', $this->store);
@@ -469,6 +492,8 @@ class UnitDetail extends Component
             'canRecordCost' => $canManageCosts && $isUsedDevice,
             'canCorrectIdentity' => Gate::allows('correctUnitIdentity', $this->store),
             'canRemove' => $unit->status->allowsRemoval() && Gate::allows('adjustInventory', $this->store),
+            'canSetUnitPrice' => $isUsedDevice && ! in_array($unit->status, [UnitStatus::SOLD, UnitStatus::REMOVED], true) && Gate::allows('setUnitSellingPrices', $this->store),
+            'soldOn' => $unit->status === UnitStatus::SOLD ? $unit->saleLine()->with('sale:id,store_id,user_id,number,completed_at')->first()?->sale : null,
             'removalReasons' => MovementType::ADJUSTMENT_DECREASE->allowedReasons(),
             'usedConditions' => UnitCondition::allowedFor(TrackingMode::USED_DEVICE),
             'currencies' => Currency::cases(),
@@ -629,6 +654,7 @@ class UnitDetail extends Component
                 'identifierCorrection',
                 'reference' => fn (MorphTo $reference) => $reference->morphWith([
                     PurchaseReceiptLine::class => ['receipt:id,purchase_id', 'receipt.purchase:id,supplier_invoice_number'],
+                    SaleLine::class => ['sale:id,store_id,user_id,number'],
                 ]),
             ])
             ->when($canManageCosts, fn (Builder $query) => $query->with(['costEntries', 'reversedCostEntries']))

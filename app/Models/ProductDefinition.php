@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Enums\CatalogIdentifierType;
 use App\Enums\PurchaseStatus;
 use App\Enums\TrackingMode;
+use App\Services\Purchasing\Money;
 use Database\Factories\ProductDefinitionFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Casts\Attribute;
@@ -32,6 +33,7 @@ use Illuminate\Support\Str;
  * @property string|null $barcode
  * @property int|null $catalog_brand_id
  * @property int|null $catalog_category_id
+ * @property string|null $selling_price Shared TRY price for quantity and serialized items; NULL when not priced.
  */
 class ProductDefinition extends Model
 {
@@ -53,6 +55,7 @@ class ProductDefinition extends Model
         'barcode',
         'catalog_brand_id',
         'catalog_category_id',
+        'selling_price',
     ];
 
     /**
@@ -136,6 +139,11 @@ class ProductDefinition extends Model
         $query->where(fn (Builder $matches) => $matches
             ->where('name', 'like', $pattern)
             ->orWhere('model', 'like', $pattern));
+    }
+
+    public function sellingPriceMinor(): ?int
+    {
+        return $this->selling_price === null ? null : Money::fromDecimal($this->selling_price);
     }
 
     /**

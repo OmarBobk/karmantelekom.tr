@@ -40,7 +40,7 @@ class OperationalStoreSetupSeederTest extends TestCase
 
         $this->assertSame(['KT01', 'KT02'], Store::orderBy('code')->pluck('code')->all());
         $this->assertTrue(Role::where('name', 'employee')->where('guard_name', 'web')->exists());
-        foreach (OperationalStoreSetupSeeder::OWNER_PERMISSIONS as $permission) {
+        foreach ([...OperationalStoreSetupSeeder::OWNER_PERMISSIONS, OperationalStoreSetupSeeder::POS_DISCOUNT_PERMISSION] as $permission) {
             $this->assertTrue(Permission::where('name', $permission)->where('guard_name', 'web')->exists());
         }
 
@@ -56,7 +56,7 @@ class OperationalStoreSetupSeederTest extends TestCase
         app(PermissionRegistrar::class)->forgetCachedPermissions();
         $admin = Role::findByName('admin');
         $this->assertEqualsCanonicalizing(
-            ['manage_users', 'manage_stores', 'manage_catalog', 'manage_suppliers', 'view_inventory', 'adjust_inventory', 'manage_purchases', 'receive_purchases', 'pay_suppliers', 'service_devices', 'manage_device_costs', 'correct_unit_identity'],
+            ['manage_users', 'manage_stores', 'manage_catalog', 'manage_suppliers', 'view_inventory', 'adjust_inventory', 'manage_purchases', 'receive_purchases', 'pay_suppliers', 'service_devices', 'manage_device_costs', 'correct_unit_identity', 'use_pos', 'set_selling_prices'],
             $admin->permissions->pluck('name')->all(),
         );
         $this->assertTrue(Role::findByName('salesperson')->permissions->isEmpty());

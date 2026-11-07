@@ -2,9 +2,12 @@
 
 namespace App\Actions\Jetstream;
 
+use App\Models\CardApproval;
+use App\Models\CheckoutAttempt;
 use App\Models\InventoryMovement;
 use App\Models\Purchase;
 use App\Models\PurchaseReceipt;
+use App\Models\Sale;
 use App\Models\SupplierLedgerEntry;
 use App\Models\SupplierPayment;
 use App\Models\User;
@@ -38,6 +41,12 @@ class DeleteUser implements DeletesUsers
             ]);
         }
 
+        if ($this->hasSalesRecords($user)) {
+            throw ValidationException::withMessages([
+                'password' => [__('Your account has recorded sales or checkout history, which must be kept. Please ask the owner to deactivate your account instead.')],
+            ]);
+        }
+
         $user->deleteProfilePhoto();
         $user->tokens->each->delete();
         $user->delete();
@@ -58,5 +67,19 @@ class DeleteUser implements DeletesUsers
                 ->where('user_id', $user->id)
                 ->orWhere('reversed_by', $user->id))->exists()
             || SupplierLedgerEntry::query()->where('user_id', $user->id)->exists();
+    }
+
+    /**
+     * Whether the user opened, paid, completed, or resolved any checkout, card approval, or sale.
+     */
+    private function hasSalesRecords(User $user): bool
+    {
+        return Sale::query()->where('user_id', $user->id)->exists()
+            || CheckoutAttempt::query()->where(fn ($query) => $query
+                ->where('user_id', $user->id)
+                ->orWhere('resolved_by', $user->id))->exists()
+            || CardApproval::query()->where(fn ($query) => $query
+                ->where('recorded_by', $user->id)
+                ->orWhere('voided_by', $user->id))->exists();
     }
 }

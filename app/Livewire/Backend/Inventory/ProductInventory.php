@@ -16,6 +16,7 @@ use App\Livewire\Backend\Concerns\UsesOperationalLocale;
 use App\Models\ProductDefinition;
 use App\Models\Purchase;
 use App\Models\PurchaseReceiptLine;
+use App\Models\SaleLine;
 use App\Models\Store;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
@@ -200,6 +201,7 @@ class ProductInventory extends Component
             ->where('quantity_change', '<>', 0)
             ->with(['actor:id,name', 'unit.identifiers', 'reference' => fn (MorphTo $reference) => $reference->morphWith([
                 PurchaseReceiptLine::class => ['receipt.purchase:id,supplier_invoice_number'],
+                SaleLine::class => ['sale:id,store_id,user_id,number'],
             ])])
             ->latest('occurred_at')
             ->latest('id')
@@ -243,6 +245,7 @@ class ProductInventory extends Component
         return match ($this->unitStatusFilter) {
             'in_service' => [UnitStatus::INSPECTION, UnitStatus::IN_REPAIR],
             'removed' => [UnitStatus::REMOVED],
+            'sold' => [UnitStatus::SOLD],
             default => [UnitStatus::AVAILABLE],
         };
     }

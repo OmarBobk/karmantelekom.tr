@@ -18,11 +18,11 @@ use Spatie\Permission\Traits\HasRoles;
 class User extends Authenticatable
 {
     use HasApiTokens;
+
     /** @use HasFactory<UserFactory> */
     use HasFactory;
 
     use HasProfilePhoto;
-
     use HasRoles;
     use Notifiable;
     use TwoFactorAuthenticatable;
@@ -101,6 +101,16 @@ class User extends Authenticatable
     public function stores(): BelongsToMany
     {
         return $this->belongsToMany(Store::class)->withTimestamps();
+    }
+
+    /**
+     * The owner-set discount limit of an employee allowed to give counter discounts.
+     *
+     * @return HasOne<PosDiscountGrant, $this>
+     */
+    public function posDiscountGrant(): HasOne
+    {
+        return $this->hasOne(PosDiscountGrant::class);
     }
 
     /**

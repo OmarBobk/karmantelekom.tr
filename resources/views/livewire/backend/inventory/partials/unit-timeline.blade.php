@@ -53,6 +53,7 @@
                                     <span>{!! $receiptLabel !!}</span>
                                 @endif
                             @endif
+                            @include('livewire.backend.inventory.partials.sale-reference', ['movement' => $movement])
                         </p>
 
                         @if ($movement->inspection)
