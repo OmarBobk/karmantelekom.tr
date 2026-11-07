@@ -19,6 +19,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
+use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Support\InteractsWithPos;
@@ -268,6 +269,118 @@ class PosCustomerTest extends TestCase
     }
 
     #[Test]
+    public function a_customer_changed_after_review_survives_a_reload_and_cannot_be_paid_until_reviewed_again(): void
+    {
+        $first = Customer::factory()->atCounter($this->store)->create(['name' => 'Ayşe First']);
+        $second = Customer::factory()->atCounter($this->store)->create(['name' => 'Burak Second']);
+        $terminal = $this->createTerminal();
+
+        $this->counterAs($this->cashier)
+            ->call('scan', $this->cable->barcode)
+            ->call('selectCustomer', $first->id)
+            ->call('review')
+            ->assertSet('step', 'payment')
+            ->call('selectCustomer', $second->id)
+            ->assertSet('step', 'cart');
+
+        $attempt = CheckoutAttempt::query()->sole();
+        $this->assertSame([1, $first->id], [$attempt->revision, $attempt->customer_id]);
+
+        $counter = $this->counterAs($this->cashier)
+            ->assertSet('customerId', $second->id)
+            ->assertSet('step', 'cart')
+            ->assertSee('Burak Second')
+            ->call('checkStatus')
+            ->assertSet('step', 'cart')
+            ->set('cashTendered', '50')
+            ->call('finalize')
+            ->assertHasErrors('customer')
+            ->assertSet('step', 'cart')
+            ->set('cardTerminalId', $terminal->id)
+            ->set('cardAmount', '49,90')
+            ->call('startTerminalPayment')
+            ->assertHasErrors('customer');
+
+        $this->assertSame(0, Sale::query()->count());
+        $this->assertFalse($attempt->fresh()->isFrozen());
+
+        $counter->call('review')
+            ->assertHasNoErrors()
+            ->assertSet('step', 'payment')
+            ->assertSet('attemptRevision', 2)
+            ->set('cashTendered', '50')
+            ->call('finalize')
+            ->assertHasNoErrors()
+            ->assertSet('step', 'done');
+
+        $this->assertSame([2, $second->id], [$attempt->fresh()->revision, $attempt->fresh()->customer_id]);
+        $this->assertSame($second->id, Sale::query()->sole()->customer_id);
+    }
+
+    #[Test]
+    public function a_customer_cleared_after_review_cannot_be_paid_until_reviewed_again(): void
+    {
+        $customer = Customer::factory()->atCounter($this->store)->create();
+
+        $this->counterAs($this->cashier)
+            ->call('scan', $this->cable->barcode)
+            ->call('selectCustomer', $customer->id)
+            ->call('review')
+            ->call('clearCustomer')
+            ->assertSet('step', 'cart');
+
+        $counter = $this->counterAs($this->cashier)
+            ->assertSet('customerId', null)
+            ->assertSet('step', 'cart')
+            ->set('cashTendered', '50')
+            ->call('finalize')
+            ->assertHasErrors('customer');
+
+        $this->assertSame(0, Sale::query()->count());
+
+        $counter->call('review')
+            ->set('cashTendered', '50')
+            ->call('finalize')
+            ->assertHasNoErrors()
+            ->assertSet('step', 'done');
+
+        $this->assertNull(CheckoutAttempt::query()->sole()->customer_id);
+        $this->assertNull(Sale::query()->sole()->customer_id);
+    }
+
+    #[Test]
+    public function a_frozen_attempt_keeps_its_reviewed_customer_over_a_stale_selection(): void
+    {
+        $reviewed = Customer::factory()->atCounter($this->store)->create();
+        $stale = Customer::factory()->atCounter($this->store)->create();
+        $terminal = $this->createTerminal();
+
+        $this->counterAs($this->cashier)
+            ->call('scan', $this->cable->barcode)
+            ->call('selectCustomer', $reviewed->id)
+            ->call('review')
+            ->set('cardTerminalId', $terminal->id)
+            ->set('cardAmount', '49,90')
+            ->call('startTerminalPayment')
+            ->assertHasNoErrors();
+
+        $sessionKey = 'pos.working.'.$this->cashier->id.'.'.$this->store->id;
+        session()->put($sessionKey, [...session($sessionKey), 'customer_id' => $stale->id]);
+
+        $this->counterAs($this->cashier)
+            ->assertSet('customerId', $reviewed->id)
+            ->assertSet('step', 'payment')
+            ->set('cardReference', 'A12345')
+            ->call('recordCardApproval')
+            ->assertHasNoErrors()
+            ->call('finalize')
+            ->assertHasNoErrors()
+            ->assertSet('step', 'done');
+
+        $this->assertSame($reviewed->id, Sale::query()->sole()->customer_id);
+    }
+
+    #[Test]
     public function sales_history_shows_the_customer_to_those_who_may_see_the_sale_but_the_receipt_does_not(): void
     {
         $customer = Customer::factory()->atCounter($this->store, '05321234567')->create(['name' => 'Ahmet Yılmaz']);
@@ -287,6 +400,11 @@ class PosCustomerTest extends TestCase
             ->assertOk()
             ->assertSee($sale->number)
             ->assertDontSee(['Ahmet Yılmaz', '4567']);
+    }
+
+    private function counterAs(User $actor): Testable
+    {
+        return Livewire::actingAs($actor)->test(PosCounter::class, ['store' => $this->store]);
     }
 
     private function saveCustomer(User $actor, string $name, string $phone, ?Store $store = null): Customer

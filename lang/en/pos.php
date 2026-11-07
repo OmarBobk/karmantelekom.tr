@@ -43,6 +43,7 @@ return [
             'name_required' => 'Enter the customer’s name (up to :max characters).',
             'phone_invalid' => 'Enter a valid phone number, for example 0532 123 45 67 or +90 532 123 45 67.',
             'unavailable' => 'This customer is not available in this branch. Choose another customer or sell as walk-in.',
+            'review_again' => 'The customer changed after this sale was reviewed. Review the sale again before taking payment.',
         ],
     ],
 
