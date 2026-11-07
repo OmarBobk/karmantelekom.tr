@@ -8,7 +8,7 @@ use App\Models\InventoryUnit;
 use App\Models\PosDiscountGrant;
 use App\Models\Store;
 use App\Models\User;
-use App\Services\Purchasing\Money;
+use App\Services\Purchasing\LocalizedMoney;
 use Illuminate\Support\Facades\Gate;
 
 /**
@@ -92,11 +92,11 @@ final class DiscountAuthority
         }
 
         if ($price >= $listPrice) {
-            return __('pos.errors.discount_above_list', ['list' => Money::format($listPrice)]);
+            return __('pos.errors.discount_above_list', ['list' => LocalizedMoney::format($listPrice)]);
         }
 
         if ($price < $limit['lowest']) {
-            return __('pos.errors.discount_below_limit', ['price' => Money::format($price), 'lowest' => Money::format($limit['lowest'])]);
+            return __('pos.errors.discount_below_limit', ['price' => LocalizedMoney::format($price), 'lowest' => LocalizedMoney::format($limit['lowest'])]);
         }
 
         return null;

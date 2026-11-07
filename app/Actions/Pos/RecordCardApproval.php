@@ -11,6 +11,7 @@ use App\Models\CardApproval;
 use App\Models\CheckoutAttempt;
 use App\Models\Store;
 use App\Models\User;
+use App\Services\Purchasing\LocalizedMoney;
 use App\Services\Purchasing\Money;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -93,7 +94,7 @@ class RecordCardApproval
                 }
 
                 if ($locked->terminalPaymentAmountMinor() !== $amountMinor) {
-                    throw ValidationException::withMessages(['card_amount' => __('pos.errors.terminal_payment_amount_mismatch', ['amount' => Money::format((int) $locked->terminalPaymentAmountMinor())])]);
+                    throw ValidationException::withMessages(['card_amount' => __('pos.errors.terminal_payment_amount_mismatch', ['amount' => LocalizedMoney::format((int) $locked->terminalPaymentAmountMinor())])]);
                 }
 
                 $approval = CardApproval::query()->create([

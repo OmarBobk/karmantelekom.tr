@@ -17,7 +17,7 @@ use App\Models\CheckoutAttempt;
 use App\Models\ProductDefinition;
 use App\Models\Sale;
 use App\Models\User;
-use App\Services\Purchasing\Money;
+use App\Services\Purchasing\LocalizedMoney;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
@@ -52,12 +52,12 @@ class PosCounterUiTest extends TestCase
             ->call('scan', $this->phoneSecondImei)
             ->assertSet('cart.d'.$this->cable->id.'.quantity', 2)
             ->assertSet('cart.u'.$this->phone->id.'.identifier', $this->phoneImei)
-            ->assertSee('12,599.80')
+            ->assertSee('12.599,80')
             ->call('review')
             ->assertHasNoErrors()
             ->assertSet('step', 'payment')
             ->set('cardTerminalId', $terminal->id)
-            ->set('cardAmount', '10000')
+            ->set('cardAmount', '10.000')
             ->call('startTerminalPayment')
             ->assertHasNoErrors()
             ->assertSee(__('pos.payment.terminal_pending_title'))
@@ -65,23 +65,26 @@ class PosCounterUiTest extends TestCase
             ->set('cardReference', 'A12345')
             ->call('recordCardApproval')
             ->assertHasNoErrors()
-            ->set('cashTendered', '3000')
+            ->set('cashTendered', '3.000')
             ->call('finalize')
             ->assertHasNoErrors()
             ->assertSet('step', 'done')
             ->assertSet('cart', [])
             ->assertSee('KT01-000001')
-            ->assertSee('400.20')
+            ->assertSee('400,20')
             ->assertDispatched('pos-sale-completed');
 
         $sale = Sale::query()->sole();
         $this->assertSame($sale->id, $counter->get('lastSaleId'));
         $this->assertSame(8, $this->cableStock());
         $this->assertSame(UnitStatus::SOLD, $this->phone->fresh()->status);
+        $this->assertSame(['12599.80', '3000.00', '400.20'], [$sale->total, $sale->cash_tendered, $sale->change_given]);
+        $this->assertEqualsCanonicalizing([['card', '10000.00'], ['cash', '2599.80']], $sale->payments->map(fn ($payment): array => [$payment->method->value, $payment->amount])->all());
 
         $this->actingAs($this->cashier)->get(route('pos.sales.show', [$this->store, $sale]).'?print=1')
             ->assertOk()
             ->assertSee('KT01-000001')
+            ->assertSee(['12.599,80 TRY', '10.000,00', '2.599,80', '3.000,00', '400,20'])
             ->assertSee('A12345')
             ->assertSee('window.print', false);
 
@@ -92,6 +95,41 @@ class PosCounterUiTest extends TestCase
             ->set('search', 'NOPE-404')
             ->call('applyFilters')
             ->assertDontSee('KT01-000001');
+    }
+
+    #[Test]
+    public function ambiguous_amount_text_is_rejected_with_an_example_and_nothing_is_charged_or_sold(): void
+    {
+        $terminal = $this->createTerminal();
+        $formatError = __('pos.errors.amount_format', ['example' => '10.000,50']);
+
+        $counter = $this->counter()
+            ->call('scan', $this->cable->barcode)
+            ->call('review')
+            ->assertSee('49,90 TRY')
+            ->set('cardTerminalId', $terminal->id)
+            ->set('cardAmount', '1,234.56')
+            ->call('startTerminalPayment')
+            ->assertHasErrors('card_amount')
+            ->assertSee($formatError)
+            ->assertSet('cardAmount', '1,234.56')
+            ->set('cardAmount', '')
+            ->set('cashTendered', '49.90')
+            ->call('finalize')
+            ->assertHasErrors('cash_tendered')
+            ->assertSee($formatError)
+            ->assertSet('cashTendered', '49.90')
+            ->assertSet('step', 'payment');
+
+        $this->assertNull(CheckoutAttempt::query()->sole()->terminal_payment_key);
+        $this->assertSame(0, Sale::query()->count());
+
+        $counter->set('cashTendered', '٥٠')
+            ->call('finalize')
+            ->assertHasNoErrors()
+            ->assertSet('step', 'done');
+
+        $this->assertSame(['50.00', '0.10'], [Sale::query()->sole()->cash_tendered, Sale::query()->sole()->change_given]);
     }
 
     #[Test]
@@ -217,7 +255,7 @@ class PosCounterUiTest extends TestCase
             ->assertHasNoErrors()
             ->call('review')
             ->assertSet('step', 'payment')
-            ->assertSee('45.00');
+            ->assertSee('45,00');
     }
 
     #[Test]
@@ -384,7 +422,7 @@ class PosCounterUiTest extends TestCase
             ->call('scan', $this->phoneImei)
             ->call('review')
             ->set('cardTerminalId', $terminal->id)
-            ->set('cardAmount', '12549.90')
+            ->set('cardAmount', '12.549,90')
             ->call('startTerminalPayment')
             ->assertHasNoErrors()
             ->assertSee(__('pos.payment.terminal_pending_title'));
@@ -394,7 +432,7 @@ class PosCounterUiTest extends TestCase
         $attempt = CheckoutAttempt::query()->sole();
         session()->flush();
 
-        $pendingNotice = __('pos.recovery.open_terminal_pending', ['amount' => Money::format(1254990), 'terminal' => $terminal->displayName()]);
+        $pendingNotice = __('pos.recovery.open_terminal_pending', ['amount' => LocalizedMoney::format(1254990), 'terminal' => $terminal->displayName()]);
 
         $counter = $this->counter()
             ->assertSet('attemptKey', null)
@@ -418,7 +456,7 @@ class PosCounterUiTest extends TestCase
             ->assertSet('attemptKey', $attempt->key)
             ->call('removeLine', 'u'.$this->phone->id)
             ->assertSet('cart.u'.$this->phone->id.'.identifier', $this->phoneImei)
-            ->set('cashTendered', '12549.90')
+            ->set('cashTendered', '12.549,90')
             ->call('finalize')
             ->assertHasErrors('attempt')
             ->assertSet('step', 'payment');
@@ -451,13 +489,13 @@ class PosCounterUiTest extends TestCase
     public function only_a_confirmed_new_start_says_charge_and_reload_status_or_another_tab_say_check_the_terminal(): void
     {
         $terminal = $this->createTerminal();
-        $chargeNow = __('pos.payment.terminal_pending_detail', ['amount' => Money::format(4990), 'terminal' => $terminal->displayName()]);
+        $chargeNow = __('pos.payment.terminal_pending_detail', ['amount' => LocalizedMoney::format(4990), 'terminal' => $terminal->displayName()]);
 
         $this->counter()
             ->call('scan', $this->cable->barcode)
             ->call('review')
             ->set('cardTerminalId', $terminal->id)
-            ->set('cardAmount', '49.90')
+            ->set('cardAmount', '49,90')
             ->call('startTerminalPayment')
             ->assertSee($chargeNow)
             ->assertSeeHtml('data-terminal-payment="charge"')
@@ -471,7 +509,7 @@ class PosCounterUiTest extends TestCase
             ->assertSee(__('pos.payment.do_not_charge_again'))
             ->assertDontSee($chargeNow)
             ->set('cardTerminalId', $terminal->id)
-            ->set('cardAmount', '49.90')
+            ->set('cardAmount', '49,90')
             ->call('startTerminalPayment')
             ->assertHasErrors('attempt')
             ->assertSeeHtml('data-terminal-payment="verify"')
@@ -489,7 +527,7 @@ class PosCounterUiTest extends TestCase
             ->call('scan', $this->cable->barcode)
             ->call('review')
             ->set('cardTerminalId', $terminal->id)
-            ->set('cardAmount', '49.90')
+            ->set('cardAmount', '49,90')
             ->call('startTerminalPayment');
         $attempt = CheckoutAttempt::query()->sole();
         $startA = $attempt->terminal_payment_key;
@@ -498,7 +536,7 @@ class PosCounterUiTest extends TestCase
 
         $this->counter()
             ->set('cardTerminalId', $terminal->id)
-            ->set('cardAmount', '49.90')
+            ->set('cardAmount', '49,90')
             ->call('startTerminalPayment')
             ->assertSeeHtml('data-terminal-payment="charge"');
         $startB = $attempt->fresh()->terminal_payment_key;
@@ -528,7 +566,7 @@ class PosCounterUiTest extends TestCase
             ->call('scan', $this->cable->barcode)
             ->call('review')
             ->set('cardTerminalId', $terminal->id)
-            ->set('cardAmount', '49.90')
+            ->set('cardAmount', '49,90')
             ->call('startTerminalPayment');
         $attempt = CheckoutAttempt::query()->sole();
 
@@ -539,7 +577,7 @@ class PosCounterUiTest extends TestCase
             ->call('openResolveTerminal', $attempt->key)
             ->assertDispatched('open-dialog', id: PosCounter::RESOLVE_TERMINAL_DIALOG)
             ->assertSet('resolvePaymentKey', $attempt->terminal_payment_key)
-            ->assertSee(Money::format(4990).' TRY')
+            ->assertSee(LocalizedMoney::format(4990).' TRY')
             ->set('terminalOutcome', 'no_charge')
             ->call('resolveTerminalPayment')
             ->assertHasErrors('void_note')

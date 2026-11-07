@@ -15,6 +15,7 @@ use App\Models\ProductDefinition;
 use App\Models\Store;
 use App\Models\User;
 use App\Services\Idempotency;
+use App\Services\Purchasing\LocalizedMoney;
 use App\Services\Purchasing\Money;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Collection;
@@ -317,7 +318,7 @@ class ReviewCheckout
         try {
             $price = Money::parse($rawPrice, Money::MAX_UNIT_AMOUNT);
         } catch (InvalidAmountException) {
-            return [$listPrice, null, null, ["{$field}.adjusted_price" => __('pos.errors.price_invalid', ['max' => Money::format(Money::MAX_UNIT_AMOUNT)])]];
+            return [$listPrice, null, null, ["{$field}.adjusted_price" => __('pos.errors.price_invalid', ['max' => LocalizedMoney::format(Money::MAX_UNIT_AMOUNT)])]];
         }
 
         if ($price === $listPrice) {

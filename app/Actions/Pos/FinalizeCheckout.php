@@ -29,6 +29,7 @@ use App\Models\SalePayment;
 use App\Models\Store;
 use App\Models\User;
 use App\Services\Idempotency;
+use App\Services\Purchasing\LocalizedMoney;
 use App\Services\Purchasing\Money;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Collection;
@@ -266,7 +267,7 @@ class FinalizeCheckout
         }
 
         if ($tenderedMinor === null || $tenderedMinor < $cashDue) {
-            throw ValidationException::withMessages(['cash_tendered' => __('pos.errors.cash_short', ['due' => Money::format($cashDue)])]);
+            throw ValidationException::withMessages(['cash_tendered' => __('pos.errors.cash_short', ['due' => LocalizedMoney::format($cashDue)])]);
         }
 
         return [$cashDue, $tenderedMinor - $cashDue];

@@ -280,6 +280,7 @@ return [
 
     'errors' => [
         'price_invalid' => 'أدخل سعرًا موجبًا حتى :max وبمنزلتين عشريتين كحد أقصى.',
+        'amount_format' => 'استخدم الصيغة :example — نقطة للآلاف وفاصلة قبل القروش (خانتان كحد أقصى).',
         'used_device_definition_price' => 'تُسعّر الأجهزة المستعملة على كل جهاز وليس على المنتج.',
         'unit_price_used_devices_only' => 'للأجهزة المستعملة فقط سعر خاص بكل جهاز.',
         'unit_price_final_status' => 'لا يمكن تغيير سعر جهاز حالته :status.',

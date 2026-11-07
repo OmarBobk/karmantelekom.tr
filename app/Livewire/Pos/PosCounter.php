@@ -25,6 +25,7 @@ use App\Models\InventoryUnit;
 use App\Models\ProductDefinition;
 use App\Models\Sale;
 use App\Models\Store;
+use App\Services\Purchasing\LocalizedMoney;
 use App\Services\Purchasing\Money;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Contracts\View\View;
@@ -307,7 +308,7 @@ class PosCounter extends Component
         $this->discountListPrice = $listPrice;
         $this->discountLowestPrice = $limit['lowest'] ?? null;
         $this->discountLimit = $limit['limit'] ?? '';
-        $this->discountPrice = $this->cart[$key]['adjusted_price'];
+        $this->discountPrice = $this->cart[$key]['adjusted_price'] === '' ? '' : LocalizedMoney::input(Money::fromDecimal($this->cart[$key]['adjusted_price']));
         $this->discountReason = $this->cart[$key]['adjustment_reason'];
         $this->dispatch('open-dialog', id: self::DISCOUNT_DIALOG);
     }
@@ -343,9 +344,9 @@ class PosCounter extends Component
         }
 
         try {
-            $priceMinor = Money::parse($price, Money::MAX_UNIT_AMOUNT);
-        } catch (InvalidAmountException) {
-            throw ValidationException::withMessages(['discountPrice' => __('pos.errors.price_invalid', ['max' => Money::format(Money::MAX_UNIT_AMOUNT)])]);
+            $priceMinor = LocalizedMoney::parse($price, Money::MAX_UNIT_AMOUNT);
+        } catch (InvalidAmountException $exception) {
+            throw ValidationException::withMessages(['discountPrice' => self::amountError($exception, __('pos.errors.price_invalid', ['max' => LocalizedMoney::format(Money::MAX_UNIT_AMOUNT)]))]);
         }
 
         if ($priceMinor === $listPrice) {
@@ -365,7 +366,7 @@ class PosCounter extends Component
         }
 
         $this->setLineDiscount($key, Money::input($priceMinor), $reason);
-        $this->notify('success', __('pos.cart.discount_applied', ['name' => $this->cart[$key]['name'], 'price' => Money::format($priceMinor)]));
+        $this->notify('success', __('pos.cart.discount_applied', ['name' => $this->cart[$key]['name'], 'price' => LocalizedMoney::format($priceMinor)]));
     }
 
     /**
@@ -428,8 +429,10 @@ class PosCounter extends Component
             return;
         }
 
+        $amount = self::canonicalAmount($this->cardAmount, 'card_amount');
+
         try {
-            $result = $start(auth()->user(), $store, $this->attemptKey, $this->attemptRevision, $this->startRequestKey, (int) $this->cardTerminalId, $this->cardAmount);
+            $result = $start(auth()->user(), $store, $this->attemptKey, $this->attemptRevision, $this->startRequestKey, (int) $this->cardTerminalId, $amount);
         } catch (ValidationException $exception) {
             $this->syncActiveAttempt();
 
@@ -443,7 +446,7 @@ class PosCounter extends Component
 
         if ($result->isNewStart) {
             $this->chargeInstructedFor = $result->paymentKey();
-            $this->notify('info', __('pos.payment.terminal_started', ['amount' => Money::format((int) $result->attempt->terminalPaymentAmountMinor())]));
+            $this->notify('info', __('pos.payment.terminal_started', ['amount' => LocalizedMoney::format((int) $result->attempt->terminalPaymentAmountMinor())]));
 
             return;
         }
@@ -491,8 +494,10 @@ class PosCounter extends Component
             return;
         }
 
+        $cashTendered = self::canonicalAmount($this->cashTendered, 'cash_tendered');
+
         try {
-            $sale = $finalize(auth()->user(), $store, $this->attemptKey, $this->attemptRevision, $this->cashTendered);
+            $sale = $finalize(auth()->user(), $store, $this->attemptKey, $this->attemptRevision, $cashTendered);
         } catch (IdempotencyConflictException) {
             $this->syncActiveAttempt();
             $this->notify('error', __('pos.errors.finalize_conflict'));
@@ -516,9 +521,9 @@ class PosCounter extends Component
         match ($attempt->status) {
             CheckoutAttemptStatus::COMPLETED => $this->completed($attempt->sale),
             CheckoutAttemptStatus::OPEN => $this->notify('warning', match (true) {
-                $attempt->cardApproval !== null => __('pos.recovery.open_with_card', ['amount' => Money::format($attempt->cardApproval->amountMinor()), 'reference' => $attempt->cardApproval->reference]),
+                $attempt->cardApproval !== null => __('pos.recovery.open_with_card', ['amount' => LocalizedMoney::format($attempt->cardApproval->amountMinor()), 'reference' => $attempt->cardApproval->reference]),
                 $attempt->hasStartedTerminalPayment() => __('pos.recovery.open_terminal_pending', [
-                    'amount' => Money::format((int) $attempt->terminalPaymentAmountMinor()),
+                    'amount' => LocalizedMoney::format((int) $attempt->terminalPaymentAmountMinor()),
                     'terminal' => $attempt->terminalPaymentTerminal?->displayName(),
                 ]),
                 default => __('pos.recovery.open_without_payment'),
@@ -644,7 +649,7 @@ class PosCounter extends Component
         $this->resolveAttemptKey = $attempt->key;
         $this->resolvePaymentKey = $attempt->terminal_payment_key;
         $this->resolvePaymentSummary = __('pos.recovery.resolve_terminal_payment', [
-            'amount' => Money::format((int) $attempt->terminalPaymentAmountMinor()),
+            'amount' => LocalizedMoney::format((int) $attempt->terminalPaymentAmountMinor()),
             'terminal' => $attempt->terminalPaymentTerminal?->displayName(),
             'time' => Sale::displayTime($attempt->terminal_payment_started_at),
         ]);
@@ -708,7 +713,28 @@ class PosCounter extends Component
 
     public static function formatMoney(?int $minor): string
     {
-        return $minor === null ? '—' : Money::format($minor);
+        return $minor === null ? '—' : LocalizedMoney::format($minor);
+    }
+
+    /**
+     * The POS entry boundary: localized operator text to the canonical decimal the actions accept.
+     *
+     * @throws ValidationException
+     */
+    private static function canonicalAmount(string $input, string $field): string
+    {
+        try {
+            return LocalizedMoney::toCanonical($input);
+        } catch (InvalidAmountException) {
+            throw ValidationException::withMessages([$field => __('pos.errors.amount_format', ['example' => LocalizedMoney::EXAMPLE])]);
+        }
+    }
+
+    private static function amountError(InvalidAmountException $exception, string $rangeMessage): string
+    {
+        return in_array($exception->reason, [InvalidAmountException::FORMAT, InvalidAmountException::PRECISION], true)
+            ? __('pos.errors.amount_format', ['example' => LocalizedMoney::EXAMPLE])
+            : $rangeMessage;
     }
 
     /**
@@ -1083,7 +1109,7 @@ class PosCounter extends Component
 
         if ($cashDue > 0 && Str::trim($this->cashTendered) !== '') {
             try {
-                $tendered = Money::parse($this->cashTendered, Money::MAX_TOTAL_AMOUNT, allowZero: true);
+                $tendered = LocalizedMoney::parse($this->cashTendered, Money::MAX_TOTAL_AMOUNT, allowZero: true);
                 $change = $tendered >= $cashDue ? $tendered - $cashDue : null;
             } catch (InvalidAmountException) {
                 $change = null;

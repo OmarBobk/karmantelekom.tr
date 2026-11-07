@@ -1,6 +1,6 @@
 @php
     use App\Models\Sale;
-    use App\Services\Purchasing\Money;
+    use App\Services\Purchasing\LocalizedMoney;
 @endphp
 <section dir="{{ $textDirection }}" lang="{{ $locale }}" aria-labelledby="pos-history-title" class="space-y-4 text-start">
     <div class="flex flex-wrap items-end justify-between gap-3">
@@ -40,7 +40,7 @@
                             @if ($seesAll)
                                 <span class="text-sm text-gray-600">{{ $sale->cashier?->name }}</span>
                             @endif
-                            <span dir="ltr" class="ms-auto font-semibold tabular-nums text-gray-900">{{ Money::format($sale->totalMinor()) }} TRY</span>
+                            <span dir="ltr" class="ms-auto font-semibold tabular-nums text-gray-900">{{ LocalizedMoney::format($sale->totalMinor()) }} TRY</span>
                         </a>
                     </li>
                 @endforeach

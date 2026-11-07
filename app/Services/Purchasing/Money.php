@@ -37,7 +37,7 @@ final class Money
      */
     public static function parse(string $input, int $max = self::MAX_TOTAL_AMOUNT, bool $allowZero = false): int
     {
-        $value = str_replace(self::ARABIC_DIGITS, self::LATIN_DIGITS, trim($input));
+        $value = self::latinDigits(trim($input));
         $value = str_replace(['٫', '٬', ' ', "\u{00A0}", "\u{202F}"], ['.', ',', '', '', ''], $value);
 
         if (preg_match('/^\d+,\d{1,2}$/', $value) === 1) {
@@ -76,6 +76,14 @@ final class Money
         }
 
         return $minor;
+    }
+
+    /**
+     * Arabic-Indic and Persian digits to Latin digits; other characters are kept.
+     */
+    public static function latinDigits(string $value): string
+    {
+        return str_replace(self::ARABIC_DIGITS, self::LATIN_DIGITS, $value);
     }
 
     /**

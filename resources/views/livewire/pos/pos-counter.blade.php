@@ -1,6 +1,8 @@
 @php
     use App\Livewire\Pos\PosCounter;
     use App\Models\Sale;
+    use App\Services\Purchasing\LocalizedMoney;
+    use App\Services\Purchasing\Money;
     $money = fn (?int $minor) => PosCounter::formatMoney($minor);
     $inputClass = 'block min-h-11 w-full rounded-lg border-gray-300 text-base shadow-sm focus:border-blue-500 focus:ring-blue-500';
     $primaryButton = 'inline-flex min-h-12 items-center justify-center gap-2 rounded-lg bg-blue-600 px-5 text-base font-semibold text-white shadow-sm hover:bg-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600 disabled:cursor-not-allowed disabled:opacity-60';
@@ -211,7 +213,7 @@
                         <dd dir="ltr" class="text-start font-semibold tabular-nums text-gray-900">{{ $money($lastSale->totalMinor()) }} TRY</dd>
                         @if ($lastSale->cash_tendered !== null)
                             <dt class="text-gray-600">{{ __('pos.fields.change') }}</dt>
-                            <dd dir="ltr" class="text-start text-2xl font-bold tabular-nums text-gray-900">{{ $money(\App\Services\Purchasing\Money::fromDecimal($lastSale->change_given)) }}</dd>
+                            <dd dir="ltr" class="text-start text-2xl font-bold tabular-nums text-gray-900">{{ $money(Money::fromDecimal($lastSale->change_given)) }} TRY</dd>
                         @endif
                     </dl>
                     <div class="mt-4 flex flex-wrap gap-2">
@@ -313,44 +315,63 @@
                                 @if ($terminals->isEmpty())
                                     <p class="mt-2 text-sm text-gray-700">{{ __('pos.payment.no_terminals') }}</p>
                                 @else
-                                    <div class="mt-2 grid gap-3 sm:grid-cols-2">
-                                        <div class="sm:col-span-2">
-                                            <label for="pos-card-terminal" class="block text-sm font-medium text-gray-800">{{ __('pos.fields.terminal') }}</label>
-                                            <select id="pos-card-terminal" wire:model="cardTerminalId" class="{{ $inputClass }} mt-1">
-                                                <option value="">{{ __('pos.payment.choose_terminal') }}</option>
-                                                @foreach ($terminals as $terminal)
-                                                    <option value="{{ $terminal->id }}">{{ $terminal->displayName() }}</option>
-                                                @endforeach
-                                            </select>
-                                            @error('card_terminal') <p class="mt-1 text-sm text-red-700" role="alert">{{ $message }}</p> @enderror
+                                    <form wire:submit="startTerminalPayment">
+                                        <div class="mt-2 space-y-3">
+                                            <div>
+                                                <label for="pos-card-terminal" class="block text-sm font-medium text-gray-800">{{ __('pos.fields.terminal') }}</label>
+                                                <select id="pos-card-terminal" wire:model="cardTerminalId" class="{{ $inputClass }} mt-1">
+                                                    <option value="">{{ __('pos.payment.choose_terminal') }}</option>
+                                                    @foreach ($terminals as $terminal)
+                                                        <option value="{{ $terminal->id }}">{{ $terminal->displayName() }}</option>
+                                                    @endforeach
+                                                </select>
+                                                @error('card_terminal') <p class="mt-1 text-sm text-red-700" role="alert">{{ $message }}</p> @enderror
+                                            </div>
+                                            <x-operations.money-input
+                                                id="pos-card-amount"
+                                                wire:model="cardAmount"
+                                                error="card_amount"
+                                                :label="__('pos.fields.card_charge_amount')"
+                                                :placeholder="LocalizedMoney::input($payment['total'])"
+                                            />
                                         </div>
-                                        <div class="sm:col-span-2">
-                                            <label for="pos-card-amount" class="block text-sm font-medium text-gray-800">{{ __('pos.fields.card_charge_amount') }}</label>
-                                            <input id="pos-card-amount" type="text" inputmode="decimal" dir="ltr" wire:model="cardAmount" placeholder="{{ \App\Services\Purchasing\Money::input($payment['total']) }}" class="{{ $inputClass }} mt-1 font-mono">
-                                            @error('card_amount') <p class="mt-1 text-sm text-red-700" role="alert">{{ $message }}</p> @enderror
-                                        </div>
-                                    </div>
-                                    <button type="button" wire:click="startTerminalPayment" wire:loading.attr="disabled" wire:target="startTerminalPayment" class="{{ $secondaryButton }} mt-3 w-full">{{ __('pos.payment.start_card') }}</button>
+                                        <button type="submit" wire:loading.attr="disabled" wire:target="startTerminalPayment" class="{{ $secondaryButton }} mt-3 w-full">{{ __('pos.payment.start_card') }}</button>
+                                    </form>
                                 @endif
                             </fieldset>
                         @endif
 
-                        @if ($payment['cash_due'] > 0 && ! $terminalPending)
-                            <div>
-                                <label for="pos-cash-tendered" class="block text-sm font-semibold text-gray-900">{{ __('pos.fields.cash_tendered') }}</label>
-                                <input id="pos-cash-tendered" type="text" inputmode="decimal" dir="ltr" wire:model.blur="cashTendered" placeholder="{{ \App\Services\Purchasing\Money::input($payment['cash_due']) }}" class="{{ $inputClass }} mt-1 font-mono text-lg">
-                                @error('cash_tendered') <p class="mt-1 text-sm text-red-700" role="alert">{{ $message }}</p> @enderror
-                                @if ($payment['change'] !== null)
-                                    <p class="mt-2 text-sm text-gray-700">{{ __('pos.fields.change') }}: <span dir="ltr" class="text-xl font-bold tabular-nums text-gray-900">{{ $money($payment['change']) }}</span></p>
-                                @endif
-                            </div>
-                        @endif
-
                         @unless ($terminalPending)
-                            <button type="button" wire:click="finalize" wire:loading.attr="disabled" wire:target="finalize" class="{{ $primaryButton }} w-full bg-emerald-600 hover:bg-emerald-700">
-                                <span wire:loading.remove wire:target="finalize">{{ __('pos.payment.complete') }}</span>
-                                <span wire:loading wire:target="finalize">{{ __('pos.payment.completing') }}</span>
-                            </button>
+                            <form wire:submit="finalize" class="space-y-4">
+                                @if ($payment['cash_due'] > 0)
+                                    {{-- The change preview is presentation only; finalize checks the tendered cash on the server. --}}
+                                    <div x-data="{
+                                        due: @js($payment['cash_due']),
+                                        get change() {
+                                            const tendered = $tryMoney.toMinor($wire.cashTendered);
+                                            return tendered === null || tendered < this.due ? null : tendered - this.due;
+                                        },
+                                    }">
+                                        <x-operations.money-input
+                                            id="pos-cash-tendered"
+                                            wire:model="cashTendered"
+                                            error="cash_tendered"
+                                            :label="__('pos.fields.cash_tendered')"
+                                            label-class="block text-sm font-semibold text-gray-900"
+                                            input-class="text-lg"
+                                            :placeholder="LocalizedMoney::input($payment['cash_due'])"
+                                        />
+                                        <p class="mt-2 text-sm text-gray-700" x-show="change !== null" @if ($payment['change'] === null) x-cloak @endif aria-live="polite">
+                                            {{ __('pos.fields.change') }}:
+                                            <span dir="ltr" class="text-xl font-bold tabular-nums text-gray-900"><span x-text="change === null ? '' : $tryMoney.format(change)">{{ $payment['change'] === null ? '' : $money($payment['change']) }}</span> TRY</span>
+                                        </p>
+                                    </div>
+                                @endif
+                                <button type="submit" wire:loading.attr="disabled" wire:target="finalize" class="{{ $primaryButton }} w-full bg-emerald-600 hover:bg-emerald-700">
+                                    <span wire:loading.remove wire:target="finalize">{{ __('pos.payment.complete') }}</span>
+                                    <span wire:loading wire:target="finalize">{{ __('pos.payment.completing') }}</span>
+                                </button>
+                            </form>
                         @endunless
 
                         <div class="flex flex-wrap gap-2">
@@ -443,15 +464,11 @@
                 wire:submit="applyDiscount"
                 class="space-y-3"
                 x-data="{
-                    get finalMinor() {
-                        const value = String($wire.discountPrice ?? '').trim().replace(',', '.');
-                        return /^\d+(\.\d{1,2})?$/.test(value) ? Math.round(parseFloat(value) * 100) : null;
-                    },
                     get discountMinor() {
+                        const final = $tryMoney.toMinor($wire.discountPrice);
                         const list = $wire.discountListPrice;
-                        return this.finalMinor === null || list === null || this.finalMinor > list ? null : list - this.finalMinor;
+                        return final === null || list === null || final > list ? null : list - final;
                     },
-                    format(minor) { return (minor / 100).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 }); },
                 }"
             >
                 <p class="font-medium text-gray-900">{{ $cart[$discountLineKey]['name'] ?? '' }}</p>
@@ -461,16 +478,18 @@
                     <dt class="text-gray-700">{{ __('pos.discount.lowest_price') }}</dt>
                     <dd dir="ltr" class="text-end font-mono font-semibold tabular-nums text-gray-900">{{ $money($discountLowestPrice) }} TRY</dd>
                     <dt class="text-gray-700">{{ __('pos.discount.amount') }}</dt>
-                    <dd dir="ltr" class="text-end font-mono tabular-nums text-emerald-800" aria-live="polite" x-text="discountMinor === null ? '—' : '-' + format(discountMinor) + ' TRY'">—</dd>
+                    <dd dir="ltr" class="text-end font-mono tabular-nums text-emerald-800" aria-live="polite" x-text="discountMinor === null ? '—' : '-' + $tryMoney.format(discountMinor) + ' TRY'">—</dd>
                 </dl>
                 @if ($discountLimit !== '')
                     <p class="text-xs text-gray-600">{{ __('pos.discount.limits.'.$discountLimit) }}</p>
                 @endif
-                <div>
-                    <label for="pos-discount-price" class="block text-sm font-medium text-gray-800">{{ __('pos.discount.final_price') }}</label>
-                    <input id="pos-discount-price" type="text" inputmode="decimal" dir="ltr" autocomplete="off" wire:model="discountPrice" @error('discountPrice') aria-invalid="true" aria-describedby="pos-discount-price-error" @enderror class="{{ $inputClass }} mt-1 font-mono">
-                    @error('discountPrice') <p id="pos-discount-price-error" class="mt-1 text-sm text-red-700" role="alert">{{ $message }}</p> @enderror
-                </div>
+                <x-operations.money-input
+                    id="pos-discount-price"
+                    wire:model="discountPrice"
+                    error="discountPrice"
+                    :label="__('pos.discount.final_price')"
+                />
+
                 <div>
                     <label for="pos-discount-reason" class="block text-sm font-medium text-gray-800">{{ __('pos.discount.reason') }}</label>
                     <textarea id="pos-discount-reason" dir="auto" rows="2" maxlength="500" wire:model="discountReason" @error('discountReason') aria-invalid="true" aria-describedby="pos-discount-reason-error" @enderror class="{{ $inputClass }} mt-1"></textarea>
