@@ -15,7 +15,8 @@ use Livewire\Component;
 use Livewire\WithPagination;
 
 /**
- * Customers of one store who owe money, with the balance due of each. Owner only.
+ * Customers of one store who owe money, with the balance due of each, or those whose debts there
+ * are fully paid so their payment history stays reachable. Owner only.
  */
 class CustomerAccounts extends Component
 {
@@ -27,6 +28,16 @@ class CustomerAccounts extends Component
 
     #[Url(as: 'q', except: '')]
     public string $search = '';
+
+    /** Customers who still owe ('open', the default) or who had debts and paid them all ('settled'). */
+    #[Url(except: 'open')]
+    public string $balance = 'open';
+
+    public function showBalance(string $balance): void
+    {
+        $this->balance = $balance === 'settled' ? 'settled' : 'open';
+        $this->resetPage();
+    }
 
     public function mount(Store $store): void
     {
@@ -50,10 +61,12 @@ class CustomerAccounts extends Component
     {
         $store = $this->authorizeAccounts();
         $term = Str::squish($this->search);
+        $settled = $this->balance === 'settled';
 
         return view('livewire.pos.customer-accounts', [
             'store' => $store,
-            'debtors' => $account->debtors($store)
+            'settled' => $settled,
+            'debtors' => ($settled ? $account->settled($store) : $account->debtors($store))
                 ->when($term !== '', fn ($query) => $query->where('customers.name', 'like', '%'.addcslashes($term, '%_\\').'%'))
                 ->orderBy('customers.name')
                 ->orderBy('customers.id')

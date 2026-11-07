@@ -85,6 +85,9 @@
         <section aria-labelledby="record-payment-title" class="lg:col-span-5">
             <form wire:submit="record" class="space-y-4 rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-200" x-data="{ method: $wire.entangle('method') }">
                 <h2 id="record-payment-title" class="text-base font-semibold text-gray-900">{{ __('pos.customer_accounts.record_title') }}</h2>
+                @if ($totalDue === 0)
+                    <p class="rounded-lg bg-gray-50 px-3 py-2 text-sm text-gray-700 ring-1 ring-gray-200" role="status">{{ __('pos.customer_accounts.nothing_to_record') }}</p>
+                @endif
                 <fieldset class="min-w-0 space-y-4" @disabled($totalDue === 0)>
                     <x-operations.money-input
                         id="customer-payment-amount"
