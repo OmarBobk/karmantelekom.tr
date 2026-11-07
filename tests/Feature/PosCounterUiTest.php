@@ -119,6 +119,11 @@ class PosCounterUiTest extends TestCase
             ->assertHasErrors('cash_tendered')
             ->assertSee($formatError)
             ->assertSet('cashTendered', '49.90')
+            ->set('cashTendered', '12 50')
+            ->call('finalize')
+            ->assertHasErrors('cash_tendered')
+            ->assertSee($formatError)
+            ->assertSet('cashTendered', '12 50')
             ->assertSet('step', 'payment');
 
         $this->assertNull(CheckoutAttempt::query()->sole()->terminal_payment_key);

@@ -11,7 +11,7 @@ export function normalizeMoneyText(text) {
         .replace(/[\u06F0-\u06F9]/g, (digit) => String(digit.charCodeAt(0) - 0x06f0))
         .replace(/\u066B/g, ',')
         .replace(/\u066C/g, '.')
-        .replace(/[\s\u00A0\u202F\u200E\u200F\u061C]/g, '');
+        .replace(/[\u200E\u200F\u061C]/g, '');
 }
 
 function groupThousands(digits) {
@@ -40,17 +40,19 @@ function formatEdited(value) {
     return groupThousands(integer === '' ? '0' : integer) + (fraction === undefined ? '' : `,${fraction}`);
 }
 
-/** Formats text whose periods must already be valid groups, such as a paste. */
+/** Formats text whose periods must already be valid groups, such as a paste; only surrounding whitespace is dropped. */
 function formatStrict(value) {
-    if (value === '') {
+    const trimmed = value.trim();
+
+    if (trimmed === '') {
         return '';
     }
 
-    return GRAMMAR.test(value) ? formatEdited(value) : null;
+    return GRAMMAR.test(trimmed) ? formatEdited(trimmed) : null;
 }
 
 export function moneyToMinor(text) {
-    const match = GRAMMAR.exec(normalizeMoneyText(text));
+    const match = GRAMMAR.exec(normalizeMoneyText(text).trim());
 
     if (!match) {
         return null;

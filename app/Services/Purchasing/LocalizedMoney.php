@@ -24,19 +24,25 @@ final class LocalizedMoney
      * Localized operator text to the canonical decimal string; blank stays blank.
      *
      * Accepts Latin, Arabic-Indic, or Persian digits, optional period grouping in exact groups
-     * of three, and a decimal comma with at most two digits. Dot decimals ("12.50") and comma
+     * of three, and a decimal comma with at most two digits. Surrounding whitespace is trimmed;
+     * whitespace inside the amount ("12 50", "1 000,50"), dot decimals ("12.50"), and comma
      * grouping ("1,234.56") are rejected rather than guessed.
      *
      * @throws InvalidAmountException
      */
     public static function toCanonical(string $input): string
     {
-        $value = Money::latinDigits(trim($input));
-        $value = str_replace(['٫', '٬', ' ', "\u{00A0}", "\u{202F}", "\u{200E}", "\u{200F}", "\u{061C}"], [',', '.', '', '', '', '', '', ''], $value);
+        $value = preg_replace('/^[\s\x{00A0}\x{202F}]+|[\s\x{00A0}\x{202F}]+$/u', '', str_replace(["\u{200E}", "\u{200F}", "\u{061C}"], '', $input));
 
         if ($value === '') {
             return '';
         }
+
+        if (preg_match('/[\s\x{00A0}\x{202F}]/u', $value) === 1) {
+            throw new InvalidAmountException(InvalidAmountException::FORMAT);
+        }
+
+        $value = str_replace(['٫', '٬'], [',', '.'], Money::latinDigits($value));
 
         if (preg_match(self::GRAMMAR, $value, $matches) !== 1) {
             throw new InvalidAmountException(InvalidAmountException::FORMAT);
