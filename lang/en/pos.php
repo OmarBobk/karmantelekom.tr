@@ -312,6 +312,7 @@ return [
         'unit_price_used_devices_only' => 'Only used devices have their own price.',
         'unit_price_final_status' => 'A :status device cannot be repriced.',
         'cart_empty' => 'The cart is empty.',
+        'cart_review_again' => 'The cart changed after this sale was reviewed. Review the sale again before taking payment.',
         'too_many_lines' => 'A sale can have at most :max lines.',
         'item_unavailable' => 'This item is not available for sale.',
         'item_unavailable_named' => ':name is not available for sale.',

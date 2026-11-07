@@ -500,6 +500,8 @@ class PosCounter extends Component
             return;
         }
 
+        $reviewed = self::cartFromAttempt($attempt);
+        $this->cart = array_replace(array_intersect_key($this->cart, $reviewed), $reviewed);
         $this->attemptKey = $attempt->key;
         $this->attemptRevision = $attempt->revision;
         $this->step = 'payment';
@@ -532,7 +534,7 @@ class PosCounter extends Component
             return;
         }
 
-        $this->assertCustomerReviewed();
+        $this->assertSelectionReviewed();
         $amount = self::canonicalAmount($this->cardAmount, 'card_amount');
 
         try {
@@ -599,7 +601,7 @@ class PosCounter extends Component
             return;
         }
 
-        $this->assertCustomerReviewed();
+        $this->assertSelectionReviewed();
         $cashTendered = self::canonicalAmount($this->cashTendered, 'cash_tendered');
 
         try {
@@ -641,7 +643,7 @@ class PosCounter extends Component
             $this->attemptRevision = $attempt->revision;
             $this->displayedPaymentKey = $attempt->terminal_payment_key;
             $this->chargeInstructedFor = null;
-            $this->step = $this->hasUnreviewedCustomer($attempt) ? 'cart' : 'payment';
+            $this->step = $this->unreviewedChange($attempt) === null ? 'payment' : 'cart';
         }
     }
 
@@ -1066,25 +1068,54 @@ class PosCounter extends Component
             $this->customerId = $attempt->customer_id;
         }
 
-        $this->step = $this->hasUnreviewedCustomer($attempt) ? 'cart' : 'payment';
+        $this->step = $this->unreviewedChange($attempt) === null ? 'payment' : 'cart';
     }
 
     /**
-     * The selection was changed after this open attempt was reviewed. A frozen attempt is
-     * charged as reviewed, so only an editable one can be out of date.
+     * What changed in the working cart or customer since this open attempt was reviewed: the
+     * error field to report it on, or null. A frozen attempt is charged as reviewed, so only an
+     * editable one can be out of date.
      */
-    private function hasUnreviewedCustomer(CheckoutAttempt $attempt): bool
+    private function unreviewedChange(CheckoutAttempt $attempt): ?string
     {
-        return $attempt->isOpen() && ! $attempt->isFrozen() && $this->customerId !== $attempt->customer_id;
+        if (! $attempt->isOpen() || $attempt->isFrozen()) {
+            return null;
+        }
+
+        if (self::reviewedFields($this->cart) !== self::reviewedFields(self::cartFromAttempt($attempt))) {
+            return 'cart';
+        }
+
+        return $this->customerId !== $attempt->customer_id ? 'customer' : null;
     }
 
     /**
-     * Payment is taken only for the customer that was reviewed. A frozen attempt keeps its
-     * reviewed customer; a completed one is left to finalize, which replays its sale.
+     * The cart fields review prices and checks, keyed by line, for comparison.
+     *
+     * @param  array<string, array<string, mixed>>  $cart
+     * @return array<string, array{0: int, 1: ?int, 2: int, 3: string, 4: string}>
+     */
+    private static function reviewedFields(array $cart): array
+    {
+        $fields = array_map(fn (array $line): array => [
+            (int) $line['definition_id'],
+            $line['unit_id'] === null ? null : (int) $line['unit_id'],
+            (int) $line['quantity'],
+            (string) $line['adjusted_price'],
+            (string) $line['adjustment_reason'],
+        ], $cart);
+        ksort($fields, SORT_STRING);
+
+        return $fields;
+    }
+
+    /**
+     * Payment is taken only for the cart and customer that were reviewed. A frozen attempt keeps
+     * its reviewed cart and customer; a completed one is left to finalize, which replays its sale.
      *
      * @throws ValidationException
      */
-    private function assertCustomerReviewed(): void
+    private function assertSelectionReviewed(): void
     {
         $attempt = $this->activeAttempt();
 
@@ -1093,15 +1124,18 @@ class PosCounter extends Component
         }
 
         if ($attempt->isFrozen()) {
+            $this->cart = self::cartFromAttempt($attempt);
             $this->customerId = $attempt->customer_id;
 
             return;
         }
 
-        if ($this->customerId !== $attempt->customer_id) {
+        $changed = $this->unreviewedChange($attempt);
+
+        if ($changed !== null) {
             $this->step = 'cart';
 
-            throw ValidationException::withMessages(['customer' => __('pos.customer.errors.review_again')]);
+            throw ValidationException::withMessages([$changed => $changed === 'cart' ? __('pos.errors.cart_review_again') : __('pos.customer.errors.review_again')]);
         }
     }
 
