@@ -668,6 +668,39 @@ class PosCounterUiTest extends TestCase
         $this->assertSame(8, $this->cableStock());
     }
 
+    #[Test]
+    public function removing_the_last_line_after_review_survives_a_reload_and_the_old_review_cannot_be_paid(): void
+    {
+        $key = 'd'.$this->cable->id;
+        $terminal = $this->createTerminal();
+
+        $this->counter()
+            ->call('scan', $this->cable->barcode)
+            ->call('review')
+            ->assertSet('step', 'payment')
+            ->call('removeLine', $key)
+            ->assertSet('cart', []);
+
+        $this->counter()
+            ->assertSet('cart', [])
+            ->assertSet('step', 'cart')
+            ->call('checkStatus')
+            ->assertSet('step', 'cart')
+            ->set('cashTendered', '50')
+            ->call('finalize')
+            ->assertHasErrors('cart')
+            ->set('cardTerminalId', $terminal->id)
+            ->set('cardAmount', '49,90')
+            ->call('startTerminalPayment')
+            ->assertHasErrors('cart')
+            ->assertSet('cart', []);
+
+        $attempt = CheckoutAttempt::query()->sole();
+        $this->assertSame([CheckoutAttemptStatus::OPEN, null], [$attempt->status, $attempt->frozen_at]);
+        $this->assertSame(0, Sale::query()->count());
+        $this->assertSame(10, $this->cableStock());
+    }
+
     private function counter(): Testable
     {
         return Livewire::actingAs($this->cashier)->test(PosCounter::class, ['store' => $this->store]);

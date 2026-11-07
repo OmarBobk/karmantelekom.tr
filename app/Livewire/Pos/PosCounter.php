@@ -177,6 +177,12 @@ class PosCounter extends Component
     #[Locked]
     public string $resolvePaymentSummary = '';
 
+    /**
+     * Mount found an active attempt but no saved cart, so the attempt's reviewed cart is the
+     * working cart. A saved empty cart is the cashier's edit and is kept.
+     */
+    private bool $workingCartMissing = false;
+
     public function mount(Store $store): void
     {
         $this->storeId = $store->id;
@@ -1063,9 +1069,10 @@ class PosCounter extends Component
             $this->chargeInstructedFor = null;
         }
 
-        if ($attempt->isFrozen() || $this->cart === []) {
+        if ($attempt->isFrozen() || $this->workingCartMissing) {
             $this->cart = self::cartFromAttempt($attempt);
             $this->customerId = $attempt->customer_id;
+            $this->workingCartMissing = false;
         }
 
         $this->step = $this->unreviewedChange($attempt) === null ? 'payment' : 'cart';
@@ -1147,7 +1154,8 @@ class PosCounter extends Component
             return;
         }
 
-        $this->cart = is_array($state['cart'] ?? null) ? $state['cart'] : [];
+        $this->workingCartMissing = ! is_array($state['cart'] ?? null);
+        $this->cart = $this->workingCartMissing ? [] : $state['cart'];
         $this->customerId = is_int($state['customer_id'] ?? null) ? $state['customer_id'] : null;
         $this->attemptKey = is_string($state['attempt_key'] ?? null) ? $state['attempt_key'] : null;
         $this->lastSaleId = is_int($state['last_sale_id'] ?? null) ? $state['last_sale_id'] : null;
