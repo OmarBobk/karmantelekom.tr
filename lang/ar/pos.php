@@ -312,6 +312,7 @@ return [
         'unit_price_used_devices_only' => 'للأجهزة المستعملة فقط سعر خاص بكل جهاز.',
         'unit_price_final_status' => 'لا يمكن تغيير سعر جهاز حالته :status.',
         'cart_empty' => 'السلة فارغة.',
+        'cart_review_again' => 'تغيّرت السلة بعد مراجعة هذه البيعة. راجع البيعة مرة أخرى قبل استلام الدفع.',
         'too_many_lines' => 'يمكن أن يحتوي البيع على :max سطرًا كحد أقصى.',
         'item_unavailable' => 'هذا الصنف غير متاح للبيع.',
         'item_unavailable_named' => ':name غير متاح للبيع.',

@@ -619,6 +619,88 @@ class PosCounterUiTest extends TestCase
         $this->assertSame('ar', session(PosLocale::SESSION_KEY));
     }
 
+    #[Test]
+    public function a_cart_edited_after_review_survives_a_reload_and_cannot_be_paid_until_reviewed_again(): void
+    {
+        $key = 'd'.$this->cable->id;
+        $terminal = $this->createTerminal();
+
+        $this->counter()
+            ->call('scan', $this->cable->barcode)
+            ->call('review')
+            ->assertSet('step', 'payment')
+            ->call('setQuantity', $key, 2)
+            ->assertSet('step', 'cart');
+
+        $attempt = CheckoutAttempt::query()->sole();
+        $this->assertSame([1, '49.90'], [$attempt->revision, $attempt->total]);
+
+        $counter = $this->counter()
+            ->assertSet("cart.{$key}.quantity", 2)
+            ->assertSet('step', 'cart')
+            ->call('checkStatus')
+            ->assertSet('step', 'cart')
+            ->set('cashTendered', '100')
+            ->call('finalize')
+            ->assertHasErrors('cart')
+            ->assertSet('step', 'cart')
+            ->set('cardTerminalId', $terminal->id)
+            ->set('cardAmount', '49,90')
+            ->call('startTerminalPayment')
+            ->assertHasErrors('cart');
+
+        $this->assertSame(0, Sale::query()->count());
+        $this->assertSame([1, null], [$attempt->fresh()->revision, $attempt->fresh()->frozen_at]);
+        $this->assertSame(10, $this->cableStock());
+
+        $counter->call('review')
+            ->assertHasNoErrors()
+            ->assertSet('step', 'payment')
+            ->assertSet('attemptRevision', 2)
+            ->set('cashTendered', '100')
+            ->call('finalize')
+            ->assertHasNoErrors()
+            ->assertSet('step', 'done');
+
+        $sale = Sale::query()->sole();
+        $this->assertSame('99.80', $sale->total);
+        $this->assertSame(2, $sale->lines()->sole()->quantity);
+        $this->assertSame(8, $this->cableStock());
+    }
+
+    #[Test]
+    public function removing_the_last_line_after_review_survives_a_reload_and_the_old_review_cannot_be_paid(): void
+    {
+        $key = 'd'.$this->cable->id;
+        $terminal = $this->createTerminal();
+
+        $this->counter()
+            ->call('scan', $this->cable->barcode)
+            ->call('review')
+            ->assertSet('step', 'payment')
+            ->call('removeLine', $key)
+            ->assertSet('cart', []);
+
+        $this->counter()
+            ->assertSet('cart', [])
+            ->assertSet('step', 'cart')
+            ->call('checkStatus')
+            ->assertSet('step', 'cart')
+            ->set('cashTendered', '50')
+            ->call('finalize')
+            ->assertHasErrors('cart')
+            ->set('cardTerminalId', $terminal->id)
+            ->set('cardAmount', '49,90')
+            ->call('startTerminalPayment')
+            ->assertHasErrors('cart')
+            ->assertSet('cart', []);
+
+        $attempt = CheckoutAttempt::query()->sole();
+        $this->assertSame([CheckoutAttemptStatus::OPEN, null], [$attempt->status, $attempt->frozen_at]);
+        $this->assertSame(0, Sale::query()->count());
+        $this->assertSame(10, $this->cableStock());
+    }
+
     private function counter(): Testable
     {
         return Livewire::actingAs($this->cashier)->test(PosCounter::class, ['store' => $this->store]);
