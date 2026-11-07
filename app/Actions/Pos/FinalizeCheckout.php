@@ -19,6 +19,7 @@ use App\Exceptions\Pos\CheckoutItemsChangedException;
 use App\Exceptions\Purchasing\InvalidAmountException;
 use App\Models\CardApproval;
 use App\Models\CheckoutAttempt;
+use App\Models\CustomerDebt;
 use App\Models\InventoryBalance;
 use App\Models\InventoryUnit;
 use App\Models\ProductDefinition;
@@ -46,8 +47,10 @@ use Throwable;
  *
  * Lock order: the attempt, its card approval, product definitions (ascending), the store's
  * existing balance rows, then units (ascending), then the store's sale number sequence.
- * Everything reviewed is checked again under those locks; the sale, its lines, its final
- * payments, the stock movements, and sold unit states are written together or not at all.
+ * Everything reviewed is checked again under those locks; the sale, its lines, the payments
+ * actually received, the stock movements, sold unit states, and the debt for any reviewed credit
+ * are written together or not at all. An editable checkout's credit needs the cashier's current
+ * credit authority; a frozen one completes with the credit and authorizer already recorded.
  *
  * A started terminal payment without a recorded approval blocks completion: the card may have
  * been charged, so the sale cannot be taken as cash only.
@@ -133,9 +136,14 @@ class FinalizeCheckout
             throw ValidationException::withMessages(['attempt' => __('pos.errors.terminal_payment_pending')]);
         }
 
+        $creditMinor = $locked->creditMinor();
+
+        if ($creditMinor > 0 && ! $locked->isFrozen()) {
+            ReviewCheckout::assertCreditAllowed($actor, $store, $locked->customer_id);
+        }
+
         $cardMinor = $approval !== null && $approval->status === CardApprovalStatus::APPROVED ? $approval->amountMinor() : 0;
-        $totalMinor = $locked->totalMinor();
-        [$cashDue, $changeMinor] = self::cashSplit($totalMinor, $cardMinor, $tenderedMinor);
+        [$cashDue, $changeMinor] = self::cashSplit($locked->payableMinor(), $cardMinor, $tenderedMinor);
 
         /** @var list<array<string, mixed>> $lines */
         $lines = $locked->lines;
@@ -230,6 +238,19 @@ class FinalizeCheckout
 
         $this->writePayments($actor, $store, $sale, $approval, $cardMinor, $cashDue, $tenderedMinor, $changeMinor, $now);
 
+        if ($creditMinor > 0) {
+            CustomerDebt::query()->create([
+                'store_id' => $store->id,
+                'customer_id' => $locked->customer_id,
+                'sale_id' => $sale->id,
+                'currency' => Currency::TRY,
+                'original_amount' => Money::toDecimal($creditMinor),
+                'authorized_by' => $locked->credit_authorized_by,
+                'user_id' => $actor->id,
+                'occurred_at' => $now,
+            ]);
+        }
+
         $approval?->update(['status' => CardApprovalStatus::CAPTURED]);
 
         $locked->update([
@@ -247,13 +268,14 @@ class FinalizeCheckout
     /**
      * Cash due after the approved card amount, and change against cash tendered only.
      *
+     * @param  int  $payableMinor  The sale total less any reviewed credit.
      * @return array{0: int, 1: int}
      *
      * @throws ValidationException
      */
-    public static function cashSplit(int $totalMinor, int $cardMinor, ?int $tenderedMinor): array
+    public static function cashSplit(int $payableMinor, int $cardMinor, ?int $tenderedMinor): array
     {
-        $cashDue = $totalMinor - $cardMinor;
+        $cashDue = $payableMinor - $cardMinor;
 
         if ($cashDue < 0) {
             throw ValidationException::withMessages(['card_amount' => __('pos.errors.card_amount_above_total')]);

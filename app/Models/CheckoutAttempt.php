@@ -30,6 +30,8 @@ use Illuminate\Support\Carbon;
  * @property string $subtotal
  * @property string $discount_total
  * @property string $total
+ * @property string|null $credit_amount
+ * @property int|null $credit_authorized_by
  * @property string $payload_hash
  * @property Carbon|null $frozen_at
  * @property string|null $terminal_payment_key
@@ -56,7 +58,7 @@ class CheckoutAttempt extends Model
      */
     protected $fillable = [
         'key', 'store_id', 'user_id', 'customer_id', 'status', 'revision', 'currency', 'lines',
-        'subtotal', 'discount_total', 'total', 'payload_hash', 'frozen_at',
+        'subtotal', 'discount_total', 'total', 'credit_amount', 'credit_authorized_by', 'payload_hash', 'frozen_at',
         'terminal_payment_key', 'terminal_payment_request_key', 'terminal_payment_cleared_key',
         'terminal_payment_terminal_id', 'terminal_payment_amount', 'terminal_payment_started_by',
         'terminal_payment_started_at', 'finalize_fingerprint', 'failure_code', 'failure_message', 'failed_at',
@@ -136,6 +138,22 @@ class CheckoutAttempt extends Model
     public function totalMinor(): int
     {
         return Money::fromDecimal($this->total);
+    }
+
+    /**
+     * The reviewed amount the customer will owe; 0 for a fully paid checkout.
+     */
+    public function creditMinor(): int
+    {
+        return Money::fromDecimal($this->credit_amount);
+    }
+
+    /**
+     * The reviewed total less the credit: what must be paid by card and cash.
+     */
+    public function payableMinor(): int
+    {
+        return $this->totalMinor() - $this->creditMinor();
     }
 
     public function subtotalMinor(): int

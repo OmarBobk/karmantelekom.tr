@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\DB;
 class PosRollbackGuard
 {
     public const TABLES = [
+        'customer_debts',
         'sale_payments',
         'sale_lines',
         'sales',

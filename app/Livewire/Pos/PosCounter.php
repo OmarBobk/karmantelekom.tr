@@ -83,6 +83,9 @@ class PosCounter extends Component
 
     public string $newCustomerPhone = '';
 
+    /** The part of the total the customer will owe, as localized text; blank for a fully paid sale. */
+    public string $creditAmount = '';
+
     /**
      * @var array<string, array{definition_id: int, unit_id: ?int, quantity: int, name: string, model: ?string, identifier: ?string, condition: ?string, adjusted_price: string, adjustment_reason: string}>
      */
@@ -201,6 +204,7 @@ class PosCounter extends Component
         session()->put($this->sessionKey(), [
             'cart' => $this->cart,
             'customer_id' => $this->customerId,
+            'credit_amount' => $this->creditAmount,
             'attempt_key' => $this->attemptKey,
             'last_sale_id' => $this->lastSaleId,
         ]);
@@ -489,16 +493,37 @@ class PosCounter extends Component
         }
 
         $this->customerId = null;
+        $this->creditAmount = '';
         $this->cartChanged();
         $this->notify('info', __('pos.customer.cleared'));
+    }
+
+    /**
+     * The credit is part of what was reviewed: editing it sends the cashier back to review, and a
+     * frozen checkout keeps the credit it was charged with.
+     */
+    public function updatedCreditAmount(): void
+    {
+        $this->authorizeCounter();
+        $attempt = $this->activeAttempt();
+
+        if ($attempt?->isOpen() && $attempt->isFrozen()) {
+            $this->creditAmount = self::creditInput($attempt);
+            $this->notify('warning', __('pos.errors.attempt_frozen'));
+
+            return;
+        }
+
+        $this->cartChanged();
     }
 
     public function review(ReviewCheckout $review): void
     {
         $store = $this->authorizeCounter();
+        $credit = self::canonicalAmount($this->creditAmount, 'credit_amount');
 
         try {
-            $attempt = $review(auth()->user(), $store, $this->cartInput(), $this->attemptKey, $this->attemptKey === null ? null : $this->attemptRevision, $this->customerId);
+            $attempt = $review(auth()->user(), $store, $this->cartInput(), $this->attemptKey, $this->attemptKey === null ? null : $this->attemptRevision, $this->customerId, $credit);
         } catch (ModelNotFoundException) {
             $this->forgetAttempt();
             $this->notify('error', __('pos.errors.attempt_missing'));
@@ -508,6 +533,7 @@ class PosCounter extends Component
 
         $reviewed = self::cartFromAttempt($attempt);
         $this->cart = array_replace(array_intersect_key($this->cart, $reviewed), $reviewed);
+        $this->creditAmount = self::creditInput($attempt);
         $this->attemptKey = $attempt->key;
         $this->attemptRevision = $attempt->revision;
         $this->step = 'payment';
@@ -555,6 +581,7 @@ class PosCounter extends Component
         $this->startRequestKey = (string) Str::uuid();
         $this->cart = self::cartFromAttempt($result->attempt);
         $this->customerId = $result->attempt->customer_id;
+        $this->creditAmount = self::creditInput($result->attempt);
         $this->displayedPaymentKey = $result->paymentKey();
 
         if ($result->isNewStart) {
@@ -684,6 +711,7 @@ class PosCounter extends Component
 
         $this->cart = [];
         $this->customerId = null;
+        $this->creditAmount = '';
         $this->lastSaleId = null;
         $this->forgetAttempt();
         $this->resetPaymentFields();
@@ -712,6 +740,7 @@ class PosCounter extends Component
 
         $this->cart = self::cartFromAttempt($attempt);
         $this->customerId = $attempt->customer_id;
+        $this->creditAmount = self::creditInput($attempt);
         $this->attemptKey = $attempt->key;
         $this->attemptRevision = $attempt->revision;
         $this->displayedPaymentKey = $attempt->terminal_payment_key;
@@ -821,8 +850,9 @@ class PosCounter extends Component
             'payment' => $attempt?->isOpen() ? $this->paymentPreview($attempt) : null,
             'terminals' => $store->cardTerminals()->active()->orderBy('label')->get(),
             'recoverable' => $this->recoverableAttempts($store),
-            'lastSale' => $this->lastSaleId === null ? null : Sale::query()->visibleTo($user, $store)->find($this->lastSaleId),
+            'lastSale' => $this->lastSaleId === null ? null : Sale::query()->visibleTo($user, $store)->with('debt')->find($this->lastSaleId),
             'canDiscount' => DiscountAuthority::for($user, $store)->canDiscount(),
+            'canSellOnCredit' => $user->can('sellOnCredit', $store),
             'canResolve' => $user->can('resolveCheckoutAttempts', $store),
             ...$this->localeViewData(),
         ])->layout('layouts.pos', ['posStore' => $store])->title(__('pos.counter.title', ['store' => $store->code]));
@@ -960,6 +990,7 @@ class PosCounter extends Component
 
         $this->cart = [];
         $this->customerId = null;
+        $this->creditAmount = '';
         $this->attemptKey = null;
         $this->attemptRevision = null;
         $this->displayedPaymentKey = null;
@@ -1072,6 +1103,7 @@ class PosCounter extends Component
         if ($attempt->isFrozen() || $this->workingCartMissing) {
             $this->cart = self::cartFromAttempt($attempt);
             $this->customerId = $attempt->customer_id;
+            $this->creditAmount = self::creditInput($attempt);
             $this->workingCartMissing = false;
         }
 
@@ -1079,8 +1111,8 @@ class PosCounter extends Component
     }
 
     /**
-     * What changed in the working cart or customer since this open attempt was reviewed: the
-     * error field to report it on, or null. A frozen attempt is charged as reviewed, so only an
+     * What changed in the working cart, customer, or credit since this open attempt was reviewed:
+     * the error field to report it on, or null. A frozen attempt is charged as reviewed, so only an
      * editable one can be out of date.
      */
     private function unreviewedChange(CheckoutAttempt $attempt): ?string
@@ -1093,7 +1125,28 @@ class PosCounter extends Component
             return 'cart';
         }
 
-        return $this->customerId !== $attempt->customer_id ? 'customer' : null;
+        if ($this->customerId !== $attempt->customer_id) {
+            return 'customer';
+        }
+
+        return $this->workingCreditMinor() !== $attempt->creditMinor() ? 'credit_amount' : null;
+    }
+
+    /**
+     * The working credit in minor units: 0 when blank, null when it is not a valid amount.
+     */
+    private function workingCreditMinor(): ?int
+    {
+        try {
+            return Str::trim($this->creditAmount) === '' ? 0 : LocalizedMoney::parse($this->creditAmount, Money::MAX_TOTAL_AMOUNT, allowZero: true);
+        } catch (InvalidAmountException) {
+            return null;
+        }
+    }
+
+    private static function creditInput(CheckoutAttempt $attempt): string
+    {
+        return $attempt->creditMinor() > 0 ? LocalizedMoney::input($attempt->creditMinor()) : '';
     }
 
     /**
@@ -1133,6 +1186,7 @@ class PosCounter extends Component
         if ($attempt->isFrozen()) {
             $this->cart = self::cartFromAttempt($attempt);
             $this->customerId = $attempt->customer_id;
+            $this->creditAmount = self::creditInput($attempt);
 
             return;
         }
@@ -1142,7 +1196,11 @@ class PosCounter extends Component
         if ($changed !== null) {
             $this->step = 'cart';
 
-            throw ValidationException::withMessages([$changed => $changed === 'cart' ? __('pos.errors.cart_review_again') : __('pos.customer.errors.review_again')]);
+            throw ValidationException::withMessages([$changed => match ($changed) {
+                'cart' => __('pos.errors.cart_review_again'),
+                'customer' => __('pos.customer.errors.review_again'),
+                default => __('pos.credit.errors.review_again'),
+            }]);
         }
     }
 
@@ -1157,6 +1215,7 @@ class PosCounter extends Component
         $this->workingCartMissing = ! is_array($state['cart'] ?? null);
         $this->cart = $this->workingCartMissing ? [] : $state['cart'];
         $this->customerId = is_int($state['customer_id'] ?? null) ? $state['customer_id'] : null;
+        $this->creditAmount = is_string($state['credit_amount'] ?? null) ? $state['credit_amount'] : '';
         $this->attemptKey = is_string($state['attempt_key'] ?? null) ? $state['attempt_key'] : null;
         $this->lastSaleId = is_int($state['last_sale_id'] ?? null) ? $state['last_sale_id'] : null;
     }
@@ -1307,13 +1366,15 @@ class PosCounter extends Component
     }
 
     /**
-     * @return array{total: int, card: int, cash_due: int, change: ?int}
+     * @return array{total: int, credit: int, payable: int, card: int, cash_due: int, change: ?int}
      */
     private function paymentPreview(CheckoutAttempt $attempt): array
     {
         $total = $attempt->totalMinor();
+        $credit = $attempt->creditMinor();
+        $payable = $attempt->payableMinor();
         $card = $attempt->hasPendingTerminalPayment() ? (int) $attempt->terminalPaymentAmountMinor() : $attempt->approvedCardMinor();
-        $cashDue = max(0, $total - $card);
+        $cashDue = max(0, $payable - $card);
         $change = null;
 
         if ($cashDue > 0 && Str::trim($this->cashTendered) !== '') {
@@ -1325,7 +1386,7 @@ class PosCounter extends Component
             }
         }
 
-        return ['total' => $total, 'card' => $card, 'cash_due' => $cashDue, 'change' => $change];
+        return ['total' => $total, 'credit' => $credit, 'payable' => $payable, 'card' => $card, 'cash_due' => $cashDue, 'change' => $change];
     }
 
     /**

@@ -46,6 +46,12 @@
                                     {{ $sale->customer->name }} <bdi dir="ltr" class="font-mono text-gray-600">{{ $sale->customer->maskedPhone() }}</bdi>
                                 </span>
                             @endif
+                            @if ($sale->creditMinor() > 0)
+                                <span class="rounded bg-amber-50 px-1.5 py-0.5 text-xs font-medium text-amber-900 ring-1 ring-amber-200">
+                                    {{ __('pos.fields.amount_paid') }} <span dir="ltr" class="tabular-nums">{{ LocalizedMoney::format($sale->paidMinor()) }}</span>
+                                    · {{ __('pos.fields.credit') }} <span dir="ltr" class="tabular-nums">{{ LocalizedMoney::format($sale->creditMinor()) }}</span>
+                                </span>
+                            @endif
                             <span dir="ltr" class="ms-auto font-semibold tabular-nums text-gray-900">{{ LocalizedMoney::format($sale->totalMinor()) }} TRY</span>
                         </a>
                     </li>

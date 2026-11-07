@@ -85,6 +85,12 @@
                         <dd dir="ltr" class="text-end text-gray-700">{{ $money($payment->change_given) }}</dd>
                     @endif
                 @endforeach
+                @if ($sale->creditMinor() > 0)
+                    <dt class="mt-1 font-semibold">{{ __('pos.fields.amount_paid') }}</dt>
+                    <dd dir="ltr" class="mt-1 text-end font-semibold">{{ $money($sale->paidMinor()) }} TRY</dd>
+                    <dt class="font-bold">{{ __('pos.fields.credit') }}</dt>
+                    <dd dir="ltr" class="text-end font-bold">{{ $money($sale->creditMinor()) }} TRY</dd>
+                @endif
             </dl>
 
             <footer class="border-t border-dashed border-gray-400 pt-2 text-center">

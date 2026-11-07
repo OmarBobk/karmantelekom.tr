@@ -47,6 +47,19 @@ return [
         ],
     ],
 
+    'credit' => [
+        'label' => 'Amount left on credit',
+        'help' => 'The part of the total this customer will owe. Leave empty if they pay everything now.',
+        'errors' => [
+            'invalid' => 'Enter the amount on credit, for example 700 or 1.250,50.',
+            'customer_required' => 'Choose a customer of this branch before leaving an amount on credit.',
+            'not_allowed' => 'You are not allowed to sell on credit. Remove the amount on credit or ask the owner.',
+            'above_total' => 'The amount on credit cannot exceed the total of :total TRY.',
+            'review_again' => 'The amount on credit changed after this sale was reviewed. Review the sale again before taking payment.',
+            'card_above_payable' => 'The card amount cannot exceed :amount TRY, the total less the amount on credit.',
+        ],
+    ],
+
     'scan' => [
         'label' => 'Scan or type a barcode, SKU, IMEI, or serial',
         'help' => 'Press Enter to add the exact code. Typing a name shows matching products.',
@@ -208,6 +221,9 @@ return [
         'subtotal' => 'Subtotal',
         'discount' => 'Discount',
         'total' => 'Total',
+        'credit' => 'On credit',
+        'to_pay_now' => 'To pay now',
+        'amount_paid' => 'Amount paid',
         'card' => 'Card',
         'cash_due' => 'Cash due',
         'cash_tendered' => 'Cash received',

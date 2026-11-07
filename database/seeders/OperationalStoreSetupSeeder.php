@@ -49,7 +49,13 @@ class OperationalStoreSetupSeeder extends Seeder
         'correct_unit_identity',
         self::USE_POS_PERMISSION,
         'set_selling_prices',
+        self::SELL_ON_CREDIT_PERMISSION,
     ];
+
+    /**
+     * Leaving part or all of a store customer's sale unpaid at the counter. Owner only for now.
+     */
+    public const SELL_ON_CREDIT_PERMISSION = 'sell_on_credit';
 
     /**
      * Counter access. The owner holds it through the admin role; employees only receive it

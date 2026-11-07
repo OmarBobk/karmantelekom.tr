@@ -9,6 +9,7 @@ use App\Models\CheckoutAttempt;
 use App\Models\ProductDefinition;
 use App\Models\Store;
 use App\Models\User;
+use App\Services\Purchasing\LocalizedMoney;
 use App\Services\Purchasing\Money;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
@@ -23,6 +24,9 @@ use Illuminate\Validation\ValidationException;
  * recording the approval is durable: the reviewed cart freezes, and until the matching approval
  * is recorded or the owner confirms on the terminal that nothing was charged, the attempt can be
  * neither edited, cancelled, nor completed with cash only.
+ *
+ * The charge cannot exceed the reviewed total less its credit, and a credited checkout needs the
+ * cashier's current credit authority, because once frozen it is completed as reviewed.
  *
  * Every new start gets its own key, which approvals and resolutions must name. The caller's
  * request key makes a retried request a replay (not a new start); any other start while one is
@@ -82,8 +86,14 @@ class StartTerminalPayment
                 throw ValidationException::withMessages(['attempt' => __('pos.errors.attempt_changed')]);
             }
 
-            if ($amountMinor > $locked->totalMinor()) {
-                throw ValidationException::withMessages(['card_amount' => __('pos.errors.card_amount_above_total')]);
+            if ($locked->creditMinor() > 0) {
+                ReviewCheckout::assertCreditAllowed($actor, $locked->store, $locked->customer_id);
+            }
+
+            if ($amountMinor > $locked->payableMinor()) {
+                throw ValidationException::withMessages(['card_amount' => $locked->creditMinor() > 0
+                    ? __('pos.credit.errors.card_above_payable', ['amount' => LocalizedMoney::format($locked->payableMinor())])
+                    : __('pos.errors.card_amount_above_total')]);
             }
 
             self::assertReviewedPricesCurrent($actor, $locked);

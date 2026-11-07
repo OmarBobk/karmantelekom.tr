@@ -149,6 +149,15 @@ class StorePolicy
     }
 
     /**
+     * Determine whether the user can leave part or all of a customer's sale unpaid at this
+     * store's counter (owner only).
+     */
+    public function sellOnCredit(User $user, Store $store): bool
+    {
+        return $this->ownerHas($user, 'sell_on_credit') && $this->usePos($user, $store);
+    }
+
+    /**
      * Determine whether the user can record the resolution of a voided terminal approval (owner only).
      */
     public function resolveCheckoutAttempts(User $user, Store $store): bool

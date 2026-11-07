@@ -88,7 +88,7 @@ class SalesHistory extends Component
                 $day = CarbonImmutable::createFromFormat('Y-m-d', $this->date, Sale::DISPLAY_TIMEZONE)->startOfDay();
                 $query->whereBetween('completed_at', [$day->utc(), $day->endOfDay()->utc()]);
             })
-            ->with(['cashier:id,name', 'customer:id,name,phone_normalized', 'payments:id,sale_id,method,amount'])
+            ->with(['cashier:id,name', 'customer:id,name,phone_normalized', 'payments:id,sale_id,method,amount', 'debt:id,sale_id,original_amount'])
             ->withCount('lines')
             ->latest('completed_at')
             ->latest('id')

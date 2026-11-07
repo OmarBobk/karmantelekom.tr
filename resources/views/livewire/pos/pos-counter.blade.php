@@ -138,6 +138,18 @@
                 @error('customer')
                     <p class="mt-2 text-sm text-red-700" role="alert">{{ $message }}</p>
                 @enderror
+                @if (($canSellOnCredit && $selectedCustomer) || $creditAmount !== '')
+                    <fieldset class="mt-3 min-w-0 border-t border-gray-100 pt-3" @disabled(! $cartEditable)>
+                        <x-operations.money-input
+                            id="pos-credit-amount"
+                            wire:model="creditAmount"
+                            error="credit_amount"
+                            :label="__('pos.credit.label')"
+                            placeholder="0"
+                        />
+                        <p class="mt-1 text-xs text-gray-600">{{ __('pos.credit.help') }}</p>
+                    </fieldset>
+                @endif
             </div>
 
             <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-200">
@@ -238,6 +250,12 @@
                         <dd dir="ltr" class="text-start font-mono font-semibold text-gray-900">{{ $lastSale->number }}</dd>
                         <dt class="text-gray-600">{{ __('pos.fields.total') }}</dt>
                         <dd dir="ltr" class="text-start font-semibold tabular-nums text-gray-900">{{ $money($lastSale->totalMinor()) }} TRY</dd>
+                        @if ($lastSale->creditMinor() > 0)
+                            <dt class="text-gray-600">{{ __('pos.fields.amount_paid') }}</dt>
+                            <dd dir="ltr" class="text-start tabular-nums text-gray-900">{{ $money($lastSale->paidMinor()) }} TRY</dd>
+                            <dt class="font-semibold text-amber-900">{{ __('pos.fields.credit') }}</dt>
+                            <dd dir="ltr" class="text-start font-semibold tabular-nums text-amber-900">{{ $money($lastSale->creditMinor()) }} TRY</dd>
+                        @endif
                         @if ($lastSale->cash_tendered !== null)
                             <dt class="text-gray-600">{{ __('pos.fields.change') }}</dt>
                             <dd dir="ltr" class="text-start text-2xl font-bold tabular-nums text-gray-900">{{ $money(Money::fromDecimal($lastSale->change_given)) }} TRY</dd>
@@ -299,6 +317,12 @@
                             @endif
                             <dt class="font-semibold text-gray-900">{{ __('pos.fields.total') }}</dt>
                             <dd dir="ltr" class="text-end text-xl font-bold tabular-nums text-gray-900">{{ $money($payment['total']) }} TRY</dd>
+                            @if ($payment['credit'] > 0)
+                                <dt class="font-semibold text-amber-900">{{ __('pos.fields.credit') }}</dt>
+                                <dd dir="ltr" class="text-end font-semibold tabular-nums text-amber-900">{{ $money($payment['credit']) }}</dd>
+                                <dt class="text-gray-600">{{ __('pos.fields.to_pay_now') }}</dt>
+                                <dd dir="ltr" class="text-end tabular-nums">{{ $money($payment['payable']) }}</dd>
+                            @endif
                             @if ($payment['card'] > 0)
                                 <dt class="text-gray-600">{{ __('pos.fields.card') }}</dt>
                                 <dd dir="ltr" class="text-end tabular-nums">{{ $money($payment['card']) }}</dd>
@@ -343,7 +367,7 @@
                                 </div>
                                 <button type="button" wire:click="recordCardApproval" wire:loading.attr="disabled" wire:target="recordCardApproval" class="{{ $primaryButton }} mt-3 w-full">{{ __('pos.payment.record_card') }}</button>
                             </div>
-                        @elseif (! $attempt->cardApproval)
+                        @elseif (! $attempt->cardApproval && $payment['payable'] > 0)
                             <fieldset class="rounded-lg p-3 ring-1 ring-gray-200">
                                 <legend class="px-1 text-sm font-semibold text-gray-900">{{ __('pos.payment.card_title') }}</legend>
                                 <p class="text-xs text-gray-600">{{ __('pos.payment.card_help') }}</p>
@@ -367,7 +391,7 @@
                                                 wire:model="cardAmount"
                                                 error="card_amount"
                                                 :label="__('pos.fields.card_charge_amount')"
-                                                :placeholder="LocalizedMoney::input($payment['total'])"
+                                                :placeholder="LocalizedMoney::input($payment['payable'])"
                                             />
                                         </div>
                                         <button type="submit" wire:loading.attr="disabled" wire:target="startTerminalPayment" class="{{ $secondaryButton }} mt-3 w-full">{{ __('pos.payment.start_card') }}</button>

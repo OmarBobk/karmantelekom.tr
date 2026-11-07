@@ -10,6 +10,7 @@ use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 use LogicException;
 
@@ -110,6 +111,22 @@ class Sale extends Model
     }
 
     /**
+     * The original amount left on credit when the sale was completed; 0 for a fully paid sale.
+     */
+    public function creditMinor(): int
+    {
+        return $this->debt?->originalAmountMinor() ?? 0;
+    }
+
+    /**
+     * The amount actually received at the counter: the total less the original credit.
+     */
+    public function paidMinor(): int
+    {
+        return $this->totalMinor() - $this->creditMinor();
+    }
+
+    /**
      * @return BelongsTo<Store, $this>
      */
     public function store(): BelongsTo
@@ -155,5 +172,13 @@ class Sale extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(SalePayment::class)->orderBy('id');
+    }
+
+    /**
+     * @return HasOne<CustomerDebt, $this>
+     */
+    public function debt(): HasOne
+    {
+        return $this->hasOne(CustomerDebt::class);
     }
 }

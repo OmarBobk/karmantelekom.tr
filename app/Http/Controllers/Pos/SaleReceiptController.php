@@ -22,7 +22,7 @@ class SaleReceiptController extends Controller
     {
         PosLocale::apply();
 
-        $sale->load(['lines.discountedBy:id,name', 'payments.terminal', 'cashier:id,name', 'store']);
+        $sale->load(['lines.discountedBy:id,name', 'payments.terminal', 'debt', 'cashier:id,name', 'store']);
 
         return view('pos.receipt', [
             'store' => $store,

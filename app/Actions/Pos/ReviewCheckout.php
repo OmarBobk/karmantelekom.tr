@@ -35,6 +35,10 @@ use Illuminate\Validation\ValidationException;
  *
  * The optional customer is part of the reviewed payload: it must be one of the store's counter
  * customers, choosing another one advances the revision, and it is frozen with the cart.
+ *
+ * So is the credit amount: the exact part of the total the customer will owe. A positive credit
+ * needs a customer and the reviewer's sell_on_credit authority, cannot exceed the total, and
+ * records the reviewer as its authorizer.
  */
 class ReviewCheckout
 {
@@ -50,7 +54,7 @@ class ReviewCheckout
      * @throws AuthorizationException
      * @throws ValidationException
      */
-    public function __invoke(User $actor, Store $store, array $cart, ?string $attemptKey = null, ?int $expectedRevision = null, ?int $customerId = null): CheckoutAttempt
+    public function __invoke(User $actor, Store $store, array $cart, ?string $attemptKey = null, ?int $expectedRevision = null, ?int $customerId = null, ?string $creditAmount = null): CheckoutAttempt
     {
         Gate::forUser($actor)->authorize('usePos', $store);
 
@@ -64,11 +68,26 @@ class ReviewCheckout
             throw ValidationException::withMessages(['customer' => __('pos.customer.errors.unavailable')]);
         }
 
+        $creditMinor = self::parseCredit($creditAmount);
+
+        if ($creditMinor > 0) {
+            self::assertCreditAllowed($actor, $store, $customerId);
+        }
+
         [$lines, $totals] = $this->priceCart($actor, $store, $cart);
-        $payloadHash = self::payloadHash($store, $lines, $customerId);
+
+        if ($creditMinor > Money::fromDecimal($totals['total'])) {
+            throw ValidationException::withMessages(['credit_amount' => __('pos.credit.errors.above_total', ['total' => LocalizedMoney::format(Money::fromDecimal($totals['total']))])]);
+        }
+
+        $payloadHash = self::payloadHash($store, $lines, $customerId, $creditMinor);
+        $credit = [
+            'credit_amount' => Money::toDecimal($creditMinor),
+            'credit_authorized_by' => $creditMinor > 0 ? $actor->id : null,
+        ];
 
         if ($existing === null) {
-            return DB::transaction(function () use ($actor, $store, $lines, $totals, $payloadHash, $customerId): CheckoutAttempt {
+            return DB::transaction(function () use ($actor, $store, $lines, $totals, $credit, $payloadHash, $customerId): CheckoutAttempt {
                 $hasPendingTerminalPayment = $store->checkoutAttempts()
                     ->where('user_id', $actor->id)
                     ->pendingTerminalPayment()
@@ -89,12 +108,13 @@ class ReviewCheckout
                     'currency' => Currency::TRY,
                     'lines' => $lines,
                     ...$totals,
+                    ...$credit,
                     'payload_hash' => $payloadHash,
                 ]);
             });
         }
 
-        return DB::transaction(function () use ($existing, $expectedRevision, $lines, $totals, $payloadHash, $customerId): CheckoutAttempt {
+        return DB::transaction(function () use ($existing, $expectedRevision, $lines, $totals, $credit, $payloadHash, $customerId): CheckoutAttempt {
             $attempt = CheckoutAttempt::query()->whereKey($existing->id)->lockForUpdate()->firstOrFail();
 
             self::assertOpen($attempt);
@@ -115,6 +135,7 @@ class ReviewCheckout
                 'customer_id' => $customerId,
                 'lines' => $lines,
                 ...$totals,
+                ...$credit,
                 'payload_hash' => $payloadHash,
                 'revision' => $attempt->revision + 1,
                 'failure_code' => null,
@@ -142,13 +163,48 @@ class ReviewCheckout
     }
 
     /**
+     * A positive credit needs a store customer and the reviewer's current credit authority.
+     *
+     * @throws ValidationException
+     */
+    public static function assertCreditAllowed(User $actor, Store $store, ?int $customerId): void
+    {
+        if ($customerId === null || ! $store->customers()->whereKey($customerId)->exists()) {
+            throw ValidationException::withMessages(['credit_amount' => __('pos.credit.errors.customer_required')]);
+        }
+
+        if (Gate::forUser($actor)->denies('sellOnCredit', $store)) {
+            throw ValidationException::withMessages(['credit_amount' => __('pos.credit.errors.not_allowed')]);
+        }
+    }
+
+    /**
+     * Canonical decimal credit to minor units; blank means no credit.
+     *
+     * @throws ValidationException
+     */
+    private static function parseCredit(?string $creditAmount): int
+    {
+        if (Str::trim((string) $creditAmount) === '') {
+            return 0;
+        }
+
+        try {
+            return Money::parse((string) $creditAmount, Money::MAX_TOTAL_AMOUNT, allowZero: true);
+        } catch (InvalidAmountException) {
+            throw ValidationException::withMessages(['credit_amount' => __('pos.credit.errors.invalid')]);
+        }
+    }
+
+    /**
      * Fingerprint of everything the cashier reviewed: items, revisions, quantities, prices, and
-     * the discount limit each discounted line was checked against, and the customer when one was
-     * chosen. A walk-in payload hashes exactly as it did before customers existed.
+     * the discount limit each discounted line was checked against, the customer when one was
+     * chosen, and the credit when there is one. A walk-in or fully paid payload hashes exactly as
+     * it did before customers and credit existed.
      *
      * @param  list<array<string, mixed>>  $lines
      */
-    public static function payloadHash(Store $store, array $lines, ?int $customerId = null): string
+    public static function payloadHash(Store $store, array $lines, ?int $customerId = null, int $creditMinor = 0): string
     {
         $payload = [
             'store_id' => $store->id,
@@ -162,6 +218,10 @@ class ReviewCheckout
 
         if ($customerId !== null) {
             $payload['customer_id'] = $customerId;
+        }
+
+        if ($creditMinor > 0) {
+            $payload['credit_minor'] = $creditMinor;
         }
 
         return Idempotency::fingerprint($payload);
