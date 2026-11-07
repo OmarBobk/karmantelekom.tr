@@ -20,6 +20,7 @@ use LogicException;
  * @property int $id
  * @property int $store_id
  * @property int $user_id
+ * @property int|null $customer_id
  * @property int $checkout_attempt_id
  * @property string $number
  * @property int $sequence
@@ -39,7 +40,7 @@ class Sale extends Model
      * @var list<string>
      */
     protected $fillable = [
-        'store_id', 'user_id', 'checkout_attempt_id', 'number', 'sequence', 'currency',
+        'store_id', 'user_id', 'customer_id', 'checkout_attempt_id', 'number', 'sequence', 'currency',
         'subtotal', 'discount_total', 'total', 'cash_tendered', 'change_given', 'completed_at',
     ];
 
@@ -122,6 +123,14 @@ class Sale extends Model
     public function cashier(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /**
+     * @return BelongsTo<Customer, $this>
+     */
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class);
     }
 
     /**

@@ -40,6 +40,12 @@
                             @if ($seesAll)
                                 <span class="text-sm text-gray-600">{{ $sale->cashier?->name }}</span>
                             @endif
+                            @if ($sale->customer)
+                                <span class="text-sm text-gray-800">
+                                    <span class="sr-only">{{ __('pos.customer.title') }}:</span>
+                                    {{ $sale->customer->name }} <bdi dir="ltr" class="font-mono text-gray-600">{{ $sale->customer->maskedPhone() }}</bdi>
+                                </span>
+                            @endif
                             <span dir="ltr" class="ms-auto font-semibold tabular-nums text-gray-900">{{ LocalizedMoney::format($sale->totalMinor()) }} TRY</span>
                         </a>
                     </li>

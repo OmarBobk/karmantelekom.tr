@@ -151,6 +151,7 @@ class FinalizeCheckout
         $sale = Sale::query()->create([
             'store_id' => $store->id,
             'user_id' => $actor->id,
+            'customer_id' => $locked->customer_id,
             'checkout_attempt_id' => $locked->id,
             'number' => Sale::formatNumber($store, $sequence),
             'sequence' => $sequence,

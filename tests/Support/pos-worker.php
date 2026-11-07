@@ -10,6 +10,7 @@ declare(strict_types=1);
  */
 
 use App\Actions\Catalog\SaveProductDefinition;
+use App\Actions\Customers\SaveCounterCustomer;
 use App\Actions\Inventory\AdjustQuantity;
 use App\Actions\Inventory\RecordInspection;
 use App\Actions\Pos\FinalizeCheckout;
@@ -83,6 +84,11 @@ try {
             );
 
             return ['status' => 'ok'];
+        })(),
+        'customer' => (function () use ($actor, $store, $payload): array {
+            $customer = app(SaveCounterCustomer::class)($actor, $store, $payload['name'], $payload['phone']);
+
+            return ['status' => 'ok', 'customer_id' => $customer->id, 'created' => $customer->wasRecentlyCreated];
         })(),
         'set_price' => (function () use ($actor, $payload): array {
             $definition = ProductDefinition::query()->findOrFail($payload['definition_id']);

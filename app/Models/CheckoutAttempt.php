@@ -22,6 +22,7 @@ use Illuminate\Support\Carbon;
  * @property string $key
  * @property int $store_id
  * @property int $user_id
+ * @property int|null $customer_id
  * @property CheckoutAttemptStatus $status
  * @property int $revision
  * @property Currency $currency
@@ -54,7 +55,7 @@ class CheckoutAttempt extends Model
      * @var list<string>
      */
     protected $fillable = [
-        'key', 'store_id', 'user_id', 'status', 'revision', 'currency', 'lines',
+        'key', 'store_id', 'user_id', 'customer_id', 'status', 'revision', 'currency', 'lines',
         'subtotal', 'discount_total', 'total', 'payload_hash', 'frozen_at',
         'terminal_payment_key', 'terminal_payment_request_key', 'terminal_payment_cleared_key',
         'terminal_payment_terminal_id', 'terminal_payment_amount', 'terminal_payment_started_by',
@@ -171,6 +172,14 @@ class CheckoutAttempt extends Model
     public function cashier(): BelongsTo
     {
         return $this->belongsTo(User::class, 'user_id');
+    }
+
+    /**
+     * @return BelongsTo<Customer, $this>
+     */
+    public function customer(): BelongsTo
+    {
+        return $this->belongsTo(Customer::class);
     }
 
     /**

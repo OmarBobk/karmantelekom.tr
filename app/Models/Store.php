@@ -104,6 +104,14 @@ class Store extends Model
     }
 
     /**
+     * @return HasMany<Customer, $this>
+     */
+    public function customers(): HasMany
+    {
+        return $this->hasMany(Customer::class);
+    }
+
+    /**
      * Limit the query to stores the user may operate in.
      *
      * Admins reach every store; employees reach only stores they are assigned to;

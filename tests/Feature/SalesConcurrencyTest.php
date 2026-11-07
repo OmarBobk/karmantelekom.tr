@@ -10,6 +10,7 @@ use App\Enums\MovementType;
 use App\Enums\UnitStatus;
 use App\Models\CardApproval;
 use App\Models\CheckoutAttempt;
+use App\Models\Customer;
 use App\Models\InventoryMovement;
 use App\Models\ProductDefinition;
 use App\Models\Sale;
@@ -269,6 +270,31 @@ class SalesConcurrencyTest extends TestCase
         $this->assertSame(CheckoutAttemptStatus::OPEN, $failing->fresh()->status);
         $this->assertContains($failing->fresh()->failure_code, ['system_error', 'unavailable']);
         $this->assertSame('KT01-000001', Sale::query()->sole()->number);
+    }
+
+    #[Test]
+    public function two_counters_adding_the_same_phone_at_once_get_the_customer_already_being_added(): void
+    {
+        $request = fn (User $actor, string $name, string $phone): array => ['operation' => 'customer', 'actor_id' => $actor->id, 'store_id' => $this->store->id, 'name' => $name, 'phone' => $phone];
+
+        DB::beginTransaction();
+
+        try {
+            $first = Customer::query()->create(['store_id' => $this->store->id, 'name' => 'Ahmet Yılmaz', 'phone' => '0532 123 45 67', 'phone_normalized' => '905321234567', 'created_by' => $this->owner->id]);
+            $processes = [
+                $this->startWorker($request($this->cashier, 'Ahmet Y', '+90 532 123 45 67')),
+                $this->startWorker($request($this->rival, 'A. Yilmaz', '5321234567')),
+            ];
+            $this->waitForBlockedWorkers(2);
+        } finally {
+            DB::commit();
+        }
+
+        $results = array_map(fn (array $process): array => $this->finishWorker($process), $processes);
+
+        $this->assertSame([['status' => 'ok', 'customer_id' => $first->id, 'created' => false], ['status' => 'ok', 'customer_id' => $first->id, 'created' => false]], $results);
+        $this->assertSame(['Ahmet Yılmaz', '0532 123 45 67'], [$first->fresh()->name, $first->fresh()->phone]);
+        $this->assertSame(1, Customer::query()->count());
     }
 
     /**

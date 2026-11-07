@@ -113,6 +113,33 @@
                 </div>
             </form>
 
+            <div class="rounded-xl bg-white px-4 py-3 shadow-sm ring-1 ring-gray-200" aria-labelledby="pos-customer-title" role="group">
+                <div class="flex flex-wrap items-center justify-between gap-3">
+                    <div class="min-w-0">
+                        <p id="pos-customer-title" class="text-sm font-semibold text-gray-900">{{ __('pos.customer.title') }}</p>
+                        @if ($selectedCustomer)
+                            <p class="mt-0.5 text-base text-gray-900">
+                                <span class="font-medium">{{ $selectedCustomer->name }}</span>
+                                <bdi dir="ltr" class="ms-1 font-mono text-sm text-gray-600">{{ $selectedCustomer->maskedPhone() }}</bdi>
+                            </p>
+                        @else
+                            <p class="mt-0.5 text-sm text-gray-600">{{ __('pos.customer.walk_in') }}</p>
+                        @endif
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <button type="button" wire:click="openCustomer" @disabled(! $cartEditable) aria-haspopup="dialog" class="{{ $secondaryButton }}">
+                            {{ $selectedCustomer ? __('pos.customer.change') : __('pos.customer.choose') }}
+                        </button>
+                        @if ($selectedCustomer)
+                            <button type="button" wire:click="clearCustomer" @disabled(! $cartEditable) class="{{ $secondaryButton }}">{{ __('pos.customer.remove') }}</button>
+                        @endif
+                    </div>
+                </div>
+                @error('customer')
+                    <p class="mt-2 text-sm text-red-700" role="alert">{{ $message }}</p>
+                @enderror
+            </div>
+
             <div class="rounded-xl bg-white shadow-sm ring-1 ring-gray-200">
                 <div class="flex items-center justify-between gap-3 border-b border-gray-100 px-4 py-3">
                     <h2 id="pos-cart-title" class="text-base font-semibold text-gray-900">{{ __('pos.cart.title') }}</h2>
@@ -256,6 +283,14 @@
                         @endif
 
                         <dl class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                            <dt class="text-gray-600">{{ __('pos.customer.title') }}</dt>
+                            <dd class="text-end text-gray-900">
+                                @if ($attempt->customer)
+                                    {{ $attempt->customer->name }} <bdi dir="ltr" class="font-mono text-gray-600">{{ $attempt->customer->maskedPhone() }}</bdi>
+                                @else
+                                    {{ __('pos.customer.walk_in') }}
+                                @endif
+                            </dd>
                             <dt class="text-gray-600">{{ __('pos.fields.subtotal') }}</dt>
                             <dd dir="ltr" class="text-end tabular-nums">{{ $money($attempt->subtotalMinor()) }}</dd>
                             @if ($attempt->discountTotalMinor() > 0)
@@ -455,6 +490,49 @@
                 @include('livewire.pos.partials.target-option', ['option' => $choice, 'keyPrefix' => 'choice'])
             @endforeach
         </ul>
+    </x-operations.dialog>
+
+    <x-operations.dialog :id="PosCounter::CUSTOMER_DIALOG" :title="__('pos.customer.dialog_title')" :direction="$textDirection">
+        <form wire:submit="searchCustomers" role="search">
+            <label for="pos-customer-search" class="block text-sm font-medium text-gray-800">{{ __('pos.customer.search_label') }}</label>
+            <p id="pos-customer-search-help" class="mt-0.5 text-xs text-gray-600">{{ __('pos.customer.search_help') }}</p>
+            <div class="mt-1 flex gap-2">
+                <input id="pos-customer-search" type="search" dir="auto" autofocus autocomplete="off" maxlength="80" enterkeyhint="search" wire:model="customerSearch" aria-describedby="pos-customer-search-help" class="{{ $inputClass }} min-w-0 flex-1">
+                <button type="submit" wire:loading.attr="disabled" wire:target="searchCustomers" class="{{ $secondaryButton }}">{{ __('pos.customer.search') }}</button>
+            </div>
+        </form>
+
+        <div aria-live="polite">
+            @if ($customerResults !== [])
+                <ul class="mt-3 max-h-64 divide-y divide-gray-100 overflow-y-auto rounded-lg ring-1 ring-gray-200">
+                    @foreach ($customerResults as $result)
+                        <li wire:key="customer-{{ $result['id'] }}">
+                            <button type="button" wire:click="selectCustomer({{ $result['id'] }})" class="flex min-h-11 w-full items-center justify-between gap-3 px-3 py-2 text-start hover:bg-blue-50 focus-visible:bg-blue-50 focus-visible:outline-none">
+                                <span class="font-medium text-gray-900">{{ $result['name'] }}</span>
+                                <bdi dir="ltr" class="font-mono text-sm text-gray-600">{{ $result['phone'] }}</bdi>
+                            </button>
+                        </li>
+                    @endforeach
+                </ul>
+            @elseif ($customerSearchedFor !== '')
+                <p class="mt-3 text-sm text-gray-600">{{ __('pos.customer.no_results', ['term' => $customerSearchedFor]) }}</p>
+            @endif
+        </div>
+
+        <form wire:submit="createCustomer" class="mt-4 space-y-3 border-t border-gray-100 pt-4">
+            <p class="text-sm font-semibold text-gray-900">{{ __('pos.customer.new_title') }}</p>
+            <div>
+                <label for="pos-customer-name" class="block text-sm font-medium text-gray-800">{{ __('pos.customer.name') }} <span class="text-red-700" aria-hidden="true">*</span></label>
+                <input id="pos-customer-name" type="text" dir="auto" required autocomplete="off" maxlength="{{ \App\Models\Customer::MAX_NAME_LENGTH }}" wire:model="newCustomerName" @error('customer_name') aria-invalid="true" aria-describedby="pos-customer-name-error" @enderror class="{{ $inputClass }} mt-1">
+                @error('customer_name') <p id="pos-customer-name-error" class="mt-1 text-sm text-red-700" role="alert">{{ $message }}</p> @enderror
+            </div>
+            <div>
+                <label for="pos-customer-phone" class="block text-sm font-medium text-gray-800">{{ __('pos.customer.phone') }} <span class="text-red-700" aria-hidden="true">*</span></label>
+                <input id="pos-customer-phone" type="tel" dir="ltr" inputmode="tel" required autocomplete="off" maxlength="{{ \App\Models\Customer::MAX_PHONE_LENGTH }}" placeholder="0532 123 45 67" wire:model="newCustomerPhone" @error('customer_phone') aria-invalid="true" aria-describedby="pos-customer-phone-error" @enderror class="{{ $inputClass }} mt-1 font-mono">
+                @error('customer_phone') <p id="pos-customer-phone-error" class="mt-1 text-sm text-red-700" role="alert">{{ $message }}</p> @enderror
+            </div>
+            <button type="submit" wire:loading.attr="disabled" wire:target="createCustomer" class="{{ $primaryButton }} w-full">{{ __('pos.customer.save') }}</button>
+        </form>
     </x-operations.dialog>
 
     @if ($canDiscount)
