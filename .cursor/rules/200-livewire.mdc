@@ -1,17 +1,29 @@
 ---
-globs: ["app/Livewire/**/*.php", "resources/views/**/*.blade.php"]
-description: "Livewire 4 performance-first rules"
+description: Livewire 4 and Alpine interaction decisions
+globs: app/Livewire/**/*.php,resources/views/**/*.blade.php,resources/js/**/*.js
+alwaysApply: false
 ---
 
-## Livewire 4 (performance-first)
-- Default to: `wire:model.defer` or `wire:model.lazy` (NOT live).
-- Prefer explicit actions: `wire:click="..."`, `wire:submit.prevent="..."`, `wire:change="..."`.
-- Use debouncing only when needed: `wire:model.debounce.500ms`.
-- Use `wire:loading` + `wire:target` for UX without extra requests.
-- Use `wire:key` for stable DOM.
-- Use `wire:ignore` for heavy JS-managed elements (editors, complex widgets).
-- Avoid frequent re-renders; keep render() pure.
+# Responsive interactions using the installed stack
 
-## Alpine integration
-- Alpine controls UI state; Livewire controls server state.
-- Sync only at checkpoints (submit, confirm, apply, save).
+Read version-matched docs when an API is uncertain. These examples target Livewire 4.
+
+| Need | Starting choice |
+| --- | --- |
+| Submit a normal form | wire:model with wire:submit. Default model updates wait for an action before a network request. |
+| Fetch search suggestions | wire:model.live.debounce.350ms, or the existing explicit search handler. Use one request path. |
+| Server validation when leaving a field | wire:model.blur.live when validation at that point benefits the task. |
+| Local visibility, focus, tabs, or input formatting | Alpine or native HTML. |
+| Pending action feedback | Targeted loading/disabled state, attached to the action being submitted. |
+| Repeated elements | Stable wire:key based on record identity. |
+| Expensive independent content | Consider computed, lazy loading, or islands only for a demonstrated rendering need. |
+| Frequent page navigation | Consider wire:navigate after checking listener cleanup, reinitialization, and focus. |
+
+- Keep durable business state and authority on the server. Local editing and formatting state may be optimistic, while payment and stock outcomes need server confirmation.
+- Use the Alpine instance supplied by the configured Livewire integration. Check which plugins are available before adding scripts or packages.
+- Prefer direct $wire access and explicit checkpoints. Use entanglement only for state that actually needs two-way synchronization.
+- A scanner's Enter must submit the complete current text, cancel its pending debounce, and add once per scan. Old search replies must not replace newer feedback.
+- Validate disabled, dirty, loading, failure, and resumed states. Preserve input across validation and failed requests. Financial retry must use the existing recovery flow.
+- Keep DOM ownership clear. Restrict wire:ignore to the widget that needs it. Disabled controls and server updates must still reach the user.
+- Scope global listeners and clean them up on navigation/unmount. Keep render free of writes and expensive external calls.
+- Handle stale responses with the smallest mechanism fitting the actual request lifecycle. Verify the API before adding request interception, async actions, or parallel execution.

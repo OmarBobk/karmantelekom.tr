@@ -280,6 +280,7 @@ return [
 
     'errors' => [
         'price_invalid' => 'Enter a positive price up to :max, with at most 2 decimals.',
+        'amount_format' => 'Use the format :example — a period for thousands and a comma before kuruş (up to 2 digits).',
         'used_device_definition_price' => 'Used devices are priced on each device, not on the product.',
         'unit_price_used_devices_only' => 'Only used devices have their own price.',
         'unit_price_final_status' => 'A :status device cannot be repriced.',

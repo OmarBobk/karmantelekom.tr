@@ -52,7 +52,7 @@ class PosDiscountTest extends TestCase
         $field = 'lines.u'.$this->phone->id.'.adjusted_price';
 
         $refused = $this->validationErrors(fn () => $this->review($this->cashier, $this->phoneLine(extra: ['adjusted_price' => '390', 'adjustment_reason' => 'Scratch'])));
-        $this->assertSame(['390.00 TRY is below your limit. The lowest allowed unit price is 400.00 TRY.'], $refused[$field]);
+        $this->assertSame(['390,00 TRY is below your limit. The lowest allowed unit price is 400,00 TRY.'], $refused[$field]);
         $this->assertSame(0, CheckoutAttempt::query()->count());
 
         $attempt = $this->review($this->cashier, $this->phoneLine(extra: ['adjusted_price' => '400', 'adjustment_reason' => 'Scratch on the back']));
@@ -177,7 +177,7 @@ class PosDiscountTest extends TestCase
 
         $this->grantDiscount($this->cashier, '5');
 
-        $counter->call('$refresh')->assertSee('44.91')->assertDontSee('47.41');
+        $counter->call('$refresh')->assertSee('44,91')->assertDontSee('47,41');
         $this->assertArrayHasKey('attempt', $this->validationErrors(fn () => $this->review($this->cashier, $this->cableLine(1), $attempt->fresh())));
 
         $this->approveCard($this->cashier, $attempt, $terminal, '44.91');
@@ -200,21 +200,35 @@ class PosDiscountTest extends TestCase
             ->assertSet('discountListPrice', 50000)
             ->assertSet('discountLowestPrice', 40000)
             ->assertSet('discountLimit', DiscountAuthority::DEVICE_MINIMUM)
-            ->assertSee([__('pos.discount.original_price'), '500.00', __('pos.discount.lowest_price'), '400.00'])
+            ->assertSee([__('pos.discount.original_price'), '500,00', __('pos.discount.lowest_price'), '400,00'])
             ->set('discountPrice', '390')
             ->set('discountReason', 'Scratch')
             ->call('applyDiscount')
             ->assertHasErrors('discountPrice')
-            ->assertSee('The lowest allowed unit price is 400.00 TRY.')
+            ->assertSee('The lowest allowed unit price is 400,00 TRY.')
             ->assertSet("cart.{$key}.adjusted_price", '')
             ->set('discountPrice', '400')
             ->call('applyDiscount')
             ->assertHasNoErrors()
             ->assertSet("cart.{$key}.adjusted_price", '400.00')
-            ->assertSee('-100.00 each')
+            ->assertSee('-100,00 each')
+            ->call('openDiscount', $key)
+            ->assertSet('discountPrice', '400')
+            ->set('discountPrice', '450.50')
+            ->call('applyDiscount')
+            ->assertHasErrors('discountPrice')
+            ->assertSee(__('pos.errors.amount_format', ['example' => '10.000,50']))
+            ->assertSet("cart.{$key}.adjusted_price", '400.00')
+            ->set('discountPrice', '٤٥٠,٥٠')
+            ->call('applyDiscount')
+            ->assertHasNoErrors()
+            ->assertSet("cart.{$key}.adjusted_price", '450.50')
+            ->assertSee('-49,50 each')
+            ->call('openDiscount', $key)
+            ->assertSet('discountPrice', '450,50')
             ->call('review')
             ->assertSet('step', 'payment')
-            ->assertSee('400.00')
+            ->assertSee('450,50')
             ->call('removeDiscount', $key)
             ->assertSet("cart.{$key}.adjusted_price", '');
     }
@@ -272,11 +286,11 @@ class PosDiscountTest extends TestCase
 
         $this->actingAs($this->owner)->get(route('pos.sales.show', [$this->store, $sale]))
             ->assertOk()
-            ->assertSee([__('pos.discount.audit_title'), 'Scratch on the back', 'Ayşe', __('pos.discount.limit_device_minimum'), '-100.00', '400.00']);
+            ->assertSee([__('pos.discount.audit_title'), 'Scratch on the back', 'Ayşe', __('pos.discount.limit_device_minimum'), '-100,00', '400,00']);
 
         $this->actingAs($this->cashier)->get(route('pos.sales.show', [$this->store, $sale]))
             ->assertOk()
-            ->assertSee('400.00')
+            ->assertSee('400,00')
             ->assertDontSee(__('pos.discount.audit_title'));
     }
 

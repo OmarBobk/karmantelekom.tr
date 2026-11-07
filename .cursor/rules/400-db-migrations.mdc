@@ -1,9 +1,15 @@
 ---
-globs: ["database/migrations/**/*.php", "database/seeders/**/*.php"]
+description: Forward migrations and existing data preservation
+globs: database/migrations/**/*.php,database/seeders/**/*.php
+alwaysApply: false
 ---
 
-## DB/Migrations
-- Early stage: editing the latest migration is acceptable if the project workflow uses `migrate:fresh`.
-- Otherwise: create a new migration for schema changes.
-- Assume MySQL/MariaDB compatibility.
-- Add indexes intentionally (search fields, foreign keys, status columns used in filters).
+# Database changes
+
+- Inspect the actual installed schema state. An unmerged branch may already have migrations installed in an application database.
+- For installed migrations, add a forward migration and preserve data. Test the changed upgrade path with representative old records and a fresh install when relevant.
+- Run destructive rebuilds only against an explicitly disposable isolated database. Verify its connection before the command.
+- Application data removal requires Omar's explicit authorization for that action and database.
+- Use exact money types, documented constraints, deliberate indexes, and the project's MySQL/MariaDB semantics.
+- Consider partial migration failure, backfill retry, and existing null or legacy values. Document any deployment write pause needed.
+- Keep seeders targeted and safe to rerun. Respect rollback guards and append-only records.

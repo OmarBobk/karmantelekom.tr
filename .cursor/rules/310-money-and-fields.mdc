@@ -1,0 +1,21 @@
+---
+description: Exact values and usable money, identifier, date, and form controls
+globs: resources/views/**/*.blade.php,resources/js/**/*.js,app/Livewire/**/*.php,app/Services/Purchasing/Money.php
+alwaysApply: false
+---
+
+# Values must remain correct through editing
+
+- Make the display format, accepted entry format, canonical payload, and stored value explicit. Use one financial format for the whole affected flow.
+- Omar prefers period grouping, for example 10000 displayed as 10.000. For new localized TRY controls, use a decimal comma and Latin digits, for example 10.000,50. Treat this as the proposed Karman financial format, independent of Arabic/English labels, and disclose the choice on first implementation.
+- Normalize localized money through an explicit boundary into the existing exact canonical decimal or minor-unit contract. Server-side validation and calculation stay authoritative.
+- Existing Purchasing Money::parse interprets a period as a decimal mark. Passing grouped 10.000 directly can become 10.00. Preserve legacy callers and persisted payload interpretation by making localization explicit.
+- Use text inputs with inputmode=decimal for grouped money. Consider the installed Alpine Mask $money helper for caret-aware editing and Intl.NumberFormat for presentation after checking availability and behavior.
+- A formatter is not a parser or validator. Reject malformed or excessive-precision input before a permissive mask can silently alter its meaning. Preserve blank versus zero, limits, null values, and allowed negative signs.
+- Support Arabic/Persian digits by normalization where relevant. Preserve a partially typed decimal, insertion in the middle, selection replacement, Backspace, paste, Tab, Enter, and server-driven resets. Keep formatting local while typing.
+- Define the accepted separators explicitly. Reject an ambiguous foreign-format paste with a useful example instead of guessing its amount.
+- Use strings or integer minor units for money conversion and arithmetic. Prove round-trip behavior at the supported bounds.
+- Reuse one input component and formatter across the affected fields, totals, history, and receipt. Adopt them in other screens when those screens are in scope.
+- Treat phone numbers, barcodes, IMEIs, SKUs, and references as identifiers. Preserve leading zeroes and exact characters. Isolate their direction within RTL text.
+- Keep dates and times consistent with the operational timezone, Europe/Istanbul. Localize display while preserving canonical storage.
+- Label units, currency, required status, and errors. Empty data, unknown values, and zero must remain distinguishable.

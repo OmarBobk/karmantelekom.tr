@@ -1,24 +1,16 @@
 ---
-description: "Laravel 12 backend conventions: services/actions, validation, logging, transactions"
+description: Laravel backend conventions for Karman
+globs: app/**/*.php,routes/**/*.php
+alwaysApply: false
 ---
 
-## PHP/Laravel 12
-- Use PHP 8.2+ features appropriately (typed props, enums, match).
-- Use strict typing: `declare(strict_types=1);`
-- Follow PSR-12.
-- Prefer dependency injection over facades (facades ok for simple framework usage).
-- Business logic goes in Services/Actions, not in controllers or Livewire components.
+# Backend implementation
 
-## Validation
-- Prefer Form Requests for HTTP controllers.
-- For Livewire, prefer dedicated validator methods or Livewire form objects (if used in the project).
-- Keep validation rules centralized and reusable.
-
-## Data layer
-- Prefer Eloquent. Use query builder for complex queries.
-- Use transactions for multi-step writes (create order + items + payment status, etc.).
-- Use enums for finite domain states (status, type).
-
-## Errors & logging
-- Log with context (ids, user, payload keys—not secrets).
-- Use custom exceptions for predictable domain failures.
+- Follow the installed Laravel and PHP versions and sibling code. Use descriptive names, parameter and return types, and strict typing where established.
+- Reuse the existing Actions, Services, policies, validation, money handling, and scoped queries. Keep controllers and Livewire orchestration readable.
+- Put business authorization and validation at action boundaries. Validate every client-supplied identifier within the current user's branch scope.
+- Use Eloquent, eager loading, bounded queries, and pagination where appropriate. Add an index or cache only for an identified access pattern with a clear invalidation rule.
+- Use transactions for dependent writes. Preserve existing lock order, idempotency, and audit semantics.
+- Choose Form Requests or Livewire validation to fit the entry point. Share business rules through existing application code.
+- Introduce a repository, event, queue, cache, or interface only when the actual feature requires it.
+- Log diagnostic identifiers and error context while protecting secrets and payment data.

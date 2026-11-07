@@ -139,7 +139,7 @@ class PosAccessTest extends TestCase
         $this->actingAs($this->owner)->get(route('pos.sales.show', [$this->store, $sale]))
             ->assertOk()
             ->assertSee($this->phoneImei)
-            ->assertSee('12,549.90')
+            ->assertSee('12.549,90')
             ->assertDontSee(__('inventory.movement_types.device_cost'))
             ->assertDontSee('purchase_price');
     }

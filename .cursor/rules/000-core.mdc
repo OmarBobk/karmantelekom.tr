@@ -1,28 +1,35 @@
 ---
+description: Karman engineering, delivery, and verification policy
 alwaysApply: true
 ---
 
-You are a senior full-stack engineer for:
-Laravel 12, Livewire 4, Tailwind CSS 4.1, Alpine.js, Flux (FREE components only).
+# Deliver complete work with proportionate verification
 
-## Primary Goal
-Build a fast, lightweight UI.
-Avoid chatty Livewire updates and unnecessary network requests.
+Omar's working policy, 2026-11-07.
 
-## Hard Constraints
-- Flux: use FREE components only (no Pro).
-- Use Laravel 12 / Livewire 4 / Tailwind 4.1 conventions and new features where applicable.
-- Do not invent DB schema/columns/relationships; inspect existing code first.
-- Do not add new packages unless explicitly requested.
+- Read the applicable repository instructions once. Start from the requested entry point and its direct action, component, helper, and tests. Use targeted searches and bounded excerpts. Expand only when a dependency or finding requires it.
+- Confirm installed versions from lockfiles or installed package metadata once per task when relevant. Recheck after dependency changes. Package constraints and older rules are not installed-version evidence.
+- Choose the simplest supported implementation that completes the user journey. Prefer existing application logic, native browser behavior, and installed framework capabilities. Make routine reversible UX decisions autonomously. Raise only decisions affecting money policy, access, data loss, or an unresolved requirement.
+- Review the touched flow for usable defaults, input handling, feedback, recovery, accessibility, and request cost before delivery. Fix in-scope omissions in the same pass. A new shared component must have a current caller.
+- Preserve server authorization, branch isolation, authoritative prices, exact money, transaction boundaries, and replay safety. Protect application databases. Changes to installed schemas use forward migrations.
+- Keep output bounded. Read failure details when needed. Reuse results for unchanged code and dependencies.
 
-## Performance Rules (critical)
-- Prefer event-driven Livewire: submit actions, `wire:change`, and `wire:model.defer`/`lazy`.
-- Avoid `wire:model.live` on high-frequency inputs unless explicitly needed.
-- Use Alpine.js for UI-only state (tabs, dropdowns, modals, toggles, wizard steps).
-- Do NOT duplicate business state in Alpine. Alpine state must remain presentation-only.
-- Reduce Livewire component state; derive values via computed properties when possible.
-- Avoid side effects in render().
+## Verification ownership
 
-## Output style
-- Provide diff-friendly, minimal changes.
-- Explain briefly: what changed + why + performance impact.
+| Changed behavior | Agent verification |
+| --- | --- |
+| Rules or documentation only | Inspect the diff and run git diff --check. |
+| Copy, styling, layout | Check the affected markup. Build once if assets changed. Omar checks the appearance. |
+| Form, search, or interaction | Run the smallest existing checks covering the affected path. Add a regression only for a meaningful uncovered behavior. Omar checks typing, keyboard, and touch. |
+| Money, payments, stock, permissions, or migration | Verify the changed invariant and relevant failure/replay boundaries with focused tests. Run real concurrency checks when locking, competing writes, or idempotency changes. |
+
+- After the final relevant edit, run the selected checks once. Repeat only after another relevant edit, a failure, or evidence of flakiness. Broaden to a full suite when shared impact justifies it or CI requires it.
+- Use the formatter on changed PHP files. Use the project's existing PHPUnit conventions.
+- Omar owns routine browser walkthroughs, Arabic/English appearance, tablet checks, and print previews. Supply at most three numbered checks with route, role, input, and expected result. Report them as pending until Omar confirms.
+- Use agent browser automation when Omar requests it, or when a browser-only defect needs reproduction that code checks cannot establish. Bound it to the changed flow and one relevant boundary. Add a viewport or language only for a specific risk.
+- This verification policy also governs runs of the existing UI review skills. Skill techniques inform the work, while this table sets the run scope and verification owner.
+- Distinguish automated results, agent browser observations, and pending Omar checks. A PHP component test alone does not prove JavaScript timing or caret behavior.
+
+## Handoff
+
+Aim for 150 words plus the three manual checks when needed. Report the result, commit, checks actually run, and material gaps. Update an existing project note only for a decision or behavior that future work needs. Stop when the requested work and selected checks are complete.

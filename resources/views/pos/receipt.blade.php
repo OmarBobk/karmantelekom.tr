@@ -1,7 +1,8 @@
 @php
     use App\Models\Sale;
+    use App\Services\Purchasing\LocalizedMoney;
     use App\Services\Purchasing\Money;
-    $money = fn (string|int|null $value) => Money::format(is_int($value) ? $value : Money::fromDecimal($value));
+    $money = fn (string|int|null $value) => LocalizedMoney::format(is_int($value) ? $value : Money::fromDecimal($value));
 @endphp
 <!DOCTYPE html>
 <html lang="{{ $locale }}" dir="{{ $textDirection }}">
