@@ -1,21 +1,16 @@
 ---
-globs: ["resources/views/**/*.blade.php", "resources/js/**/*.js", "resources/css/**/*.css"]
-description: "Tailwind 4.1 + Flux Free + Alpine UI rules"
+description: Existing components, Tailwind, Alpine, and accessibility
+globs: resources/views/**/*.blade.php,resources/js/**/*.js,resources/css/**/*.css
+alwaysApply: false
 ---
 
-## Flux (FREE only)
-- Use only free Flux components/patterns.
-- If a Flux Pro component is needed, replace with:
-  - plain HTML + Tailwind utilities
-  - minimal Alpine behavior
+# UI implementation
 
-## Tailwind CSS 4.1
-- Utility-first; avoid custom CSS unless required.
-- Keep class lists readable; extract Blade components if repeated.
-- Don’t change colors/layout unless requested.
-- Ensure responsiveness + accessibility (focus states, aria, semantics).
-
-## Alpine.js
-- Use Alpine for UI-only interactions.
-- Keep Alpine small and declarative.
-- No complex business logic in Alpine.
+- Reuse a suitable Blade component before repeating markup. Improve a shared component when the same defect affects its actual callers, checking those callers for compatibility.
+- Use installed Tailwind APIs, CSS-first configuration where present, and existing semantic tokens. Keep class lists readable.
+- Flux usage requires an installed package and a verified component API. Use free components within the available license. At the reviewed 53ea705 lockfile, livewire/flux is absent, despite old rules mentioning it.
+- Prefer native controls and existing accessible components. Add focused Alpine behavior for interactions that need it.
+- Use logical spacing/alignment, readable Arabic typography, visible focus, and sufficient contrast. Keep labels attached to inputs and errors associated with their fields.
+- For dialogs, preserve focus entry, keyboard navigation, Escape behavior where appropriate, and return focus.
+- Use semantic HTML and text labels for statuses. Design touch targets for the operating device and respect reduced motion.
+- Apply karman-ui.mdc to the user journey and 310-money-and-fields.mdc when values or inputs are involved.

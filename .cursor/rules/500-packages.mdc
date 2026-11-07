@@ -1,18 +1,16 @@
 ---
-alwaysApply: true
-description: "Project packages and how to use them"
+description: Choose existing packages when a feature needs their capabilities
+alwaysApply: false
 ---
 
-This project uses these packages; prefer them over reinventing:
+# Package selection
 
-- spatie/laravel-permission: roles/permissions via middleware, policies, gates.
-- spatie/laravel-activitylog: audit logs for key models (orders, users, products).
-- laravel reverb: realtime broadcasting (prefer over ad-hoc polling).
-- pusher/pusher-php-server: broadcasting driver/compat (as configured).
-- spatie/browsershot: server-side rendering/PDF/screenshots (queue heavy tasks).
-- spatie/laravel-analytics: GA4 queries (cache results; don’t query on every request).
-- laravel boost: use MCP/tools where available; prefer repo-aware answers.
+Confirm the package is installed and its API matches the lockfile.
 
-Performance notes:
-- Analytics calls must be cached and never run on frequent UI interactions.
-- Browsershot jobs should be queued, not synchronous in web requests.
+- Use existing Spatie permission policies and gates for authorization, and activitylog for established audit events.
+- Use Reverb for a real requirement for server-pushed updates. Compare that requirement with the existing refresh or polling pattern and infrastructure cost.
+- Keep analytics queries out of frequent interactions. Use deliberate caching with a freshness rule.
+- Use the existing PDF/printing path. Heavy Browsershot work should run asynchronously when the workflow permits.
+- Use Laravel queues, events, validation, collections, and database APIs where they simplify the actual task.
+- Follow the configured broadcast, storage, and error-handling conventions.
+- A new dependency needs a concrete gap in the installed stack and Omar's authorization.

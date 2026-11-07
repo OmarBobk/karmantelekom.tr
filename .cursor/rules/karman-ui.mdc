@@ -1,26 +1,36 @@
 ---
+description: Design judgment and completion checks for Karman operational interfaces
+globs: resources/views/**/*.blade.php,resources/js/**/*.js,resources/css/**/*.css
 alwaysApply: false
 ---
 
-# Karman Telekom UI and UX
+# Design the task before styling the screen
 
-## Understand the task
+- Identify the operator, current branch, primary action, frequency, and device from the request and nearby workflow. Read only relevant product constraints.
+- Base decisions on usability, existing identity, and evidence appropriate to the task. DESIGN.md may provide context when relevant. Choose improvements using design judgment.
+- Reuse established good patterns. For a genuinely new workflow or major redesign, use karman-ux-benchmark to answer one concrete design question, then karman-ui-design for the chosen direction. Load only the relevant skill.
+- A local field or visual fix normally needs the existing component and applicable framework docs. Reuse a previously established benchmark decision.
+- Choose one direction, implement it, and briefly explain the meaningful tradeoff. Resolve ordinary font, spacing, hierarchy, and interaction choices autonomously within the task.
 
-- Read `DESIGN.md`, the relevant requirements in `PROJECT_SPEC.md` and `IMPLEMENTATION_PLAN.md` when present, and the closest existing view and components. Limit exploration to the requested screen and its workflow.
-- Identify the user's role, branch scope, primary task, and information needed to act. Use the project's documented permissions, terminology, and data semantics.
-- In a design review, recommend one direction in up to eight bullets. Explain the information hierarchy, primary action, typography, spacing, color roles, relevant states, and tablet behavior. If an unresolved product decision blocks the task, state the specific question. Return the review as text.
+## Review the touched journey
 
-## Design the screen
+| Area | Check before handoff |
+| --- | --- |
+| Hierarchy | Clear primary action, readable density, related information together, current branch and record visible. |
+| Fields | Suitable input type, formatting, labels, sensible defaults, validation timing, recoverable values. |
+| Feedback | Targeted loading, accurate success/failure, understandable disabled states, stale results handled. |
+| Lists | Distinguish no data from no matches, useful filter reset, bounded results, stable sorting and pagination. |
+| Keyboard | Tab order, Enter behavior, visible focus, dialog focus return, scanner speed when relevant. |
+| Arabic/English | Joined Arabic letters, long labels, logical spacing, isolated identifiers and amounts, translated errors. |
+| Responsive | Main task usable at the intended desktop/tablet width, appropriate touch targets, controlled overflow. |
+| Recovery | Preserve work, explain the next safe action, distinguish pending from completed, respect frozen payments. |
+| Accessibility | Semantics, labels, error association, contrast, keyboard operation, readable status text. |
 
-- Make the main task easy to spot. Group information by what the user needs together, and place actions near the records they affect. Use the appropriate density for daily operations and preserve important content at smaller widths.
-- Use the type scale, spacing, and semantic colors in `DESIGN.md`. Choose size, weight, and line height by content role. Reserve the accent for actions, selection, and focus. Give status a readable label.
-- Use Arabic labels and RTL structure with logical alignment and spacing. Isolate Latin device names, branch codes, phone numbers, IMEIs, and numeric amounts from surrounding Arabic. Try representative long labels and mixed-direction values.
-- Treat Stitch exports and screenshots as visual references. Compare their layout, states, and values with the project requirements and running application.
+Apply the rows relevant to the change during implementation and self-review. A small fix does not require a whole-site audit.
 
-## Implement and verify
+## Finish with evidence appropriate to risk
 
-- Reuse the project's Blade, Livewire, Alpine, and Tailwind components and tokens. Keep edits within the requested UI and use the existing server-backed actions, validation, and access rules. Surface any shared design-system change separately.
-- Cover the states relevant to the screen, such as loading, empty data, no filter matches, validation, failed requests, and success. Keep input recoverable, give fields clear labels, and make the keyboard focus and dialog behavior visible and predictable.
-- In the running app, check the requested screen at 1440px and 1024px, plus 390px when mobile is in scope. Inspect the actual Arabic font, text clipping and overflow, contrast of effective color pairs, focus order, and touch targets. Use synthetic data for previews.
-- Walk through the primary action and the highest-risk relevant state. For visual changes, use one screenshot per requested viewport when available. For an existing screen, compare against the original at a matching viewport when practical.
-- Report the route, viewport widths, actions checked, and remaining verification gaps. Distinguish browser observations from code inspection.
+- The verification policy in 000-core.mdc governs ownership and scope.
+- Omar performs routine rendered UI and print walkthroughs. Supply up to three concrete checks.
+- Invoke karman-ui-review for a requested visual review or a browser-specific defect. Select only the viewport, role, and boundary needed to establish that behavior.
+- Describe unperformed browser checks as pending. A screenshot or successful render alone does not establish the action's behavior.
