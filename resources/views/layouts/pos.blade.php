@@ -62,6 +62,9 @@
                         @can('receiveCustomerPayments', $posStore)
                             <a href="{{ route('pos.customers', $posStore) }}" @class(['inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-medium', 'bg-blue-50 text-blue-700' => request()->routeIs('pos.customers*'), 'text-gray-700 hover:bg-gray-100' => ! request()->routeIs('pos.customers*')]) @if (request()->routeIs('pos.customers*')) aria-current="page" @endif>{{ __('pos.nav.customers') }}</a>
                         @endcan
+                        @can('manageCashbox', $posStore)
+                            <a href="{{ route('pos.cashbox', $posStore) }}" @class(['inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-medium', 'bg-blue-50 text-blue-700' => request()->routeIs('pos.cashbox'), 'text-gray-700 hover:bg-gray-100' => ! request()->routeIs('pos.cashbox')]) @if (request()->routeIs('pos.cashbox')) aria-current="page" @endif>{{ __('pos.nav.cashbox') }}</a>
+                        @endcan
                     </nav>
                 @endif
 

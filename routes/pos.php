@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Pos\PosLocaleController;
 use App\Http\Controllers\Pos\SaleReceiptController;
+use App\Livewire\Pos\CashboxPage;
 use App\Livewire\Pos\CustomerAccountPage;
 use App\Livewire\Pos\CustomerAccounts;
 use App\Livewire\Pos\PosCounter;
@@ -31,6 +32,10 @@ Route::get('{store}/customers/{customer}', CustomerAccountPage::class)
     ->whereNumber(['store', 'customer'])
     ->scopeBindings()
     ->name('customers.show');
+Route::get('{store}/cashbox', CashboxPage::class)
+    ->middleware('can:manageCashbox,store')
+    ->whereNumber('store')
+    ->name('cashbox');
 Route::get('{store}/sales/{sale}', SaleReceiptController::class)
     ->middleware(['can:usePos,store', 'can:view,sale'])
     ->whereNumber(['store', 'sale'])

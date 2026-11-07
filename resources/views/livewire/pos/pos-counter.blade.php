@@ -367,7 +367,7 @@
                                 </div>
                                 <button type="button" wire:click="recordCardApproval" wire:loading.attr="disabled" wire:target="recordCardApproval" class="{{ $primaryButton }} mt-3 w-full">{{ __('pos.payment.record_card') }}</button>
                             </div>
-                        @elseif (! $attempt->cardApproval && $payment['payable'] > 0)
+                        @elseif (! $attempt->cardApproval && ! $cashIntake && $payment['payable'] > 0)
                             <fieldset class="rounded-lg p-3 ring-1 ring-gray-200">
                                 <legend class="px-1 text-sm font-semibold text-gray-900">{{ __('pos.payment.card_title') }}</legend>
                                 <p class="text-xs text-gray-600">{{ __('pos.payment.card_help') }}</p>
@@ -400,7 +400,40 @@
                             </fieldset>
                         @endif
 
+                        @error('cashbox')
+                            <p class="rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800 ring-1 ring-red-200" role="alert">{{ $message }}</p>
+                        @enderror
+
                         @unless ($terminalPending)
+                        @if ($payment['cash_due'] > 0 && $cashTracked && ! $cashIntake)
+                            @if ($cashSessionOpen)
+                                <div>
+                                    <button type="button" wire:click="startCashIntake" wire:loading.attr="disabled" wire:target="startCashIntake" class="{{ $primaryButton }} w-full">{{ __('pos.cashbox.take_cash', ['amount' => $money($payment['cash_due'])]) }}</button>
+                                    <p class="mt-1 text-xs text-gray-600">{{ __('pos.cashbox.take_cash_help') }}</p>
+                                </div>
+                            @else
+                                <p class="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-950 ring-1 ring-amber-300" role="status">{{ __('pos.cashbox.counter_no_session') }}</p>
+                            @endif
+                        @else
+                            @if ($cashIntake)
+                                <div
+                                    wire:key="cash-intake-{{ $cashIntake->id }}"
+                                    data-cash-intake="{{ $takeCashNow ? 'take' : 'verify' }}"
+                                    @class([
+                                        'rounded-lg p-3 text-sm ring-2',
+                                        'bg-sky-50 text-sky-950 ring-sky-500' => $takeCashNow,
+                                        'bg-amber-50 text-amber-950 ring-amber-500' => ! $takeCashNow,
+                                    ])
+                                    role="status"
+                                    aria-live="polite"
+                                >
+                                    <p class="text-base font-semibold">{{ __('pos.cashbox.intake_title', ['amount' => $money($cashIntake->amountMinor())]) }}</p>
+                                    <p class="mt-1">{{ $takeCashNow
+                                        ? __('pos.cashbox.intake_detail')
+                                        : __('pos.cashbox.intake_verify', ['amount' => $money($cashIntake->amountMinor()), 'time' => Sale::displayTime($cashIntake->started_at)]) }}</p>
+                                    <p class="mt-1 text-xs">{{ __('pos.cashbox.intake_release_hint') }}</p>
+                                </div>
+                            @endif
                             <form wire:submit="finalize" class="space-y-4">
                                 @if ($payment['cash_due'] > 0)
                                     {{-- The change preview is presentation only; finalize checks the tendered cash on the server. --}}
@@ -431,6 +464,7 @@
                                     <span wire:loading wire:target="finalize">{{ __('pos.payment.completing') }}</span>
                                 </button>
                             </form>
+                        @endif
                         @endunless
 
                         <div class="flex flex-wrap gap-2">
@@ -485,6 +519,9 @@
                                         'amount' => $money($open->terminalPaymentAmountMinor()),
                                         'terminal' => $open->terminalPaymentTerminal?->displayName(),
                                     ]) }}</p>
+                                @endif
+                                @if ($open->pendingCashIntake)
+                                    <p class="mt-1 font-semibold text-sky-900">{{ __('pos.cashbox.recovery_intake', ['amount' => $money($open->pendingCashIntake->amountMinor())]) }}</p>
                                 @endif
                                 @if ($open->failure_code)
                                     <p class="mt-1 text-red-800">{{ __('pos.recovery.failures.'.$open->failure_code) }}</p>

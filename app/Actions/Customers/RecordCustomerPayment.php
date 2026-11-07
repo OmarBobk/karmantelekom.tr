@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace App\Actions\Customers;
 
+use App\Actions\Cashbox\CashIntakePosting;
+use App\Enums\CashMovementType;
 use App\Enums\Currency;
 use App\Enums\CustomerPaymentMethod;
 use App\Exceptions\Inventory\IdempotencyConflictException;
 use App\Exceptions\Purchasing\InvalidAmountException;
+use App\Models\CashboxSession;
+use App\Models\CashIntake;
 use App\Models\Customer;
 use App\Models\CustomerPayment;
 use App\Models\CustomerPaymentAllocation;
@@ -32,8 +36,11 @@ use Illuminate\Validation\ValidationException;
  *
  * Payments for one customer are serialized by locking the customer row as the transaction's
  * first statement, so balances read afterwards include every committed payment and debt. The
- * payment, its allocations, and any cash receipt number are written together; debts and sales
- * are never changed. The request key replays an identical submission by the same actor and
+ * payment, its allocations, any cash receipt number, and the cash movement are written
+ * together; debts and sales are never changed. Once the store tracks its cashbox, cash needs the
+ * customer's pending intake for the same amount, and the part of the balance a pending intake
+ * reserves is not available to other payments. Lock order: the customer, the pending intake,
+ * the receipt sequence, then the store row in share mode with its open cashbox session. The request key replays an identical submission by the same actor and
  * conflicts otherwise. A card or transfer reference already recorded for this store and method
  * returns that payment only for an identical submission.
  */
@@ -106,13 +113,23 @@ class RecordCustomerPayment
                     return $this->replay($existing, $actor, $fingerprint, $key);
                 }
 
+                $intake = CashIntake::lockPending(CashIntake::customerSource($customer));
                 $openDebts = $this->account->openDebts($customer);
                 $due = CustomerAccount::totalDueMinor($openDebts);
+                $postsIntake = $method === CustomerPaymentMethod::CASH && $intake !== null;
 
-                if ($amount > $due) {
-                    throw ValidationException::withMessages(['amount' => $due === 0
-                        ? __('pos.customer_accounts.errors.nothing_due')
-                        : __('pos.customer_accounts.errors.amount_exceeds_due', ['due' => LocalizedMoney::format($due)])]);
+                if ($method === CustomerPaymentMethod::CASH) {
+                    self::assertCashBound($store, $intake, $amount);
+                }
+
+                $reserved = $intake !== null && ! $postsIntake ? $intake->amountMinor() : 0;
+
+                if ($amount > $due - $reserved) {
+                    throw ValidationException::withMessages(['amount' => match (true) {
+                        $due === 0 => __('pos.customer_accounts.errors.nothing_due'),
+                        $reserved > 0 => __('pos.cashbox.errors.amount_exceeds_unreserved', ['available' => LocalizedMoney::format(max(0, $due - $reserved)), 'reserved' => LocalizedMoney::format($reserved)]),
+                        default => __('pos.customer_accounts.errors.amount_exceeds_due', ['due' => LocalizedMoney::format($due)]),
+                    }]);
                 }
 
                 $now = now();
@@ -148,6 +165,10 @@ class RecordCustomerPayment
                         'customer_debt_id' => $debt->id,
                         'amount' => Money::toDecimal($applied),
                     ]);
+                }
+
+                if ($postsIntake) {
+                    CashIntakePosting::post($actor, $store, $intake, CashMovementType::CUSTOMER_PAYMENT_CASH, $amount, ['customer_payment_id' => $payment->id], $now);
                 }
 
                 return $payment;
@@ -188,6 +209,30 @@ class RecordCustomerPayment
         }
 
         throw ValidationException::withMessages(['reference' => __('pos.customer_accounts.errors.reference_used')]);
+    }
+
+    /**
+     * Once a store tracks its cashbox, cash is recorded only against the customer's pending
+     * intake for exactly that amount.
+     *
+     * @throws ValidationException
+     */
+    private static function assertCashBound(Store $store, ?CashIntake $intake, int $amount): void
+    {
+        if ($intake === null) {
+            if (CashboxSession::trackingStarted($store)) {
+                throw ValidationException::withMessages(['cashbox' => __('pos.cashbox.errors.cash_intake_required')]);
+            }
+
+            return;
+        }
+
+        if ($intake->amountMinor() !== $amount) {
+            throw ValidationException::withMessages(['amount' => __('pos.cashbox.errors.intake_amount_mismatch', [
+                'intake' => LocalizedMoney::format($intake->amountMinor()),
+                'due' => LocalizedMoney::format($amount),
+            ])]);
+        }
     }
 
     private function nextReceiptSequence(Store $store): int

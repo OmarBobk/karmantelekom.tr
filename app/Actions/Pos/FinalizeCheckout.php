@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Actions\Pos;
 
+use App\Actions\Cashbox\CashIntakePosting;
 use App\Actions\Inventory\InventoryLedger;
 use App\Actions\Inventory\UnitLifecycle;
 use App\Enums\AdjustmentReason;
 use App\Enums\CardApprovalStatus;
+use App\Enums\CashMovementType;
 use App\Enums\CheckoutAttemptStatus;
 use App\Enums\Currency;
 use App\Enums\MovementType;
@@ -18,6 +20,8 @@ use App\Exceptions\Inventory\IdempotencyConflictException;
 use App\Exceptions\Pos\CheckoutItemsChangedException;
 use App\Exceptions\Purchasing\InvalidAmountException;
 use App\Models\CardApproval;
+use App\Models\CashboxSession;
+use App\Models\CashIntake;
 use App\Models\CheckoutAttempt;
 use App\Models\CustomerDebt;
 use App\Models\InventoryBalance;
@@ -45,11 +49,13 @@ use Throwable;
 /**
  * Complete a reviewed checkout attempt as one sale, in one transaction.
  *
- * Lock order: the attempt, its card approval, product definitions (ascending), the store's
- * existing balance rows, then units (ascending), then the store's sale number sequence.
+ * Lock order: the attempt, its card approval, its pending cash intake, product definitions
+ * (ascending), the store's existing balance rows, then units (ascending), the store's sale
+ * number sequence, and last the store row in share mode with its open cashbox session.
  * Everything reviewed is checked again under those locks; the sale, its lines, the payments
- * actually received, the stock movements, sold unit states, and the debt for any reviewed credit
- * are written together or not at all. An editable checkout's credit needs the cashier's current
+ * actually received, the stock movements, sold unit states, the debt for any reviewed credit,
+ * and the cash movement for the net cash kept are written together or not at all. Once the
+ * store tracks its cashbox, cash is accepted only against the intake bound for it. An editable checkout's credit needs the cashier's current
  * credit authority; a frozen one completes with the credit and authorizer already recorded.
  *
  * A started terminal payment without a recorded approval blocks completion: the card may have
@@ -143,6 +149,8 @@ class FinalizeCheckout
         }
 
         $cardMinor = $approval !== null && $approval->status === CardApprovalStatus::APPROVED ? $approval->amountMinor() : 0;
+        $intake = CashIntake::lockPending(CashIntake::attemptSource($locked));
+        self::assertCashBound($store, $intake, max(0, $locked->payableMinor() - $cardMinor));
         [$cashDue, $changeMinor] = self::cashSplit($locked->payableMinor(), $cardMinor, $tenderedMinor);
 
         /** @var list<array<string, mixed>> $lines */
@@ -236,7 +244,11 @@ class FinalizeCheckout
             ]);
         }
 
-        $this->writePayments($actor, $store, $sale, $approval, $cardMinor, $cashDue, $tenderedMinor, $changeMinor, $now);
+        $cashPayment = $this->writePayments($actor, $store, $sale, $approval, $cardMinor, $cashDue, $tenderedMinor, $changeMinor, $now);
+
+        if ($intake !== null && $cashPayment !== null) {
+            CashIntakePosting::post($actor, $store, $intake, CashMovementType::SALE_CASH, $cashDue, ['sale_payment_id' => $cashPayment->id], $now);
+        }
 
         if ($creditMinor > 0) {
             CustomerDebt::query()->create([
@@ -456,7 +468,10 @@ class FinalizeCheckout
         return $sequence->last_number;
     }
 
-    private function writePayments(User $actor, Store $store, Sale $sale, ?CardApproval $approval, int $cardMinor, int $cashDue, ?int $tenderedMinor, int $changeMinor, mixed $now): void
+    /**
+     * @return SalePayment|null The cash payment, if any.
+     */
+    private function writePayments(User $actor, Store $store, Sale $sale, ?CardApproval $approval, int $cardMinor, int $cashDue, ?int $tenderedMinor, int $changeMinor, mixed $now): ?SalePayment
     {
         $base = [
             'sale_id' => $sale->id,
@@ -477,14 +492,41 @@ class FinalizeCheckout
             ]);
         }
 
-        if ($cashDue > 0) {
-            SalePayment::query()->create([
-                ...$base,
-                'method' => SalePaymentMethod::CASH,
-                'amount' => Money::toDecimal($cashDue),
-                'cash_tendered' => Money::toDecimal((int) $tenderedMinor),
-                'change_given' => Money::toDecimal($changeMinor),
-            ]);
+        if ($cashDue === 0) {
+            return null;
+        }
+
+        return SalePayment::query()->create([
+            ...$base,
+            'method' => SalePaymentMethod::CASH,
+            'amount' => Money::toDecimal($cashDue),
+            'cash_tendered' => Money::toDecimal((int) $tenderedMinor),
+            'change_given' => Money::toDecimal($changeMinor),
+        ]);
+    }
+
+    /**
+     * Once a store tracks its cashbox, cash is accepted only against a pending intake for exactly
+     * the cash due, bound before the cashier was told to take it. Card-only and fully credited
+     * checkouts need none.
+     *
+     * @throws ValidationException
+     */
+    private static function assertCashBound(Store $store, ?CashIntake $intake, int $cashDue): void
+    {
+        if ($intake === null) {
+            if ($cashDue > 0 && CashboxSession::trackingStarted($store)) {
+                throw ValidationException::withMessages(['cashbox' => __('pos.cashbox.errors.cash_intake_required')]);
+            }
+
+            return;
+        }
+
+        if ($intake->amountMinor() !== $cashDue) {
+            throw ValidationException::withMessages(['cashbox' => __('pos.cashbox.errors.intake_amount_mismatch', [
+                'intake' => LocalizedMoney::format($intake->amountMinor()),
+                'due' => LocalizedMoney::format($cashDue),
+            ])]);
         }
     }
 
