@@ -193,6 +193,32 @@ class CustomerPaymentTest extends TestCase
         $this->assertSame($key, CustomerPayment::query()->sole()->idempotency_key);
     }
 
+    #[Test]
+    public function a_fully_settled_account_is_found_under_settled_and_keeps_its_history_with_entry_disabled(): void
+    {
+        $sale = $this->creditSale($this->customer, 10, '300', '199');
+        Customer::factory()->atCounter($this->store)->create(['name' => 'Never Owed']);
+        $this->pay(['amount' => '300', 'method' => 'cash'], 'key-1');
+
+        Livewire::actingAs($this->owner)->test(CustomerAccounts::class, ['store' => $this->store])
+            ->assertSet('balance', 'open')
+            ->assertDontSee('Ahmet Yılmaz')
+            ->call('showBalance', 'settled')
+            ->assertSee(['Ahmet Yılmaz', __('pos.customer_accounts.settled')])
+            ->assertDontSee('Never Owed')
+            ->set('search', 'ahmet')
+            ->call('applySearch')
+            ->assertSee('Ahmet Yılmaz');
+
+        Livewire::actingAs($this->owner)->test(CustomerAccountPage::class, ['store' => $this->store, 'customer' => $this->customer])
+            ->assertSee([__('pos.customer_accounts.no_open_debts'), __('pos.customer_accounts.nothing_to_record'), 'KT01-CP-000001', $sale->number])
+            ->set('amount', '1')
+            ->call('record')
+            ->assertHasErrors('amount');
+
+        $this->assertSame(1, CustomerPayment::query()->count());
+    }
+
     private function pay(array $input, string $key, ?User $actor = null, ?Store $store = null, ?Customer $customer = null): CustomerPayment
     {
         return app(RecordCustomerPayment::class)($actor ?? $this->owner, $store ?? $this->store, $customer ?? $this->customer, $input, $key);

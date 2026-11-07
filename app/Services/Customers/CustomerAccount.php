@@ -55,6 +55,26 @@ class CustomerAccount
      */
     public function debtors(Store $store): Builder
     {
+        return $this->accounts($store)->having('due_amount', '>', 0);
+    }
+
+    /**
+     * Customers of the store who had debts there and have paid them all, with due_amount 0.
+     *
+     * @return Builder<Customer>
+     */
+    public function settled(Store $store): Builder
+    {
+        return $this->accounts($store)->having('due_amount', '=', 0);
+    }
+
+    /**
+     * Customers of the store with at least one debt in it, with their balance as due_amount.
+     *
+     * @return Builder<Customer>
+     */
+    private function accounts(Store $store): Builder
+    {
         $owed = CustomerDebt::query()
             ->selectRaw('coalesce(sum(original_amount), 0)')
             ->whereColumn('customer_debts.customer_id', 'customers.id')
@@ -69,7 +89,9 @@ class CustomerAccount
         return $store->customers()->getQuery()
             ->select('customers.*')
             ->selectRaw('('.$owed->toSql().') - ('.$paid->toSql().') as due_amount', [...$owed->getBindings(), ...$paid->getBindings()])
-            ->whereExists(fn ($query) => $query->select(DB::raw(1))->from('customer_debts')->whereColumn('customer_debts.customer_id', 'customers.id'))
-            ->having('due_amount', '>', 0);
+            ->whereExists(fn ($query) => $query->select(DB::raw(1))
+                ->from('customer_debts')
+                ->whereColumn('customer_debts.customer_id', 'customers.id')
+                ->where('customer_debts.store_id', $store->id));
     }
 }
