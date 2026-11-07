@@ -90,6 +90,22 @@ class Customer extends Model
         return $this->hasMany(Sale::class);
     }
 
+    /**
+     * @return HasMany<CustomerDebt, $this>
+     */
+    public function debts(): HasMany
+    {
+        return $this->hasMany(CustomerDebt::class);
+    }
+
+    /**
+     * @return HasMany<CustomerPayment, $this>
+     */
+    public function payments(): HasMany
+    {
+        return $this->hasMany(CustomerPayment::class);
+    }
+
     public function orders(): HasMany
     {
         return $this->hasMany(Order::class);

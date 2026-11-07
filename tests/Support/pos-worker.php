@@ -3,13 +3,15 @@
 declare(strict_types=1);
 
 /*
- * Test-only worker for SalesConcurrencyTest: runs one counter or inventory action in its own
+ * Test-only worker for SalesConcurrencyTest and CustomerPaymentConcurrencyTest: runs one counter,
+ * customer payment, or inventory action in its own
  * process (own database connection) and prints the outcome as JSON.
  *
  * Usage: php tests/Support/pos-worker.php '<json payload>'
  */
 
 use App\Actions\Catalog\SaveProductDefinition;
+use App\Actions\Customers\RecordCustomerPayment;
 use App\Actions\Customers\SaveCounterCustomer;
 use App\Actions\Inventory\AdjustQuantity;
 use App\Actions\Inventory\RecordInspection;
@@ -23,6 +25,7 @@ use App\Enums\SalePaymentMethod;
 use App\Enums\UnitStatus;
 use App\Exceptions\Inventory\IdempotencyConflictException;
 use App\Exceptions\Inventory\StaleUnitStateException;
+use App\Models\Customer;
 use App\Models\ProductDefinition;
 use App\Models\SalePayment;
 use App\Models\Store;
@@ -89,6 +92,11 @@ try {
             $customer = app(SaveCounterCustomer::class)($actor, $store, $payload['name'], $payload['phone']);
 
             return ['status' => 'ok', 'customer_id' => $customer->id, 'created' => $customer->wasRecentlyCreated];
+        })(),
+        'customer_payment' => (function () use ($actor, $store, $payload): array {
+            $payment = app(RecordCustomerPayment::class)($actor, $store, Customer::query()->findOrFail($payload['customer_id']), $payload['input'], $payload['key']);
+
+            return ['status' => 'ok', 'payment_id' => $payment->id, 'created' => $payment->wasRecentlyCreated];
         })(),
         'set_price' => (function () use ($actor, $payload): array {
             $definition = ProductDefinition::query()->findOrFail($payload['definition_id']);

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 use App\Http\Controllers\Pos\PosLocaleController;
 use App\Http\Controllers\Pos\SaleReceiptController;
+use App\Livewire\Pos\CustomerAccountPage;
+use App\Livewire\Pos\CustomerAccounts;
 use App\Livewire\Pos\PosCounter;
 use App\Livewire\Pos\PosHome;
 use App\Livewire\Pos\SalesHistory;
@@ -20,6 +22,15 @@ Route::get('{store}/sales', SalesHistory::class)
     ->middleware('can:usePos,store')
     ->whereNumber('store')
     ->name('sales');
+Route::get('{store}/customers', CustomerAccounts::class)
+    ->middleware('can:receiveCustomerPayments,store')
+    ->whereNumber('store')
+    ->name('customers');
+Route::get('{store}/customers/{customer}', CustomerAccountPage::class)
+    ->middleware('can:receiveCustomerPayments,store')
+    ->whereNumber(['store', 'customer'])
+    ->scopeBindings()
+    ->name('customers.show');
 Route::get('{store}/sales/{sale}', SaleReceiptController::class)
     ->middleware(['can:usePos,store', 'can:view,sale'])
     ->whereNumber(['store', 'sale'])

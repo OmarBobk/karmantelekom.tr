@@ -8,6 +8,7 @@ use App\Enums\Currency;
 use App\Services\Purchasing\Money;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Support\Carbon;
 use LogicException;
 
@@ -56,6 +57,27 @@ class CustomerDebt extends Model
     public function originalAmountMinor(): int
     {
         return Money::fromDecimal($this->original_amount);
+    }
+
+    /**
+     * The original amount less recorded allocations. Needs allocations_sum_amount, loaded with
+     * withSum('allocations', 'amount').
+     */
+    public function outstandingMinor(): int
+    {
+        if (! array_key_exists('allocations_sum_amount', $this->attributes)) {
+            throw new LogicException('Load the allocation total with withSum(\'allocations\', \'amount\') first.');
+        }
+
+        return $this->originalAmountMinor() - Money::fromDecimal($this->attributes['allocations_sum_amount']);
+    }
+
+    /**
+     * @return HasMany<CustomerPaymentAllocation, $this>
+     */
+    public function allocations(): HasMany
+    {
+        return $this->hasMany(CustomerPaymentAllocation::class);
     }
 
     /**

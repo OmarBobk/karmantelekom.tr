@@ -158,6 +158,15 @@ class StorePolicy
     }
 
     /**
+     * Determine whether the user can see this store's customer debts and record customer
+     * payments toward them (owner only).
+     */
+    public function receiveCustomerPayments(User $user, Store $store): bool
+    {
+        return $this->ownerHas($user, 'receive_customer_payments') && $this->usePos($user, $store);
+    }
+
+    /**
      * Determine whether the user can record the resolution of a voided terminal approval (owner only).
      */
     public function resolveCheckoutAttempts(User $user, Store $store): bool

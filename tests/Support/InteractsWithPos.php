@@ -13,6 +13,7 @@ use App\Enums\TrackingMode;
 use App\Models\CardApproval;
 use App\Models\CardTerminal;
 use App\Models\CheckoutAttempt;
+use App\Models\Customer;
 use App\Models\InventoryUnit;
 use App\Models\ProductDefinition;
 use App\Models\Sale;
@@ -127,6 +128,17 @@ trait InteractsWithPos
     protected function finalize(User $actor, CheckoutAttempt $attempt, ?string $cash = null): Sale
     {
         return app(FinalizeCheckout::class)($actor, $attempt->store, $attempt->key, $attempt->revision, $cash);
+    }
+
+    /**
+     * An owner-reviewed and completed cable sale for a counter customer of this store, with the
+     * given amount left on credit.
+     */
+    protected function creditSale(Customer $customer, int $cables, string $credit, ?string $cash = null): Sale
+    {
+        $attempt = app(ReviewCheckout::class)($this->owner, $this->store, $this->cableLine($cables), null, null, $customer->id, $credit);
+
+        return $this->finalize($this->owner, $attempt, $cash);
     }
 
     protected function cableStock(?Store $store = null): int

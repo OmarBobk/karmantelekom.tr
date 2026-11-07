@@ -50,7 +50,13 @@ class OperationalStoreSetupSeeder extends Seeder
         self::USE_POS_PERMISSION,
         'set_selling_prices',
         self::SELL_ON_CREDIT_PERMISSION,
+        self::RECEIVE_CUSTOMER_PAYMENTS_PERMISSION,
     ];
+
+    /**
+     * Recording later customer payments toward their debts. Owner only for now.
+     */
+    public const RECEIVE_CUSTOMER_PAYMENTS_PERMISSION = 'receive_customer_payments';
 
     /**
      * Leaving part or all of a store customer's sale unpaid at the counter. Owner only for now.
