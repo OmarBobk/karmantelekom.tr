@@ -39,5 +39,7 @@ return [
         'product_inactive' => 'The product is inactive, so it cannot be shared or sold.',
         'unit_unavailable' => 'The device is :status, so other branches cannot see it.',
         'not_priced' => 'Set a selling price before sharing this device.',
+        'stale' => 'Sharing for this device changed after you opened the page. Review its current state and try again.',
+        'other_branch_listing' => 'Another branch shared this device, so it cannot be withdrawn here.',
     ],
 ];

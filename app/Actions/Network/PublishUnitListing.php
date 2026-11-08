@@ -4,47 +4,43 @@ declare(strict_types=1);
 
 namespace App\Actions\Network;
 
+use App\Models\InventoryUnit;
 use App\Models\NetworkListing;
 use App\Models\ProductDefinition;
 use App\Models\Store;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
 final class PublishUnitListing
 {
     /**
-     * Share one of the branch's devices on Store Network.
+     * Share one of the branch's devices on Store Network, from the listing revision the operator saw.
      *
-     * Eligibility is checked under the inventory lock order (definition, then unit), so it
-     * serializes with checkout and price changes. Publishing an already published device
-     * changes nothing and logs nothing. No stock movement is written.
+     * Runs under the inventory lock order (definition, unit, then listing), so it serializes with
+     * checkout and price changes. A device this branch already shares is returned unchanged with
+     * no audit event, which makes retries harmless. Otherwise the listing must still be at the
+     * expected revision, or the request is stale. No stock movement is written.
      *
      * @throws AuthorizationException
      * @throws ValidationException
      */
-    public function __invoke(User $actor, Store $store, int $unitId): NetworkListing
+    public function __invoke(User $actor, Store $store, int $unitId, int $expectedRevision): NetworkListing
     {
         Gate::forUser($actor)->authorize('shareListings', $store);
 
-        $unit = $store->units()->whereKey($unitId)->firstOrFail();
+        return ListingLocks::run($store, $unitId, function (ProductDefinition $definition, InventoryUnit $unit, ?NetworkListing $listing) use ($actor, $store, $expectedRevision): NetworkListing {
+            if ($listing?->isPublishedBy($store)) {
+                return $listing;
+            }
 
-        return DB::transaction(function () use ($actor, $store, $unit): NetworkListing {
-            $definition = ProductDefinition::query()->whereKey($unit->product_definition_id)->lockForUpdate()->firstOrFail();
-            $locked = $store->units()->whereKey($unit->id)->lockForUpdate()->firstOrFail();
+            ListingLocks::assertCurrent($listing, $expectedRevision);
 
-            $problem = ListingEligibility::problem($definition, $locked);
+            $problem = ListingEligibility::problem($definition, $unit);
 
             if ($problem !== null) {
                 throw ValidationException::withMessages(['listing' => $problem]);
-            }
-
-            $listing = NetworkListing::query()->where('inventory_unit_id', $locked->id)->lockForUpdate()->first();
-
-            if ($listing !== null && $listing->isPublished() && $listing->store_id === $store->id) {
-                return $listing;
             }
 
             $attributes = [
@@ -56,17 +52,17 @@ final class PublishUnitListing
             ];
 
             if ($listing === null) {
-                $listing = NetworkListing::query()->create(['inventory_unit_id' => $locked->id, ...$attributes]);
+                $listing = NetworkListing::query()->create(['inventory_unit_id' => $unit->id, 'revision' => 1, ...$attributes]);
             } else {
-                $listing->update($attributes);
+                $listing->update([...$attributes, 'revision' => $listing->revision + 1]);
             }
 
             activity('store_network')
                 ->performedOn($listing)
                 ->causedBy($actor)
                 ->event('listing_published')
-                ->withProperties(['store_id' => $store->id, 'inventory_unit_id' => $locked->id])
-                ->log("Unit #{$locked->id} published to Store Network by {$store->code}");
+                ->withProperties(['store_id' => $store->id, 'inventory_unit_id' => $unit->id, 'revision' => $listing->revision])
+                ->log("Unit #{$unit->id} published to Store Network by {$store->code}");
 
             return $listing;
         });

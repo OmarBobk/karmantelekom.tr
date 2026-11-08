@@ -20,6 +20,7 @@ return new class extends Migration
             $table->timestamp('published_at');
             $table->foreignId('unpublished_by')->nullable()->constrained('users')->restrictOnDelete();
             $table->timestamp('unpublished_at')->nullable();
+            $table->unsignedInteger('revision')->default(1);
             $table->timestamps();
 
             $table->index(['unpublished_at', 'store_id']);

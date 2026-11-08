@@ -71,7 +71,7 @@ try {
         'correct_identifier' => $movementResult(app(CorrectUnitIdentifier::class)(
             $actor, $store, $payload['unit_id'], $payload['identifier_id'], $payload['expected_value'], $payload['new_value'], 'Concurrent correction', $payload['key'],
         )),
-        'publish_listing' => ['status' => 'ok', 'listing_id' => app(PublishUnitListing::class)($actor, $store, $payload['unit_id'])->id],
+        'publish_listing' => ['status' => 'ok', 'listing_id' => app(PublishUnitListing::class)($actor, $store, $payload['unit_id'], $payload['expected_revision'])->id],
         'change_tracking_mode' => (function () use ($actor, $definition, $payload): array {
             app(SaveProductDefinition::class)($actor, $definition, ['name' => $definition->name, 'tracking_mode' => $payload['tracking_mode']]);
 

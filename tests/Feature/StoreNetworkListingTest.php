@@ -57,40 +57,71 @@ class StoreNetworkListingTest extends TestCase
         $movements = InventoryMovement::count();
 
         $this->travelTo(now()->startOfMinute());
-        $listing = $this->publish();
+        $listing = $this->publish(NetworkListing::UNLISTED_REVISION);
         $this->assertSame($this->store->id, $listing->store_id);
         $this->assertSame($this->owner->id, $listing->published_by);
         $this->assertTrue($listing->published_at->equalTo(now()));
+        $this->assertSame(1, $listing->revision);
 
         $this->travel(5)->minutes();
-        $again = $this->publish();
-        $this->assertSame($listing->id, $again->id);
-        $this->assertTrue($again->published_at->equalTo($listing->published_at));
+        $retry = $this->publish(NetworkListing::UNLISTED_REVISION);
+        $this->assertSame($listing->id, $retry->id);
+        $this->assertSame(1, $retry->revision);
+        $this->assertTrue($retry->fresh()->updated_at->equalTo($listing->updated_at));
         $this->assertSame(1, NetworkListing::count());
         $this->assertSame(1, $this->auditEvents('listing_published'));
 
-        app(UnpublishUnitListing::class)($this->owner, $this->store, $this->phone->id);
-        app(UnpublishUnitListing::class)($this->owner, $this->store, $this->phone->id);
+        $this->unpublish(1);
+        $this->unpublish(1);
         $this->assertSame(1, $this->auditEvents('listing_unpublished'));
         $this->assertFalse($listing->fresh()->isPublished());
+        $this->assertSame(2, $listing->fresh()->revision);
 
-        $this->publish();
+        $this->publish(2);
         $this->assertSame(1, NetworkListing::count());
         $this->assertTrue($listing->fresh()->isPublished());
         $this->assertNull($listing->fresh()->unpublished_by);
+        $this->assertSame(3, $listing->fresh()->revision);
         $this->assertSame(2, $this->auditEvents('listing_published'));
         $this->assertSame($movements, InventoryMovement::count());
     }
 
     #[Test]
+    public function an_old_stop_sharing_action_cannot_withdraw_a_newer_republication(): void
+    {
+        $this->publish(NetworkListing::UNLISTED_REVISION);
+        $stalePage = Livewire::actingAs($this->owner)->test(UnitDetail::class, ['store' => $this->store, 'unit' => $this->phone])
+            ->assertSet('listingRevision', 1);
+
+        $this->unpublish(1);
+        $this->publish(2);
+
+        $stalePage->call('unpublishListing')
+            ->assertHasErrors('listing')
+            ->assertSee('Sharing for this device changed after you opened the page.')
+            ->assertSet('listingRevision', 3);
+
+        $listing = NetworkListing::query()->sole();
+        $this->assertTrue($listing->isPublished());
+        $this->assertSame(3, $listing->revision);
+        $this->assertSame(1, $this->auditEvents('listing_unpublished'));
+        $this->assertListingError(fn () => $this->unpublish(1), 'changed after you opened the page');
+
+        $this->unpublish(3);
+        $this->assertListingError(fn () => $this->publish(3), 'changed after you opened the page');
+        $this->assertFalse(NetworkListing::query()->sole()->isPublished());
+        $this->assertSame(2, $this->auditEvents('listing_published'));
+    }
+
+    #[Test]
     public function only_an_owner_with_sharing_permission_publishes_an_eligible_device_of_their_branch(): void
     {
-        $this->assertRefused(fn () => app(PublishUnitListing::class)($this->createCashier(), $this->store, $this->phone->id));
+        $this->assertRefused(fn () => app(PublishUnitListing::class)($this->createCashier(), $this->store, $this->phone->id, 0));
 
-        $this->expectModelNotFound(fn () => app(PublishUnitListing::class)($this->owner, $this->otherStore, $this->phone->id));
+        $this->expectModelNotFound(fn () => app(PublishUnitListing::class)($this->owner, $this->otherStore, $this->phone->id, 0));
 
         $unpriced = $this->registerDevice($this->owner, $this->store, $this->usedPhone, self::imei('35693803564381'));
-        $this->assertListingError(fn () => app(PublishUnitListing::class)($this->owner, $this->store, $unpriced->id), 'Set a selling price');
+        $this->assertListingError(fn () => app(PublishUnitListing::class)($this->owner, $this->store, $unpriced->id, 0), 'Set a selling price');
 
         $this->usedPhone->update(['is_active' => false]);
         $this->assertListingError(fn () => $this->publish(), 'inactive');
@@ -127,7 +158,7 @@ class StoreNetworkListingTest extends TestCase
         $this->publish();
         $ownListing = $this->registerDevice($this->owner, $this->otherStore, $this->usedPhone, self::imei('35693803564382'));
         $ownListing->update(['selling_price' => '9000.00']);
-        app(PublishUnitListing::class)($this->owner, $this->otherStore, $ownListing->id);
+        app(PublishUnitListing::class)($this->owner, $this->otherStore, $ownListing->id, 0);
 
         $response = $this->actingAs($this->otherCashier)->get(route('pos.network', $this->otherStore))
             ->assertOk()
@@ -149,7 +180,7 @@ class StoreNetworkListingTest extends TestCase
         $galaxy = ProductDefinition::factory()->priced('15000.00')->create(['name' => 'Galaxy S24', 'model' => 'SM-S921', 'tracking_mode' => TrackingMode::SERIALIZED]);
         $sealed = $this->registerDevice($this->owner, $thirdStore, $galaxy, null, 'R5CX1234', condition: UnitCondition::NEW);
         $this->publish();
-        app(PublishUnitListing::class)($this->owner, $thirdStore, $sealed->id);
+        app(PublishUnitListing::class)($this->owner, $thirdStore, $sealed->id, 0);
 
         $page = Livewire::actingAs($this->otherCashier)->test(NetworkListings::class, ['store' => $this->otherStore]);
         $this->assertEqualsCanonicalizing(['iPhone 13', 'Galaxy S24'], $this->listedProducts($page));
@@ -207,9 +238,22 @@ class StoreNetworkListingTest extends TestCase
         $this->assertDiscovered([]);
     }
 
-    private function publish(): NetworkListing
+    /**
+     * Share the KT01 phone from the given revision, or from its current one.
+     */
+    private function publish(?int $expectedRevision = null): NetworkListing
     {
-        return app(PublishUnitListing::class)($this->owner, $this->store, $this->phone->id);
+        return app(PublishUnitListing::class)($this->owner, $this->store, $this->phone->id, $expectedRevision ?? $this->currentRevision());
+    }
+
+    private function unpublish(int $expectedRevision): ?NetworkListing
+    {
+        return app(UnpublishUnitListing::class)($this->owner, $this->store, $this->phone->id, $expectedRevision);
+    }
+
+    private function currentRevision(): int
+    {
+        return NetworkListing::revisionOf(NetworkListing::query()->where('inventory_unit_id', $this->phone->id)->first());
     }
 
     /**

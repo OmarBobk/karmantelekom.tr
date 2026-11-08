@@ -34,6 +34,7 @@ use App\Livewire\Backend\Concerns\UsesOperationalLocale;
 use App\Models\DeviceCostEntry;
 use App\Models\InventoryMovement;
 use App\Models\InventoryUnit;
+use App\Models\NetworkListing;
 use App\Models\Purchase;
 use App\Models\PurchaseReceiptLine;
 use App\Models\SaleLine;
@@ -85,6 +86,12 @@ class UnitDetail extends Component
 
     #[Locked]
     public ?string $staleNotice = null;
+
+    /**
+     * Store Network listing revision the operator is looking at; share and withdraw act from it.
+     */
+    #[Locked]
+    public int $listingRevision = NetworkListing::UNLISTED_REVISION;
 
     public string $removalReason = '';
 
@@ -171,6 +178,7 @@ class UnitDetail extends Component
         $this->store = $store;
         $this->unitId = $unit->id;
         $this->adoptState($unit);
+        $this->listingRevision = NetworkListing::revisionOf($unit->networkListing);
 
         $priceMinor = $unit->sellingPriceMinor();
         $this->unitSellingPrice = $priceMinor === null ? '' : Money::input($priceMinor);
@@ -454,21 +462,41 @@ class UnitDetail extends Component
     public function publishListing(PublishUnitListing $publishUnitListing): void
     {
         $this->authorize('shareListings', $this->store);
-        $this->resetErrorBag('listing');
-
-        $publishUnitListing(auth()->user(), $this->store, $this->unitId);
-
-        $this->dispatch('notify', ['type' => 'success', 'message' => __('network.listing.published_message')]);
+        $this->changeListing(
+            fn (): ?NetworkListing => $publishUnitListing(auth()->user(), $this->store, $this->unitId, $this->listingRevision),
+            __('network.listing.published_message'),
+        );
     }
 
     public function unpublishListing(UnpublishUnitListing $unpublishUnitListing): void
     {
         $this->authorize('shareListings', $this->store);
+        $this->changeListing(
+            fn (): ?NetworkListing => $unpublishUnitListing(auth()->user(), $this->store, $this->unitId, $this->listingRevision),
+            __('network.listing.unpublished_message'),
+        );
+    }
+
+    /**
+     * Apply a share or withdraw from the shown revision. A refusal re-renders the current listing,
+     * so the operator's next action is bound to the state now on screen.
+     *
+     * @param  Closure(): ?NetworkListing  $change
+     */
+    private function changeListing(Closure $change, string $successMessage): void
+    {
         $this->resetErrorBag('listing');
 
-        $unpublishUnitListing(auth()->user(), $this->store, $this->unitId);
+        try {
+            $listing = $change();
+        } catch (ValidationException $exception) {
+            $this->listingRevision = NetworkListing::revisionOf(NetworkListing::query()->where('inventory_unit_id', $this->unitId)->first());
 
-        $this->dispatch('notify', ['type' => 'success', 'message' => __('network.listing.unpublished_message')]);
+            throw $exception;
+        }
+
+        $this->listingRevision = NetworkListing::revisionOf($listing);
+        $this->dispatch('notify', ['type' => 'success', 'message' => $successMessage]);
     }
 
     public function dismissStaleNotice(): void
@@ -486,7 +514,9 @@ class UnitDetail extends Component
     public function refreshState(): void
     {
         $this->authorize('viewInventory', $this->store);
-        $this->adoptState($this->unitQuery()->firstOrFail());
+        $unit = $this->unitQuery()->firstOrFail();
+        $this->adoptState($unit);
+        $this->listingRevision = NetworkListing::revisionOf($unit->networkListing);
         $this->reset('completionReturned', 'cancelReturned');
         $this->staleNotice = null;
         $this->resetErrorBag();

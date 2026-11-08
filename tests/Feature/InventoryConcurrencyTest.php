@@ -173,7 +173,7 @@ class InventoryConcurrencyTest extends TestCase
         $movement = app(RegisterOpeningUnit::class)($this->owner, $this->storeOne, $phone, UnitCondition::B, self::imei('35693803564380'), null, null, null, 'unit');
         InventoryUnit::query()->whereKey($movement->inventory_unit_id)->update(['selling_price' => '9000.00']);
 
-        $request = ['operation' => 'publish_listing', 'store_id' => $this->storeOne->id, 'definition_id' => $phone->id, 'unit_id' => $movement->inventory_unit_id];
+        $request = ['operation' => 'publish_listing', 'store_id' => $this->storeOne->id, 'definition_id' => $phone->id, 'unit_id' => $movement->inventory_unit_id, 'expected_revision' => NetworkListing::UNLISTED_REVISION];
         $results = $this->raceWhileLocked([$phone], [$request, $request]);
 
         $this->assertSame(['ok', 'ok'], array_column($results, 'status'));

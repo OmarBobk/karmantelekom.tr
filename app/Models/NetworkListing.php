@@ -20,6 +20,7 @@ use Illuminate\Support\Carbon;
  * @property int $store_id
  * @property int $published_by
  * @property Carbon $published_at
+ * @property int $revision Increases with every publication and withdrawal.
  * @property int|null $unpublished_by
  * @property Carbon|null $unpublished_at
  */
@@ -28,19 +29,38 @@ class NetworkListing extends Model
     /** @use HasFactory<NetworkListingFactory> */
     use HasFactory;
 
-    protected $fillable = ['inventory_unit_id', 'store_id', 'published_by', 'published_at', 'unpublished_by', 'unpublished_at'];
+    protected $fillable = ['inventory_unit_id', 'store_id', 'published_by', 'published_at', 'unpublished_by', 'unpublished_at', 'revision'];
+
+    /**
+     * The revision an operator sees for a device that has never been listed.
+     */
+    public const UNLISTED_REVISION = 0;
 
     protected function casts(): array
     {
         return [
             'published_at' => 'datetime',
             'unpublished_at' => 'datetime',
+            'revision' => 'integer',
         ];
     }
 
     public function isPublished(): bool
     {
         return $this->unpublished_at === null;
+    }
+
+    public function isPublishedBy(Store $store): bool
+    {
+        return $this->isPublished() && (int) $this->store_id === (int) $store->id;
+    }
+
+    /**
+     * The listing revision of a device as shown to an operator.
+     */
+    public static function revisionOf(?self $listing): int
+    {
+        return $listing?->revision ?? self::UNLISTED_REVISION;
     }
 
     /**
