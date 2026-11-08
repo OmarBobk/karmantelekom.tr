@@ -98,6 +98,7 @@ return [
             'intake_amount_mismatch' => 'The cash recorded for this payment is :intake TRY, but :due TRY is due. Ask the owner to release it.',
             'intake_already_pending' => 'A cash payment is already in progress here.',
             'intake_not_pending' => 'This cash payment is no longer in progress.',
+            'intake_changed' => 'The cash payment on this screen changed. Check the current one before confirming.',
             'release_note_required' => 'Describe what happened (up to :max characters).',
             'card_after_cash_intake' => 'Cash for this checkout is in progress, so a card payment cannot start. Complete the sale with cash, or ask the owner to release the cash.',
             'cancel_with_cash_intake' => 'Cash for this checkout is in progress, so it cannot be cancelled. Complete it, or ask the owner to release the cash.',

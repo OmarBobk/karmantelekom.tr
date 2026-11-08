@@ -49,7 +49,8 @@ class RecordCustomerPayment
     public function __construct(private readonly CustomerAccount $account) {}
 
     /**
-     * @param  array{amount?: mixed, method?: mixed, reference?: mixed, note?: mixed}  $input  The amount is a canonical decimal.
+     * @param  array{amount?: mixed, method?: mixed, reference?: mixed, note?: mixed, cash_intake_id?: mixed}  $input  The amount is a canonical decimal;
+     *                                                                                                                 cash_intake_id is the pending intake the screen displayed for a cash payment.
      *
      * @throws AuthorizationException
      * @throws ValidationException
@@ -70,6 +71,7 @@ class RecordCustomerPayment
             'method' => ['required', Rule::enum(CustomerPaymentMethod::class)],
             'reference' => ['nullable', 'string', 'max:'.CustomerPayment::MAX_REFERENCE_LENGTH],
             'note' => ['nullable', 'string', 'max:'.CustomerPayment::MAX_NOTE_LENGTH],
+            'cash_intake_id' => ['nullable', 'integer'],
         ], [], [
             'amount' => __('pos.customer_accounts.fields.amount'),
             'method' => __('pos.customer_accounts.fields.method'),
@@ -92,6 +94,7 @@ class RecordCustomerPayment
         }
 
         $note = Str::trim((string) ($validated['note'] ?? '')) ?: null;
+        $cashIntakeId = $method === CustomerPaymentMethod::CASH && isset($validated['cash_intake_id']) ? (int) $validated['cash_intake_id'] : null;
 
         $fingerprint = Idempotency::fingerprint([
             'operation' => 'customer_payment',
@@ -101,10 +104,11 @@ class RecordCustomerPayment
             'method' => $method->value,
             'reference_key' => $referenceKey,
             'note' => $note,
+            'cash_intake' => $cashIntakeId,
         ]);
 
         try {
-            return DB::transaction(function () use ($actor, $store, $customer, $amount, $method, $reference, $referenceKey, $note, $key, $fingerprint): CustomerPayment {
+            return DB::transaction(function () use ($actor, $store, $customer, $amount, $method, $reference, $referenceKey, $note, $cashIntakeId, $key, $fingerprint): CustomerPayment {
                 Customer::query()->whereKey($customer->id)->lockForUpdate()->firstOrFail();
 
                 $existing = $this->findExisting($store, $key, $method, $referenceKey);
@@ -113,7 +117,9 @@ class RecordCustomerPayment
                     return $this->replay($existing, $actor, $fingerprint, $key);
                 }
 
-                $intake = CashIntake::lockPending(CashIntake::customerSource($customer));
+                $intake = $method === CustomerPaymentMethod::CASH
+                    ? CashIntake::lockDisplayed(CashIntake::customerSource($customer), $cashIntakeId)
+                    : CashIntake::query()->where('pending_source', CashIntake::customerSource($customer))->first();
                 $openDebts = $this->account->openDebts($customer);
                 $due = CustomerAccount::totalDueMinor($openDebts);
                 $postsIntake = $method === CustomerPaymentMethod::CASH && $intake !== null;
@@ -149,6 +155,10 @@ class RecordCustomerPayment
                     'request_fingerprint' => $fingerprint,
                     'received_at' => $now,
                 ]);
+
+                if ($method === CustomerPaymentMethod::CASH && $intake === null && CashboxSession::lockTrackingStarted($store)) {
+                    throw ValidationException::withMessages(['cashbox' => __('pos.cashbox.errors.cash_intake_required')]);
+                }
 
                 $remaining = $amount;
 

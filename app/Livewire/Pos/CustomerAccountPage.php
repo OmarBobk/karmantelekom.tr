@@ -46,6 +46,13 @@ class CustomerAccountPage extends Component
     #[Locked]
     public string $cashRequestKey = '';
 
+    /**
+     * The pending cash intake this page shows. Confirming names it, so a released intake is
+     * never swapped for a newer one, and a retry after a lost response replays the payment.
+     */
+    #[Locked]
+    public ?int $displayedCashIntakeId = null;
+
     public string $amount = '';
 
     public string $method = 'cash';
@@ -60,7 +67,8 @@ class CustomerAccountPage extends Component
         $this->customerId = $customer->id;
         $this->requestKey = (string) Str::uuid();
         $this->cashRequestKey = (string) Str::uuid();
-        $this->authorizeAccount();
+        [, $customer] = $this->authorizeAccount();
+        $this->displayedCashIntakeId = self::pendingIntakeId($customer);
     }
 
     public function record(RecordCustomerPayment $record, StartCustomerCashIntake $startCash): void
@@ -74,38 +82,51 @@ class CustomerAccountPage extends Component
         }
 
         if ($this->method === CustomerPaymentMethod::CASH->value && CashboxSession::trackingStarted($store)) {
-            $intake = $startCash(auth()->user(), $store, $customer, $amount, $this->cashRequestKey);
+            try {
+                $intake = $startCash(auth()->user(), $store, $customer, $amount, $this->cashRequestKey);
+            } catch (ValidationException $exception) {
+                $this->displayedCashIntakeId = self::pendingIntakeId($customer);
+
+                throw $exception;
+            }
+
             $this->cashRequestKey = (string) Str::uuid();
+            $this->displayedCashIntakeId = $intake->isPending() ? $intake->id : self::pendingIntakeId($customer);
             $this->resetValidation();
             $this->notify('info', __('pos.cashbox.customer_intake_title', ['amount' => LocalizedMoney::format($intake->amountMinor())]));
 
             return;
         }
 
-        $this->submit($record, $store, $customer, $amount, $this->method);
+        $this->submit($record, $store, $customer, $amount, $this->method, null);
     }
 
     /**
-     * Record the cash payment for the customer's pending intake, once the cash was taken.
+     * Record the cash payment for the intake this page displayed, once the cash was taken. A
+     * completed intake is still named, so a retry after a lost response replays its payment.
      */
     public function confirmCash(RecordCustomerPayment $record): void
     {
         [$store, $customer] = $this->authorizeAccount();
-        $intake = CashIntake::query()->where('pending_source', CashIntake::customerSource($customer))->first();
+        $intake = $this->displayedCashIntakeId === null ? null : CashIntake::query()
+            ->where('store_id', $store->id)
+            ->where('customer_id', $customer->id)
+            ->find($this->displayedCashIntakeId);
 
         if ($intake === null) {
-            $this->notify('error', __('pos.cashbox.errors.intake_not_pending'));
+            $this->displayedCashIntakeId = self::pendingIntakeId($customer);
+            $this->notify('error', __('pos.cashbox.errors.intake_changed'));
 
             return;
         }
 
-        $this->submit($record, $store, $customer, $intake->amount, CustomerPaymentMethod::CASH->value);
+        $this->submit($record, $store, $customer, $intake->amount, CustomerPaymentMethod::CASH->value, $intake->id);
     }
 
     /**
      * @throws ValidationException
      */
-    private function submit(RecordCustomerPayment $record, Store $store, Customer $customer, string $amount, string $method): void
+    private function submit(RecordCustomerPayment $record, Store $store, Customer $customer, string $amount, string $method, ?int $cashIntakeId): void
     {
         try {
             $payment = $record(auth()->user(), $store, $customer, [
@@ -113,10 +134,19 @@ class CustomerAccountPage extends Component
                 'method' => $method,
                 'reference' => $this->reference,
                 'note' => $this->note,
+                'cash_intake_id' => $cashIntakeId,
             ], $this->requestKey);
         } catch (IdempotencyConflictException) {
             throw ValidationException::withMessages(['amount' => __('pos.customer_accounts.errors.request_conflict')]);
+        } catch (ValidationException $exception) {
+            if (array_key_exists('cashbox', $exception->errors())) {
+                $this->displayedCashIntakeId = self::pendingIntakeId($customer);
+            }
+
+            throw $exception;
         }
+
+        $this->displayedCashIntakeId = self::pendingIntakeId($customer);
 
         $this->reset('amount', 'reference', 'note');
         $this->method = CustomerPaymentMethod::CASH->value;
@@ -161,6 +191,11 @@ class CustomerAccountPage extends Component
         $this->authorize('receiveCustomerPayments', $store);
 
         return [$store, $store->customers()->findOrFail($this->customerId)];
+    }
+
+    private static function pendingIntakeId(Customer $customer): ?int
+    {
+        return CashIntake::query()->where('pending_source', CashIntake::customerSource($customer))->value('id');
     }
 
     private function notify(string $type, string $message): void

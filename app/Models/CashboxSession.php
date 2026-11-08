@@ -83,6 +83,19 @@ class CashboxSession extends Model
     }
 
     /**
+     * Whether tracking started, as a current read under the store row's share lock. Opening locks
+     * the store row exclusively first, so a first session opened by a transaction that committed
+     * after this one's snapshot is still seen, and none can open until this one commits. Like
+     * lockOpenShared, take it after every other lock.
+     */
+    public static function lockTrackingStarted(Store $store): bool
+    {
+        Store::query()->whereKey($store->id)->sharedLock()->first();
+
+        return self::query()->where('store_id', $store->id)->sharedLock()->value('id') !== null;
+    }
+
+    /**
      * The store's open session, read after locking the store row in share mode: no session can
      * open or close until this transaction commits, while other postings proceed. Take it after
      * every other lock. Opening and closing lock the store row exclusively as their first

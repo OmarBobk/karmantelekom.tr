@@ -11,6 +11,7 @@ declare(strict_types=1);
  */
 
 use App\Actions\Cashbox\CloseCashboxSession;
+use App\Actions\Cashbox\OpenCashboxSession;
 use App\Actions\Cashbox\StartSaleCashIntake;
 use App\Actions\Catalog\SaveProductDefinition;
 use App\Actions\Customers\RecordCustomerPayment;
@@ -60,7 +61,7 @@ if ($payload['fail_late'] ?? false) {
 try {
     $result = match ($payload['operation']) {
         'finalize' => (function () use ($actor, $store, $payload): array {
-            $sale = app(FinalizeCheckout::class)($actor, $store, $payload['attempt_key'], $payload['revision'], $payload['cash'] ?? null);
+            $sale = app(FinalizeCheckout::class)($actor, $store, $payload['attempt_key'], $payload['revision'], $payload['cash'] ?? null, $payload['cash_intake_id'] ?? null);
 
             return ['status' => 'ok', 'sale_id' => $sale->id, 'number' => $sale->number];
         })(),
@@ -104,6 +105,11 @@ try {
             $intake = app(StartSaleCashIntake::class)($actor, $store, $payload['attempt_key'], $payload['revision'], $payload['request_key']);
 
             return ['status' => 'ok', 'intake_id' => $intake->id];
+        })(),
+        'open_cashbox' => (function () use ($actor, $store, $payload): array {
+            $session = app(OpenCashboxSession::class)($actor, $store, $payload['counted'], $payload['note'] ?? null);
+
+            return ['status' => 'ok', 'session_id' => $session->id];
         })(),
         'close_cashbox' => (function () use ($actor, $store, $payload): array {
             $session = app(CloseCashboxSession::class)($actor, $store, $payload['session_id'], $payload['expected_shown'], $payload['counted'], $payload['note'] ?? null);

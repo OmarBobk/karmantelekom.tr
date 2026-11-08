@@ -77,7 +77,10 @@ class FinalizeCheckout
      * @throws IdempotencyConflictException
      * @throws ValidationException
      */
-    public function __invoke(User $actor, Store $store, string $attemptKey, int $expectedRevision, ?string $cashTendered): Sale
+    /**
+     * @param  int|null  $cashIntakeId  The pending cash intake the counter displayed, or null when it displayed none.
+     */
+    public function __invoke(User $actor, Store $store, string $attemptKey, int $expectedRevision, ?string $cashTendered, ?int $cashIntakeId = null): Sale
     {
         Gate::forUser($actor)->authorize('usePos', $store);
 
@@ -91,10 +94,11 @@ class FinalizeCheckout
             'attempt' => $attempt->key,
             'revision' => $expectedRevision,
             'cash_tendered' => $tenderedMinor,
+            'cash_intake' => $cashIntakeId,
         ]);
 
         try {
-            return DB::transaction(fn (): Sale => $this->complete($actor, $store, $attempt, $expectedRevision, $tenderedMinor, $fingerprint), self::DEADLOCK_ATTEMPTS);
+            return DB::transaction(fn (): Sale => $this->complete($actor, $store, $attempt, $expectedRevision, $tenderedMinor, $cashIntakeId, $fingerprint), self::DEADLOCK_ATTEMPTS);
         } catch (CheckoutItemsChangedException $exception) {
             $this->recordFailure($attempt, $exception->failureCode, (string) collect($exception->errors())->flatten()->first());
 
@@ -122,7 +126,7 @@ class FinalizeCheckout
      * @throws ValidationException
      * @throws IdempotencyConflictException
      */
-    private function complete(User $actor, Store $store, CheckoutAttempt $attempt, int $expectedRevision, ?int $tenderedMinor, string $fingerprint): Sale
+    private function complete(User $actor, Store $store, CheckoutAttempt $attempt, int $expectedRevision, ?int $tenderedMinor, ?int $cashIntakeId, string $fingerprint): Sale
     {
         $locked = CheckoutAttempt::query()->whereKey($attempt->id)->lockForUpdate()->firstOrFail();
 
@@ -149,7 +153,7 @@ class FinalizeCheckout
         }
 
         $cardMinor = $approval !== null && $approval->status === CardApprovalStatus::APPROVED ? $approval->amountMinor() : 0;
-        $intake = CashIntake::lockPending(CashIntake::attemptSource($locked));
+        $intake = CashIntake::lockDisplayed(CashIntake::attemptSource($locked), $cashIntakeId);
         self::assertCashBound($store, $intake, max(0, $locked->payableMinor() - $cardMinor));
         [$cashDue, $changeMinor] = self::cashSplit($locked->payableMinor(), $cardMinor, $tenderedMinor);
 
@@ -163,6 +167,10 @@ class FinalizeCheckout
 
         $now = now();
         $sequence = $this->nextSequence($store);
+
+        if ($intake === null && $cashDue > 0 && CashboxSession::lockTrackingStarted($store)) {
+            throw ValidationException::withMessages(['cashbox' => __('pos.cashbox.errors.cash_intake_required')]);
+        }
 
         $sale = Sale::query()->create([
             'store_id' => $store->id,
@@ -508,7 +516,8 @@ class FinalizeCheckout
     /**
      * Once a store tracks its cashbox, cash is accepted only against a pending intake for exactly
      * the cash due, bound before the cashier was told to take it. Card-only and fully credited
-     * checkouts need none.
+     * checkouts need none. Without an intake this is an early refusal from the transaction's
+     * snapshot; the binding check is repeated last, under the store row lock.
      *
      * @throws ValidationException
      */

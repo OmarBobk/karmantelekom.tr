@@ -193,6 +193,10 @@ class PosCounter extends Component
     #[Locked]
     public ?int $cashInstructedFor = null;
 
+    /** The pending cash intake this page shows; completing the sale names it, so it is never swapped silently. */
+    #[Locked]
+    public ?int $displayedCashIntakeId = null;
+
     /**
      * Mount found an active attempt but no saved cart, so the attempt's reviewed cart is the
      * working cart. A saved empty cart is the cashier's edit and is kept.
@@ -683,7 +687,13 @@ class PosCounter extends Component
         $cashTendered = self::canonicalAmount($this->cashTendered, 'cash_tendered');
 
         try {
-            $sale = $finalize(auth()->user(), $store, $this->attemptKey, $this->attemptRevision, $cashTendered);
+            $sale = $finalize(auth()->user(), $store, $this->attemptKey, $this->attemptRevision, $cashTendered, $this->displayedCashIntakeId);
+        } catch (ValidationException $exception) {
+            if (array_key_exists('cashbox', $exception->errors())) {
+                $this->syncActiveAttempt();
+            }
+
+            throw $exception;
         } catch (IdempotencyConflictException) {
             $this->syncActiveAttempt();
             $this->notify('error', __('pos.errors.finalize_conflict'));
@@ -723,6 +733,7 @@ class PosCounter extends Component
             $this->displayedPaymentKey = $attempt->terminal_payment_key;
             $this->chargeInstructedFor = null;
             $this->cashInstructedFor = null;
+            $this->displayedCashIntakeId = $attempt->pendingCashIntake()->value('id');
             $this->step = $this->unreviewedChange($attempt) === null ? 'payment' : 'cart';
         }
     }
@@ -793,6 +804,7 @@ class PosCounter extends Component
         $this->displayedPaymentKey = $attempt->terminal_payment_key;
         $this->chargeInstructedFor = null;
         $this->cashInstructedFor = null;
+        $this->displayedCashIntakeId = $attempt->pendingCashIntake()->value('id');
         $this->lastSaleId = null;
         $this->step = 'payment';
         $this->resetPaymentFields();
@@ -1050,6 +1062,7 @@ class PosCounter extends Component
         $this->displayedPaymentKey = null;
         $this->chargeInstructedFor = null;
         $this->cashInstructedFor = null;
+        $this->displayedCashIntakeId = null;
         $this->lastSaleId = $sale->id;
         $this->step = 'done';
         $this->resetPaymentFields();
@@ -1104,6 +1117,7 @@ class PosCounter extends Component
         $this->displayedPaymentKey = null;
         $this->chargeInstructedFor = null;
         $this->cashInstructedFor = null;
+        $this->displayedCashIntakeId = null;
         $this->step = 'cart';
     }
 
@@ -1156,7 +1170,9 @@ class PosCounter extends Component
             $this->chargeInstructedFor = null;
         }
 
-        if ($this->cashInstructedFor !== $attempt->pendingCashIntake()->value('id')) {
+        $this->displayedCashIntakeId = $attempt->pendingCashIntake()->value('id');
+
+        if ($this->cashInstructedFor !== $this->displayedCashIntakeId) {
             $this->cashInstructedFor = null;
         }
 

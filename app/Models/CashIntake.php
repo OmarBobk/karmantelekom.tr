@@ -12,6 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
+use Illuminate\Validation\ValidationException;
 use LogicException;
 
 /**
@@ -88,14 +89,24 @@ class CashIntake extends Model
     }
 
     /**
-     * The pending intake for a source, row-locked by primary key. Call only while holding the
-     * source's own lock (attempt or customer row): intakes are created and ended under it.
+     * The source's pending intake, row-locked by primary key, which must be the intake the
+     * confirming screen displayed (null when it displayed none). A released or completed intake
+     * is never swapped for a newer pending one: the confirmation is refused instead.
+     *
+     * Call only while holding the source's own lock (attempt or customer row): intakes are
+     * created and ended under it.
+     *
+     * @throws ValidationException
      */
-    public static function lockPending(string $pendingSource): ?self
+    public static function lockDisplayed(string $pendingSource, ?int $displayedId): ?self
     {
-        $id = self::query()->where('pending_source', $pendingSource)->value('id');
+        $pendingId = self::query()->where('pending_source', $pendingSource)->value('id');
 
-        return $id === null ? null : self::query()->whereKey($id)->lockForUpdate()->first();
+        if ($pendingId !== $displayedId) {
+            throw ValidationException::withMessages(['cashbox' => __('pos.cashbox.errors.intake_changed')]);
+        }
+
+        return $pendingId === null ? null : self::query()->whereKey($pendingId)->lockForUpdate()->first();
     }
 
     /**

@@ -41,6 +41,10 @@ class CashboxPage extends Component
     #[Locked]
     public ?int $expectedShown = null;
 
+    /** The session the expected amount belongs to; the close names both, so a stale form never closes a newer session. */
+    #[Locked]
+    public ?int $sessionShown = null;
+
     #[Locked]
     public ?string $expectedShownAt = null;
 
@@ -83,18 +87,19 @@ class CashboxPage extends Component
     public function close(CloseCashboxSession $close): void
     {
         $store = $this->authorizeCashbox();
-        $session = CashboxSession::openFor($store);
 
-        if ($session === null || $this->expectedShown === null) {
+        if ($this->sessionShown === null || $this->expectedShown === null) {
             $this->snapshotExpected($store);
 
             return;
         }
 
         try {
-            $closed = $close(auth()->user(), $store, $session->id, Money::toDecimal($this->expectedShown), self::canonical($this->countedClosing, 'counted_closing'), $this->closingNote);
+            $closed = $close(auth()->user(), $store, $this->sessionShown, Money::toDecimal($this->expectedShown), self::canonical($this->countedClosing, 'counted_closing'), $this->closingNote);
         } catch (ValidationException $exception) {
-            if (array_key_exists('counted_closing', $exception->errors()) && $session->expectedMinor() !== $this->expectedShown) {
+            $session = CashboxSession::openFor($store);
+
+            if ($session?->id !== $this->sessionShown || $session->expectedMinor() !== $this->expectedShown) {
                 $this->snapshotExpected($store);
             }
 
@@ -176,6 +181,7 @@ class CashboxPage extends Component
     private function snapshotExpected(Store $store): void
     {
         $session = CashboxSession::openFor($store);
+        $this->sessionShown = $session?->id;
         $this->expectedShown = $session?->expectedMinor();
         $this->expectedShownAt = $session === null ? null : Carbon::now()->toIso8601String();
     }

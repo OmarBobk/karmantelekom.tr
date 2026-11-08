@@ -12,6 +12,8 @@ use App\Models\CashboxSession;
 use App\Models\CashIntake;
 use App\Models\CashMovement;
 use App\Models\CheckoutAttempt;
+use App\Models\Customer;
+use App\Models\CustomerPayment;
 use App\Models\Sale;
 use App\Models\Store;
 use Illuminate\Database\Eloquent\Builder;
@@ -24,16 +26,15 @@ use Tests\Support\InteractsWithPos;
 use Tests\TestCase;
 
 /**
- * Closing the cashbox while cash is being bound or posted, from independent PHP processes with
- * their own MariaDB connections. The test process holds the store row lock (the cashbox's lock
- * point) while the workers start, waits until the database reports every worker blocked, then releases it so they race.
+ * Opening and closing the cashbox while cash is being bound or posted, from independent PHP
+ * processes with their own MariaDB connections. The test process holds the store row lock (the
+ * cashbox's lock point) while the workers start one by one, waits until the database reports
+ * each worker blocked, then releases it so they race in that order.
  */
 class CashboxConcurrencyTest extends TestCase
 {
     use DatabaseTruncation;
     use InteractsWithPos;
-
-    private CashboxSession $session;
 
     private CheckoutAttempt $attempt;
 
@@ -46,7 +47,6 @@ class CashboxConcurrencyTest extends TestCase
         }
 
         $this->setUpCounter();
-        $this->session = app(OpenCashboxSession::class)($this->owner, $this->store, '1000', null);
         $this->attempt = $this->review($this->owner, $this->cableLine(2));
     }
 
@@ -60,13 +60,15 @@ class CashboxConcurrencyTest extends TestCase
     #[Test]
     public function a_close_racing_a_cash_intake_either_closes_first_or_is_refused_by_the_pending_intake(): void
     {
+        $session = $this->openSession();
+
         [$intake, $close] = $this->raceWhileLocked(Store::query()->whereKey($this->store->id), [
             ['operation' => 'cash_intake', 'attempt_key' => $this->attempt->key, 'revision' => $this->attempt->revision, 'request_key' => (string) Str::uuid()],
-            $this->closeRequest('1000'),
+            $this->closeRequest($session, '1000'),
         ]);
 
         $this->assertEqualsCanonicalizing(['ok', 'validation'], [$intake['status'], $close['status']], json_encode([$intake, $close]));
-        $session = $this->session->fresh();
+        $session->refresh();
 
         if ($close['status'] === 'ok') {
             $this->assertSame(['cashbox'], $intake['errors']);
@@ -80,11 +82,12 @@ class CashboxConcurrencyTest extends TestCase
     #[Test]
     public function a_close_racing_a_posting_never_misses_its_movement(): void
     {
-        app(StartSaleCashIntake::class)($this->owner, $this->store, $this->attempt->key, $this->attempt->revision, (string) Str::uuid());
+        $session = $this->openSession();
+        $intake = app(StartSaleCashIntake::class)($this->owner, $this->store, $this->attempt->key, $this->attempt->revision, (string) Str::uuid());
 
         [$finalize, $close] = $this->raceWhileLocked(Store::query()->whereKey($this->store->id), [
-            ['operation' => 'finalize', 'attempt_key' => $this->attempt->key, 'revision' => $this->attempt->revision, 'cash' => '100'],
-            $this->closeRequest('1000'),
+            ['operation' => 'finalize', 'attempt_key' => $this->attempt->key, 'revision' => $this->attempt->revision, 'cash' => '100', 'cash_intake_id' => $intake->id],
+            $this->closeRequest($session, '1000'),
         ]);
 
         $this->assertSame('ok', $finalize['status']);
@@ -93,21 +96,50 @@ class CashboxConcurrencyTest extends TestCase
         $this->assertContains($close['errors'][0], ['cashbox', 'counted_closing'], 'Closing first sees the pending intake; closing after the posting sees a changed expected amount.');
         $this->assertSame(1, Sale::query()->count());
         $this->assertSame(['99.80'], CashMovement::query()->pluck('amount')->all());
-        $this->assertTrue($this->session->fresh()->isOpen());
+        $this->assertTrue($session->fresh()->isOpen());
 
-        $closed = app(CloseCashboxSession::class)($this->owner, $this->store, $this->session->id, '1099.80', '1099.80', null);
+        $closed = app(CloseCashboxSession::class)($this->owner, $this->store, $session->id, '1099.80', '1099.80', null);
         $this->assertSame(['1099.80', '0.00'], [$closed->expected_closing, $closed->closing_difference]);
+    }
+
+    #[Test]
+    public function cash_writes_without_an_intake_that_lose_the_race_to_the_first_session_are_refused(): void
+    {
+        $customer = Customer::factory()->atCounter($this->store)->create();
+        $this->creditSale($customer, 2, '99.80');
+        $this->assertFalse(CashboxSession::trackingStarted($this->store));
+
+        [$open, $finalize, $payment] = $this->raceWhileLocked(Store::query()->whereKey($this->store->id), [
+            ['operation' => 'open_cashbox', 'counted' => '0'],
+            ['operation' => 'finalize', 'attempt_key' => $this->attempt->key, 'revision' => $this->attempt->revision, 'cash' => '100'],
+            ['operation' => 'customer_payment', 'customer_id' => $customer->id, 'input' => ['amount' => '50', 'method' => 'cash'], 'key' => (string) Str::uuid()],
+        ]);
+
+        $this->assertSame('ok', $open['status'], json_encode($open));
+        $this->assertSame(['validation', ['cashbox']], [$finalize['status'], $finalize['errors'] ?? null], json_encode($finalize));
+        $this->assertSame(['validation', ['cashbox']], [$payment['status'], $payment['errors'] ?? null], json_encode($payment));
+        $this->assertSame(1, Sale::query()->count());
+        $this->assertSame(0, CustomerPayment::query()->count());
+        $this->assertSame(0, CashMovement::query()->count());
+    }
+
+    private function openSession(): CashboxSession
+    {
+        return app(OpenCashboxSession::class)($this->owner, $this->store, '1000', null);
     }
 
     /**
      * @return array<string, mixed>
      */
-    private function closeRequest(string $expectedShown): array
+    private function closeRequest(CashboxSession $session, string $expectedShown): array
     {
-        return ['operation' => 'close_cashbox', 'session_id' => $this->session->id, 'expected_shown' => $expectedShown, 'counted' => $expectedShown];
+        return ['operation' => 'close_cashbox', 'session_id' => $session->id, 'expected_shown' => $expectedShown, 'counted' => $expectedShown];
     }
 
     /**
+     * Each worker starts only after the previous one is blocked, so the lock queue holds them in
+     * request order.
+     *
      * @param  Builder<covariant \Illuminate\Database\Eloquent\Model>  $lockedRows
      * @param  list<array<string, mixed>>  $requests
      * @return list<array<string, mixed>>
@@ -123,9 +155,8 @@ class CashboxConcurrencyTest extends TestCase
 
             foreach ($requests as $request) {
                 $processes[] = $this->startWorker(['actor_id' => $this->owner->id, 'store_id' => $this->store->id, ...$request]);
+                $this->waitForBlockedWorkers(count($processes));
             }
-
-            $this->waitForBlockedWorkers(count($requests));
         } finally {
             DB::commit();
         }
@@ -183,7 +214,7 @@ class CashboxConcurrencyTest extends TestCase
         $deadline = microtime(true) + 30;
 
         while (microtime(true) < $deadline) {
-            if ((int) DB::scalar('select count(*) from information_schema.innodb_lock_waits') >= $expected) {
+            if ((int) DB::scalar('select count(distinct requesting_trx_id) from information_schema.innodb_lock_waits') >= $expected) {
                 return;
             }
 

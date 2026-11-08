@@ -14,6 +14,7 @@ use App\Enums\CardApprovalStatus;
 use App\Enums\CashboxSessionStatus;
 use App\Enums\CashIntakeStatus;
 use App\Enums\CashMovementType;
+use App\Livewire\Pos\CashboxPage;
 use App\Livewire\Pos\CustomerAccountPage;
 use App\Livewire\Pos\PosCounter;
 use App\Models\CashboxSession;
@@ -64,11 +65,11 @@ class CashboxSessionTest extends TestCase
         $this->approveCard($this->cashier, $attempt, $terminal, '200');
         $intake = $this->startSaleCash($this->cashier, $attempt);
         $this->assertSame('300.00', $intake->amount);
-        $sale = $this->finalize($this->cashier, $attempt, '350');
+        $sale = $this->finalize($this->cashier, $attempt, '350', $intake->id);
 
         $this->creditSale($this->customer, 4, '199.60');
-        $this->startCustomerCash('170');
-        $this->recordCustomerPayment(['amount' => '170', 'method' => 'cash']);
+        $customerIntake = $this->startCustomerCash('170');
+        $this->recordCustomerPayment(['amount' => '170', 'method' => 'cash', 'cash_intake_id' => $customerIntake->id]);
 
         $movements = CashMovement::query()->orderBy('id')->get();
         $this->assertSame(['300.00', '170.00'], $movements->pluck('amount')->all());
@@ -157,10 +158,10 @@ class CashboxSessionTest extends TestCase
         $intake = $this->startSaleCash($this->cashier, $attempt);
         $this->assertSame(['7500.00', $second->id], [$intake->amount, $intake->cashbox_session_id]);
 
-        $this->assertValidationError(fn () => $this->finalize($this->cashier, $attempt, '7000'), 'cash_tendered');
+        $this->assertValidationError(fn () => $this->finalize($this->cashier, $attempt, '7000', $intake->id), 'cash_tendered');
         $this->assertTrue($intake->fresh()->isPending());
 
-        $sale = $this->finalize($this->cashier, $attempt, '7500');
+        $sale = $this->finalize($this->cashier, $attempt, '7500', $intake->id);
 
         $this->assertEqualsCanonicalizing(['card:5000.00', 'cash:7500.00'], $sale->payments->map(fn (SalePayment $payment): string => "{$payment->method->value}:{$payment->amount}")->all());
         $this->assertSame(CardApprovalStatus::CAPTURED, $approval->fresh()->status);
@@ -178,8 +179,8 @@ class CashboxSessionTest extends TestCase
         $intake = $this->startSaleCash($this->cashier, $attempt, $requestKey);
         $this->assertSame($intake->id, $this->startSaleCash($this->cashier, $attempt, $requestKey)->id);
 
-        $sale = $this->finalize($this->cashier, $attempt, '100');
-        $this->assertSame($sale->id, $this->finalize($this->cashier, $attempt, '100')->id);
+        $sale = $this->finalize($this->cashier, $attempt, '100', $intake->id);
+        $this->assertSame($sale->id, $this->finalize($this->cashier, $attempt, '100', $intake->id)->id);
         $this->assertSame($intake->id, $this->startSaleCash($this->cashier, $attempt, $requestKey)->id);
 
         $this->creditSale($this->customer, 4, '199.60');
@@ -192,9 +193,10 @@ class CashboxSessionTest extends TestCase
         $this->assertSame(0, CustomerPayment::query()->count());
 
         $paymentKey = $page->get('requestKey');
-        $page->call('confirmCash')->assertHasNoErrors();
+        $customerIntakeId = $page->get('displayedCashIntakeId');
+        $page->call('confirmCash')->assertHasNoErrors()->assertSet('displayedCashIntakeId', null);
         $payment = CustomerPayment::query()->sole();
-        $this->assertSame($payment->id, $this->recordCustomerPayment(['amount' => '170', 'method' => 'cash'], $paymentKey)->id);
+        $this->assertSame($payment->id, $this->recordCustomerPayment(['amount' => '170', 'method' => 'cash', 'cash_intake_id' => $customerIntakeId], $paymentKey)->id);
         $this->assertValidationError(fn () => $this->recordCustomerPayment(['amount' => '29.60', 'method' => 'cash']), 'cashbox');
 
         $this->assertSame(['99.80', '170.00'], CashMovement::query()->orderBy('id')->pluck('amount')->all());
@@ -206,17 +208,96 @@ class CashboxSessionTest extends TestCase
     {
         $this->openSession('0');
         $this->creditSale($this->customer, 4, '199.60');
-        $this->startCustomerCash('150');
+        $intake = $this->startCustomerCash('150');
 
         $this->assertValidationError(fn () => $this->recordCustomerPayment(['amount' => '100', 'method' => 'card', 'reference' => 'A100']), 'amount');
         $this->assertValidationError(fn () => $this->startCustomerCash('10'), 'cashbox');
         $this->recordCustomerPayment(['amount' => '49.60', 'method' => 'card', 'reference' => 'A101']);
-        $this->assertValidationError(fn () => $this->recordCustomerPayment(['amount' => '100', 'method' => 'cash']), 'amount');
+        $this->assertValidationError(fn () => $this->recordCustomerPayment(['amount' => '100', 'method' => 'cash', 'cash_intake_id' => $intake->id]), 'amount');
 
-        $this->recordCustomerPayment(['amount' => '150', 'method' => 'cash']);
+        $this->recordCustomerPayment(['amount' => '150', 'method' => 'cash', 'cash_intake_id' => $intake->id]);
 
         $this->assertSame(['150.00'], CashMovement::query()->pluck('amount')->all());
         $this->assertSame(0, CashIntake::query()->pending()->count());
+    }
+
+    #[Test]
+    public function a_stale_close_form_never_closes_the_next_session_and_an_identical_retry_returns_the_original_close(): void
+    {
+        $first = $this->openSession('100');
+        $retryPage = Livewire::actingAs($this->owner)->test(CashboxPage::class, ['store' => $this->store]);
+        $stalePage = Livewire::actingAs($this->owner)->test(CashboxPage::class, ['store' => $this->store]);
+        $closed = $this->closeSession($first, '100', '100');
+        $second = $this->openSession('100');
+
+        $retryPage->set('countedClosing', '100')->call('close')->assertHasNoErrors();
+        $stalePage->set('countedClosing', '95')->set('closingNote', 'Five short')->call('close')
+            ->assertHasErrors('cashbox')
+            ->assertSet('sessionShown', $second->id);
+
+        $this->assertTrue($second->fresh()->isOpen());
+        $this->assertSame(['100.00', $closed->closed_at->toIso8601String()], [$first->fresh()->counted_closing, $first->fresh()->closed_at->toIso8601String()]);
+        $this->assertSame($first->id, $this->closeSession($first, '100', '100')->id);
+        $this->assertValidationError(fn () => $this->closeSession($first, '100', '95', 'Five short'), 'cashbox');
+        $this->assertTrue($second->fresh()->isOpen());
+    }
+
+    #[Test]
+    public function a_confirmation_names_the_displayed_intake_and_never_completes_its_replacement(): void
+    {
+        $this->openSession('0');
+        $attempt = $this->review($this->cashier, $this->cableLine(1));
+        $released = $this->startSaleCash($this->cashier, $attempt);
+        session()->put('pos.working.'.$this->cashier->id.'.'.$this->store->id, ['cart' => [], 'attempt_key' => $attempt->key]);
+        $counter = Livewire::actingAs($this->cashier)->test(PosCounter::class, ['store' => $this->store])
+            ->assertSet('displayedCashIntakeId', $released->id);
+
+        app(ReleaseCashIntake::class)($this->owner, $this->store, $released->id, 'Customer left before paying');
+        $replacement = $this->startSaleCash($this->cashier, $attempt);
+
+        $this->assertValidationError(fn () => $this->finalize($this->cashier, $attempt, '50', $released->id), 'cashbox');
+        $this->assertValidationError(fn () => $this->finalize($this->cashier, $attempt, '50'), 'cashbox');
+        $counter->set('cashTendered', '50')->call('finalize')
+            ->assertHasErrors('cashbox')
+            ->assertSet('displayedCashIntakeId', $replacement->id);
+        $this->assertSame([0, true], [CashMovement::query()->count(), $replacement->fresh()->isPending()]);
+
+        $this->creditSale($this->customer, 2, '99.80');
+        $releasedDebt = $this->startCustomerCash('50');
+        $page = Livewire::actingAs($this->owner)->test(CustomerAccountPage::class, ['store' => $this->store, 'customer' => $this->customer])
+            ->assertSet('displayedCashIntakeId', $releasedDebt->id);
+        app(ReleaseCashIntake::class)($this->owner, $this->store, $releasedDebt->id, 'Customer left before paying');
+        $replacementDebt = $this->startCustomerCash('50');
+
+        $this->assertValidationError(fn () => $this->recordCustomerPayment(['amount' => '50', 'method' => 'cash', 'cash_intake_id' => $releasedDebt->id]), 'cashbox');
+        $page->call('confirmCash')
+            ->assertHasErrors('cashbox')
+            ->assertSet('displayedCashIntakeId', $replacementDebt->id);
+        $this->assertSame([0, 0, true], [CustomerPayment::query()->count(), CashMovement::query()->count(), $replacementDebt->fresh()->isPending()]);
+    }
+
+    #[Test]
+    public function a_retry_after_a_lost_confirmation_response_returns_the_original_record_without_posting_again(): void
+    {
+        $this->openSession('0');
+        $attempt = $this->review($this->cashier, $this->cableLine(1));
+        $intake = $this->startSaleCash($this->cashier, $attempt);
+        session()->put('pos.working.'.$this->cashier->id.'.'.$this->store->id, ['cart' => [], 'attempt_key' => $attempt->key]);
+        $counter = Livewire::actingAs($this->cashier)->test(PosCounter::class, ['store' => $this->store]);
+
+        $sale = $this->finalize($this->cashier, $attempt, '50', $intake->id);
+        $counter->set('cashTendered', '50')->call('finalize')->assertHasNoErrors()->assertSet('lastSaleId', $sale->id);
+
+        $this->creditSale($this->customer, 2, '99.80');
+        $debtIntake = $this->startCustomerCash('50');
+        $key = (string) Str::uuid();
+        $payment = $this->recordCustomerPayment(['amount' => '50', 'method' => 'cash', 'cash_intake_id' => $debtIntake->id], $key);
+        $retry = $this->recordCustomerPayment(['amount' => '50', 'method' => 'cash', 'cash_intake_id' => $debtIntake->id], $key);
+
+        $this->assertSame([$payment->id, false], [$retry->id, $retry->wasRecentlyCreated]);
+        $this->assertSame(1, CashMovement::query()->where('sale_payment_id', SalePayment::query()->where('sale_id', $sale->id)->where('method', 'cash')->value('id'))->count());
+        $this->assertSame(1, CashMovement::query()->where('customer_payment_id', $payment->id)->count());
+        $this->assertSame(2, CashMovement::query()->count());
     }
 
     #[Test]
@@ -254,7 +335,7 @@ class CashboxSessionTest extends TestCase
     }
 
     /**
-     * @param  array<string, string>  $input
+     * @param  array<string, string|int|null>  $input
      */
     private function recordCustomerPayment(array $input, ?string $key = null): CustomerPayment
     {

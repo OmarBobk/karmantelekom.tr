@@ -65,7 +65,11 @@ class CloseCashboxSession
             if ($session?->id !== $sessionId) {
                 $closed = CashboxSession::query()->where('store_id', $store->id)->findOrFail($sessionId);
 
-                if (! $closed->isOpen() && $closed->closed_by === $actor->id && $closed->countedClosingMinor() === $countedMinor && (string) $closed->closing_note === $note) {
+                if (! $closed->isOpen()
+                    && $closed->closed_by === $actor->id
+                    && Money::fromDecimal((string) $closed->expected_closing) === $shownMinor
+                    && $closed->countedClosingMinor() === $countedMinor
+                    && (string) $closed->closing_note === $note) {
                     return $closed;
                 }
 
