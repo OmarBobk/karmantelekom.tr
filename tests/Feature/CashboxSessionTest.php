@@ -14,6 +14,7 @@ use App\Enums\CardApprovalStatus;
 use App\Enums\CashboxSessionStatus;
 use App\Enums\CashIntakeStatus;
 use App\Enums\CashMovementType;
+use App\Exceptions\Inventory\IdempotencyConflictException;
 use App\Livewire\Pos\CashboxPage;
 use App\Livewire\Pos\CustomerAccountPage;
 use App\Livewire\Pos\PosCounter;
@@ -23,8 +24,11 @@ use App\Models\CashMovement;
 use App\Models\CheckoutAttempt;
 use App\Models\Customer;
 use App\Models\CustomerPayment;
+use App\Models\CustomerPaymentAllocation;
+use App\Models\Sale;
 use App\Models\SalePayment;
 use App\Models\User;
+use App\Services\Idempotency;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Str;
@@ -298,6 +302,44 @@ class CashboxSessionTest extends TestCase
         $this->assertSame(1, CashMovement::query()->where('sale_payment_id', SalePayment::query()->where('sale_id', $sale->id)->where('method', 'cash')->value('id'))->count());
         $this->assertSame(1, CashMovement::query()->where('customer_payment_id', $payment->id)->count());
         $this->assertSame(2, CashMovement::query()->count());
+    }
+
+    #[Test]
+    public function records_with_pre_cashbox_fingerprints_replay_after_tracking_starts_and_a_named_intake_conflicts(): void
+    {
+        $attempt = $this->review($this->cashier, $this->cableLine(1));
+        $sale = $this->finalize($this->cashier, $attempt, '50');
+        $attempt->forceFill(['finalize_fingerprint' => Idempotency::fingerprint([
+            'operation' => 'finalize_checkout',
+            'attempt' => $attempt->key,
+            'revision' => $attempt->revision,
+            'cash_tendered' => 5000,
+        ])])->save();
+
+        $this->creditSale($this->customer, 2, '99.80');
+        $key = (string) Str::uuid();
+        $payment = $this->recordCustomerPayment(['amount' => '50', 'method' => 'cash'], $key);
+        $payment->forceFill(['request_fingerprint' => Idempotency::fingerprint([
+            'operation' => 'customer_payment',
+            'store_id' => $this->store->id,
+            'customer_id' => $this->customer->id,
+            'amount' => 5000,
+            'method' => 'cash',
+            'reference_key' => null,
+            'note' => null,
+        ])])->save();
+
+        $this->openSession('0');
+        $counts = fn (): array => [Sale::query()->count(), SalePayment::query()->count(), CustomerPayment::query()->count(), CustomerPaymentAllocation::query()->count(), CashMovement::query()->count()];
+        $before = $counts();
+
+        $this->assertSame($sale->id, $this->finalize($this->cashier, $attempt, '50')->id);
+        $this->assertSame($payment->id, $this->recordCustomerPayment(['amount' => '50', 'method' => 'cash'], $key)->id);
+        $this->assertSame($before, $counts());
+
+        $this->assertThrows(fn () => $this->finalize($this->cashier, $attempt, '50', $payment->id), IdempotencyConflictException::class);
+        $this->assertThrows(fn () => $this->recordCustomerPayment(['amount' => '50', 'method' => 'cash', 'cash_intake_id' => $payment->id], $key), IdempotencyConflictException::class);
+        $this->assertSame($before, $counts());
     }
 
     #[Test]

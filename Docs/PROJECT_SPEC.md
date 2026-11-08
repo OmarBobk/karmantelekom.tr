@@ -652,6 +652,7 @@ Corrections must follow approved procedures rather than silently replacing histo
 - Opening requires an explicit count, zero included. If it differs from the previous session's closing count, a note is required, and the expected amount and difference are kept.
 - Closing requires an explicit count. The expected amount is the opening count plus every movement in the session. A difference requires a note. The expected amount, count, and difference are kept, and a closed session is final.
 - A close is refused when the expected amount changed after the owner was shown it, for example because a sale posted cash while the owner was counting. The owner counts again against the new figure.
+- A close names the session and expected amount shown together. A form for an earlier session never closes a later one, even with the same expected amount. An identical retry returns the original close.
 
 **Cash intake**
 
@@ -661,6 +662,7 @@ Corrections must follow approved procedures rather than silently replacing histo
 - A pending intake survives reloads and failed submissions, and it blocks closing the session.
 - A debt-payment intake reserves its amount of the customer's balance, so no other payment can consume that part.
 - An intake ends in one of two ways. It completes when its sale or payment is recorded for exactly that amount. Or the owner releases it with a required note when completion is impossible, after confirming the cash was not kept. A release is logged and posts nothing.
+- Confirming a sale or debt payment names the intake shown on the screen. It is checked under the sale or customer lock. A released intake is never swapped for a newer pending one: the screen shows the new intake and staff confirm again. A retry after a lost response returns the original sale or payment and posts nothing more.
 
 **Movements**
 
@@ -671,6 +673,7 @@ Corrections must follow approved procedures rather than silently replacing histo
 
 - Cash tracking starts in each branch when its first session opens. Earlier sales and payments remain as recorded and have no movements.
 - From then on, cash always needs an open session and an intake.
+- A cash sale or debt payment without an intake rechecks tracking with a locking read as its last lock, after its number sequence and in share mode on the store row. If the first session opened first, the write is refused and needs an intake.
 
 **Locking**
 

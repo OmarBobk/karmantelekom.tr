@@ -89,13 +89,18 @@ class FinalizeCheckout
 
         $tenderedMinor = self::parseTendered($cashTendered);
 
-        $fingerprint = Idempotency::fingerprint([
+        $payload = [
             'operation' => 'finalize_checkout',
             'attempt' => $attempt->key,
             'revision' => $expectedRevision,
             'cash_tendered' => $tenderedMinor,
-            'cash_intake' => $cashIntakeId,
-        ]);
+        ];
+
+        if ($cashIntakeId !== null) {
+            $payload['cash_intake'] = $cashIntakeId;
+        }
+
+        $fingerprint = Idempotency::fingerprint($payload);
 
         try {
             return DB::transaction(fn (): Sale => $this->complete($actor, $store, $attempt, $expectedRevision, $tenderedMinor, $cashIntakeId, $fingerprint), self::DEADLOCK_ATTEMPTS);

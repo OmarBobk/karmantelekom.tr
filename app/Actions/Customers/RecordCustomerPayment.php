@@ -96,7 +96,7 @@ class RecordCustomerPayment
         $note = Str::trim((string) ($validated['note'] ?? '')) ?: null;
         $cashIntakeId = $method === CustomerPaymentMethod::CASH && isset($validated['cash_intake_id']) ? (int) $validated['cash_intake_id'] : null;
 
-        $fingerprint = Idempotency::fingerprint([
+        $payload = [
             'operation' => 'customer_payment',
             'store_id' => $store->id,
             'customer_id' => $customer->id,
@@ -104,8 +104,13 @@ class RecordCustomerPayment
             'method' => $method->value,
             'reference_key' => $referenceKey,
             'note' => $note,
-            'cash_intake' => $cashIntakeId,
-        ]);
+        ];
+
+        if ($cashIntakeId !== null) {
+            $payload['cash_intake'] = $cashIntakeId;
+        }
+
+        $fingerprint = Idempotency::fingerprint($payload);
 
         try {
             return DB::transaction(function () use ($actor, $store, $customer, $amount, $method, $reference, $referenceKey, $note, $cashIntakeId, $key, $fingerprint): CustomerPayment {
