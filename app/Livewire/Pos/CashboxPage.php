@@ -18,6 +18,7 @@ use App\Livewire\Pos\Concerns\UsesPosLocale;
 use App\Models\CashboxSession;
 use App\Models\CashboxTransfer;
 use App\Models\CashIntake;
+use App\Models\CashMovement;
 use App\Models\Store;
 use App\Services\Purchasing\LocalizedMoney;
 use App\Services\Purchasing\Money;
@@ -27,6 +28,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
+use Livewire\WithPagination;
 
 /**
  * The store's cashbox: open and close sessions, see the cash received in the open session, record
@@ -40,6 +42,7 @@ use Livewire\Component;
 class CashboxPage extends Component
 {
     use UsesPosLocale;
+    use WithPagination;
 
     public const RELEASE_DIALOG = 'cashbox-release';
 
@@ -249,6 +252,7 @@ class CashboxPage extends Component
 
         $this->reset('countedClosing', 'closingNote');
         $this->resetValidation();
+        $this->resetPage('history');
         $this->snapshotExpected($store);
         $this->notify('success', __('pos.cashbox.closed', ['difference' => LocalizedMoney::format(Money::fromDecimal($closed->closing_difference))]));
     }
@@ -304,7 +308,7 @@ class CashboxPage extends Component
             'transferKinds' => CashboxTransferKind::cases(),
             'resolutions' => CashPayoutResolution::cases(),
             'movements' => $session === null ? collect() : $session->movements()
-                ->with(['recorder:id,name', 'transfer:id,kind,reason', 'salePayment.sale:id,number', 'customerPayment:id,receipt_number,customer_id', 'customerPayment.customer:id,name', 'expense:id,category,description', 'supplierPayment:id,reference,operational_supplier_id', 'supplierPayment.supplier:id,name'])
+                ->with(CashMovement::DISPLAY_RELATIONS)
                 ->latest('occurred_at')
                 ->latest('id')
                 ->limit(100)
@@ -320,8 +324,7 @@ class CashboxPage extends Component
                 ->with(['opener:id,name', 'closer:id,name'])
                 ->latest('closed_at')
                 ->latest('id')
-                ->limit(20)
-                ->get(),
+                ->paginate(20, pageName: 'history'),
             ...$this->localeViewData(),
         ])->layout('layouts.pos', ['posStore' => $store])->title(__('pos.cashbox.title', ['store' => $store->code]));
     }

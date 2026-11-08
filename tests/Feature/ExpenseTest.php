@@ -20,9 +20,13 @@ use App\Models\CashMovement;
 use App\Models\CashPayout;
 use App\Models\Expense;
 use App\Models\ExpenseSubmission;
+use App\Models\InventoryMovement;
+use App\Models\OperationalSupplier;
 use App\Models\Sale;
 use App\Models\Store;
+use App\Models\SupplierLedgerEntry;
 use App\Models\User;
+use App\Services\Idempotency;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -236,6 +240,55 @@ class ExpenseTest extends TestCase
         $this->assertThrows(fn () => $this->submit($this->details('70', 'card'), null, $cashKey), IdempotencyConflictException::class);
         $this->assertSame([$cash->id, $cash->cash_payout_id], [$this->submit($this->details('70'), $session->id, $cashKey)->id, $cash->payout->id]);
         $this->assertSame([2, 1, 1], [ExpenseSubmission::query()->count(), CashPayout::query()->count(), Expense::query()->count()]);
+    }
+
+    #[Test]
+    public function supplier_and_device_references_follow_the_payout_into_the_expense_and_replay_only_identically(): void
+    {
+        $session = $this->openSession('1000');
+        $supplier = OperationalSupplier::factory()->create(['name' => 'Fix Parts Ltd']);
+        $otherSupplier = OperationalSupplier::factory()->create();
+        $untouched = fn (): array => [SupplierLedgerEntry::count(), InventoryMovement::count(), $this->phone->costEntries()->count(), $this->phone->fresh()->status];
+        $before = $untouched();
+
+        $page = Livewire::actingAs($this->owner)->test(ExpensesPage::class, ['store' => $this->store])
+            ->set('deviceCode', $this->phoneImei)
+            ->call('findDevice')
+            ->assertSet('unitId', $this->phone->id)
+            ->assertSeeHtml('data-expense-device-chosen');
+        $key = $page->get('requestKey');
+        $page->set('method', 'cash')->set('category', 'supplies')->set('description', 'Screen glue')->set('amount', '150')
+            ->set('supplierId', (string) $supplier->id)
+            ->call('record')
+            ->assertHasNoErrors();
+
+        $payout = CashPayout::query()->sole();
+        $this->assertSame([$supplier->id, $this->phone->id], [$payout->operational_supplier_id, $payout->inventory_unit_id]);
+
+        $input = [...$this->details('150'), 'description' => 'Screen glue', 'operational_supplier_id' => (string) $supplier->id, 'inventory_unit_id' => $this->phone->id];
+        $this->assertSame($payout->id, $this->submit($input, $session->id, $key)->cash_payout_id);
+        $this->assertThrows(fn () => $this->submit([...$input, 'operational_supplier_id' => $otherSupplier->id], $session->id, $key), IdempotencyConflictException::class);
+        $this->assertThrows(fn () => $this->submit([...$input, 'inventory_unit_id' => null], $session->id, $key), IdempotencyConflictException::class);
+
+        $expense = app(ConfirmCashPayout::class)($this->owner, $this->store, $payout->id, $session->id);
+        $this->assertSame([$supplier->id, $this->phone->id], [$expense->operational_supplier_id, $expense->inventory_unit_id]);
+        $this->assertSame($before, $untouched());
+
+        Livewire::actingAs($this->owner)->test(ExpensesPage::class, ['store' => $this->store])
+            ->assertSeeHtml('data-expense-links')
+            ->assertSee('Fix Parts Ltd')
+            ->assertSee($this->phoneImei);
+
+        $inactive = OperationalSupplier::factory()->create(['is_active' => false]);
+        $elsewhere = $this->registerDevice($this->owner, Store::factory()->create(['code' => 'KT02']), $this->usedPhone, self::imei('35693803564414'));
+        $this->assertValidationError(fn () => $this->submit([...$this->details('20', 'card'), 'operational_supplier_id' => $inactive->id], null), 'operational_supplier_id');
+        $this->assertValidationError(fn () => $this->submit([...$this->details('20', 'card'), 'inventory_unit_id' => $elsewhere->id], null), 'inventory_unit_id');
+
+        $plain = $this->submit($this->details('40', 'card'), null);
+        $this->assertSame(Idempotency::fingerprint([
+            'operation' => 'expense_submission', 'store_id' => $this->store->id, 'method' => 'card', 'session_id' => null,
+            'category' => 'supplies', 'description' => 'Printer paper', 'amount' => 4_000, 'expense_date' => Carbon::now(Sale::DISPLAY_TIMEZONE)->toDateString(), 'reference' => null,
+        ]), $plain->request_fingerprint);
     }
 
     private function openSession(string $counted): CashboxSession

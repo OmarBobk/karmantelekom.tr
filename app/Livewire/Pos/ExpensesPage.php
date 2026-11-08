@@ -7,6 +7,7 @@ namespace App\Livewire\Pos;
 use App\Actions\Expenses\ConfirmCashPayout;
 use App\Actions\Expenses\ReleaseCashPayout;
 use App\Actions\Expenses\SubmitExpense;
+use App\Actions\Inventory\FindUnitsByIdentifier;
 use App\Enums\CashPayoutResolution;
 use App\Enums\ExpenseCategory;
 use App\Enums\ExpenseMethod;
@@ -17,6 +18,7 @@ use App\Models\CashboxSession;
 use App\Models\CashPayout;
 use App\Models\Expense;
 use App\Models\ExpenseSubmission;
+use App\Models\OperationalSupplier;
 use App\Models\Sale;
 use App\Models\Store;
 use App\Services\Purchasing\LocalizedMoney;
@@ -79,6 +81,23 @@ class ExpensesPage extends Component
 
     public string $reference = '';
 
+    public string $supplierId = '';
+
+    public string $deviceCode = '';
+
+    /** The device chosen from this branch's lookup results; only a listed match can be chosen. */
+    #[Locked]
+    public ?int $unitId = null;
+
+    /**
+     * @var list<array{unit_id: int, label: string}>
+     */
+    #[Locked]
+    public array $deviceMatches = [];
+
+    #[Locked]
+    public bool $deviceSearched = false;
+
     #[Locked]
     public ?int $releasePayoutId = null;
 
@@ -117,6 +136,8 @@ class ExpensesPage extends Component
             'amount' => $amount,
             'expense_date' => $this->expenseDate,
             'reference' => $this->reference,
+            'operational_supplier_id' => $this->supplierId === '' ? null : $this->supplierId,
+            'inventory_unit_id' => $this->unitId,
         ];
 
         try {
@@ -153,6 +174,45 @@ class ExpensesPage extends Component
         }
 
         $this->notify('success', __('pos.expenses.recorded', ['amount' => LocalizedMoney::format($submission->expense->amountMinor())]));
+    }
+
+    /**
+     * Exact IMEI or serial lookup within this branch, through the shared device lookup.
+     */
+    public function findDevice(FindUnitsByIdentifier $find): void
+    {
+        $store = $this->authorizeExpenses();
+        $this->authorize('viewInventory', $store);
+
+        $this->resetValidation('inventory_unit_id');
+        $this->unitId = null;
+        $this->deviceMatches = collect($find(auth()->user(), $this->deviceCode, $store)['current'])
+            ->map(fn (array $match): array => [
+                'unit_id' => $match['unit_id'],
+                'label' => trim($match['product_name'].' · '.$match['matched_value']),
+            ])
+            ->values()
+            ->all();
+        $this->deviceSearched = true;
+
+        if (count($this->deviceMatches) === 1) {
+            $this->unitId = $this->deviceMatches[0]['unit_id'];
+        }
+    }
+
+    public function chooseDevice(int $unitId): void
+    {
+        $this->authorizeExpenses();
+
+        if (in_array($unitId, array_column($this->deviceMatches, 'unit_id'), true)) {
+            $this->unitId = $unitId;
+        }
+    }
+
+    public function clearDevice(): void
+    {
+        $this->reset('unitId', 'deviceMatches', 'deviceSearched', 'deviceCode');
+        $this->resetValidation('inventory_unit_id');
     }
 
     /**
@@ -234,13 +294,13 @@ class ExpensesPage extends Component
             'pendingPayouts' => CashPayout::query()
                 ->where('store_id', $store->id)
                 ->pending()
-                ->with('starter:id,name')
+                ->with(['starter:id,name', 'supplier:id,name', 'unit:id,product_definition_id', 'unit.productDefinition:id,name', 'unit.identifiers'])
                 ->oldest('started_at')
                 ->oldest('id')
                 ->get(),
             'expenses' => Expense::query()
                 ->where('store_id', $store->id)
-                ->with('recorder:id,name')
+                ->with(['recorder:id,name', 'supplier:id,name', 'unit:id,product_definition_id', 'unit.productDefinition:id,name', 'unit.identifiers'])
                 ->latest('expense_date')
                 ->latest('id')
                 ->paginate(25),
@@ -248,6 +308,11 @@ class ExpensesPage extends Component
             'methods' => ExpenseMethod::cases(),
             'resolutions' => CashPayoutResolution::cases(),
             'canRelease' => auth()->user()->can('manageCashbox', $store),
+            'suppliers' => auth()->user()->can('viewAny', OperationalSupplier::class)
+                ? OperationalSupplier::query()->where('is_active', true)->orderBy('name')->get(['id', 'name'])
+                : collect(),
+            'canLinkDevice' => auth()->user()->can('viewInventory', $store),
+            'chosenDevice' => collect($this->deviceMatches)->firstWhere('unit_id', $this->unitId),
             'today' => self::today(),
             ...$this->localeViewData(),
         ])->layout('layouts.pos', ['posStore' => $store])->title(__('pos.expenses.title', ['store' => $store->code]));
@@ -260,7 +325,7 @@ class ExpensesPage extends Component
 
     private function resetForm(): void
     {
-        $this->reset('category', 'description', 'amount', 'reference');
+        $this->reset('category', 'description', 'amount', 'reference', 'supplierId', 'deviceCode', 'unitId', 'deviceMatches', 'deviceSearched');
         $this->method = ExpenseMethod::CASH->value;
         $this->expenseDate = self::today();
         $this->requestKey = (string) Str::uuid();

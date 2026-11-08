@@ -947,6 +947,30 @@ Multiple employees may operate during the same business day, but the system must
 - Cash and card movements are not confused.
 - Failed operations do not leave inconsistent financial records.
 
+### Phase 6 Status (closeout 2026-11-08)
+
+Delivered in 6A (counter customers), 6B1–6B2 (customer debt and payments), 6C1 (sessions and cash posting), 6C2 (expenses and cash payouts), 6C3 (supplier cash payouts), 6C4 (owner deposits and withdrawals), and the closeout (reconciliation, expense traceability, session balance limits). Rules are in `PROJECT_SPEC.md` §10–§12.
+
+| Acceptance criterion | Status and evidence |
+|---|---|
+| Customer debt balances reconcile with sales, payments, and adjustments | Met for sales and payments: balances derive from debt sales and allocated payments, and duplicate payments are refused by request key and reference. Debt adjustments are not implemented; they wait for the corrections decision below. |
+| Supplier obligations remain distinct from customer debts | Met. Supplier balances live in the supplier ledger; customer debts in customer accounts. Expense supplier links change no supplier balance (§12.3). |
+| Debt payments do not create new sales | Met. A payment records allocations and, for cash, one cashbox movement; debts and sales are never changed. |
+| Each store has its own cashbox records | Met. One open session per branch; every cashbox page and action checks branch access on the server, including closed-session reconciliation (§11.8). |
+| Every relevant transaction identifies its responsible employee | Met. Each movement, payout, transfer, expense, and session records its own user. |
+| Cashbox differences are visible and auditable | Met. Opening and closing differences need a note and are stored with the snapshot; closed sessions are read-only and reviewable with their movements. Discrepancy approval is pending (below). |
+| Cash and card movements are not confused | Met. Only physical cash posts cashbox movements; card and transfer payments and expenses do not. Owner transfers are classified as internal (§11.7). |
+| Failed operations do not leave inconsistent financial records | Met. Every money write runs in one transaction with a documented lock order, replays return the original result, and pending cash survives reloads and blocks closing. Covered by feature and two-process concurrency tests. |
+
+Task 8 of the cashbox list is partly complete: reconciliation is done, and authorized corrections are pending. Expense task 4 is done as traceability links only, and task 5 is kept by leaving device costs in the device-cost workflow.
+
+**Owner decisions still needed.** These workflows stay unimplemented until their rules are approved:
+
+1. Corrections of posted transactions: cash movements, expenses, supplier cash payouts, customer payments, and closed sessions. Who may correct, whether a correction is a reversing entry, and how it affects a closed session.
+2. Discrepancy approval: whether a closing or opening difference needs approval beyond the owner's note, above what amount, and by whom.
+3. Session handover between employees during a day.
+4. Customer payment allocation: confirm the implemented oldest-sale-first rule.
+
 ---
 
 ## 11. Phase 7 — Store Network
@@ -1161,11 +1185,13 @@ The following decisions do not need to block foundation work, but must be resolv
 | Tax treatment and applicable reporting requirements | Final pricing and production financial reports |
 | Detailed weighted-average costing rules | Purchase costing and stock valuation |
 | Treatment of device-related costs and repair expenses | Device profit implementation |
-| Customer payment allocation across multiple debts | Debt payment workflow |
+| Customer payment allocation across multiple debts | Implemented oldest sale first in Phase 6B2; owner confirmation pending |
 | Supplier payment allocation and adjustments | Supplier balance workflow |
 | Returns, exchanges, and refund rules | POS corrections and returns |
 | Discount limits and approval rules | POS pricing and permissions |
-| Cashbox session operating rules | Cashbox implementation |
+| Cashbox session operating rules | Decided in spec §11.6–§11.8 |
+| Corrections of posted cash, expense, payment, and session records | Any correction workflow |
+| Cashbox discrepancy approval and session handover | Discrepancy approval or handover workflow |
 | Store transfer approval and receiving rules | Inventory transfer workflow |
 | Required IMEI and serial-number validation rules | Serialized device registration |
 | Store Network reservation duration and configuration | Reservation implementation |

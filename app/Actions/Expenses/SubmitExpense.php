@@ -43,7 +43,7 @@ class SubmitExpense
 {
     /**
      * @param  int|null  $sessionId  The open session the form was shown with; used for cash only.
-     * @param  array{method?: mixed, category?: mixed, description?: mixed, amount?: mixed, expense_date?: mixed, reference?: mixed}  $input
+     * @param  array{method?: mixed, category?: mixed, description?: mixed, amount?: mixed, expense_date?: mixed, reference?: mixed, operational_supplier_id?: mixed, inventory_unit_id?: mixed}  $input
      *
      * @throws AuthorizationException
      * @throws ValidationException
@@ -59,7 +59,7 @@ class SubmitExpense
             'method' => ['required', Rule::enum(ExpenseMethod::class)],
         ], [], ['method' => __('pos.expenses.fields.method')])->validate()['method']);
 
-        $details = ExpenseInput::from($input);
+        $details = ExpenseInput::from($input, $actor, $store);
         $sessionId = $method === ExpenseMethod::CASH ? $sessionId : null;
         $fingerprint = Idempotency::fingerprint([
             'operation' => 'expense_submission',
@@ -90,6 +90,8 @@ class SubmitExpense
                     'expense_date' => $details->expenseDate,
                     'method' => $method,
                     'reference' => $details->reference,
+                    'operational_supplier_id' => $details->supplierId,
+                    'inventory_unit_id' => $details->unitId,
                     'user_id' => $actor->id,
                     'recorded_at' => $now,
                 ]) : null;
@@ -145,6 +147,8 @@ class SubmitExpense
             'description' => $details->description,
             'expense_date' => $details->expenseDate,
             'reference' => $details->reference,
+            'operational_supplier_id' => $details->supplierId,
+            'inventory_unit_id' => $details->unitId,
             'status' => CashPayoutStatus::PENDING,
             'started_by' => $actor->id,
             'started_at' => $now,

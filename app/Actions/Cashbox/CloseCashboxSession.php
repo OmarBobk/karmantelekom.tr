@@ -46,8 +46,8 @@ class CloseCashboxSession
         }
 
         try {
-            $countedMinor = Money::parse((string) $counted, Money::MAX_TOTAL_AMOUNT, allowZero: true);
-            $shownMinor = Money::parse((string) $expectedShown, Money::MAX_TOTAL_AMOUNT, allowZero: true);
+            $countedMinor = Money::parse((string) $counted, CashboxSession::MAX_AMOUNT, allowZero: true);
+            $shownMinor = Money::parse((string) $expectedShown, CashboxSession::MAX_AMOUNT, allowZero: true);
         } catch (InvalidAmountException) {
             throw ValidationException::withMessages(['counted_closing' => __('pos.cashbox.errors.count_invalid')]);
         }
@@ -95,6 +95,10 @@ class CloseCashboxSession
             }
 
             $expected = $session->expectedMinor();
+
+            if ($expected > CashboxSession::MAX_AMOUNT) {
+                throw ValidationException::withMessages(['cashbox' => __('pos.cashbox.errors.expected_too_large')]);
+            }
 
             if ($expected !== $shownMinor) {
                 throw ValidationException::withMessages(['counted_closing' => __('pos.cashbox.errors.expected_changed', ['expected' => LocalizedMoney::format($expected)])]);

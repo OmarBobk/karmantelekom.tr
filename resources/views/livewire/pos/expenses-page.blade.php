@@ -40,6 +40,7 @@
                                                 · <bdi dir="ltr" class="font-mono">{{ $payout->reference }}</bdi>
                                             @endif
                                         </p>
+                                        @include('livewire.pos.partials.expense-links', ['record' => $payout])
                                     </div>
                                     <span dir="ltr" class="font-semibold tabular-nums text-gray-900">{{ LocalizedMoney::format($payout->amountMinor()) }} TRY</span>
                                 </div>
@@ -85,6 +86,7 @@
                                                     · <bdi dir="ltr" class="font-mono">{{ $expense->reference }}</bdi>
                                                 @endif
                                             </span>
+                                            @include('livewire.pos.partials.expense-links', ['record' => $expense])
                                         </td>
                                         <td class="px-4 py-2 align-top text-gray-700">{{ $expense->method->label() }}</td>
                                         <td dir="ltr" class="px-4 py-2 text-end align-top font-semibold tabular-nums text-gray-900">{{ LocalizedMoney::format($expense->amountMinor()) }}</td>
@@ -194,6 +196,58 @@
                     <input id="expense-reference" type="text" dir="ltr" autocomplete="off" maxlength="{{ Expense::MAX_REFERENCE_LENGTH }}" wire:model="reference" aria-describedby="expense-reference-help" class="{{ $inputClass }} mt-1 font-mono">
                     @error('reference') <p class="mt-1 text-sm text-red-700" role="alert">{{ $message }}</p> @enderror
                 </div>
+
+                @if ($suppliers->isNotEmpty() || $canLinkDevice)
+                    <fieldset class="space-y-3">
+                        <legend class="block text-sm font-medium text-gray-800">{{ __('pos.expenses.links_title') }}</legend>
+                        <p id="expense-links-help" class="text-xs text-gray-600">{{ __('pos.expenses.links_help') }}</p>
+
+                        @if ($suppliers->isNotEmpty())
+                            <div>
+                                <label for="expense-supplier" class="block text-sm font-medium text-gray-800">{{ __('pos.expenses.fields.supplier') }}</label>
+                                <select id="expense-supplier" wire:model="supplierId" @error('operational_supplier_id') aria-invalid="true" aria-describedby="expense-links-help expense-supplier-error" @else aria-describedby="expense-links-help" @enderror class="{{ $inputClass }} mt-1">
+                                    <option value="">{{ __('pos.expenses.no_supplier') }}</option>
+                                    @foreach ($suppliers as $supplier)
+                                        <option value="{{ $supplier->id }}">{{ $supplier->name }}</option>
+                                    @endforeach
+                                </select>
+                                @error('operational_supplier_id') <p id="expense-supplier-error" class="mt-1 text-sm text-red-700" role="alert">{{ $message }}</p> @enderror
+                            </div>
+                        @endif
+
+                        @if ($canLinkDevice)
+                            <div>
+                                <label for="expense-device" class="block text-sm font-medium text-gray-800">{{ __('pos.expenses.fields.device') }}</label>
+                                @if ($chosenDevice)
+                                    <div class="mt-1 flex min-h-11 items-center gap-2 rounded-lg bg-gray-50 px-3 ring-1 ring-gray-300" data-expense-device-chosen>
+                                        <span dir="auto" class="flex-1 text-sm text-gray-900">{{ $chosenDevice['label'] }}</span>
+                                        <button type="button" wire:click="clearDevice" class="text-sm font-medium text-blue-700 underline focus-visible:outline-2 focus-visible:outline-blue-600">{{ __('pos.expenses.clear_device') }}</button>
+                                    </div>
+                                @else
+                                    <div class="mt-1 flex gap-2">
+                                        <input id="expense-device" type="text" dir="ltr" autocomplete="off" maxlength="{{ \App\Actions\Inventory\FindUnitsByIdentifier::MAX_INPUT_LENGTH }}" wire:model="deviceCode" wire:keydown.enter.prevent="findDevice" placeholder="{{ __('pos.expenses.device_placeholder') }}" @error('inventory_unit_id') aria-invalid="true" aria-describedby="expense-device-error" @enderror class="{{ $inputClass }} font-mono">
+                                        <button type="button" wire:click="findDevice" wire:loading.attr="disabled" wire:target="findDevice" class="{{ $secondaryButton }} shrink-0">
+                                            <span wire:loading.remove wire:target="findDevice">{{ __('pos.expenses.find_device') }}</span>
+                                            <span wire:loading wire:target="findDevice">{{ __('pos.expenses.finding_device') }}</span>
+                                        </button>
+                                    </div>
+                                    @if ($deviceSearched && $deviceMatches === [])
+                                        <p class="mt-1 text-sm text-amber-900" role="status">{{ __('pos.expenses.no_device') }}</p>
+                                    @elseif (count($deviceMatches) > 1)
+                                        <ul class="mt-1 space-y-1" aria-label="{{ __('pos.expenses.choose_device') }}">
+                                            @foreach ($deviceMatches as $match)
+                                                <li wire:key="device-match-{{ $match['unit_id'] }}">
+                                                    <button type="button" wire:click="chooseDevice({{ $match['unit_id'] }})" class="{{ $secondaryButton }} w-full justify-start" dir="auto">{{ $match['label'] }}</button>
+                                                </li>
+                                            @endforeach
+                                        </ul>
+                                    @endif
+                                @endif
+                                @error('inventory_unit_id') <p id="expense-device-error" class="mt-1 text-sm text-red-700" role="alert">{{ $message }}</p> @enderror
+                            </div>
+                        @endif
+                    </fieldset>
+                @endif
 
                 <button type="submit" wire:loading.attr="disabled" wire:target="record" class="{{ $primaryButton }} bg-blue-600 hover:bg-blue-700">
                     <span wire:loading.remove wire:target="record">

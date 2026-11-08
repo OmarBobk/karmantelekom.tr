@@ -19,6 +19,9 @@ use LogicException;
  * expense submission and posts nothing to the cashbox. Corrections are a separate procedure, so
  * expenses are never edited or deleted.
  *
+ * The optional supplier and device references are for traceability only: they change no stock,
+ * device cost, or supplier balance.
+ *
  * @property int $id
  * @property int $store_id
  * @property Currency $currency
@@ -28,6 +31,8 @@ use LogicException;
  * @property Carbon $expense_date
  * @property ExpenseMethod $method
  * @property string|null $reference
+ * @property int|null $operational_supplier_id
+ * @property int|null $inventory_unit_id
  * @property int $user_id
  * @property int|null $cash_payout_id
  * @property Carbon $recorded_at
@@ -42,8 +47,8 @@ class Expense extends Model
      * @var list<string>
      */
     protected $fillable = [
-        'store_id', 'currency', 'category', 'description', 'amount', 'expense_date', 'method', 'reference', 'user_id',
-        'cash_payout_id', 'recorded_at',
+        'store_id', 'currency', 'category', 'description', 'amount', 'expense_date', 'method', 'reference',
+        'operational_supplier_id', 'inventory_unit_id', 'user_id', 'cash_payout_id', 'recorded_at',
     ];
 
     protected static function booted(): void
@@ -93,5 +98,21 @@ class Expense extends Model
     public function payout(): BelongsTo
     {
         return $this->belongsTo(CashPayout::class, 'cash_payout_id');
+    }
+
+    /**
+     * @return BelongsTo<OperationalSupplier, $this>
+     */
+    public function supplier(): BelongsTo
+    {
+        return $this->belongsTo(OperationalSupplier::class, 'operational_supplier_id');
+    }
+
+    /**
+     * @return BelongsTo<InventoryUnit, $this>
+     */
+    public function unit(): BelongsTo
+    {
+        return $this->belongsTo(InventoryUnit::class, 'inventory_unit_id');
     }
 }

@@ -42,7 +42,7 @@ class OpenCashboxSession
         }
 
         try {
-            $countedMinor = Money::parse((string) $counted, Money::MAX_TOTAL_AMOUNT, allowZero: true);
+            $countedMinor = Money::parse((string) $counted, CashboxSession::MAX_AMOUNT, allowZero: true);
         } catch (InvalidAmountException) {
             throw ValidationException::withMessages(['opening_counted' => __('pos.cashbox.errors.count_invalid')]);
         }

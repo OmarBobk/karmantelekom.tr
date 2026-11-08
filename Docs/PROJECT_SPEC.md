@@ -653,6 +653,7 @@ Corrections must follow approved procedures rather than silently replacing histo
 - Closing requires an explicit count. The expected amount is the opening count plus every movement in the session. A difference requires a note. The expected amount, count, and difference are kept, and a closed session is final.
 - A close is refused when the expected amount changed after the owner was shown it, for example because a sale posted cash while the owner was counting. The owner counts again against the new figure.
 - A close names the session and expected amount shown together. A form for an earlier session never closes a later one, even with the same expected amount. An identical retry returns the original close.
+- Session counts and totals (opening count, expected and counted closing, differences) may reach the storage limit of 9,999,999,999,999.99 TRY, so a session holding many payments still closes. Each individual payment, payout, and transfer keeps the per-payment limit of 9,999,999,999.99 TRY. A session whose expected cash exceeds the storage limit cannot close until cash is withdrawn.
 
 **Cash intake**
 
@@ -703,6 +704,13 @@ The owner moves their own TRY cash into or out of the drawer from the branch Cas
 - Starting, confirming, and releasing a transfer take the store row exclusively as their first statement, then lock the transfer.
 - The available cash and the open session are read only after that lock. So a withdrawal is serialized with payouts and closing, and its check sees every committed reservation.
 - A supplier cash payout locks the invoice before the store row (§12.2). A transfer never touches invoices, so the two meet only at the store row, and their lock order cannot invert.
+
+### 11.8 Reconciliation of Closed Sessions (decided 2026-11-08, Phase 6 closeout)
+
+- The owner (`manage_cashbox`) opens any closed session of a branch from its paginated history. A session of another branch, or a session that is still open, is not found. Access is checked on the server for every request.
+- The page is read-only. It shows the stored snapshot: opening expected, counted, difference, and note, the opener and time; and expected closing, counted, difference, and note, the closer and time. These figures are never recomputed, so the page shows exactly what the close compared against.
+- Movements are listed oldest first and paginated, each with its time, direction, signed amount, recorder, and source (sale, customer payment, expense, supplier payment, or owner transfer reason).
+- Corrections of posted movements and approval of discrepancies are not available here; they stay pending until their rules are approved (§18.2).
 
 ---
 
@@ -756,6 +764,13 @@ An expense record must not automatically create an inventory movement or change 
 - Confirming names the payout and session displayed (`pay_suppliers`). It records the supplier payment, its ledger entry, and one outgoing cash movement linked to both, then completes the payout. A retry returns the original payment. Only the submission that creates a payout tells staff to hand out cash; reloads show pending payouts with a prompt to verify first.
 - Pending supplier payouts block closing the session and reversing the invoice. The owner (`manage_cashbox`) releases one with a resolution and note, logged; nothing is recorded as paid.
 - A supplier payment handed out from the cashbox is not reversed through the payment reversal, since its cash already left the drawer. Correcting it is a separate procedure.
+
+### 12.3 Expense Traceability (decided 2026-11-08, Phase 6 closeout)
+
+- An expense may reference one supplier and one device, both optional. The references are kept on the pending cash payout and copied to the expense when it is confirmed, and expense history shows them.
+- A supplier must be active, and the owner must be allowed to see suppliers (`manage_suppliers`). A device must belong to the same branch, found by exact IMEI or serial through the branch's device lookup, and the owner must be allowed to see its inventory (`view_inventory`). The server checks both.
+- The references are part of the submission fingerprint only when set. A submission without references keeps its earlier fingerprint, so older requests still replay. A retry under the same key with a different or missing reference is refused as a conflict.
+- The links are for traceability only. They create no inventory movement and change no device cost basis or supplier balance. Device costs are still recorded through the device-cost workflow (§6), and supplier obligations through purchasing (§8).
 
 ---
 
@@ -1071,7 +1086,7 @@ Cursor must not silently choose business rules for these areas.
 - Treatment of supplier returns and purchase corrections.
 - Which device-related expenses become part of inventory cost.
 - Final device-level profit formula.
-- Customer payment allocation across multiple debts.
+- Customer payment allocation across multiple debts. Phase 6B2 implemented oldest sale first; this needs the owner's confirmation.
 - Supplier payment allocation and adjustments.
 - Refund, exchange, return, and void rules.
 - Discount limits and approval requirements.
@@ -1079,11 +1094,11 @@ Cursor must not silently choose business rules for these areas.
 
 ### 18.2 Cashbox Decisions
 
-Decided in §11.6: multiple employees work under one owner-opened session, and each movement is attributed to its recorder. Opening and closing differences need a note and stay visible. Owner deposits and withdrawals are decided in §11.7. Still open:
+Decided in §11.6: multiple employees work under one owner-opened session, and each movement is attributed to its recorder. Opening and closing differences need a note and stay visible. Owner deposits and withdrawals are decided in §11.7, and read-only reconciliation in §11.8. Still open, and not implemented until approved:
 
+- Corrections of posted transactions: cash movements, expenses, supplier cash payouts, customer payments, and closed sessions. Today these records are append-only and final.
+- Approval requirements for cashbox discrepancies. Today a difference needs only the owner's note.
 - Session handover procedures.
-- Rules for cash corrections.
-- Approval requirements for cashbox discrepancies.
 
 ### 18.3 Inventory and Device Decisions
 

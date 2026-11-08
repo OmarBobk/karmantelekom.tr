@@ -74,6 +74,8 @@ class ConfirmCashPayout
                 'expense_date' => $payout->expense_date->toDateString(),
                 'method' => ExpenseMethod::CASH,
                 'reference' => $payout->reference,
+                'operational_supplier_id' => $payout->operational_supplier_id,
+                'inventory_unit_id' => $payout->inventory_unit_id,
                 'user_id' => $actor->id,
                 'cash_payout_id' => $payout->id,
                 'recorded_at' => $now,

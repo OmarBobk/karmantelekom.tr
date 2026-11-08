@@ -31,6 +31,8 @@ use LogicException;
  * @property string $description
  * @property Carbon $expense_date
  * @property string|null $reference
+ * @property int|null $operational_supplier_id
+ * @property int|null $inventory_unit_id
  * @property CashPayoutStatus $status
  * @property int $started_by
  * @property Carbon $started_at
@@ -48,8 +50,8 @@ class CashPayout extends Model
      * @var list<string>
      */
     protected $fillable = [
-        'store_id', 'cashbox_session_id', 'amount', 'category', 'description', 'expense_date', 'reference', 'status',
-        'started_by', 'started_at', 'completed_at', 'released_by', 'released_at', 'resolution', 'release_note',
+        'store_id', 'cashbox_session_id', 'amount', 'category', 'description', 'expense_date', 'reference',
+        'operational_supplier_id', 'inventory_unit_id', 'status', 'started_by', 'started_at', 'completed_at', 'released_by', 'released_at', 'resolution', 'release_note',
     ];
 
     protected static function booted(): void
@@ -126,5 +128,21 @@ class CashPayout extends Model
     public function expense(): HasOne
     {
         return $this->hasOne(Expense::class);
+    }
+
+    /**
+     * @return BelongsTo<OperationalSupplier, $this>
+     */
+    public function supplier(): BelongsTo
+    {
+        return $this->belongsTo(OperationalSupplier::class, 'operational_supplier_id');
+    }
+
+    /**
+     * @return BelongsTo<InventoryUnit, $this>
+     */
+    public function unit(): BelongsTo
+    {
+        return $this->belongsTo(InventoryUnit::class, 'inventory_unit_id');
     }
 }
