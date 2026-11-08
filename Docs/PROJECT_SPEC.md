@@ -272,6 +272,15 @@ The system must prevent:
 
 Inventory operations must be protected against duplicate submissions and concurrent requests.
 
+### 5.5 Stock Entry Sources and Physical Counts
+
+- New stock from a supplier enters through the existing purchase receipt workflow on its invoice. The invoice accompanies the goods. The inventory screen may link directly to purchasing for this action.
+- Opening stock records goods already on hand during initial setup. For quantity-tracked stock it is allowed once per branch and product definition, before any movement for that pair. Individually tracked opening stock records each device and its identifier during setup. Unknown acquisition cost stays unknown.
+- A physical count adjustment requires the branch's inventory-adjustment permission and a reason, whether stock rises or falls. For quantity-tracked items, the employee enters the physically counted total, including zero. The server records the prior balance, counted total, signed difference, reason, branch, actor, and time in the movement history.
+- A count is tied to the stock state at the start of the count. Check that state under the same lock that applies the movement. Any intervening stock movement makes the count stale, including offsetting movements that return the balance to its prior value. Ask the employee to verify the count again.
+- Individually tracked discrepancies identify the exact existing device by IMEI or serial and follow its approved lifecycle rules. A device found without a verified source must be reviewed before it can become sellable.
+- Use explicit actions for receipt, opening stock, and stock count adjustment. Keep provenance in the movement and device histories. Receipt movements link to the invoice and receipt for users with purchasing access.
+
 ---
 
 ## 6. Used-Device Management
@@ -960,6 +969,25 @@ Important Store Network events must be traceable, including:
 
 Each event must identify the relevant user, store, item, timestamp, and associated transaction where applicable.
 
+## 14A. Storefront Publishing
+
+### 14A.1 Branch Sharing and Publication
+
+- A branch separately chooses what to share within Store Network and what to make eligible for storefront publication. For the storefront, it specifies an online quantity for quantity-tracked stock or selects a specific individually tracked device.
+- A user with a dedicated storefront-publishing permission reviews eligible stock in a single screen and decides whether to publish for retail, wholesale, or both. The publisher can link, publish, and unpublish listings. Any pricing permission is separate. Preserve the existing storefront audience rules for wholesale and retail.
+- The operational product definition identifies the item. The legacy storefront product is the presentation record. Match existing listings explicitly, keep their URLs, media, translations, and order references, and create a new storefront listing when there is no match. Storefront categories and wholesale customer shops retain their existing roles.
+- Publishing does not change the branch's on-hand stock. A published listing uses the branch's current sellable inventory and its online allocation. When both channels offer an item, they draw from the same allocation. Recheck availability if the branch changes its allocation or sells, transfers, or reserves the item elsewhere.
+
+### 14A.2 Online Orders and Stock Reservation
+
+- In the initial release, a submitted order for branch stock is pending branch confirmation and does not yet reserve stock. Show the pending status to the customer.
+- The fulfilling branch confirms only after the server rechecks the online allocation and physical availability. Confirming the order and creating the stock hold are atomic and retry-safe. The hold must prevent a conflicting POS sale or Store Network reservation for the same stock.
+- Activate online ordering for linked branch stock after confirming the reservation works across retail, wholesale, Store Network, and POS. Keep existing storefront records and order history throughout the transition.
+
+### 14A.3 Release Order
+
+Deliver this after Store Network. Start with the publisher workflow and verified legacy links. Before accepting online orders against branch stock, agree how to choose the fulfilling branch when several qualify and how payments, cancellations, and hold releases work.
+
 ---
 
 ## 15. Dashboard and Reporting
@@ -1188,6 +1216,8 @@ All listed capabilities belong to the initial system scope, but they must be imp
 
 ### Priority 6 — Store Network
 
+Complete the stock entry and physical count rules in §5.5 before this work.
+
 - Shared listings.
 - Cross-store discovery.
 - Reservation requests.
@@ -1197,6 +1227,8 @@ All listed capabilities belong to the initial system scope, but they must be imp
 - Transfer and sale integration.
 
 Store Network must not introduce an independent inventory or device-identity system.
+
+Storefront publishing (§14A) follows Store Network and precedes online order activation against branch stock.
 
 ### Priority 7 — Consolidated Management and Reporting
 
