@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Actions\Catalog\SaveProductDefinition;
-use App\Actions\Inventory\AdjustQuantity;
 use App\Actions\Inventory\RecordOpeningBalance;
+use App\Actions\Inventory\RecordStockCount;
 use App\Actions\Inventory\RegisterUnit;
 use App\Actions\Inventory\RemoveUnit;
 use App\Enums\AdjustmentReason;
@@ -104,7 +104,7 @@ class InventoryLedgerTest extends TestCase
     #[Test]
     public function opening_balance_is_rejected_once_any_history_exists(): void
     {
-        $this->adjust($this->storeOne, MovementType::ADJUSTMENT_INCREASE, AdjustmentReason::FOUND, 2, 'adjust-1');
+        $this->recordCount($this->storeOne, 2, 'count-1');
 
         $this->assertValidationError('quantity', fn () => $this->openingBalance($this->storeOne, 10, 'open-1'));
 
@@ -134,34 +134,16 @@ class InventoryLedgerTest extends TestCase
     }
 
     #[Test]
-    public function decreases_never_take_quantity_below_zero_and_leave_no_movement(): void
-    {
-        $this->openingBalance($this->storeOne, 10, 'open');
-        $this->adjust($this->storeOne, MovementType::ADJUSTMENT_DECREASE, AdjustmentReason::DAMAGED, 3, 'damaged', 'Water damage');
-
-        $this->assertSame(7, $this->quantity($this->storeOne));
-
-        $this->assertValidationError('quantity', fn () => $this->adjust($this->storeOne, MovementType::ADJUSTMENT_DECREASE, AdjustmentReason::LOST, 8, 'lost', 'Missing'));
-
-        $this->assertSame(7, $this->quantity($this->storeOne));
-        $this->assertSame(2, InventoryMovement::count());
-
-        $this->assertValidationError('quantity', fn () => $this->adjust($this->storeTwo, MovementType::ADJUSTMENT_DECREASE, AdjustmentReason::LOST, 1, 'empty-store', 'Missing'));
-        $this->assertSame(0, $this->quantity($this->storeTwo));
-    }
-
-    #[Test]
-    public function adjustments_validate_reason_note_quantity_and_tracking_mode(): void
+    public function counts_validate_the_reason_the_total_and_the_tracking_mode(): void
     {
         $this->openingBalance($this->storeOne, 10, 'open');
 
-        $this->assertValidationError('reason', fn () => $this->adjust($this->storeOne, MovementType::ADJUSTMENT_INCREASE, AdjustmentReason::DAMAGED, 1, 'a'));
-        $this->assertValidationError('reason', fn () => $this->adjust($this->storeOne, MovementType::ADJUSTMENT_DECREASE, AdjustmentReason::FOUND, 1, 'b', 'note'));
-        $this->assertValidationError('note', fn () => $this->adjust($this->storeOne, MovementType::ADJUSTMENT_DECREASE, AdjustmentReason::DAMAGED, 1, 'c', '   '));
-        $this->assertValidationError('quantity', fn () => $this->adjust($this->storeOne, MovementType::ADJUSTMENT_INCREASE, AdjustmentReason::FOUND, 0, 'd'));
-        $this->assertValidationError('type', fn () => $this->adjust($this->storeOne, MovementType::OPENING_BALANCE, AdjustmentReason::OPENING_BALANCE, 1, 'e'));
-        $this->assertValidationError('quantity', fn () => app(AdjustQuantity::class)(
-            $this->owner, $this->storeOne, $this->usedPhone, MovementType::ADJUSTMENT_INCREASE, AdjustmentReason::FOUND, 1, null, 'f',
+        $this->assertValidationError('note', fn () => $this->recordCount($this->storeOne, 9, 'a', '   '));
+        $this->assertValidationError('note', fn () => $this->recordCount($this->storeOne, 9, 'b', null));
+        $this->assertValidationError('counted_quantity', fn () => $this->recordCount($this->storeOne, -1, 'c'));
+        $this->assertValidationError('counted_quantity', fn () => $this->recordCount($this->storeOne, RecordStockCount::MAX_QUANTITY + 1, 'd'));
+        $this->assertValidationError('counted_quantity', fn () => app(RecordStockCount::class)(
+            $this->owner, $this->storeOne, $this->usedPhone, 1, null, 'Shelf count', 'e',
         ));
 
         $this->assertSame(10, $this->quantity($this->storeOne));
@@ -180,7 +162,7 @@ class InventoryLedgerTest extends TestCase
         });
 
         $this->assertThrows(
-            fn () => $this->adjust($this->storeOne, MovementType::ADJUSTMENT_DECREASE, AdjustmentReason::DAMAGED, 4, 'fails', 'Broken'),
+            fn () => $this->recordCount($this->storeOne, 6, 'fails', 'Broken'),
             RuntimeException::class,
         );
 
@@ -199,10 +181,10 @@ class InventoryLedgerTest extends TestCase
     #[Test]
     public function an_identical_retry_returns_the_original_movement_without_reapplying_it(): void
     {
-        $this->openingBalance($this->storeOne, 10, 'open');
+        $opening = $this->openingBalance($this->storeOne, 10, 'open');
 
-        $first = $this->adjust($this->storeOne, MovementType::ADJUSTMENT_DECREASE, AdjustmentReason::DAMAGED, 3, 'retry-key', 'Damaged box');
-        $retry = $this->adjust($this->storeOne, MovementType::ADJUSTMENT_DECREASE, AdjustmentReason::DAMAGED, 3, 'retry-key', '  Damaged box  ');
+        $first = $this->recordCount($this->storeOne, 7, 'retry-key', 'Damaged box', $opening->id);
+        $retry = $this->recordCount($this->storeOne, 7, 'retry-key', '  Damaged box  ', $opening->id);
 
         $this->assertTrue($first->wasRecentlyCreated);
         $this->assertFalse($retry->wasRecentlyCreated);
@@ -214,19 +196,20 @@ class InventoryLedgerTest extends TestCase
     #[Test]
     public function reusing_a_key_for_a_different_request_or_actor_is_rejected(): void
     {
-        $this->openingBalance($this->storeOne, 10, 'open');
-        $this->adjust($this->storeOne, MovementType::ADJUSTMENT_DECREASE, AdjustmentReason::DAMAGED, 3, 'shared', 'Damaged');
+        $opening = $this->openingBalance($this->storeOne, 10, 'open');
+        $this->recordCount($this->storeOne, 7, 'shared', 'Damaged', $opening->id);
 
         $conflicts = [
-            'different quantity' => fn () => $this->adjust($this->storeOne, MovementType::ADJUSTMENT_DECREASE, AdjustmentReason::DAMAGED, 2, 'shared', 'Damaged'),
-            'different reason' => fn () => $this->adjust($this->storeOne, MovementType::ADJUSTMENT_DECREASE, AdjustmentReason::LOST, 3, 'shared', 'Damaged'),
-            'different store' => fn () => $this->adjust($this->storeTwo, MovementType::ADJUSTMENT_INCREASE, AdjustmentReason::FOUND, 3, 'shared'),
+            'different total' => fn () => $this->recordCount($this->storeOne, 8, 'shared', 'Damaged', $opening->id),
+            'different reason' => fn () => $this->recordCount($this->storeOne, 7, 'shared', 'Lost', $opening->id),
+            'different count start' => fn () => $this->recordCount($this->storeOne, 7, 'shared', 'Damaged', null),
+            'different store' => fn () => $this->recordCount($this->storeTwo, 7, 'shared', 'Damaged', $opening->id),
             'different operation' => fn () => $this->openingBalance($this->storeTwo, 3, 'shared'),
-            'different target' => fn () => app(AdjustQuantity::class)(
-                $this->owner, $this->storeOne, ProductDefinition::factory()->create(), MovementType::ADJUSTMENT_DECREASE, AdjustmentReason::DAMAGED, 3, 'Damaged', 'shared',
+            'different target' => fn () => app(RecordStockCount::class)(
+                $this->owner, $this->storeOne, ProductDefinition::factory()->create(), 7, $opening->id, 'Damaged', 'shared',
             ),
-            'different actor' => fn () => app(AdjustQuantity::class)(
-                $this->createOwner(), $this->storeOne, $this->cable, MovementType::ADJUSTMENT_DECREASE, AdjustmentReason::DAMAGED, 3, 'Damaged', 'shared',
+            'different actor' => fn () => app(RecordStockCount::class)(
+                $this->createOwner(), $this->storeOne, $this->cable, 7, $opening->id, 'Damaged', 'shared',
             ),
         ];
 
@@ -245,17 +228,17 @@ class InventoryLedgerTest extends TestCase
     }
 
     #[Test]
-    public function a_stale_form_cannot_record_a_second_opening_balance_or_overdraw(): void
+    public function a_stale_form_cannot_record_a_second_opening_balance_or_a_second_count(): void
     {
         // Two forms rendered while the store had no history and 10 on hand.
-        $this->openingBalance($this->storeOne, 10, 'form-a');
+        $opening = $this->openingBalance($this->storeOne, 10, 'form-a');
 
         $this->assertValidationError('quantity', fn () => $this->openingBalance($this->storeOne, 10, 'form-b'));
 
-        $this->adjust($this->storeOne, MovementType::ADJUSTMENT_DECREASE, AdjustmentReason::DAMAGED, 6, 'tab-1', 'Damaged');
+        $this->recordCount($this->storeOne, 4, 'tab-1', 'Damaged', $opening->id);
 
-        // A second tab that still shows 10 on hand tries to remove 6: recalculated from the row, it fails.
-        $this->assertValidationError('quantity', fn () => $this->adjust($this->storeOne, MovementType::ADJUSTMENT_DECREASE, AdjustmentReason::LOST, 6, 'tab-2', 'Lost'));
+        // A second tab started counting from the same stock state.
+        $this->assertValidationError('count', fn () => $this->recordCount($this->storeOne, 5, 'tab-2', 'Lost', $opening->id));
 
         $this->assertSame(4, $this->quantity($this->storeOne));
         $this->assertSame(2, InventoryMovement::count());
@@ -469,9 +452,14 @@ class InventoryLedgerTest extends TestCase
         return app(RecordOpeningBalance::class)($this->owner, $store, $this->cable, $quantity, $note, $key);
     }
 
-    private function adjust(Store $store, MovementType $type, AdjustmentReason $reason, int $quantity, string $key, ?string $note = null): InventoryMovement
+    /**
+     * Record a count that started from the current stock state unless a start is given.
+     */
+    private function recordCount(Store $store, int $counted, string $key, ?string $reason = 'Shelf count', int|false|null $startedAfter = false): ?InventoryMovement
     {
-        return app(AdjustQuantity::class)($this->owner, $store, $this->cable, $type, $reason, $quantity, $note, $key);
+        $startedAfter = $startedAfter === false ? RecordStockCount::latestMovementId($store, $this->cable) : $startedAfter;
+
+        return app(RecordStockCount::class)($this->owner, $store, $this->cable, $counted, $startedAfter, $reason, $key);
     }
 
     private function registerUnit(

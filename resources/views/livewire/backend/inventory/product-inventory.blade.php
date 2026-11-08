@@ -66,62 +66,45 @@
                     </button>
                 </form>
             @elseif (! $tracksUnits)
-                <form wire:submit="adjust" class="space-y-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-200" aria-labelledby="adjust-title">
+                <section class="space-y-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-200" aria-labelledby="count-title">
                     <div>
-                        <h2 id="adjust-title" class="text-base font-semibold text-gray-900">{{ __('inventory.adjust.title') }}</h2>
-                        <p class="text-xs text-gray-500">{{ __('inventory.adjust.help') }}</p>
+                        <h2 id="count-title" class="text-base font-semibold text-gray-900">{{ __('inventory.count.title') }}</h2>
+                        <p class="text-xs text-gray-500">{{ $countInProgress ? __('inventory.count.in_progress_help') : __('inventory.count.help') }}</p>
                     </div>
-                    <fieldset>
-                        <legend class="text-sm font-medium text-gray-700">{{ __('inventory.fields.direction') }}</legend>
-                        <div class="mt-1 grid grid-cols-2 gap-2">
-                            @foreach (['adjustment_decrease' => 'red', 'adjustment_increase' => 'green'] as $value => $color)
-                                <label @class([
-                                    'flex min-h-11 cursor-pointer items-center justify-center rounded-lg border px-3 text-sm font-medium',
-                                    'border-red-300 bg-red-50 text-red-700' => $adjustmentType === $value && $color === 'red',
-                                    'border-green-300 bg-green-50 text-green-700' => $adjustmentType === $value && $color === 'green',
-                                    'border-gray-300 text-gray-700 hover:bg-gray-50' => $adjustmentType !== $value,
-                                ])>
-                                    <input type="radio" wire:model.live="adjustmentType" value="{{ $value }}" class="sr-only">
-                                    {{ \App\Enums\MovementType::from($value)->label() }}
-                                </label>
-                            @endforeach
-                        </div>
-                        @error('adjustmentType') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
-                    </fieldset>
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label for="adjust-reason" class="block text-sm font-medium text-gray-700">{{ __('inventory.fields.reason') }}</label>
-                            <select id="adjust-reason" wire:model="adjustmentReason" @error('adjustmentReason') aria-invalid="true" @enderror class="mt-1 block min-h-11 w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                                <option value="">{{ __('inventory.form.choose') }}</option>
-                                @foreach ($adjustmentReasons as $reason)
-                                    <option value="{{ $reason->value }}">{{ $reason->label() }}</option>
-                                @endforeach
-                            </select>
-                            @error('adjustmentReason') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
-                        </div>
-                        <div>
-                            <label for="adjust-quantity" class="block text-sm font-medium text-gray-700">{{ __('inventory.fields.quantity') }}</label>
-                            <input id="adjust-quantity" type="number" min="1" step="1" inputmode="numeric" dir="ltr" wire:model="adjustmentQuantity" @error('adjustmentQuantity') aria-invalid="true" aria-describedby="adjust-quantity-error" @enderror class="mt-1 block min-h-11 w-full rounded-lg border-gray-300 font-mono shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                        </div>
-                        @error('adjustmentQuantity') <p id="adjust-quantity-error" class="col-span-2 -mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
-                    </div>
-                    <div>
-                        <label for="adjust-note" class="block text-sm font-medium text-gray-700">
-                            {{ __('inventory.fields.note') }}
-                            @if ($adjustmentType === 'adjustment_decrease')
-                                <span class="font-normal text-red-600">({{ __('inventory.form.required') }})</span>
-                            @else
-                                <span class="font-normal text-gray-400">({{ __('inventory.form.optional') }})</span>
-                            @endif
-                        </label>
-                        <textarea id="adjust-note" rows="2" wire:model="adjustmentNote" @error('adjustmentNote') aria-invalid="true" @enderror class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"></textarea>
-                        @error('adjustmentNote') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
-                    </div>
-                    <button type="submit" wire:loading.attr="disabled" wire:target="adjust" class="min-h-11 w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60">
-                        <span wire:loading.remove wire:target="adjust">{{ __('inventory.adjust.submit') }}</span>
-                        <span wire:loading wire:target="adjust">{{ __('inventory.form.saving') }}</span>
-                    </button>
-                </form>
+                    @if (! $countInProgress)
+                        <button type="button" wire:click="startCount" wire:loading.attr="disabled" wire:target="startCount" class="min-h-11 w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60">{{ __('inventory.count.start') }}</button>
+                    @else
+                        <form wire:submit="recordCount" class="space-y-4">
+                            @error('count')
+                                <div role="alert" class="space-y-2 rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-800 ring-1 ring-amber-200">
+                                    <p>{{ $message }}</p>
+                                    <button type="button" wire:click="startCount" class="min-h-11 font-medium text-amber-900 underline">{{ __('inventory.count.restart') }}</button>
+                                </div>
+                            @enderror
+                            <div>
+                                <label for="counted-quantity" class="block text-sm font-medium text-gray-700">{{ __('inventory.fields.counted_quantity') }}</label>
+                                <input id="counted-quantity" type="number" min="0" step="1" inputmode="numeric" dir="ltr" autofocus wire:model="countedQuantity" @error('countedQuantity') aria-invalid="true" aria-describedby="counted-quantity-error" @else aria-describedby="counted-quantity-help" @enderror class="mt-1 block min-h-11 w-full rounded-lg border-gray-300 font-mono shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                                @error('countedQuantity')
+                                    <p id="counted-quantity-error" class="mt-1 text-sm text-red-600">{{ $message }}</p>
+                                @else
+                                    <p id="counted-quantity-help" class="mt-1 text-xs text-gray-500">{{ __('inventory.count.quantity_help') }}</p>
+                                @enderror
+                            </div>
+                            <div>
+                                <label for="count-reason" class="block text-sm font-medium text-gray-700">{{ __('inventory.fields.reason') }} <span class="font-normal text-red-600">({{ __('inventory.form.required') }})</span></label>
+                                <textarea id="count-reason" rows="2" required maxlength="{{ \App\Actions\Inventory\InventoryLedger::MAX_NOTE_LENGTH }}" wire:model="countReason" @error('countReason') aria-invalid="true" aria-describedby="count-reason-error" @enderror class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"></textarea>
+                                @error('countReason') <p id="count-reason-error" class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                            </div>
+                            <div class="flex gap-2">
+                                <button type="submit" wire:loading.attr="disabled" wire:target="recordCount" class="min-h-11 flex-1 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60">
+                                    <span wire:loading.remove wire:target="recordCount">{{ __('inventory.count.submit') }}</span>
+                                    <span wire:loading wire:target="recordCount">{{ __('inventory.form.saving') }}</span>
+                                </button>
+                                <button type="button" wire:click="cancelCount" class="min-h-11 rounded-lg px-4 py-2 text-sm font-medium text-gray-700 ring-1 ring-gray-300 hover:bg-gray-50">{{ __('inventory.count.cancel') }}</button>
+                            </div>
+                        </form>
+                    @endif
+                </section>
             @else
                 <form wire:submit="registerUnit" class="space-y-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-200" aria-labelledby="register-title">
                     <div>
@@ -169,6 +152,13 @@
                         <span wire:loading wire:target="registerUnit">{{ __('inventory.form.saving') }}</span>
                     </button>
                 </form>
+            @endif
+
+            @if ($canViewPurchases)
+                <p class="rounded-xl bg-gray-50 px-4 py-3 text-sm text-gray-600 ring-1 ring-gray-200">
+                    {{ __('inventory.receiving.help') }}
+                    <a href="{{ route('subdomain.purchases') }}" wire:navigate class="font-medium text-blue-600 hover:text-blue-800">{{ __('inventory.receiving.link') }}</a>
+                </p>
             @endif
         </div>
 

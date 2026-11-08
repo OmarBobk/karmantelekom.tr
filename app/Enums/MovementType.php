@@ -27,7 +27,8 @@ enum MovementType: string
     case SALE = 'sale';
 
     /**
-     * Reasons that may accompany this movement type.
+     * Reasons an operator may choose for this movement type. Physical counts record
+     * AdjustmentReason::PHYSICAL_COUNT themselves and are not choosable here.
      *
      * @return list<AdjustmentReason>
      */
@@ -49,11 +50,6 @@ enum MovementType: string
     public function allows(AdjustmentReason $reason): bool
     {
         return in_array($reason, $this->allowedReasons(), true);
-    }
-
-    public function requiresNote(): bool
-    {
-        return $this === self::ADJUSTMENT_DECREASE;
     }
 
     /**

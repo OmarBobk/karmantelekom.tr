@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace App\Livewire\Backend\Inventory;
 
-use App\Actions\Inventory\AdjustQuantity;
+use App\Actions\Inventory\InventoryLedger;
 use App\Actions\Inventory\RecordOpeningBalance;
+use App\Actions\Inventory\RecordStockCount;
 use App\Actions\Inventory\RegisterUnit;
-use App\Enums\AdjustmentReason;
-use App\Enums\MovementType;
 use App\Enums\UnitCondition;
 use App\Enums\UnitStatus;
 use App\Livewire\Backend\Concerns\SubmitsInventoryChanges;
@@ -22,7 +21,6 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Facades\Gate;
-use Illuminate\Validation\Rule;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
@@ -47,13 +45,17 @@ class ProductInventory extends Component
 
     public string $openingNote = '';
 
-    public string $adjustmentType = 'adjustment_decrease';
+    public bool $countInProgress = false;
 
-    public string $adjustmentReason = '';
+    /**
+     * Latest movement for this store and product when the count started; null when there was none.
+     */
+    #[Locked]
+    public ?int $countStartedAfterMovementId = null;
 
-    public string $adjustmentQuantity = '';
+    public string $countedQuantity = '';
 
-    public string $adjustmentNote = '';
+    public string $countReason = '';
 
     public string $unitCondition = '';
 
@@ -74,12 +76,6 @@ class ProductInventory extends Component
         $this->store = $store;
         $this->definition = $productDefinition;
         $this->unitCondition = UnitCondition::allowedFor($productDefinition->tracking_mode)[0]->value ?? '';
-    }
-
-    public function updatedAdjustmentType(): void
-    {
-        $this->adjustmentReason = '';
-        $this->resetErrorBag('adjustmentReason');
     }
 
     public function updatedUnitStatusFilter(): void
@@ -114,42 +110,59 @@ class ProductInventory extends Component
         }
     }
 
-    public function adjust(AdjustQuantity $adjustQuantity): void
+    /**
+     * Tie a new physical count to the current stock state. Restarting discards a stale count.
+     */
+    public function startCount(): void
     {
         $this->authorize('adjustInventory', $this->store);
 
-        $type = MovementType::tryFrom($this->adjustmentType);
-        $allowedReasons = $type?->allowedReasons() ?? [];
+        $this->countStartedAfterMovementId = RecordStockCount::latestMovementId($this->store, $this->definition);
+        $this->countInProgress = true;
+        $this->reset('countedQuantity');
+        $this->resetErrorBag();
+        $this->renewSubmissionKey();
+    }
+
+    public function cancelCount(): void
+    {
+        $this->reset('countInProgress', 'countStartedAfterMovementId', 'countedQuantity', 'countReason');
+        $this->resetErrorBag();
+    }
+
+    public function recordCount(RecordStockCount $recordStockCount): void
+    {
+        $this->authorize('adjustInventory', $this->store);
+
+        if (! $this->countInProgress) {
+            return;
+        }
 
         $this->validate([
-            'adjustmentType' => ['required', Rule::in([MovementType::ADJUSTMENT_INCREASE->value, MovementType::ADJUSTMENT_DECREASE->value])],
-            'adjustmentReason' => ['required', Rule::in(array_map(fn (AdjustmentReason $reason) => $reason->value, $allowedReasons))],
-            'adjustmentQuantity' => ['required', 'integer', 'min:1', 'max:'.AdjustQuantity::MAX_QUANTITY],
-            'adjustmentNote' => [$type?->requiresNote() ? 'required' : 'nullable', 'string', 'max:1000'],
+            'countedQuantity' => ['required', 'integer', 'min:0', 'max:'.RecordStockCount::MAX_QUANTITY],
+            'countReason' => ['required', 'string', 'max:'.InventoryLedger::MAX_NOTE_LENGTH],
         ], attributes: [
-            'adjustmentType' => __('inventory.fields.direction'),
-            'adjustmentReason' => __('inventory.fields.reason'),
-            'adjustmentQuantity' => __('inventory.fields.quantity'),
-            'adjustmentNote' => __('inventory.fields.note'),
+            'countedQuantity' => __('inventory.fields.counted_quantity'),
+            'countReason' => __('inventory.fields.reason'),
         ]);
 
-        $movement = $this->submitInventoryChange(
-            fn () => $adjustQuantity(
+        $this->submitInventoryChange(
+            fn () => $recordStockCount(
                 auth()->user(),
                 $this->store,
                 $this->definition,
-                $type,
-                AdjustmentReason::from($this->adjustmentReason),
-                (int) $this->adjustmentQuantity,
-                $this->adjustmentNote,
+                (int) $this->countedQuantity,
+                $this->countStartedAfterMovementId,
+                $this->countReason,
                 $this->submissionKey,
             ),
-            ['quantity' => 'adjustmentQuantity', 'note' => 'adjustmentNote', 'reason' => 'adjustmentReason', 'type' => 'adjustmentType'],
-            'adjustmentQuantity',
+            ['counted_quantity' => 'countedQuantity', 'note' => 'countReason', 'count' => 'count'],
+            'countedQuantity',
+            __('inventory.messages.count_matches'),
         );
 
-        if ($movement !== null) {
-            $this->reset('adjustmentReason', 'adjustmentQuantity', 'adjustmentNote');
+        if ($this->getErrorBag()->isEmpty()) {
+            $this->cancelCount();
         }
     }
 
@@ -216,8 +229,6 @@ class ProductInventory extends Component
                 ->paginate(25, pageName: 'units')
             : null;
 
-        $type = MovementType::tryFrom($this->adjustmentType);
-
         return view('livewire.backend.inventory.product-inventory', [
             'product' => $definition,
             'tracksUnits' => $tracksUnits,
@@ -229,7 +240,6 @@ class ProductInventory extends Component
             'movements' => $movements,
             'units' => $units,
             'canAdjust' => Gate::allows('adjustInventory', $this->store),
-            'adjustmentReasons' => $type?->allowedReasons() ?? [],
             'conditions' => UnitCondition::allowedFor($definition->tracking_mode),
             'canViewPurchases' => $canViewPurchases,
             'lastPurchase' => $canViewPurchases ? $this->lastPurchaseLine($definition) : null,

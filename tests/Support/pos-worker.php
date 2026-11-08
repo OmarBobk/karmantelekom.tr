@@ -18,14 +18,12 @@ use App\Actions\Customers\RecordCustomerPayment;
 use App\Actions\Customers\SaveCounterCustomer;
 use App\Actions\Expenses\ConfirmCashPayout;
 use App\Actions\Expenses\SubmitExpense;
-use App\Actions\Inventory\AdjustQuantity;
 use App\Actions\Inventory\RecordInspection;
+use App\Actions\Inventory\RecordStockCount;
 use App\Actions\Pos\FinalizeCheckout;
 use App\Actions\Pos\RecordCardApproval;
 use App\Actions\Pos\StartTerminalPayment;
-use App\Enums\AdjustmentReason;
 use App\Enums\InspectionOutcome;
-use App\Enums\MovementType;
 use App\Enums\SalePaymentMethod;
 use App\Enums\UnitStatus;
 use App\Exceptions\Inventory\IdempotencyConflictException;
@@ -85,13 +83,13 @@ try {
 
             return ['status' => 'ok'];
         })(),
-        'decrease' => (function () use ($actor, $store, $payload): array {
-            app(AdjustQuantity::class)(
-                $actor, $store, ProductDefinition::query()->findOrFail($payload['definition_id']), MovementType::ADJUSTMENT_DECREASE,
-                AdjustmentReason::DAMAGED, $payload['quantity'], 'Concurrent decrease', $payload['key'],
+        'count' => (function () use ($actor, $store, $payload): array {
+            $movement = app(RecordStockCount::class)(
+                $actor, $store, ProductDefinition::query()->findOrFail($payload['definition_id']),
+                $payload['counted'], $payload['count_started_after'], 'Concurrent count', $payload['key'],
             );
 
-            return ['status' => 'ok'];
+            return ['status' => $movement === null ? 'unchanged' : 'ok'];
         })(),
         'customer' => (function () use ($actor, $store, $payload): array {
             $customer = app(SaveCounterCustomer::class)($actor, $store, $payload['name'], $payload['phone']);

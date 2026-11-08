@@ -10,7 +10,10 @@ namespace App\Enums;
 enum AdjustmentReason: string
 {
     case OPENING_BALANCE = 'opening_balance';
+    /** Legacy relative adjustment; quantity_after is only the resulting balance. */
     case COUNT_CORRECTION = 'count_correction';
+    /** Absolute physical count; quantity_after is the counted total. */
+    case PHYSICAL_COUNT = 'physical_count';
     case FOUND = 'found';
     case DAMAGED = 'damaged';
     case LOST = 'lost';

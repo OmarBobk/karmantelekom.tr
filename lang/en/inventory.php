@@ -39,6 +39,7 @@ return [
     'reasons' => [
         'opening_balance' => 'Opening balance',
         'count_correction' => 'Count correction',
+        'physical_count' => 'Physical count',
         'found' => 'Found',
         'damaged' => 'Damaged',
         'lost' => 'Lost',
@@ -59,7 +60,7 @@ return [
         'quantity' => 'Quantity',
         'note' => 'Note',
         'reason' => 'Reason',
-        'direction' => 'Adjustment',
+        'counted_quantity' => 'Counted total',
         'product' => 'Product',
         'on_hand' => 'On hand',
         'condition' => 'Condition',
@@ -74,8 +75,10 @@ return [
         'invalid_imei' => 'An IMEI must be 15 digits with a valid check digit.',
         'quantity_range' => 'Quantity must be a whole number between 1 and :max.',
         'requires_quantity_tracking' => 'This product is not tracked by quantity.',
-        'opening_balance_exists' => 'An opening balance is not allowed once this store has stock history for the product. Use an adjustment.',
-        'invalid_adjustment_type' => 'Invalid adjustment type.',
+        'opening_balance_exists' => 'An opening balance is not allowed once this store has stock history for the product. Use a physical count.',
+        'count_range' => 'The counted total must be a whole number between 0 and :max.',
+        'count_reason_required' => 'Enter the reason for this count.',
+        'count_stale' => 'Stock changed after this count started. Count the shelf again, then restart the count.',
         'reason_mismatch' => 'The selected reason does not match this operation.',
         'note_required' => 'A note is required when decreasing stock.',
         'insufficient_stock' => 'Not enough stock. Currently available: :available.',
@@ -93,6 +96,7 @@ return [
     'messages' => [
         'recorded' => 'Inventory movement recorded.',
         'already_recorded' => 'This operation was already recorded and was not repeated.',
+        'count_matches' => 'The count matches the current balance. No change was recorded.',
     ],
 
     'actions' => [
@@ -129,14 +133,24 @@ return [
 
     'opening' => [
         'title' => 'Opening balance',
-        'help' => 'Recorded once, before any other movement in this store. Later changes are adjustments.',
+        'help' => 'Initial setup only: recorded once, before any other movement in this store. Later changes come from purchase receipts, sales, and physical counts.',
         'submit' => 'Record opening balance',
     ],
 
-    'adjust' => [
-        'title' => 'Adjust quantity',
-        'help' => 'Quantity can never go below zero. Every adjustment is kept in the history and cannot be deleted.',
-        'submit' => 'Record adjustment',
+    'count' => [
+        'title' => 'Physical count',
+        'help' => 'Start the count before counting the shelf. Any sale or receipt during the count makes it stale.',
+        'in_progress_help' => 'Enter the total you counted on the shelf, including zero. The difference is recorded in the history.',
+        'start' => 'Start count',
+        'restart' => 'Restart count',
+        'quantity_help' => 'The full physical total, not the difference.',
+        'submit' => 'Record count',
+        'cancel' => 'Cancel',
+    ],
+
+    'receiving' => [
+        'help' => 'Stock from a supplier is received on its purchase invoice.',
+        'link' => 'Open purchases',
     ],
 
     'register' => [
@@ -171,6 +185,8 @@ return [
         'subtitle' => 'Permanent record; entries cannot be edited or deleted.',
         'empty' => 'No inventory movements yet.',
         'balance_after' => 'Balance after',
+        'previous_balance' => 'Previous balance',
+        'counted_total' => 'Counted total',
         'status_change' => 'Status',
     ],
 
