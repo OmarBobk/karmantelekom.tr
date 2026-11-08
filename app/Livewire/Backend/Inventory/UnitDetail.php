@@ -14,6 +14,9 @@ use App\Actions\Inventory\RemoveUnit;
 use App\Actions\Inventory\ReverseDeviceCost;
 use App\Actions\Inventory\StartRepair;
 use App\Actions\Inventory\UnitLifecycle;
+use App\Actions\Network\ListingEligibility;
+use App\Actions\Network\PublishUnitListing;
+use App\Actions\Network\UnpublishUnitListing;
 use App\Actions\Pos\SetUnitSellingPrice;
 use App\Enums\AdjustmentReason;
 use App\Enums\Currency;
@@ -448,6 +451,26 @@ class UnitDetail extends Component
         $this->dispatch('notify', ['type' => 'success', 'message' => __('pos.pricing.unit_price_saved')]);
     }
 
+    public function publishListing(PublishUnitListing $publishUnitListing): void
+    {
+        $this->authorize('shareListings', $this->store);
+        $this->resetErrorBag('listing');
+
+        $publishUnitListing(auth()->user(), $this->store, $this->unitId);
+
+        $this->dispatch('notify', ['type' => 'success', 'message' => __('network.listing.published_message')]);
+    }
+
+    public function unpublishListing(UnpublishUnitListing $unpublishUnitListing): void
+    {
+        $this->authorize('shareListings', $this->store);
+        $this->resetErrorBag('listing');
+
+        $unpublishUnitListing(auth()->user(), $this->store, $this->unitId);
+
+        $this->dispatch('notify', ['type' => 'success', 'message' => __('network.listing.unpublished_message')]);
+    }
+
     public function dismissStaleNotice(): void
     {
         $this->authorize('viewInventory', $this->store);
@@ -481,7 +504,7 @@ class UnitDetail extends Component
         $unit = $this->unitQuery()
             ->with([
                 'identifiers:id,inventory_unit_id,type,position,value',
-                'productDefinition:id,name,model,tracking_mode',
+                'productDefinition:id,name,model,tracking_mode,is_active,selling_price',
                 'openRepair',
                 'acquisition:id,inventory_unit_id,purchase_receipt_line_id,currency,unit_cost',
             ])
@@ -518,6 +541,9 @@ class UnitDetail extends Component
             'canRemove' => $unit->status->allowsRemoval() && Gate::allows('adjustInventory', $this->store),
             'canApproveReview' => UnitLifecycle::allows($unit->status, UnitLifecycle::APPROVE_REVIEW) && Gate::allows('adjustInventory', $this->store),
             'origin' => $this->origin($unit),
+            'listing' => $unit->networkListing()->with('publisher:id,name')->first(),
+            'listingProblem' => ListingEligibility::problem($unit->productDefinition, $unit),
+            'canShare' => Gate::allows('shareListings', $this->store),
             'canSetUnitPrice' => $isUsedDevice && ! in_array($unit->status, [UnitStatus::SOLD, UnitStatus::REMOVED], true) && Gate::allows('setUnitSellingPrices', $this->store),
             'soldOn' => $unit->status === UnitStatus::SOLD ? $unit->saleLine()->with('sale:id,store_id,user_id,number,completed_at')->first()?->sale : null,
             'removalReasons' => MovementType::ADJUSTMENT_DECREASE->allowedReasons(),

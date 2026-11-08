@@ -59,6 +59,9 @@
                     <nav aria-label="{{ __('pos.nav.label') }}" class="flex items-center gap-1">
                         <a href="{{ route('pos.counter', $posStore) }}" @class(['inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-medium', 'bg-blue-50 text-blue-700' => request()->routeIs('pos.counter'), 'text-gray-700 hover:bg-gray-100' => ! request()->routeIs('pos.counter')]) @if (request()->routeIs('pos.counter')) aria-current="page" @endif>{{ __('pos.nav.counter') }}</a>
                         <a href="{{ route('pos.sales', $posStore) }}" @class(['inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-medium', 'bg-blue-50 text-blue-700' => request()->routeIs('pos.sales*'), 'text-gray-700 hover:bg-gray-100' => ! request()->routeIs('pos.sales*')]) @if (request()->routeIs('pos.sales*')) aria-current="page" @endif>{{ __('pos.nav.sales') }}</a>
+                        @can('discoverListings', $posStore)
+                            <a href="{{ route('pos.network', $posStore) }}" @class(['inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-medium', 'bg-blue-50 text-blue-700' => request()->routeIs('pos.network'), 'text-gray-700 hover:bg-gray-100' => ! request()->routeIs('pos.network')]) @if (request()->routeIs('pos.network')) aria-current="page" @endif>{{ __('network.nav') }}</a>
+                        @endcan
                         @can('receiveCustomerPayments', $posStore)
                             <a href="{{ route('pos.customers', $posStore) }}" @class(['inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-medium', 'bg-blue-50 text-blue-700' => request()->routeIs('pos.customers*'), 'text-gray-700 hover:bg-gray-100' => ! request()->routeIs('pos.customers*')]) @if (request()->routeIs('pos.customers*')) aria-current="page" @endif>{{ __('pos.nav.customers') }}</a>
                         @endcan

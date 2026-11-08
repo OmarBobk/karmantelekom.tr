@@ -17,6 +17,7 @@ use App\Models\InventoryMovement;
 use App\Models\InventoryUnit;
 use App\Models\InventoryUnitIdentifier;
 use App\Models\InventoryUnitIdentifierCorrection;
+use App\Models\NetworkListing;
 use App\Models\ProductDefinition;
 use App\Models\Store;
 use App\Models\User;
@@ -24,6 +25,7 @@ use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Support\Facades\DB;
 use PHPUnit\Framework\Attributes\Test;
 use RuntimeException;
+use Spatie\Activitylog\Models\Activity;
 use Tests\Support\InteractsWithOperationalInventory;
 use Tests\TestCase;
 
@@ -162,6 +164,23 @@ class InventoryConcurrencyTest extends TestCase
         $this->assertSame([['setup'], ['setup']], array_column($results, 'errors'));
         $this->assertSame(0, InventoryMovement::count());
         $this->assertSame(0, InventoryUnit::count());
+    }
+
+    #[Test]
+    public function competing_publications_of_one_device_create_one_listing_and_one_audit_event(): void
+    {
+        $phone = ProductDefinition::factory()->create(['tracking_mode' => TrackingMode::USED_DEVICE]);
+        $movement = app(RegisterOpeningUnit::class)($this->owner, $this->storeOne, $phone, UnitCondition::B, self::imei('35693803564380'), null, null, null, 'unit');
+        InventoryUnit::query()->whereKey($movement->inventory_unit_id)->update(['selling_price' => '9000.00']);
+
+        $request = ['operation' => 'publish_listing', 'store_id' => $this->storeOne->id, 'definition_id' => $phone->id, 'unit_id' => $movement->inventory_unit_id];
+        $results = $this->raceWhileLocked([$phone], [$request, $request]);
+
+        $this->assertSame(['ok', 'ok'], array_column($results, 'status'));
+        $this->assertSame($results[0]['listing_id'], $results[1]['listing_id']);
+        $this->assertSame(1, NetworkListing::count());
+        $this->assertSame(1, Activity::query()->where('event', 'listing_published')->count());
+        $this->assertSame(1, InventoryMovement::count());
     }
 
     #[Test]

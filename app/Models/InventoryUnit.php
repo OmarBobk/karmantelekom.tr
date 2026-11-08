@@ -58,6 +58,16 @@ class InventoryUnit extends Model
     }
 
     /**
+     * The Store Network listing for this device, published or withdrawn.
+     *
+     * @return HasOne<NetworkListing, $this>
+     */
+    public function networkListing(): HasOne
+    {
+        return $this->hasOne(NetworkListing::class);
+    }
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array
