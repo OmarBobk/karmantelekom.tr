@@ -18,17 +18,19 @@ use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
 
-class RegisterUnit
+class RegisterOpeningUnit
 {
     public const MAX_SERIAL_LENGTH = UnitIdentity::MAX_SERIAL_LENGTH;
 
     public function __construct(private readonly InventoryLedger $ledger) {}
 
     /**
-     * Register one serialized or used-device unit as available stock in a store.
+     * Record one serialized or used-device unit already on hand as opening stock during the
+     * branch's initial inventory setup.
      *
-     * A unit registered outside a purchase receipt is recorded as an opening-balance movement of +1
-     * with no recorded cost.
+     * It is an opening-balance movement of +1 with no acquisition cost, which stays unknown.
+     * After setup is completed this is refused; new supplier stock enters through purchase
+     * receiving and found devices through reconciliation review.
      *
      * @throws AuthorizationException
      * @throws ValidationException
@@ -72,6 +74,7 @@ class RegisterUnit
                 $idempotencyKey,
                 $payload,
                 function (ProductDefinition $locked) use ($store, $condition, $imei, $secondaryImei, $serial, $note): array {
+                    InventorySetup::assertOpen($store);
                     self::throwIfAny(UnitIdentity::modeErrors($locked, $condition));
                     self::throwIfAny(UnitIdentity::takenErrors($locked->id, $imei, $secondaryImei, $serial));
 

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Actions\Inventory\RecordOpeningBalance;
-use App\Actions\Inventory\RegisterUnit;
+use App\Actions\Inventory\RegisterOpeningUnit;
 use App\Enums\TrackingMode;
 use App\Enums\UnitCondition;
 use App\Enums\UnitStatus;
@@ -129,11 +129,11 @@ class InventoryUiTest extends TestCase
             ->test(ProductInventory::class, ['store' => $this->storeOne, 'productDefinition' => $this->usedPhone])
             ->set('unitCondition', 'b')
             ->set('imei', '356938035643801')
-            ->call('registerUnit')
+            ->call('registerOpeningUnit')
             ->assertHasErrors('imei')
             ->assertSee('يجب أن يتكون IMEI من 15 رقمًا برقم تحقق صحيح.')
             ->set('imei', $imei)
-            ->call('registerUnit')
+            ->call('registerOpeningUnit')
             ->assertHasNoErrors()
             ->assertViewHas('availableUnits', 1)
             ->assertSee($imei);
@@ -164,7 +164,7 @@ class InventoryUiTest extends TestCase
             ->test(ProductInventory::class, ['store' => $this->storeTwo, 'productDefinition' => $this->usedPhone])
             ->set('unitCondition', 'a')
             ->set('imei', $imei)
-            ->call('registerUnit')
+            ->call('registerOpeningUnit')
             ->assertHasErrors('imei')
             ->assertSee('رقم IMEI هذا مسجل مسبقًا لجهاز آخر.');
 
@@ -333,7 +333,7 @@ class InventoryUiTest extends TestCase
 
     private function registerPhone(Store $store, string $imeiBody = '35693803564380'): InventoryUnit
     {
-        return app(RegisterUnit::class)(
+        return app(RegisterOpeningUnit::class)(
             $this->owner,
             $store,
             $this->usedPhone,

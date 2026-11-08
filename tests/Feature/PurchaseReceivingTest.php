@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature;
 
 use App\Actions\Inventory\RecordOpeningBalance;
-use App\Actions\Inventory\RegisterUnit;
+use App\Actions\Inventory\RegisterOpeningUnit;
 use App\Actions\Purchasing\ReceivePurchase;
 use App\Actions\Purchasing\ReversePurchase;
 use App\Enums\MovementType;
@@ -180,7 +180,7 @@ class PurchaseReceivingTest extends TestCase
     #[Test]
     public function a_device_identity_already_in_stock_is_rejected_before_any_write(): void
     {
-        app(RegisterUnit::class)($this->owner, $this->store, $this->usedPhone, UnitCondition::A, $this->imei, null, null, null, 'existing');
+        app(RegisterOpeningUnit::class)($this->owner, $this->store, $this->usedPhone, UnitCondition::A, $this->imei, null, null, null, 'existing');
 
         try {
             app(ReceivePurchase::class)($this->owner, $this->purchase, $this->phoneUnits(), null, 'receipt-1');

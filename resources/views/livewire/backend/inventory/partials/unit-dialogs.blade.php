@@ -356,6 +356,30 @@
     </x-operations.dialog>
 @endif
 
+@if ($canApproveReview)
+    <x-operations.dialog id="approve-review" :title="__('inventory.review.approve')" :direction="$textDirection">
+        <form wire:submit="approveReview" class="space-y-4" novalidate>
+            @include('livewire.backend.inventory.partials.stale-form-notice')
+            <p class="rounded-lg bg-orange-50 px-3 py-2 text-sm text-orange-950 ring-1 ring-inset ring-orange-200">
+                {{ $unit->status->label() }} <span aria-hidden="true">{{ $arrow }}</span><span class="sr-only">{{ __('devices.to') }}</span> {{ \App\Enums\UnitStatus::AVAILABLE->label() }}.
+                {{ __('inventory.review.approve_help') }}
+            </p>
+            <div>
+                <label for="review-verification" class="{{ $label }}">{{ __('inventory.review.verification') }} {!! $required !!}</label>
+                <textarea id="review-verification" rows="3" autofocus wire:model="reviewVerification" @error('reviewVerification') aria-invalid="true" aria-describedby="review-verification-error" @enderror @class(['mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500', $invalid => $errors->has('reviewVerification')])></textarea>
+                @error('reviewVerification') <p id="review-verification-error" class="mt-1 text-sm text-red-700">{{ $message }}</p> @enderror
+            </div>
+            <div class="flex flex-wrap justify-end gap-2 border-t border-gray-100 pt-4">
+                <button type="button" x-on:click="{{ $closeDialog }}" class="{{ $secondaryButton }}">{{ __('devices.actions.close') }}</button>
+                <button type="submit" wire:loading.attr="disabled" wire:target="approveReview" class="{{ $primaryButton }}">
+                    <span wire:loading.remove wire:target="approveReview">{{ __('inventory.review.approve') }}</span>
+                    <span wire:loading wire:target="approveReview">{{ __('inventory.form.saving') }}</span>
+                </button>
+            </div>
+        </form>
+    </x-operations.dialog>
+@endif
+
 @if ($canRemove)
     <x-operations.dialog id="remove-unit" :title="__('inventory.remove.title')" :direction="$textDirection">
         <form wire:submit="remove" class="space-y-4" novalidate>

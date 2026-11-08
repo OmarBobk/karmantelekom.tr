@@ -6,7 +6,7 @@ namespace Tests\Feature;
 
 use App\Actions\Inventory\RecordInspection;
 use App\Actions\Inventory\RecordOpeningBalance;
-use App\Actions\Inventory\RegisterUnit;
+use App\Actions\Inventory\RegisterOpeningUnit;
 use App\Enums\InspectionOutcome;
 use App\Enums\TrackingMode;
 use App\Enums\UnitCondition;
@@ -132,6 +132,39 @@ class InventoryConcurrencyTest extends TestCase
     }
 
     #[Test]
+    public function opening_stock_waiting_on_setup_completion_is_refused_once_it_commits(): void
+    {
+        $phone = ProductDefinition::factory()->create(['tracking_mode' => TrackingMode::USED_DEVICE]);
+        $cable = ProductDefinition::factory()->create(['tracking_mode' => TrackingMode::QUANTITY]);
+        $processes = [];
+
+        DB::beginTransaction();
+
+        try {
+            Store::query()->whereKey($this->storeOne->id)->lockForUpdate()->first();
+            Store::query()->whereKey($this->storeOne->id)->update(['inventory_setup_completed_at' => now(), 'inventory_setup_completed_by' => $this->owner->id]);
+
+            foreach ([
+                ['operation' => 'register', 'store_id' => $this->storeOne->id, 'definition_id' => $phone->id, 'imei' => self::imei('35693803564380'), 'key' => 'late-unit'],
+                ['operation' => 'opening', 'store_id' => $this->storeOne->id, 'definition_id' => $cable->id, 'quantity' => 4, 'key' => 'late-balance'],
+            ] as $request) {
+                $processes[] = $this->startWorker(['actor_id' => $this->owner->id, ...$request]);
+            }
+
+            $this->waitForBlockedWorkers(2);
+        } finally {
+            DB::commit();
+        }
+
+        $results = array_map(fn (array $process) => $this->finishWorker($process), $processes);
+
+        $this->assertSame(['validation', 'validation'], array_column($results, 'status'));
+        $this->assertSame([['setup'], ['setup']], array_column($results, 'errors'));
+        $this->assertSame(0, InventoryMovement::count());
+        $this->assertSame(0, InventoryUnit::count());
+    }
+
+    #[Test]
     public function a_tracking_mode_change_and_a_stock_write_cannot_both_succeed(): void
     {
         $cable = ProductDefinition::factory()->create(['tracking_mode' => TrackingMode::QUANTITY]);
@@ -222,7 +255,7 @@ class InventoryConcurrencyTest extends TestCase
     private function deviceAwaitingInspection(ProductDefinition $phone, string $imei, ?Store $store = null): InventoryUnit
     {
         $store ??= $this->storeOne;
-        app(RegisterUnit::class)($this->owner, $store, $phone, UnitCondition::B, $imei, null, null, null, 'reg-'.$imei);
+        app(RegisterOpeningUnit::class)($this->owner, $store, $phone, UnitCondition::B, $imei, null, null, null, 'reg-'.$imei);
         $unit = InventoryUnit::query()->whereHas('identifiers', fn ($query) => $query->where('value', $imei))->sole();
         app(RecordInspection::class)($this->owner, $store, $unit->id, UnitStatus::AVAILABLE, 0, InspectionOutcome::NEEDS_REPAIR, null, 'Screen flicker', 'inspect-'.$imei);
 

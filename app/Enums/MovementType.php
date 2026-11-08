@@ -24,6 +24,7 @@ enum MovementType: string
     case DEVICE_COST_RECORDED = 'device_cost_recorded';
     case DEVICE_COST_REVERSED = 'device_cost_reversed';
     case IDENTIFIER_CORRECTED = 'identifier_corrected';
+    case REVIEW_APPROVED = 'review_approved';
     case SALE = 'sale';
 
     /**
@@ -43,6 +44,7 @@ enum MovementType: string
             self::REPAIR_STARTED, self::REPAIR_COMPLETED, self::REPAIR_CANCELLED => [AdjustmentReason::REPAIR],
             self::DEVICE_COST_RECORDED, self::DEVICE_COST_REVERSED => [AdjustmentReason::DEVICE_COST],
             self::IDENTIFIER_CORRECTED => [AdjustmentReason::IDENTITY_CORRECTION],
+            self::REVIEW_APPROVED => [AdjustmentReason::REVIEW],
             self::SALE => [AdjustmentReason::SALE],
         };
     }
@@ -73,6 +75,7 @@ enum MovementType: string
             self::DEVICE_COST_RECORDED,
             self::DEVICE_COST_REVERSED,
             self::IDENTIFIER_CORRECTED,
+            self::REVIEW_APPROVED,
         ];
     }
 

@@ -12,6 +12,28 @@
         <p class="mt-1 text-sm text-gray-500">{{ __('inventory.store.subtitle') }}</p>
     </div>
 
+    <section aria-labelledby="setup-title" class="flex flex-col gap-3 rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-200 sm:flex-row sm:items-center sm:justify-between" data-testid="inventory-setup">
+        <div class="min-w-0">
+            <h2 id="setup-title" class="text-base font-semibold text-gray-900">
+                {{ __('inventory.setup.title') }}
+                <span @class(['ms-2 rounded-full px-2.5 py-0.5 align-middle text-xs font-medium', 'bg-amber-50 text-amber-800' => $setupOpen, 'bg-green-50 text-green-800' => ! $setupOpen])>{{ $setupOpen ? __('inventory.setup.open') : __('inventory.setup.completed') }}</span>
+            </h2>
+            <p class="mt-0.5 text-xs text-gray-500">
+                @if ($setupOpen)
+                    {{ __('inventory.setup.open_help') }}
+                @else
+                    {!! __('inventory.setup.completed_help', [
+                        'date' => '<time dir="ltr" datetime="'.$store->inventory_setup_completed_at->toIso8601String().'">'.e($store->inventory_setup_completed_at->format('Y-m-d H:i')).'</time>',
+                        'name' => '<bdi>'.e($store->inventorySetupCompleter?->name).'</bdi>',
+                    ]) !!}
+                @endif
+            </p>
+        </div>
+        @if ($setupOpen && $canAdjust)
+            <button type="button" wire:click="completeSetup" wire:confirm="{{ __('inventory.setup.confirm') }}" wire:loading.attr="disabled" wire:target="completeSetup" class="min-h-11 shrink-0 rounded-lg bg-white px-4 py-2 text-sm font-medium text-gray-800 ring-1 ring-gray-300 hover:bg-gray-50 disabled:opacity-60">{{ __('inventory.setup.complete') }}</button>
+        @endif
+    </section>
+
     <livewire:backend.inventory.device-lookup :store="$store" />
 
     <section aria-labelledby="stock-product-title" class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-200">

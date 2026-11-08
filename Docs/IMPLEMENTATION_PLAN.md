@@ -985,7 +985,20 @@ Task 8 of the cashbox list is partly complete: reconciliation is done, and autho
 
 **Acceptance.** A receipt can increase stock only once, an opening entry respects the initial setup boundary, counting 10 against a stable balance of 8 records +2, an intervening sale or receipt makes the count stale, and adjustment access and records are branch-scoped.
 
-**Status.** Quantity-tracked slice delivered: the generic increase/decrease action is replaced by `RecordStockCount`. A count is tied to the latest movement for the branch and product when it starts and is rejected under the definition lock if any later movement exists. It writes reason `physical_count` with the counted total as `quantity_after` and the signed difference as `quantity_change`. Legacy `count_correction` rows were relative adjustments, so history keeps showing them with "Balance after". A count equal to the balance writes nothing. The inventory screen links to purchasing for receipts. Individual-device reconciliation (items 2 for units, 4, and device provenance in item 5) is the next slice.
+**Status.** Quantity-tracked slice delivered: the generic increase/decrease action is replaced by `RecordStockCount`. A count is tied to the latest movement for the branch and product when it starts and is rejected under the definition lock if any later movement exists. It writes reason `physical_count` with the counted total as `quantity_after` and the signed difference as `quantity_change`. Legacy `count_correction` rows were relative adjustments, so history keeps showing them with "Balance after". A count equal to the balance writes nothing. The inventory screen links to purchasing for receipts.
+
+Individual-device slice delivered; Phase 6.5 is complete.
+
+- **Setup boundary.** `stores.inventory_setup_completed_at` and `_by` mark the boundary. `CompleteInventorySetup` is owner-only and one-way. `RegisterOpeningUnit` (formerly `RegisterUnit`) and `RecordOpeningBalance` read the flag under a shared lock on the store row, inside the definition lock, and refuse with `setup` once it is set.
+- **Existing branches.** After the migration, existing branches start with setup open. Their movement history is unchanged. Each branch stays open until an owner completes it from the branch inventory page.
+- **Device reconciliation.** The product inventory page looks a device up by IMEI (system-wide) or serial (within the product). A device from another branch is reported without its details.
+  - A device that is not on the shelf goes through `RemoveUnit` with reason `lost` and the looked-up revision.
+  - A removed device that is found goes to the new `review` status through `MarkUnitFound`: +1, reason `found`.
+  - A device with no record is created in `review` by `RecordFoundUnit`.
+  - `ApproveUnitReview` writes a zero-quantity `review_approved` event that makes the device available. It requires a verification note.
+  - Rejection uses `RemoveUnit`.
+  - Every action needs branch adjustment permission and a reason, checks the unit revision under lock, and goes through `InventoryLedger`. Sales accept only `available`, so devices in review are owned but not sellable.
+- **Provenance.** The device page shows the source from the first movement: a purchase receipt links its invoice for purchasers, opening stock shows "cost unknown", and a found device shows "source unverified".
 
 ---
 

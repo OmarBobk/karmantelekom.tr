@@ -4,19 +4,28 @@ declare(strict_types=1);
 
 namespace App\Livewire\Backend\Inventory;
 
+use App\Actions\Inventory\FindUnitsByIdentifier;
 use App\Actions\Inventory\InventoryLedger;
+use App\Actions\Inventory\LocateDeviceForReconciliation;
+use App\Actions\Inventory\MarkUnitFound;
+use App\Actions\Inventory\RecordFoundUnit;
 use App\Actions\Inventory\RecordOpeningBalance;
 use App\Actions\Inventory\RecordStockCount;
-use App\Actions\Inventory\RegisterUnit;
+use App\Actions\Inventory\RegisterOpeningUnit;
+use App\Actions\Inventory\RemoveUnit;
+use App\Enums\AdjustmentReason;
 use App\Enums\UnitCondition;
 use App\Enums\UnitStatus;
+use App\Exceptions\Inventory\StaleUnitStateException;
 use App\Livewire\Backend\Concerns\SubmitsInventoryChanges;
 use App\Livewire\Backend\Concerns\UsesOperationalLocale;
+use App\Models\InventoryMovement;
 use App\Models\ProductDefinition;
 use App\Models\Purchase;
 use App\Models\PurchaseReceiptLine;
 use App\Models\SaleLine;
 use App\Models\Store;
+use Closure;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
@@ -69,6 +78,33 @@ class ProductInventory extends Component
 
     public string $unitStatusFilter = 'available';
 
+    public string $reconcileCode = '';
+
+    /**
+     * Result of the last reconciliation lookup; one of the LocateDeviceForReconciliation outcomes.
+     */
+    #[Locked]
+    public ?string $reconcileOutcome = null;
+
+    #[Locked]
+    public ?int $reconcileUnitId = null;
+
+    /**
+     * Lifecycle revision of the looked-up device; a change before submission makes the action stale.
+     */
+    #[Locked]
+    public ?int $reconcileRevision = null;
+
+    public string $reconcileReason = '';
+
+    public string $foundCondition = '';
+
+    public string $foundImei = '';
+
+    public string $foundSecondaryImei = '';
+
+    public string $foundSerial = '';
+
     public function mount(Store $store, ProductDefinition $productDefinition): void
     {
         $this->authorize('viewInventory', $store);
@@ -76,6 +112,7 @@ class ProductInventory extends Component
         $this->store = $store;
         $this->definition = $productDefinition;
         $this->unitCondition = UnitCondition::allowedFor($productDefinition->tracking_mode)[0]->value ?? '';
+        $this->foundCondition = $this->unitCondition;
     }
 
     public function updatedUnitStatusFilter(): void
@@ -166,7 +203,7 @@ class ProductInventory extends Component
         }
     }
 
-    public function registerUnit(RegisterUnit $registerUnit): void
+    public function registerOpeningUnit(RegisterOpeningUnit $registerOpeningUnit): void
     {
         $this->authorize('adjustInventory', $this->store);
 
@@ -179,7 +216,7 @@ class ProductInventory extends Component
         }
 
         $movement = $this->submitInventoryChange(
-            fn () => $registerUnit(
+            fn () => $registerOpeningUnit(
                 auth()->user(),
                 $this->store,
                 $this->definition,
@@ -196,6 +233,132 @@ class ProductInventory extends Component
 
         if ($movement !== null) {
             $this->reset('imei', 'secondaryImei', 'serial', 'unitNote');
+        }
+    }
+
+    /**
+     * Look up the exact device a counted IMEI or serial refers to and remember its revision.
+     */
+    public function findDevice(LocateDeviceForReconciliation $locate): void
+    {
+        $this->authorize('adjustInventory', $this->store);
+
+        $this->validate(
+            ['reconcileCode' => ['required', 'string', 'max:'.FindUnitsByIdentifier::MAX_INPUT_LENGTH]],
+            attributes: ['reconcileCode' => __('inventory.reconcile.code')],
+        );
+
+        $result = $locate($this->store, $this->definition, $this->reconcileCode);
+
+        $this->resetErrorBag();
+        $this->reset('reconcileReason', 'foundSecondaryImei');
+        $this->reconcileOutcome = $result['outcome'];
+        $this->reconcileUnitId = $result['unit']?->id;
+        $this->reconcileRevision = $result['unit']?->lifecycle_revision;
+        $this->foundImei = $result['imei'] ?? '';
+        $this->foundSerial = $result['serial'] ?? '';
+        $this->renewSubmissionKey();
+    }
+
+    public function clearReconciliation(): void
+    {
+        $this->reset('reconcileCode', 'reconcileOutcome', 'reconcileUnitId', 'reconcileRevision', 'reconcileReason', 'foundImei', 'foundSecondaryImei', 'foundSerial');
+        $this->foundCondition = $this->unitCondition;
+        $this->resetErrorBag();
+    }
+
+    /**
+     * The looked-up available or in-inspection device is not on the shelf: remove it as lost.
+     */
+    public function markMissing(RemoveUnit $removeUnit): void
+    {
+        $this->authorize('adjustInventory', $this->store);
+        $this->reconcileUnit(fn (): InventoryMovement => $removeUnit(
+            auth()->user(),
+            $this->store,
+            $this->reconcileUnitId,
+            AdjustmentReason::LOST,
+            $this->reconcileReason,
+            $this->submissionKey,
+            $this->reconcileRevision,
+        ));
+    }
+
+    /**
+     * The looked-up removed device is on the shelf: return it to stock awaiting review.
+     */
+    public function markFound(MarkUnitFound $markUnitFound): void
+    {
+        $this->authorize('adjustInventory', $this->store);
+        $this->reconcileUnit(fn (): InventoryMovement => $markUnitFound(
+            auth()->user(),
+            $this->store,
+            $this->reconcileUnitId,
+            $this->reconcileRevision,
+            $this->reconcileReason,
+            $this->submissionKey,
+        ));
+    }
+
+    /**
+     * A device with no record anywhere is on the shelf: record it awaiting review.
+     */
+    public function recordFoundDevice(RecordFoundUnit $recordFoundUnit): void
+    {
+        $this->authorize('adjustInventory', $this->store);
+
+        if ($this->reconcileOutcome !== LocateDeviceForReconciliation::NOT_FOUND) {
+            return;
+        }
+
+        $condition = UnitCondition::tryFrom($this->foundCondition);
+
+        if ($condition === null) {
+            $this->addError('foundCondition', __('inventory.errors.condition_not_allowed'));
+
+            return;
+        }
+
+        $movement = $this->submitInventoryChange(
+            fn () => $recordFoundUnit(
+                auth()->user(),
+                $this->store,
+                $this->definition,
+                $condition,
+                $this->foundImei,
+                $this->foundSecondaryImei,
+                $this->foundSerial,
+                $this->reconcileReason,
+                $this->submissionKey,
+            ),
+            ['imei' => 'foundImei', 'secondary_imei' => 'foundSecondaryImei', 'serial' => 'foundSerial', 'condition' => 'foundCondition', 'note' => 'reconcileReason'],
+            'reconcileReason',
+        );
+
+        if ($movement !== null) {
+            $this->clearReconciliation();
+        }
+    }
+
+    /**
+     * @param  Closure(): InventoryMovement  $action
+     */
+    private function reconcileUnit(Closure $action): void
+    {
+        if ($this->reconcileOutcome !== LocateDeviceForReconciliation::UNIT || $this->reconcileUnitId === null || $this->reconcileRevision === null) {
+            return;
+        }
+
+        try {
+            $movement = $this->submitInventoryChange($action, ['note' => 'reconcileReason', 'reason' => 'reconcileReason', 'unit' => 'reconcileReason'], 'reconcileReason');
+        } catch (StaleUnitStateException $exception) {
+            $this->addError('reconcileReason', __('inventory.reconcile.stale', ['status' => $exception->currentStatus->label()]));
+
+            return;
+        }
+
+        if ($movement !== null) {
+            $this->clearReconciliation();
         }
     }
 
@@ -240,6 +403,10 @@ class ProductInventory extends Component
             'movements' => $movements,
             'units' => $units,
             'canAdjust' => Gate::allows('adjustInventory', $this->store),
+            'setupOpen' => $this->store->refresh()->inventorySetupIsOpen(),
+            'reconcileUnit' => $tracksUnits && $this->reconcileUnitId !== null
+                ? $this->store->units()->with(['identifiers', 'productDefinition:id,name,model'])->find($this->reconcileUnitId)
+                : null,
             'conditions' => UnitCondition::allowedFor($definition->tracking_mode),
             'canViewPurchases' => $canViewPurchases,
             'lastPurchase' => $canViewPurchases ? $this->lastPurchaseLine($definition) : null,
@@ -254,6 +421,7 @@ class ProductInventory extends Component
     {
         return match ($this->unitStatusFilter) {
             'in_service' => [UnitStatus::INSPECTION, UnitStatus::IN_REPAIR],
+            'review' => [UnitStatus::REVIEW],
             'removed' => [UnitStatus::REMOVED],
             'sold' => [UnitStatus::SOLD],
             default => [UnitStatus::AVAILABLE],

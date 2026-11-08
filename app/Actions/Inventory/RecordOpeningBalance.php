@@ -26,7 +26,8 @@ class RecordOpeningBalance
     /**
      * Record the single opening balance for a quantity-tracked definition in a store.
      *
-     * Allowed only while the store has no stock history for the definition.
+     * Allowed only during the branch's initial inventory setup, while the store has no stock
+     * history for the definition.
      *
      * @throws AuthorizationException
      * @throws ValidationException
@@ -65,6 +66,8 @@ class RecordOpeningBalance
                             'quantity' => __('inventory.errors.requires_quantity_tracking'),
                         ]);
                     }
+
+                    InventorySetup::assertOpen($store);
 
                     if ($store->inventoryMovements()->where('product_definition_id', $locked->id)->exists()) {
                         throw ValidationException::withMessages([

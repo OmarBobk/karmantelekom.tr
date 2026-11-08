@@ -44,7 +44,7 @@
         <div class="space-y-6 lg:col-span-2">
             @if (! $canAdjust)
                 <p class="rounded-xl bg-gray-50 px-4 py-3 text-sm text-gray-600 ring-1 ring-gray-200">{{ __('inventory.product.read_only') }}</p>
-            @elseif (! $tracksUnits && ! $hasStoreHistory)
+            @elseif (! $tracksUnits && ! $hasStoreHistory && $setupOpen)
                 <form wire:submit="recordOpeningBalance" class="space-y-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-200" aria-labelledby="opening-title">
                     <div>
                         <h2 id="opening-title" class="text-base font-semibold text-gray-900">{{ __('inventory.opening.title') }}</h2>
@@ -105,8 +105,11 @@
                         </form>
                     @endif
                 </section>
+            @elseif (! $setupOpen)
+                <p class="rounded-xl bg-gray-50 px-4 py-3 text-sm text-gray-600 ring-1 ring-gray-200" data-testid="setup-completed">{{ __('inventory.setup.completed_product_help') }}</p>
+                @include('livewire.backend.inventory.partials.device-reconciliation')
             @else
-                <form wire:submit="registerUnit" class="space-y-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-200" aria-labelledby="register-title">
+                <form wire:submit="registerOpeningUnit" class="space-y-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-200" aria-labelledby="register-title">
                     <div>
                         <h2 id="register-title" class="text-base font-semibold text-gray-900">{{ __('inventory.register.title') }}</h2>
                         <p class="text-xs text-gray-500">{{ __('inventory.register.help') }}</p>
@@ -147,11 +150,12 @@
                         <textarea id="unit-note" rows="2" wire:model="unitNote" @error('unitNote') aria-invalid="true" @enderror class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"></textarea>
                         @error('unitNote') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
-                    <button type="submit" wire:loading.attr="disabled" wire:target="registerUnit" class="min-h-11 w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60">
-                        <span wire:loading.remove wire:target="registerUnit">{{ __('inventory.register.submit') }}</span>
-                        <span wire:loading wire:target="registerUnit">{{ __('inventory.form.saving') }}</span>
+                    <button type="submit" wire:loading.attr="disabled" wire:target="registerOpeningUnit" class="min-h-11 w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60">
+                        <span wire:loading.remove wire:target="registerOpeningUnit">{{ __('inventory.register.submit') }}</span>
+                        <span wire:loading wire:target="registerOpeningUnit">{{ __('inventory.form.saving') }}</span>
                     </button>
                 </form>
+                @include('livewire.backend.inventory.partials.device-reconciliation')
             @endif
 
             @if ($canViewPurchases)
@@ -167,8 +171,8 @@
                 <section aria-labelledby="units-title" class="rounded-xl bg-white shadow-sm ring-1 ring-gray-200">
                     <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-4 py-3">
                         <h2 id="units-title" class="text-base font-semibold text-gray-900">{{ __('inventory.units.title') }}</h2>
-                        <div class="flex gap-1 rounded-lg bg-gray-100 p-1 text-sm" role="radiogroup" aria-label="{{ __('inventory.units.filter') }}">
-                            @foreach ($product->tracking_mode === \App\Enums\TrackingMode::USED_DEVICE ? ['available', 'in_service', 'sold', 'removed', 'all'] : ['available', 'sold', 'removed', 'all'] as $filter)
+                        <div class="flex flex-wrap gap-1 rounded-lg bg-gray-100 p-1 text-sm" role="radiogroup" aria-label="{{ __('inventory.units.filter') }}">
+                            @foreach ($product->tracking_mode === \App\Enums\TrackingMode::USED_DEVICE ? ['available', 'in_service', 'review', 'sold', 'removed', 'all'] : ['available', 'review', 'sold', 'removed', 'all'] as $filter)
                                 <label @class(['flex min-h-11 cursor-pointer items-center rounded-md px-3', 'bg-white font-medium text-gray-900 shadow-sm' => $unitStatusFilter === $filter, 'text-gray-600' => $unitStatusFilter !== $filter])>
                                     <input type="radio" wire:model.live="unitStatusFilter" value="{{ $filter }}" class="sr-only">
                                     {{ __("inventory.units.filters.{$filter}") }}
