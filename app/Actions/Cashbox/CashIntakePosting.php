@@ -6,6 +6,7 @@ namespace App\Actions\Cashbox;
 
 use App\Enums\CashIntakeSource;
 use App\Enums\CashIntakeStatus;
+use App\Enums\CashMovementDirection;
 use App\Enums\CashMovementType;
 use App\Models\CashboxSession;
 use App\Models\CashIntake;
@@ -71,6 +72,7 @@ final class CashIntakePosting
             'store_id' => $store->id,
             'cashbox_session_id' => $session->id,
             'type' => $type,
+            'direction' => CashMovementDirection::IN,
             'amount' => Money::toDecimal($amountMinor),
             'cash_intake_id' => $intake->id,
             'sale_payment_id' => $source['sale_payment_id'] ?? null,

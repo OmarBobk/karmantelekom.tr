@@ -54,7 +54,9 @@
                         <dt class="text-gray-600">{{ __('pos.cashbox.opening') }}</dt>
                         <dd dir="ltr" class="text-end tabular-nums">{{ LocalizedMoney::format($session->openingCountedMinor()) }}</dd>
                         <dt class="text-gray-600">{{ __('pos.cashbox.cash_in') }}</dt>
-                        <dd dir="ltr" class="text-end tabular-nums">{{ LocalizedMoney::format((int) $expectedShown - $session->openingCountedMinor()) }}</dd>
+                        <dd dir="ltr" class="text-end tabular-nums">{{ $signed($cashIn) }}</dd>
+                        <dt class="text-gray-600">{{ __('pos.cashbox.cash_out') }}</dt>
+                        <dd dir="ltr" class="text-end tabular-nums">{{ $signed(-$cashOut) }}</dd>
                         <dt class="font-semibold text-gray-900">{{ __('pos.cashbox.expected') }}</dt>
                         <dd dir="ltr" class="text-end text-xl font-bold tabular-nums text-gray-900">{{ LocalizedMoney::format((int) $expectedShown) }} TRY</dd>
                     </dl>
@@ -62,6 +64,15 @@
                         <p class="mt-1 text-end text-xs text-gray-500">{{ __('pos.cashbox.expected_as_of', ['time' => Sale::displayTime(Carbon::parse($expectedShownAt))]) }}</p>
                     @endif
                 </section>
+
+                @if ($pendingPayoutCount > 0)
+                    <p class="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-950 ring-1 ring-amber-300" role="status">
+                        {{ trans_choice('pos.cashbox.pending_payouts', $pendingPayoutCount, ['count' => $pendingPayoutCount]) }}
+                        @can('manageExpenses', $store)
+                            <a href="{{ route('pos.expenses', $store) }}" class="font-medium underline">{{ __('pos.nav.expenses') }}</a>
+                        @endcan
+                    </p>
+                @endif
 
                 @if ($pendingIntakes->isNotEmpty())
                     <section aria-labelledby="cashbox-pending-title" class="rounded-xl bg-white shadow-sm ring-1 ring-amber-300">
@@ -111,10 +122,12 @@
                                             @elseif ($movement->customerPayment)
                                                 <bdi dir="ltr" class="font-mono">{{ $movement->customerPayment->receipt_number }}</bdi>
                                                 <span class="text-gray-700">{{ $movement->customerPayment->customer?->name }}</span>
+                                            @elseif ($movement->expense)
+                                                <span class="text-gray-700">{{ $movement->expense->category->label() }} · <span dir="auto">{{ $movement->expense->description }}</span></span>
                                             @endif
                                         </td>
                                         <td class="px-4 py-2 text-gray-700">{{ $movement->recorder?->name }}</td>
-                                        <td dir="ltr" class="px-4 py-2 text-end font-semibold tabular-nums text-gray-900">{{ LocalizedMoney::format($movement->amountMinor()) }}</td>
+                                        <td dir="ltr" @class(['px-4 py-2 text-end font-semibold tabular-nums', 'text-gray-900' => $movement->signedMinor() > 0, 'text-red-700' => $movement->signedMinor() < 0])>{{ $signed($movement->signedMinor()) }}</td>
                                     </tr>
                                 @endforeach
                             </tbody>
@@ -149,7 +162,7 @@
                         <textarea id="cashbox-closing-note" dir="auto" rows="2" maxlength="{{ \App\Models\CashboxSession::MAX_NOTE_LENGTH }}" wire:model="closingNote" aria-describedby="cashbox-closing-note-help" class="{{ $inputClass }} mt-1"></textarea>
                         @error('closing_note') <p class="mt-1 text-sm text-red-700" role="alert">{{ $message }}</p> @enderror
                     </div>
-                    <button type="submit" wire:loading.attr="disabled" wire:target="close" @disabled($pendingIntakes->isNotEmpty()) class="{{ $primaryButton }} bg-gray-900 hover:bg-gray-800">{{ __('pos.cashbox.close') }}</button>
+                    <button type="submit" wire:loading.attr="disabled" wire:target="close" @disabled($pendingIntakes->isNotEmpty() || $pendingPayoutCount > 0) class="{{ $primaryButton }} bg-gray-900 hover:bg-gray-800">{{ __('pos.cashbox.close') }}</button>
                 </form>
             </section>
         @endif

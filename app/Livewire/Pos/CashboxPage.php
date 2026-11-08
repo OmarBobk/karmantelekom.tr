@@ -155,8 +155,11 @@ class CashboxPage extends Component
             'session' => $session,
             'tracked' => $session !== null || CashboxSession::trackingStarted($store),
             'previous' => $session === null ? CashboxSession::query()->where('store_id', $store->id)->closed()->latest('closed_at')->latest('id')->first() : null,
+            'cashIn' => $session?->cashInMinor() ?? 0,
+            'cashOut' => $session?->cashOutMinor() ?? 0,
+            'pendingPayoutCount' => $session?->pendingPayoutCount() ?? 0,
             'movements' => $session === null ? collect() : $session->movements()
-                ->with(['recorder:id,name', 'salePayment.sale:id,number', 'customerPayment:id,receipt_number,customer_id', 'customerPayment.customer:id,name'])
+                ->with(['recorder:id,name', 'salePayment.sale:id,number', 'customerPayment:id,receipt_number,customer_id', 'customerPayment.customer:id,name', 'expense:id,category,description'])
                 ->latest('occurred_at')
                 ->latest('id')
                 ->limit(100)

@@ -52,12 +52,18 @@ class OperationalStoreSetupSeeder extends Seeder
         self::SELL_ON_CREDIT_PERMISSION,
         self::RECEIVE_CUSTOMER_PAYMENTS_PERMISSION,
         self::MANAGE_CASHBOX_PERMISSION,
+        self::MANAGE_EXPENSES_PERMISSION,
     ];
 
     /**
-     * Opening and closing cashbox sessions and releasing cash intakes. Owner only.
+     * Opening and closing cashbox sessions and releasing cash intakes and payouts. Owner only.
      */
     public const MANAGE_CASHBOX_PERMISSION = 'manage_cashbox';
+
+    /**
+     * Recording general branch expenses, including cash paid out of the open session. Owner only.
+     */
+    public const MANAGE_EXPENSES_PERMISSION = 'manage_expenses';
 
     /**
      * Recording later customer payments toward their debts. Owner only for now.
