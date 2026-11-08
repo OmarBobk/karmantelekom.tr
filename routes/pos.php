@@ -9,6 +9,7 @@ use App\Livewire\Pos\CashboxSessionPage;
 use App\Livewire\Pos\CustomerAccountPage;
 use App\Livewire\Pos\CustomerAccounts;
 use App\Livewire\Pos\ExpensesPage;
+use App\Livewire\Pos\NetworkListings;
 use App\Livewire\Pos\PosCounter;
 use App\Livewire\Pos\PosHome;
 use App\Livewire\Pos\SalesHistory;
@@ -25,6 +26,10 @@ Route::get('{store}/sales', SalesHistory::class)
     ->middleware('can:usePos,store')
     ->whereNumber('store')
     ->name('sales');
+Route::get('{store}/network', NetworkListings::class)
+    ->middleware('can:discoverListings,store')
+    ->whereNumber('store')
+    ->name('network');
 Route::get('{store}/customers', CustomerAccounts::class)
     ->middleware('can:receiveCustomerPayments,store')
     ->whereNumber('store')

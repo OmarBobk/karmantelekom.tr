@@ -14,6 +14,9 @@ use App\Actions\Inventory\RemoveUnit;
 use App\Actions\Inventory\ReverseDeviceCost;
 use App\Actions\Inventory\StartRepair;
 use App\Actions\Inventory\UnitLifecycle;
+use App\Actions\Network\ListingEligibility;
+use App\Actions\Network\PublishUnitListing;
+use App\Actions\Network\UnpublishUnitListing;
 use App\Actions\Pos\SetUnitSellingPrice;
 use App\Enums\AdjustmentReason;
 use App\Enums\Currency;
@@ -31,6 +34,7 @@ use App\Livewire\Backend\Concerns\UsesOperationalLocale;
 use App\Models\DeviceCostEntry;
 use App\Models\InventoryMovement;
 use App\Models\InventoryUnit;
+use App\Models\NetworkListing;
 use App\Models\Purchase;
 use App\Models\PurchaseReceiptLine;
 use App\Models\SaleLine;
@@ -82,6 +86,12 @@ class UnitDetail extends Component
 
     #[Locked]
     public ?string $staleNotice = null;
+
+    /**
+     * Store Network listing revision the operator is looking at; share and withdraw act from it.
+     */
+    #[Locked]
+    public int $listingRevision = NetworkListing::UNLISTED_REVISION;
 
     public string $removalReason = '';
 
@@ -168,6 +178,7 @@ class UnitDetail extends Component
         $this->store = $store;
         $this->unitId = $unit->id;
         $this->adoptState($unit);
+        $this->listingRevision = NetworkListing::revisionOf($unit->networkListing);
 
         $priceMinor = $unit->sellingPriceMinor();
         $this->unitSellingPrice = $priceMinor === null ? '' : Money::input($priceMinor);
@@ -448,6 +459,46 @@ class UnitDetail extends Component
         $this->dispatch('notify', ['type' => 'success', 'message' => __('pos.pricing.unit_price_saved')]);
     }
 
+    public function publishListing(PublishUnitListing $publishUnitListing): void
+    {
+        $this->authorize('shareListings', $this->store);
+        $this->changeListing(
+            fn (): ?NetworkListing => $publishUnitListing(auth()->user(), $this->store, $this->unitId, $this->listingRevision),
+            __('network.listing.published_message'),
+        );
+    }
+
+    public function unpublishListing(UnpublishUnitListing $unpublishUnitListing): void
+    {
+        $this->authorize('shareListings', $this->store);
+        $this->changeListing(
+            fn (): ?NetworkListing => $unpublishUnitListing(auth()->user(), $this->store, $this->unitId, $this->listingRevision),
+            __('network.listing.unpublished_message'),
+        );
+    }
+
+    /**
+     * Apply a share or withdraw from the shown revision. A refusal re-renders the current listing,
+     * so the operator's next action is bound to the state now on screen.
+     *
+     * @param  Closure(): ?NetworkListing  $change
+     */
+    private function changeListing(Closure $change, string $successMessage): void
+    {
+        $this->resetErrorBag('listing');
+
+        try {
+            $listing = $change();
+        } catch (ValidationException $exception) {
+            $this->listingRevision = NetworkListing::revisionOf(NetworkListing::query()->where('inventory_unit_id', $this->unitId)->first());
+
+            throw $exception;
+        }
+
+        $this->listingRevision = NetworkListing::revisionOf($listing);
+        $this->dispatch('notify', ['type' => 'success', 'message' => $successMessage]);
+    }
+
     public function dismissStaleNotice(): void
     {
         $this->authorize('viewInventory', $this->store);
@@ -463,7 +514,9 @@ class UnitDetail extends Component
     public function refreshState(): void
     {
         $this->authorize('viewInventory', $this->store);
-        $this->adoptState($this->unitQuery()->firstOrFail());
+        $unit = $this->unitQuery()->firstOrFail();
+        $this->adoptState($unit);
+        $this->listingRevision = NetworkListing::revisionOf($unit->networkListing);
         $this->reset('completionReturned', 'cancelReturned');
         $this->staleNotice = null;
         $this->resetErrorBag();
@@ -481,7 +534,7 @@ class UnitDetail extends Component
         $unit = $this->unitQuery()
             ->with([
                 'identifiers:id,inventory_unit_id,type,position,value',
-                'productDefinition:id,name,model,tracking_mode',
+                'productDefinition:id,name,model,tracking_mode,is_active,selling_price',
                 'openRepair',
                 'acquisition:id,inventory_unit_id,purchase_receipt_line_id,currency,unit_cost',
             ])
@@ -518,6 +571,9 @@ class UnitDetail extends Component
             'canRemove' => $unit->status->allowsRemoval() && Gate::allows('adjustInventory', $this->store),
             'canApproveReview' => UnitLifecycle::allows($unit->status, UnitLifecycle::APPROVE_REVIEW) && Gate::allows('adjustInventory', $this->store),
             'origin' => $this->origin($unit),
+            'listing' => $unit->networkListing()->with('publisher:id,name')->first(),
+            'listingProblem' => ListingEligibility::problem($unit->productDefinition, $unit),
+            'canShare' => Gate::allows('shareListings', $this->store),
             'canSetUnitPrice' => $isUsedDevice && ! in_array($unit->status, [UnitStatus::SOLD, UnitStatus::REMOVED], true) && Gate::allows('setUnitSellingPrices', $this->store),
             'soldOn' => $unit->status === UnitStatus::SOLD ? $unit->saleLine()->with('sale:id,store_id,user_id,number,completed_at')->first()?->sale : null,
             'removalReasons' => MovementType::ADJUSTMENT_DECREASE->allowedReasons(),

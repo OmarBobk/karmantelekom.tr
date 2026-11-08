@@ -201,6 +201,22 @@ class StorePolicy
     }
 
     /**
+     * Determine whether the user can publish this store's devices to Store Network or withdraw them.
+     */
+    public function shareListings(User $user, Store $store): bool
+    {
+        return $this->ownerHas($user, 'share_listings') && $store->isAccessibleBy($user);
+    }
+
+    /**
+     * Determine whether the user can browse other branches' Store Network listings from this store.
+     */
+    public function discoverListings(User $user, Store $store): bool
+    {
+        return $this->usePos($user, $store);
+    }
+
+    /**
      * Determine whether the user can grant or revoke counter access and discount limits for employees.
      */
     public function managePosAccess(User $user): bool

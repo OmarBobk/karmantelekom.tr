@@ -156,6 +156,36 @@
                         </dd>
                     </div>
                 @endif
+                @if ($unit->productDefinition->tracking_mode !== \App\Enums\TrackingMode::QUANTITY)
+                    @php($shared = $listing?->isPublished() && $listing->store_id === $unit->store_id)
+                    <div class="col-span-2" data-testid="network-listing">
+                        <dt class="text-xs font-medium text-gray-600">{{ __('network.listing.title') }}</dt>
+                        <dd class="mt-1 flex flex-wrap items-center gap-2 text-gray-900">
+                            @if ($shared)
+                                <span @class(['inline-flex rounded-full px-2 py-0.5 text-xs font-medium ring-1', 'bg-green-50 text-green-800 ring-green-200' => $listingProblem === null, 'bg-amber-50 text-amber-800 ring-amber-200' => $listingProblem !== null])>
+                                    {{ $listingProblem === null ? __('network.listing.visible') : __('network.listing.hidden') }}
+                                </span>
+                                <span class="text-xs text-gray-600">
+                                    {{ __('network.listing.since', ['name' => $listing->publisher?->name ?? '—']) }}
+                                    <time dir="ltr" datetime="{{ $listing->published_at->toIso8601String() }}">{{ $listing->published_at->format('Y-m-d H:i') }}</time>
+                                </span>
+                            @else
+                                <span class="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">{{ __('network.listing.not_shared') }}</span>
+                            @endif
+                            @if ($canShare)
+                                @if ($shared)
+                                    <button type="button" wire:click="unpublishListing" wire:loading.attr="disabled" wire:target="unpublishListing" class="min-h-11 rounded-lg px-3 text-sm font-medium text-gray-700 ring-1 ring-gray-300 hover:bg-gray-50 disabled:opacity-60">{{ __('network.listing.unpublish') }}</button>
+                                @elseif ($listingProblem === null)
+                                    <button type="button" wire:click="publishListing" wire:loading.attr="disabled" wire:target="publishListing" class="min-h-11 rounded-lg px-3 text-sm font-medium text-blue-700 ring-1 ring-blue-200 hover:bg-blue-50 disabled:opacity-60">{{ __('network.listing.publish') }}</button>
+                                @endif
+                            @endif
+                        </dd>
+                        @if ($listingProblem !== null && ($shared || $canShare))
+                            <p class="mt-1 text-xs text-gray-600">{{ $listingProblem }}</p>
+                        @endif
+                        @error('listing') <p class="mt-1 text-sm text-red-700" role="alert">{{ $message }}</p> @enderror
+                    </div>
+                @endif
             </dl>
         </div>
 

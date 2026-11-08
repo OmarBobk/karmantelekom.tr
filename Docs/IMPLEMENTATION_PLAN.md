@@ -1065,6 +1065,16 @@ The rules for sales attribution, internal store settlement, and employee incenti
 - Transfers and sales preserve correct inventory and device history.
 - Tests cover simultaneous requests, expired reservations, and unavailable devices.
 
+### Status
+
+Publication, discovery, and availability are delivered (tasks 1–5). Reservations (tasks 6–15) are the next batch; storefront publishing stays in Phase 7.5.
+
+- **Decisions applied.** An owner with the new `share_listings` permission publishes without further approval (§18.4). A device is eligible when it could be sold at the counter: an individually tracked, active product, a device that is `available`, and a selling price. `ListingEligibility` holds the rule.
+- **Publication.** `network_listings` holds one row per device: owning branch, publisher and time, withdrawer and time. `PublishUnitListing` checks eligibility under the definition-then-unit lock order used by checkout. Publishing an already published device, or withdrawing one that is not listed, changes nothing and writes no audit event. Otherwise `store_network` activity events `listing_published` and `listing_unpublished` are recorded. Withdrawing keeps the row, and republishing reuses it. Every publication and withdrawal increments the listing `revision`. Share and withdraw act from the revision shown to the operator. Under the same locks, they refuse a mismatch that would change a newer publication. Publishing writes no stock movement. The device page shows the sharing state, why a shared device is hidden, and the share or withdraw control.
+- **Discovery.** `pos/{store}/network` is open to anyone with counter access to the branch. It searches product name or model, filters by condition and owning branch, and pages by 20. `SharedListings` returns only product, model, condition, asking price, and owning branch; identifiers, costs, minimum prices, and device IDs stay out of the response and the component state.
+- **Availability.** Each request rechecks the device: still held by the publishing branch, `available`, on an active product, and priced. Sold, removed, and in-review devices drop out without changing the listing.
+- **Deployment.** Run the migration, then rerun `OperationalStoreSetupSeeder` to grant `share_listings` to the owner role.
+
 ---
 
 ## 11A. Phase 7.5 — Storefront Publishing
