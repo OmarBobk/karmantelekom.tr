@@ -218,6 +218,8 @@ return [
         'markMissing_help' => 'This device is recorded in stock. If it is not on the shelf, record it as lost.',
         'markFound' => 'Mark found for review',
         'markFound_help' => 'This device was removed from stock. If it is on the shelf, return it awaiting review. It is not sellable until an owner approves it.',
+        'ambiguous' => 'This identifier matches more than one device of this product. Choose the device you are holding before continuing.',
+        'choose' => 'Choose this device',
         'in_review' => 'This device is already awaiting review. Approve or remove it on its device page.',
         'no_action' => 'This device is :status. No reconciliation applies.',
         'other_product' => 'This identifier belongs to :product in this branch.',

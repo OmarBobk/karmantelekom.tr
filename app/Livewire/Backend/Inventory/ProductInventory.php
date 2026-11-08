@@ -95,6 +95,14 @@ class ProductInventory extends Component
     #[Locked]
     public ?int $reconcileRevision = null;
 
+    /**
+     * This branch's devices of the product that matched an ambiguous lookup; one must be chosen.
+     *
+     * @var list<int>
+     */
+    #[Locked]
+    public array $reconcileCandidateIds = [];
+
     public string $reconcileReason = '';
 
     public string $foundCondition = '';
@@ -255,14 +263,42 @@ class ProductInventory extends Component
         $this->reconcileOutcome = $result['outcome'];
         $this->reconcileUnitId = $result['unit']?->id;
         $this->reconcileRevision = $result['unit']?->lifecycle_revision;
+        $this->reconcileCandidateIds = $result['candidates'];
         $this->foundImei = $result['imei'] ?? '';
         $this->foundSerial = $result['serial'] ?? '';
         $this->renewSubmissionKey();
     }
 
+    /**
+     * Pick the exact device after an ambiguous lookup; only the offered candidates are accepted.
+     */
+    public function chooseDevice(int $unitId): void
+    {
+        $this->authorize('adjustInventory', $this->store);
+
+        if ($this->reconcileOutcome !== LocateDeviceForReconciliation::AMBIGUOUS || ! in_array($unitId, $this->reconcileCandidateIds, true)) {
+            return;
+        }
+
+        $unit = $this->store->units()->where('product_definition_id', $this->definition->id)->find($unitId);
+
+        if ($unit === null) {
+            $this->clearReconciliation();
+
+            return;
+        }
+
+        $this->resetErrorBag();
+        $this->reset('reconcileReason', 'reconcileCandidateIds');
+        $this->reconcileOutcome = LocateDeviceForReconciliation::UNIT;
+        $this->reconcileUnitId = $unit->id;
+        $this->reconcileRevision = $unit->lifecycle_revision;
+        $this->renewSubmissionKey();
+    }
+
     public function clearReconciliation(): void
     {
-        $this->reset('reconcileCode', 'reconcileOutcome', 'reconcileUnitId', 'reconcileRevision', 'reconcileReason', 'foundImei', 'foundSecondaryImei', 'foundSerial');
+        $this->reset('reconcileCode', 'reconcileOutcome', 'reconcileUnitId', 'reconcileRevision', 'reconcileCandidateIds', 'reconcileReason', 'foundImei', 'foundSecondaryImei', 'foundSerial');
         $this->foundCondition = $this->unitCondition;
         $this->resetErrorBag();
     }
@@ -407,6 +443,9 @@ class ProductInventory extends Component
             'reconcileUnit' => $tracksUnits && $this->reconcileUnitId !== null
                 ? $this->store->units()->with(['identifiers', 'productDefinition:id,name,model'])->find($this->reconcileUnitId)
                 : null,
+            'reconcileCandidates' => $tracksUnits && $this->reconcileCandidateIds !== []
+                ? $this->store->units()->where('product_definition_id', $definition->id)->with('identifiers')->whereKey($this->reconcileCandidateIds)->orderBy('id')->get()
+                : collect(),
             'conditions' => UnitCondition::allowedFor($definition->tracking_mode),
             'canViewPurchases' => $canViewPurchases,
             'lastPurchase' => $canViewPurchases ? $this->lastPurchaseLine($definition) : null,

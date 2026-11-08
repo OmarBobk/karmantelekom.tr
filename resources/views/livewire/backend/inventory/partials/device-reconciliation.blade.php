@@ -21,7 +21,22 @@
 
     @if ($outcome !== null)
         <div class="space-y-3 rounded-lg bg-gray-50 p-3 ring-1 ring-gray-200" aria-live="polite" data-testid="reconcile-result">
-            @if ($outcome === \App\Actions\Inventory\LocateDeviceForReconciliation::UNIT && $reconcileUnit)
+            @if ($outcome === \App\Actions\Inventory\LocateDeviceForReconciliation::AMBIGUOUS)
+                <p class="text-sm text-gray-700">{{ __('inventory.reconcile.ambiguous') }}</p>
+                <ul class="space-y-2" data-testid="reconcile-candidates">
+                    @foreach ($reconcileCandidates as $candidate)
+                        <li wire:key="reconcile-candidate-{{ $candidate->id }}" class="flex flex-wrap items-center gap-2 rounded-lg bg-white p-2 ring-1 ring-gray-200">
+                            <span class="min-w-0 flex-1 font-mono text-sm" dir="ltr">
+                                @foreach ($candidate->identifiers as $identifier)
+                                    <span class="me-2 inline-block">{{ $identifier->type->label() }}: {{ $identifier->value }}</span>
+                                @endforeach
+                            </span>
+                            <span class="rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset {{ $candidate->status->badgeClasses() }}">{{ $candidate->status->label() }}</span>
+                            <button type="button" wire:click="chooseDevice({{ $candidate->id }})" wire:loading.attr="disabled" wire:target="chooseDevice" class="min-h-11 rounded-lg bg-white px-3 py-2 text-sm font-medium text-gray-800 ring-1 ring-gray-300 hover:bg-gray-50 disabled:opacity-60">{{ __('inventory.reconcile.choose') }}</button>
+                        </li>
+                    @endforeach
+                </ul>
+            @elseif ($outcome === \App\Actions\Inventory\LocateDeviceForReconciliation::UNIT && $reconcileUnit)
                 <div class="flex flex-wrap items-center gap-2">
                     <a href="{{ route('subdomain.inventory.unit', [$store, $reconcileUnit]) }}" class="font-mono text-sm font-medium text-blue-700 hover:text-blue-900" dir="ltr">{{ $reconcileUnit->primaryIdentifierValue() }}</a>
                     <span class="rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset {{ $unitStatus->badgeClasses() }}">{{ $unitStatus->label() }}</span>

@@ -27,6 +27,7 @@ use App\Models\InventoryUnit;
 use App\Models\ProductDefinition;
 use App\Models\Store;
 use App\Models\User;
+use App\Services\Inventory\ReconciliationRollbackGuard;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -34,6 +35,7 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\Test;
+use RuntimeException;
 use Spatie\Permission\Models\Role;
 use Spatie\Permission\PermissionRegistrar;
 use Tests\Support\InteractsWithDeviceLifecycle;
@@ -272,6 +274,57 @@ class DeviceReconciliationTest extends TestCase
         $this->revokeFromOwners('adjust_inventory');
         $this->assertRefused(fn () => $this->recordFound($this->usedPhone, self::imei('35693803564381'), null));
         $this->assertSame(UnitStatus::REMOVED, $elsewhere->fresh()->status);
+    }
+
+    #[Test]
+    public function a_lookup_matching_several_branch_devices_requires_an_explicit_choice(): void
+    {
+        $code = self::imei('35693803564380');
+        $byImei = $this->registerDevice($this->owner, $this->store, $this->usedPhone, $code);
+        $bySerial = $this->registerDevice($this->owner, $this->store, $this->usedPhone, self::imei('35693803564381'), serial: $code);
+        $elsewhere = $this->registerDevice($this->owner, $this->otherStore, $this->usedPhone, self::imei('35693803564382'));
+
+        $page = Livewire::actingAs($this->owner)->test(ProductInventory::class, ['store' => $this->store, 'productDefinition' => $this->usedPhone])
+            ->set('reconcileCode', $code)
+            ->call('findDevice')
+            ->assertSet('reconcileOutcome', LocateDeviceForReconciliation::AMBIGUOUS)
+            ->assertSet('reconcileUnitId', null)
+            ->assertSet('reconcileCandidateIds', [$byImei->id, $bySerial->id])
+            ->assertSee('Choose this device')
+            ->assertDontSee('Mark missing')
+            ->assertDontSee(self::imei('35693803564382'))
+            ->set('reconcileReason', 'Not on shelf')
+            ->call('markMissing')
+            ->call('chooseDevice', $elsewhere->id)
+            ->assertSet('reconcileUnitId', null);
+
+        $this->assertSame(0, InventoryMovement::query()->where('type', MovementType::ADJUSTMENT_DECREASE)->count());
+
+        $page->call('chooseDevice', $bySerial->id)
+            ->assertSet('reconcileOutcome', LocateDeviceForReconciliation::UNIT)
+            ->assertSet('reconcileUnitId', $bySerial->id)
+            ->set('reconcileReason', 'Not on shelf')
+            ->call('markMissing')
+            ->assertHasNoErrors();
+
+        $this->assertSame(UnitStatus::REMOVED, $bySerial->fresh()->status);
+        $this->assertSame(UnitStatus::AVAILABLE, $byImei->fresh()->status);
+    }
+
+    #[Test]
+    public function rollback_is_refused_when_review_appears_only_in_movement_history(): void
+    {
+        $movement = $this->recordFound($this->usedPhone, self::imei('35693803564380'), null);
+        app(RemoveUnit::class)($this->owner, $this->store, $movement->inventory_unit_id, AdjustmentReason::DAMAGED, 'Not ours', (string) Str::uuid(), 0);
+        Store::query()->update(['inventory_setup_completed_at' => null]);
+
+        $this->assertSame(0, InventoryUnit::query()->where('status', UnitStatus::REVIEW)->count());
+        $this->assertSame(0, InventoryMovement::query()->where('type', MovementType::REVIEW_APPROVED)->count());
+
+        $this->expectException(RuntimeException::class);
+        $this->expectExceptionMessage('inventory_movements (review status history): 2');
+
+        app(ReconciliationRollbackGuard::class)->assertNoRecordedReconciliationData();
     }
 
     #[Test]

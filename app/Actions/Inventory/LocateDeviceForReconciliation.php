@@ -17,11 +17,14 @@ use Illuminate\Database\Eloquent\Builder;
  *
  * IMEIs are matched system-wide and serials within the product definition, the same scopes as
  * identity uniqueness, so "not found" means the identifier can be recorded. A device held by
- * another branch is reported without any of its details.
+ * another branch is reported without any of its details. When several of this branch's devices
+ * of the product match, none is chosen: the caller must pick one of the candidates explicitly.
  */
 final class LocateDeviceForReconciliation
 {
     public const UNIT = 'unit';
+
+    public const AMBIGUOUS = 'ambiguous';
 
     public const OTHER_PRODUCT = 'other_product';
 
@@ -32,14 +35,14 @@ final class LocateDeviceForReconciliation
     public const INVALID = 'invalid';
 
     /**
-     * @return array{outcome: string, unit: InventoryUnit|null, imei: string|null, serial: string|null}
+     * @return array{outcome: string, unit: InventoryUnit|null, candidates: list<int>, imei: string|null, serial: string|null}
      */
     public function __invoke(Store $store, ProductDefinition $definition, string $code): array
     {
         [$imeis, $serials] = FindUnitsByIdentifier::candidates($code);
 
         if ($imeis === [] && $serials === []) {
-            return ['outcome' => self::INVALID, 'unit' => null, 'imei' => null, 'serial' => null];
+            return ['outcome' => self::INVALID, 'unit' => null, 'candidates' => [], 'imei' => null, 'serial' => null];
         }
 
         $units = InventoryUnit::query()
@@ -51,22 +54,26 @@ final class LocateDeviceForReconciliation
             ->get(['id', 'store_id', 'product_definition_id', 'status', 'lifecycle_revision']);
 
         $inBranch = $units->where('store_id', $store->id);
-        $match = $inBranch->firstWhere('product_definition_id', $definition->id);
+        $matches = $inBranch->where('product_definition_id', $definition->id)->sortBy('id')->values();
 
-        if ($match !== null) {
-            return ['outcome' => self::UNIT, 'unit' => $match->load('identifiers'), 'imei' => null, 'serial' => null];
+        if ($matches->count() > 1) {
+            return ['outcome' => self::AMBIGUOUS, 'unit' => null, 'candidates' => $matches->pluck('id')->all(), 'imei' => null, 'serial' => null];
+        }
+
+        if ($matches->isNotEmpty()) {
+            return ['outcome' => self::UNIT, 'unit' => $matches->first()->load('identifiers'), 'candidates' => [], 'imei' => null, 'serial' => null];
         }
 
         if ($inBranch->isNotEmpty()) {
-            return ['outcome' => self::OTHER_PRODUCT, 'unit' => $inBranch->first()->load('identifiers', 'productDefinition:id,name,model'), 'imei' => null, 'serial' => null];
+            return ['outcome' => self::OTHER_PRODUCT, 'unit' => $inBranch->first()->load('identifiers', 'productDefinition:id,name,model'), 'candidates' => [], 'imei' => null, 'serial' => null];
         }
 
         if ($units->isNotEmpty()) {
-            return ['outcome' => self::OTHER_BRANCH, 'unit' => null, 'imei' => null, 'serial' => null];
+            return ['outcome' => self::OTHER_BRANCH, 'unit' => null, 'candidates' => [], 'imei' => null, 'serial' => null];
         }
 
         $imei = $imeis !== [] && ValidImei::isValid($imeis[0]) ? $imeis[0] : null;
 
-        return ['outcome' => self::NOT_FOUND, 'unit' => null, 'imei' => $imei, 'serial' => $imei === null ? ($serials[0] ?? null) : null];
+        return ['outcome' => self::NOT_FOUND, 'unit' => null, 'candidates' => [], 'imei' => $imei, 'serial' => $imei === null ? ($serials[0] ?? null) : null];
     }
 }

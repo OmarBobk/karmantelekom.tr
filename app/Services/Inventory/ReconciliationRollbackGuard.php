@@ -30,6 +30,9 @@ class ReconciliationRollbackGuard
         $counts = [
             'inventory_units (awaiting review)' => $connection->table('inventory_units')->where('status', self::REVIEW_STATUS)->count(),
             'inventory_movements (review approvals)' => $connection->table('inventory_movements')->where('type', self::REVIEW_APPROVED_TYPE)->count(),
+            'inventory_movements (review status history)' => $connection->table('inventory_movements')
+                ->where(fn ($query) => $query->where('unit_status_before', self::REVIEW_STATUS)->orWhere('unit_status_after', self::REVIEW_STATUS))
+                ->count(),
         ];
 
         if ($schema->hasColumn('stores', 'inventory_setup_completed_at')) {
