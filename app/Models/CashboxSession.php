@@ -19,9 +19,10 @@ use LogicException;
  * One counted period of a store's cashbox. At most one is open per store: open_store_id holds
  * the store id while open and is cleared on closing. A closed session is final.
  *
- * Cash posting locks the store row in share mode as its last lock; opening, closing, and cash
- * payouts lock it exclusively first, so a close sees every committed movement and no posting can
- * follow it, and payouts see every reservation made before them.
+ * Cash posting locks the store row in share mode as its last lock; opening, closing, and expense
+ * payouts lock it exclusively first, and supplier cash payouts right after their invoice, so a
+ * close sees every committed movement and no posting can follow it, and payouts see every
+ * reservation made before them.
  *
  * @property int $id
  * @property int $store_id

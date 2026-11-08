@@ -47,8 +47,12 @@ class RecordSupplierPayment
      * rejected without revealing it. The key is checked against payments and payouts alike, and
      * replays come before any tracking or balance check, so old payments still replay.
      *
-     * TRY cash locks the store row exclusively first, as opening, closing, and other payouts do,
-     * then the invoice; other payments lock only the invoice.
+     * Lock order for every supplier payment write: the invoice, then the store row, then a payout.
+     * Inserting a payment or ledger entry takes a share lock on the store row through its foreign
+     * key, so the invoice must come first for every writer; TRY cash then locks the store row
+     * exclusively, which serializes it with opening, closing, and other payouts. No consistent
+     * read happens before these locks, so the snapshot that computes the payable invoice amount
+     * and the drawer cash available is taken after them and sees every write they waited for.
      *
      * @param  array{amount?: mixed, paid_on?: mixed, method?: mixed, reference?: mixed, note?: mixed}  $input
      * @param  int|null  $sessionId  The open session the form was shown with; used for tracked TRY cash only.
@@ -98,11 +102,11 @@ class RecordSupplierPayment
 
         try {
             return DB::transaction(function () use ($actor, $purchase, $validated, $amount, $reference, $referenceKey, $note, $key, $fingerprint, $drawerCash, $sessionId): SupplierPayment|SupplierCashPayout {
-                if ($drawerCash) {
-                    Store::query()->whereKey($purchase->store_id)->lockForUpdate()->firstOrFail();
-                }
-
                 $locked = Purchase::query()->whereKey($purchase->id)->lockForUpdate()->firstOrFail();
+
+                if ($drawerCash) {
+                    Store::query()->whereKey($locked->store_id)->lockForUpdate()->firstOrFail();
+                }
 
                 $existing = $this->findExisting($locked->id, $key, $referenceKey);
 

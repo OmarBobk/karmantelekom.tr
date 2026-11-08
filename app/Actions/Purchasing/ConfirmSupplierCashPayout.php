@@ -34,8 +34,8 @@ use LogicException;
  * session or invoice is refused, and a released payout is never replaced by another. Confirming
  * a completed payout again returns its payment without writing, so a retry after a lost response
  * is safe. The payment keeps the submission's key, fingerprint, and actor, so resubmitting the
- * original form also returns it. Locks the store row exclusively first, then the invoice, then
- * the payout, as RecordSupplierPayment does.
+ * original form also returns it. Locks the invoice, then the store row exclusively, then the
+ * payout, as RecordSupplierPayment does.
  */
 class ConfirmSupplierCashPayout
 {
@@ -48,8 +48,8 @@ class ConfirmSupplierCashPayout
         Gate::forUser($actor)->authorize('pay', $purchase);
 
         return DB::transaction(function () use ($actor, $purchase, $payoutId, $sessionId): SupplierPayment {
-            Store::query()->whereKey($purchase->store_id)->lockForUpdate()->firstOrFail();
             $locked = Purchase::query()->whereKey($purchase->id)->lockForUpdate()->firstOrFail();
+            Store::query()->whereKey($locked->store_id)->lockForUpdate()->firstOrFail();
             $payout = SupplierCashPayout::query()->where('purchase_id', $locked->id)->lockForUpdate()->findOrFail($payoutId);
 
             if ($payout->cashbox_session_id !== $sessionId) {

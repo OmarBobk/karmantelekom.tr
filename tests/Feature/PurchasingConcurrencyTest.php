@@ -171,6 +171,21 @@ class PurchasingConcurrencyTest extends TestCase
     }
 
     #[Test]
+    public function a_cash_reservation_queued_behind_a_transfer_on_the_same_invoice_sees_the_transfer(): void
+    {
+        $session = app(OpenCashboxSession::class)($this->owner, $this->store, '1000', null);
+
+        $results = $this->raceWhileLocked(Purchase::query()->whereKey($this->purchase->id), [
+            ['operation' => 'pay', 'purchase_id' => $this->purchase->id, 'key' => 'eft', 'input' => $this->paymentInput('8000.00', 'EFT-1')],
+            ['operation' => 'pay', 'purchase_id' => $this->purchase->id, 'key' => 'cash', 'session_id' => $session->id, 'input' => $this->paymentInput('500.00', 'CASH-1', ['method' => 'cash'])],
+        ]);
+
+        $this->assertSame(['ok', 'validation'], array_column($results, 'status'));
+        $this->assertSame(['amount'], $results[1]['errors']);
+        $this->assertSame([1, 0, 17_500], [SupplierPayment::count(), SupplierCashPayout::count(), $this->purchase->refresh()->payableMinor()]);
+    }
+
+    #[Test]
     public function a_receipt_losing_a_device_identity_race_after_stock_writes_rolls_back_completely(): void
     {
         $otherPhone = ProductDefinition::factory()->create(['tracking_mode' => TrackingMode::USED_DEVICE]);
@@ -213,6 +228,9 @@ class PurchasingConcurrencyTest extends TestCase
     /**
      * Start one worker per request while holding the given rows locked, then release them.
      *
+     * Each worker is blocked before the next starts, so the workers queue on the held rows in
+     * request order, holding whatever locks they took before blocking.
+     *
      * @param  Builder<covariant \Illuminate\Database\Eloquent\Model>  $lockedRows
      * @param  list<array<string, mixed>>  $requests
      * @return list<array<string, mixed>>
@@ -228,9 +246,8 @@ class PurchasingConcurrencyTest extends TestCase
 
             foreach ($requests as $request) {
                 $processes[] = $this->startWorker(['actor_id' => $this->owner->id, ...$request]);
+                $this->waitForBlockedWorkers(count($processes));
             }
-
-            $this->waitForBlockedWorkers(count($requests));
         } finally {
             DB::commit();
         }
@@ -279,6 +296,7 @@ class PurchasingConcurrencyTest extends TestCase
         $exitCode = proc_close($worker['process']);
 
         $this->assertSame(0, $exitCode, "Worker failed: {$errors}{$output}");
+        $this->assertJson((string) $output, "Worker failed: {$errors}{$output}");
 
         return json_decode((string) $output, true, flags: JSON_THROW_ON_ERROR);
     }
@@ -288,7 +306,7 @@ class PurchasingConcurrencyTest extends TestCase
         $deadline = microtime(true) + 30;
 
         while (microtime(true) < $deadline) {
-            if ((int) DB::scalar('select count(*) from information_schema.innodb_lock_waits') >= $expected) {
+            if ((int) DB::scalar('select count(distinct requesting_trx_id) from information_schema.innodb_lock_waits') >= $expected) {
                 return;
             }
 

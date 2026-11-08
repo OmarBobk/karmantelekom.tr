@@ -22,8 +22,8 @@ use Illuminate\Validation\ValidationException;
  * Release a pending supplier cash payout after the owner verified its cash was not handed out,
  * or was handed back. Needs the branch's cashbox permission, the verified resolution, and a
  * required note, and is logged. Nothing is posted and no payment is recorded; the drawer and
- * invoice reservations end and the payout is kept as released. Locks the store row exclusively
- * first, then the payout, as confirming does.
+ * invoice reservations end and the payout is kept as released. Locks the invoice, then the store
+ * row exclusively, then the payout, as confirming does.
  */
 class ReleaseSupplierCashPayout
 {
@@ -49,7 +49,8 @@ class ReleaseSupplierCashPayout
         }
 
         return DB::transaction(function () use ($actor, $purchase, $payout, $resolution, $note): SupplierCashPayout {
-            Store::query()->whereKey($purchase->store_id)->lockForUpdate()->firstOrFail();
+            $invoice = Purchase::query()->whereKey($purchase->id)->lockForUpdate()->firstOrFail();
+            Store::query()->whereKey($invoice->store_id)->lockForUpdate()->firstOrFail();
 
             $locked = SupplierCashPayout::query()->whereKey($payout->id)->lockForUpdate()->firstOrFail();
 
