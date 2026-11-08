@@ -6,8 +6,8 @@
         $outstanding = $purchase->outstandingMinor();
         $supplierName = $purchase->supplier_name ?? $purchase->supplier->name;
         $title = $purchase->supplier_invoice_number ?? __('purchases.index.draft_label', ['id' => $purchase->id]);
-        $canRecordPayment = $canPay && $purchase->isPosted() && $outstanding > 0;
-        $canReversePurchase = $canUpdate && $purchase->isPosted() && ! $purchase->isReceived() && $activePaid === 0;
+        $canRecordPayment = $canPay && $purchase->isPosted() && $payable > 0;
+        $canReversePurchase = $canUpdate && $purchase->isPosted() && ! $purchase->isReceived() && $activePaid === 0 && $pendingPayouts->isEmpty();
         $canCopy = $canUpdate && $purchase->status === \App\Enums\PurchaseStatus::REVERSED;
         $openCorrection = $purchase->corrections->first(fn ($correction) => $correction->isDraft());
         // Left-to-right isolate so dates and codes keep their order inside Arabic sentences.
@@ -140,6 +140,9 @@
                     @if ($purchase->isPosted())
                         <div class="flex justify-between gap-3"><dt class="text-gray-600">{{ __('purchases.fields.paid_total') }}</dt><dd>@include($money, ['minor' => $purchase->paidTotalMinor(), 'currency' => $purchase->currency])</dd></div>
                         <div class="flex justify-between gap-3 rounded-lg bg-gray-50 px-3 py-2 text-base font-bold"><dt class="text-gray-900">{{ __('purchases.fields.outstanding') }}</dt><dd>@include($money, ['minor' => $outstanding, 'currency' => $purchase->currency])</dd></div>
+                        @if ($pendingPayouts->isNotEmpty())
+                            <p class="text-xs text-amber-800">{{ __('purchases.payments.reserved', ['amount' => \App\Services\Purchasing\Money::format($outstanding - $payable).' '.$purchase->currency->value]) }}</p>
+                        @endif
                     @endif
                 </dl>
                 <dl class="mt-4 grid grid-cols-2 gap-3 border-t border-gray-100 pt-4 text-sm">
@@ -169,6 +172,38 @@
             @endif
         </aside>
     </div>
+
+    @if ($pendingPayouts->isNotEmpty())
+        <section aria-labelledby="cash-payouts-title" class="rounded-xl bg-amber-50 p-5 ring-2 ring-amber-400">
+            <h2 id="cash-payouts-title" class="text-base font-semibold text-amber-950">{{ __('purchases.cash_payouts.title') }}</h2>
+            @error('cashbox') <p class="mt-2 text-sm font-medium text-red-700" role="alert">{{ $message }}</p> @enderror
+            <ul class="mt-3 space-y-3">
+                @foreach ($pendingPayouts as $payout)
+                    @php
+                        $payoutAmount = \App\Services\Purchasing\LocalizedMoney::format($payout->amountMinor());
+                    @endphp
+                    <li wire:key="cash-payout-{{ $payout->id }}" class="flex flex-col gap-3 rounded-lg bg-white p-4 ring-1 ring-amber-200 sm:flex-row sm:items-center sm:justify-between">
+                        <div class="text-sm text-gray-800">
+                            <p class="text-base font-semibold text-gray-900"><span dir="ltr" class="tabular-nums">{{ $payoutAmount }}</span> TRY · <bdi dir="ltr" class="font-mono">{{ $payout->reference }}</bdi></p>
+                            @if ($payout->id === $instructedPayoutId)
+                                <p class="mt-1 font-semibold text-amber-900" data-payout-hand-out>{{ __('purchases.cash_payouts.hand_out', ['amount' => $payoutAmount]) }}</p>
+                            @else
+                                <p class="mt-1 text-amber-900" data-payout-verify>{{ __('purchases.cash_payouts.verify', ['time' => $ltr($payout->started_at->format('Y-m-d H:i')), 'name' => $payout->starter?->name ?? '—']) }}</p>
+                            @endif
+                        </div>
+                        <div class="flex shrink-0 gap-2">
+                            @if ($canPay)
+                                <button type="button" wire:click="confirmPayout({{ $payout->id }}, {{ $payout->cashbox_session_id }})" wire:loading.attr="disabled" wire:target="confirmPayout" class="min-h-11 rounded-lg bg-gray-900 px-4 py-2 text-sm font-medium text-white hover:bg-gray-800 disabled:opacity-60">{{ __('purchases.cash_payouts.confirm') }}</button>
+                            @endif
+                            @if ($canRelease)
+                                <button type="button" wire:click="openRelease({{ $payout->id }})" class="min-h-11 rounded-lg px-4 py-2 text-sm font-medium text-gray-700 ring-1 ring-gray-300 hover:bg-gray-50">{{ __('purchases.cash_payouts.release') }}</button>
+                            @endif
+                        </div>
+                    </li>
+                @endforeach
+            </ul>
+        </section>
+    @endif
 
     @if ($purchase->isPosted() || $purchase->payments->isNotEmpty())
         <section aria-labelledby="payments-title" class="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-200">
@@ -205,7 +240,7 @@
                                             <span class="mt-1 block text-xs text-rose-800">{{ __('purchases.payments.reversed_detail', ['name' => $payment->reverser?->name ?? '—', 'date' => $ltr($payment->reversed_at->format('Y-m-d H:i')), 'reason' => $payment->reversal_reason]) }}</span>
                                         @endif
                                     </td>
-                                    <td class="px-4 py-3 text-sm">{{ $payment->method->label() }}</td>
+                                    <td class="px-4 py-3 text-sm">{{ $payment->method->label() }}@if ($payment->isFromCashbox())<span class="ms-1 inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">{{ __('purchases.cash_payouts.cash_badge') }}</span>@endif</td>
                                     <td class="px-4 py-3 text-end text-sm">
                                         @include($money, ['minor' => $payment->amountMinor(), 'currency' => $payment->currency, 'class' => $payment->isReversed() ? 'line-through' : 'font-medium text-gray-900'])
                                         @if ($payment->isReversed())
@@ -213,7 +248,7 @@
                                         @endif
                                     </td>
                                     <td class="px-4 py-3 text-end">
-                                        @if ($canPay && ! $payment->isReversed() && $purchase->isPosted())
+                                        @if ($canPay && ! $payment->isReversed() && ! $payment->isFromCashbox() && $purchase->isPosted())
                                             <button type="button" x-on:click="$wire.reversingPaymentId = '{{ $payment->id }}'; $dispatch('open-dialog', { id: 'reverse-payment' })" class="min-h-11 rounded-lg px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-50">{{ __('purchases.payments.reverse') }}</button>
                                         @endif
                                     </td>
@@ -250,7 +285,7 @@
                         <input id="payment-amount" type="text" inputmode="decimal" wire:model="paymentAmount" dir="ltr" autocomplete="off" autofocus required @error('paymentAmount') aria-invalid="true" aria-describedby="payment-amount-error" @enderror @class([$field, 'pe-14 text-end tabular-nums', $invalid => $errors->has('paymentAmount')])>
                         <span class="pointer-events-none absolute inset-y-0 end-3 mt-1 flex items-center text-xs font-medium text-gray-500">{{ $purchase->currency->value }}</span>
                     </div>
-                    <button type="button" x-on:click="$wire.paymentAmount = @js(\App\Services\Purchasing\Money::input($outstanding))" class="mt-1 min-h-11 text-sm text-blue-700 underline hover:no-underline">{{ __('purchases.payments.pay_full', ['amount' => \App\Services\Purchasing\Money::format($outstanding).' '.$purchase->currency->value]) }}</button>
+                    <button type="button" x-on:click="$wire.paymentAmount = @js(\App\Services\Purchasing\Money::input($payable))" class="mt-1 min-h-11 text-sm text-blue-700 underline hover:no-underline">{{ __('purchases.payments.pay_full', ['amount' => \App\Services\Purchasing\Money::format($payable).' '.$purchase->currency->value]) }}</button>
                     @error('paymentAmount') <p id="payment-amount-error" class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                 </div>
                 <div class="grid gap-4 sm:grid-cols-2">
@@ -269,6 +304,9 @@
                         @error('paymentMethod') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
                     </div>
                 </div>
+                @if ($tracksCash && $cashAvailable !== null)
+                    <p x-show="$wire.paymentMethod === 'cash'" class="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-900" data-cashbox-help>{{ __('purchases.payments.cashbox_help', ['available' => \App\Services\Purchasing\LocalizedMoney::format($cashAvailable).' TRY']) }}</p>
+                @endif
                 <div>
                     <label for="payment-reference" class="block text-sm font-medium text-gray-700">{{ __('purchases.fields.reference') }} <span class="text-red-600" aria-hidden="true">*</span></label>
                     <input id="payment-reference" type="text" wire:model="paymentReference" dir="ltr" maxlength="100" autocomplete="off" spellcheck="false" required aria-describedby="payment-reference-help @error('paymentReference') payment-reference-error @enderror" @error('paymentReference') aria-invalid="true" @enderror @class([$field, 'font-mono text-start', $invalid => $errors->has('paymentReference')])>
@@ -303,6 +341,35 @@
                 <div class="flex flex-col-reverse gap-2 border-t border-gray-100 pt-4 sm:flex-row sm:justify-end">
                     <button type="button" x-on:click="$el.closest('dialog').close()" class="min-h-11 rounded-lg px-4 py-2 text-sm font-medium text-gray-700 ring-1 ring-gray-300 hover:bg-gray-50">{{ __('purchases.form.cancel') }}</button>
                     <button type="submit" wire:loading.attr="disabled" wire:target="reversePayment" class="min-h-11 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-60">{{ __('purchases.payments.reverse_submit') }}</button>
+                </div>
+            </form>
+        </x-operations.dialog>
+    @endif
+
+    @if ($canRelease)
+        <x-operations.dialog id="release-payout" :title="__('purchases.cash_payouts.release_title')" :direction="$textDirection">
+            <form wire:submit="releasePayout" novalidate class="space-y-4">
+                <p class="text-sm text-gray-600">{{ __('purchases.cash_payouts.release_help') }}</p>
+                <fieldset>
+                    <legend class="block text-sm font-medium text-gray-700">{{ __('pos.expenses.fields.resolution') }} <span class="text-red-600" aria-hidden="true">*</span></legend>
+                    <div class="mt-2 space-y-2">
+                        @foreach ($resolutions as $resolution)
+                            <label class="flex min-h-11 items-center gap-3 rounded-lg px-3 ring-1 ring-gray-200">
+                                <input type="radio" wire:model="releaseResolution" value="{{ $resolution->value }}" class="text-blue-600 focus:ring-blue-500">
+                                <span class="text-sm text-gray-800">{{ $resolution->label() }}</span>
+                            </label>
+                        @endforeach
+                    </div>
+                    @error('releaseResolution') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                </fieldset>
+                <div>
+                    <label for="release-note" class="block text-sm font-medium text-gray-700">{{ __('purchases.fields.note') }} <span class="text-red-600" aria-hidden="true">*</span></label>
+                    <textarea id="release-note" rows="3" wire:model="releaseNote" maxlength="500" required @error('releaseNote') aria-invalid="true" aria-describedby="release-note-error" @enderror @class(['mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500', $invalid => $errors->has('releaseNote')])></textarea>
+                    @error('releaseNote') <p id="release-note-error" class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                </div>
+                <div class="flex flex-col-reverse gap-2 border-t border-gray-100 pt-4 sm:flex-row sm:justify-end">
+                    <button type="button" x-on:click="$el.closest('dialog').close()" class="min-h-11 rounded-lg px-4 py-2 text-sm font-medium text-gray-700 ring-1 ring-gray-300 hover:bg-gray-50">{{ __('purchases.form.cancel') }}</button>
+                    <button type="submit" wire:loading.attr="disabled" wire:target="releasePayout" class="min-h-11 rounded-lg bg-red-600 px-4 py-2 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-60">{{ __('purchases.cash_payouts.release_submit') }}</button>
                 </div>
             </form>
         </x-operations.dialog>

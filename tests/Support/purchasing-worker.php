@@ -20,6 +20,7 @@ use App\Exceptions\Purchasing\PurchaseAlreadyReceivedException;
 use App\Models\ProductDefinition;
 use App\Models\Purchase;
 use App\Models\Store;
+use App\Models\SupplierCashPayout;
 use App\Models\User;
 use Illuminate\Contracts\Console\Kernel;
 use Illuminate\Validation\ValidationException;
@@ -46,9 +47,9 @@ try {
             return ['status' => 'ok', 'receipt_id' => $receipt->id, 'created' => $receipt->wasRecentlyCreated];
         })(),
         'pay' => (function () use ($actor, $purchase, $payload): array {
-            $payment = app(RecordSupplierPayment::class)($actor, $purchase, $payload['input'], $payload['key']);
+            $payment = app(RecordSupplierPayment::class)($actor, $purchase, $payload['input'], $payload['key'], $payload['session_id'] ?? null);
 
-            return ['status' => 'ok', 'payment_id' => $payment->id, 'created' => $payment->wasRecentlyCreated];
+            return ['status' => 'ok', 'payment_id' => $payment->id, 'kind' => $payment instanceof SupplierCashPayout ? 'payout' : 'payment', 'created' => $payment->wasRecentlyCreated];
         })(),
         'post' => (function () use ($actor, $purchase, $payload): array {
             $result = app(PostPurchase::class)($actor, $purchase, $payload['revision']);

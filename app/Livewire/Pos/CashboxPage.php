@@ -159,7 +159,7 @@ class CashboxPage extends Component
             'cashOut' => $session?->cashOutMinor() ?? 0,
             'pendingPayoutCount' => $session?->pendingPayoutCount() ?? 0,
             'movements' => $session === null ? collect() : $session->movements()
-                ->with(['recorder:id,name', 'salePayment.sale:id,number', 'customerPayment:id,receipt_number,customer_id', 'customerPayment.customer:id,name', 'expense:id,category,description'])
+                ->with(['recorder:id,name', 'salePayment.sale:id,number', 'customerPayment:id,receipt_number,customer_id', 'customerPayment.customer:id,name', 'expense:id,category,description', 'supplierPayment:id,reference,operational_supplier_id', 'supplierPayment.supplier:id,name'])
                 ->latest('occurred_at')
                 ->latest('id')
                 ->limit(100)

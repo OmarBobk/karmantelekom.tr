@@ -33,6 +33,7 @@ use LogicException;
  * @property int|null $reversed_by
  * @property Carbon|null $reversed_at
  * @property string|null $reversal_reason
+ * @property int|null $supplier_cash_payout_id
  */
 class SupplierPayment extends Model
 {
@@ -56,6 +57,7 @@ class SupplierPayment extends Model
         'reversed_by',
         'reversed_at',
         'reversal_reason',
+        'supplier_cash_payout_id',
     ];
 
     /**
@@ -109,11 +111,27 @@ class SupplierPayment extends Model
     }
 
     /**
+     * Whether this payment was handed out from a tracked cashbox; its cash left the drawer.
+     */
+    public function isFromCashbox(): bool
+    {
+        return $this->supplier_cash_payout_id !== null;
+    }
+
+    /**
      * @return BelongsTo<Purchase, $this>
      */
     public function purchase(): BelongsTo
     {
         return $this->belongsTo(Purchase::class);
+    }
+
+    /**
+     * @return BelongsTo<OperationalSupplier, $this>
+     */
+    public function supplier(): BelongsTo
+    {
+        return $this->belongsTo(OperationalSupplier::class, 'operational_supplier_id');
     }
 
     /**

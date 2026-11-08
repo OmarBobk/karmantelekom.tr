@@ -49,7 +49,7 @@ class ReversePurchase
                 throw ValidationException::withMessages(['reason' => __('purchases.errors.reverse_received')]);
             }
 
-            if ($locked->paidTotalMinor() !== 0 || $locked->payments()->whereNull('reversed_at')->exists()) {
+            if ($locked->paidTotalMinor() !== 0 || $locked->payments()->whereNull('reversed_at')->exists() || $locked->cashPayouts()->pending()->exists()) {
                 throw ValidationException::withMessages(['reason' => __('purchases.errors.reverse_paid')]);
             }
 

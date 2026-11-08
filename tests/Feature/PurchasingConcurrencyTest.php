@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Actions\Cashbox\OpenCashboxSession;
 use App\Enums\PurchaseStatus;
 use App\Enums\TrackingMode;
 use App\Models\InventoryBalance;
@@ -15,6 +16,7 @@ use App\Models\ProductDefinition;
 use App\Models\Purchase;
 use App\Models\PurchaseReceipt;
 use App\Models\Store;
+use App\Models\SupplierCashPayout;
 use App\Models\SupplierLedgerEntry;
 use App\Models\SupplierPayment;
 use App\Models\User;
@@ -148,6 +150,24 @@ class PurchasingConcurrencyTest extends TestCase
         $this->assertSame($results[0]['payment_id'], $results[1]['payment_id']);
         $this->assertSame(1, SupplierPayment::count());
         $this->assertSame(517_500, $this->purchase->refresh()->outstandingMinor());
+    }
+
+    #[Test]
+    public function competing_supplier_cash_payouts_on_two_invoices_never_reserve_more_than_the_drawer_holds(): void
+    {
+        $session = app(OpenCashboxSession::class)($this->owner, $this->store, '1000', null);
+        $second = $this->postedPurchase($this->owner, $this->store, $this->supplier, [[$this->cable, 100, '12.50']], ['supplier_invoice_number' => 'INV-1002']);
+        $cash = fn (Purchase $purchase, string $reference) => [
+            'operation' => 'pay', 'purchase_id' => $purchase->id, 'session_id' => $session->id, 'key' => $reference,
+            'input' => $this->paymentInput('700.00', $reference, ['method' => 'cash']),
+        ];
+
+        $results = $this->raceWhileLocked(Store::query()->whereKey($this->store->id), [$cash($this->purchase, 'CASH-A'), $cash($second, 'CASH-B')]);
+
+        $this->assertEqualsCanonicalizing(['ok', 'validation'], array_column($results, 'status'));
+        $this->assertSame(['payout', 1, 0], [collect($results)->firstWhere('status', 'ok')['kind'], SupplierCashPayout::count(), SupplierPayment::count()]);
+        $this->assertSame(['amount'], collect($results)->firstWhere('status', 'validation')['errors']);
+        $this->assertSame(30_000, $session->refresh()->availableForPayoutMinor());
     }
 
     #[Test]

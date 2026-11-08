@@ -147,6 +147,22 @@ class Purchase extends Model
         return $this->status === PurchaseStatus::POSTED ? $this->totalMinor() - $this->paidTotalMinor() : 0;
     }
 
+    /**
+     * TRY cash reserved for this invoice by pending supplier cash payouts.
+     */
+    public function pendingCashPayoutMinor(): int
+    {
+        return Money::fromDecimal((string) $this->cashPayouts()->pending()->sum('amount'));
+    }
+
+    /**
+     * What a new payment may still cover: the outstanding amount minus pending cash payouts.
+     */
+    public function payableMinor(): int
+    {
+        return $this->outstandingMinor() - $this->pendingCashPayoutMinor();
+    }
+
     public function rootId(): int
     {
         return $this->root_purchase_id ?? $this->id;
@@ -205,6 +221,14 @@ class Purchase extends Model
     public function payments(): HasMany
     {
         return $this->hasMany(SupplierPayment::class);
+    }
+
+    /**
+     * @return HasMany<SupplierCashPayout, $this>
+     */
+    public function cashPayouts(): HasMany
+    {
+        return $this->hasMany(SupplierCashPayout::class);
     }
 
     /**

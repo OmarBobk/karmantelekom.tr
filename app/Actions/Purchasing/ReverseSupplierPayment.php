@@ -20,6 +20,8 @@ class ReverseSupplierPayment
 {
     /**
      * Reverse an active payment: the payment row stays, an opposite ledger entry restores the balance.
+     * A payment handed out from a tracked cashbox is not reversed here, since its cash already left
+     * the drawer; correcting it is a separate procedure.
      *
      * @throws AuthorizationException
      * @throws ModelNotFoundException when the payment does not belong to the purchase.
@@ -41,6 +43,10 @@ class ReverseSupplierPayment
 
             if ($locked->status !== PurchaseStatus::POSTED) {
                 throw ValidationException::withMessages(['reason' => __('purchases.errors.not_posted')]);
+            }
+
+            if ($payment->isFromCashbox()) {
+                throw ValidationException::withMessages(['reason' => __('purchases.cash_payouts.errors.not_reversible')]);
             }
 
             $now = now();

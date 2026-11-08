@@ -9,6 +9,7 @@ enum CashMovementType: string
     case SALE_CASH = 'sale_cash';
     case CUSTOMER_PAYMENT_CASH = 'customer_payment_cash';
     case EXPENSE_CASH = 'expense_cash';
+    case SUPPLIER_PAYMENT_CASH = 'supplier_payment_cash';
 
     public function label(): string
     {
@@ -17,6 +18,9 @@ enum CashMovementType: string
 
     public function direction(): CashMovementDirection
     {
-        return $this === self::EXPENSE_CASH ? CashMovementDirection::OUT : CashMovementDirection::IN;
+        return match ($this) {
+            self::EXPENSE_CASH, self::SUPPLIER_PAYMENT_CASH => CashMovementDirection::OUT,
+            default => CashMovementDirection::IN,
+        };
     }
 }

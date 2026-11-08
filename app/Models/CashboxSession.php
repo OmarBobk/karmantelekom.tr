@@ -157,11 +157,14 @@ class CashboxSession extends Model
     }
 
     /**
-     * Expected cash not already reserved by pending payouts: the most a new payout may take.
+     * Expected cash not already reserved by pending expense or supplier payouts: the most a new
+     * payout may take.
      */
     public function availableForPayoutMinor(): int
     {
-        return $this->expectedMinor() - Money::fromDecimal((string) $this->payouts()->pending()->sum('amount'));
+        return $this->expectedMinor()
+            - Money::fromDecimal((string) $this->payouts()->pending()->sum('amount'))
+            - Money::fromDecimal((string) $this->supplierPayouts()->pending()->sum('amount'));
     }
 
     public function pendingIntakeCount(): int
@@ -171,7 +174,7 @@ class CashboxSession extends Model
 
     public function pendingPayoutCount(): int
     {
-        return $this->payouts()->pending()->count();
+        return $this->payouts()->pending()->count() + $this->supplierPayouts()->pending()->count();
     }
 
     /**
@@ -180,6 +183,14 @@ class CashboxSession extends Model
     public function payouts(): HasMany
     {
         return $this->hasMany(CashPayout::class);
+    }
+
+    /**
+     * @return HasMany<SupplierCashPayout, $this>
+     */
+    public function supplierPayouts(): HasMany
+    {
+        return $this->hasMany(SupplierCashPayout::class);
     }
 
     /**
