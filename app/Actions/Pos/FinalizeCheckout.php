@@ -7,6 +7,7 @@ namespace App\Actions\Pos;
 use App\Actions\Cashbox\CashIntakePosting;
 use App\Actions\Inventory\InventoryLedger;
 use App\Actions\Inventory\UnitLifecycle;
+use App\Actions\Network\ReservationGuard;
 use App\Enums\AdjustmentReason;
 use App\Enums\CardApprovalStatus;
 use App\Enums\CashMovementType;
@@ -50,8 +51,8 @@ use Throwable;
  * Complete a reviewed checkout attempt as one sale, in one transaction.
  *
  * Lock order: the attempt, its card approval, its pending cash intake, product definitions
- * (ascending), the store's existing balance rows, then units (ascending), the store's sale
- * number sequence, and last the store row in share mode with its open cashbox session.
+ * (ascending), the store's existing balance rows, then units (ascending), their Store Network
+ * reservations, the store's sale number sequence, and last the store row in share mode with its open cashbox session.
  * Everything reviewed is checked again under those locks; the sale, its lines, the payments
  * actually received, the stock movements, sold unit states, the debt for any reviewed credit,
  * and the cash movement for the net cash kept are written together or not at all. Once the
@@ -169,6 +170,7 @@ class FinalizeCheckout
         $units = $this->lockUnits($store, $lines);
 
         $this->revalidate($lines, $definitions, $balances, $units, $locked->isFrozen() ? null : DiscountAuthority::for($actor, $store));
+        $reservation = ReservationGuard::lockedReservationFor($locked, $locked->unitIds());
 
         $now = now();
         $sequence = $this->nextSequence($store);
@@ -277,6 +279,10 @@ class FinalizeCheckout
         }
 
         $approval?->update(['status' => CardApprovalStatus::CAPTURED]);
+
+        if ($reservation !== null) {
+            ReservationGuard::fulfill($reservation, $sale, $actor, $store);
+        }
 
         $locked->update([
             'status' => CheckoutAttemptStatus::COMPLETED,

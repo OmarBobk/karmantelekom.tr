@@ -172,7 +172,7 @@
                     <div class="flex flex-wrap items-center justify-between gap-3 border-b border-gray-100 px-4 py-3">
                         <h2 id="units-title" class="text-base font-semibold text-gray-900">{{ __('inventory.units.title') }}</h2>
                         <div class="flex flex-wrap gap-1 rounded-lg bg-gray-100 p-1 text-sm" role="radiogroup" aria-label="{{ __('inventory.units.filter') }}">
-                            @foreach ($product->tracking_mode === \App\Enums\TrackingMode::USED_DEVICE ? ['available', 'in_service', 'review', 'sold', 'removed', 'all'] : ['available', 'review', 'sold', 'removed', 'all'] as $filter)
+                            @foreach ($product->tracking_mode === \App\Enums\TrackingMode::USED_DEVICE ? ['available', 'in_service', 'review', 'in_transit', 'sold', 'removed', 'all'] : ['available', 'review', 'in_transit', 'sold', 'removed', 'all'] as $filter)
                                 <label @class(['flex min-h-11 cursor-pointer items-center rounded-md px-3', 'bg-white font-medium text-gray-900 shadow-sm' => $unitStatusFilter === $filter, 'text-gray-600' => $unitStatusFilter !== $filter])>
                                     <input type="radio" wire:model.live="unitStatusFilter" value="{{ $filter }}" class="sr-only">
                                     {{ __("inventory.units.filters.{$filter}") }}

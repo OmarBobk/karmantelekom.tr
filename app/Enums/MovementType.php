@@ -26,6 +26,8 @@ enum MovementType: string
     case IDENTIFIER_CORRECTED = 'identifier_corrected';
     case REVIEW_APPROVED = 'review_approved';
     case SALE = 'sale';
+    case TRANSFER_OUT = 'transfer_out';
+    case TRANSFER_IN = 'transfer_in';
 
     /**
      * Reasons an operator may choose for this movement type. Physical counts record
@@ -46,6 +48,7 @@ enum MovementType: string
             self::IDENTIFIER_CORRECTED => [AdjustmentReason::IDENTITY_CORRECTION],
             self::REVIEW_APPROVED => [AdjustmentReason::REVIEW],
             self::SALE => [AdjustmentReason::SALE],
+            self::TRANSFER_OUT, self::TRANSFER_IN => [AdjustmentReason::TRANSFER],
         };
     }
 

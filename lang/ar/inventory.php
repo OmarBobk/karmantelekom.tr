@@ -10,6 +10,7 @@ return [
         'inspection' => 'بانتظار الفحص',
         'in_repair' => 'قيد الصيانة',
         'review' => 'بانتظار المراجعة',
+        'in_transit' => 'قيد النقل',
         'removed' => 'مُزال',
         'sold' => 'مُباع',
     ],
@@ -36,6 +37,8 @@ return [
         'identifier_corrected' => 'تصحيح معرّف',
         'review_approved' => 'اعتماد بعد المراجعة',
         'sale' => 'بيع',
+        'transfer_out' => 'تحويل صادر',
+        'transfer_in' => 'تحويل وارد',
     ],
 
     'reasons' => [
@@ -52,6 +55,7 @@ return [
         'identity_correction' => 'تصحيح معرّف',
         'review' => 'مراجعة',
         'sale' => 'بيع',
+        'transfer' => 'تحويل بين الفروع',
     ],
 
     'identifier_types' => [
@@ -180,6 +184,7 @@ return [
             'available' => 'المتاحة',
             'in_service' => 'الفحص والصيانة',
             'review' => 'بانتظار المراجعة',
+            'in_transit' => 'قيد النقل',
             'removed' => 'المُزالة',
             'sold' => 'المُباعة',
             'all' => 'الكل',

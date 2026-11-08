@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Pos;
 
+use App\Actions\Network\ReservationGuard;
 use App\Exceptions\Purchasing\InvalidAmountException;
 use App\Models\CheckoutAttempt;
 use App\Models\ProductDefinition;
@@ -34,6 +35,8 @@ use Illuminate\Validation\ValidationException;
  */
 class StartTerminalPayment
 {
+    public function __construct(private readonly ReservationGuard $reservationGuard) {}
+
     /**
      * @throws AuthorizationException
      * @throws ValidationException
@@ -101,6 +104,10 @@ class StartTerminalPayment
             }
 
             self::assertReviewedPricesCurrent($actor, $locked);
+
+            if (! $locked->isFrozen()) {
+                $this->reservationGuard->lockForPaymentStart($locked);
+            }
 
             $now = now();
 

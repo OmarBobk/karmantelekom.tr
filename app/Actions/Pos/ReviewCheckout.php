@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Pos;
 
+use App\Actions\Network\ReservationGuard;
 use App\Enums\CheckoutAttemptStatus;
 use App\Enums\Currency;
 use App\Enums\TrackingMode;
@@ -54,7 +55,7 @@ class ReviewCheckout
      * @throws AuthorizationException
      * @throws ValidationException
      */
-    public function __invoke(User $actor, Store $store, array $cart, ?string $attemptKey = null, ?int $expectedRevision = null, ?int $customerId = null, ?string $creditAmount = null): CheckoutAttempt
+    public function __invoke(User $actor, Store $store, array $cart, ?string $attemptKey = null, ?int $expectedRevision = null, ?int $customerId = null, ?string $creditAmount = null, ?int $reservationId = null): CheckoutAttempt
     {
         Gate::forUser($actor)->authorize('usePos', $store);
 
@@ -80,14 +81,20 @@ class ReviewCheckout
             throw ValidationException::withMessages(['credit_amount' => __('pos.credit.errors.above_total', ['total' => LocalizedMoney::format(Money::fromDecimal($totals['total']))])]);
         }
 
-        $payloadHash = self::payloadHash($store, $lines, $customerId, $creditMinor);
+        $reservationProblem = ReservationGuard::reviewProblem($store, collect($lines)->pluck('unit_id')->filter()->map(fn ($id): int => (int) $id)->unique()->values()->all(), $reservationId);
+
+        if ($reservationProblem !== null) {
+            throw ValidationException::withMessages(['reservation' => $reservationProblem]);
+        }
+
+        $payloadHash = self::payloadHash($store, $lines, $customerId, $creditMinor, $reservationId);
         $credit = [
             'credit_amount' => Money::toDecimal($creditMinor),
             'credit_authorized_by' => $creditMinor > 0 ? $actor->id : null,
         ];
 
         if ($existing === null) {
-            return DB::transaction(function () use ($actor, $store, $lines, $totals, $credit, $payloadHash, $customerId): CheckoutAttempt {
+            return DB::transaction(function () use ($actor, $store, $lines, $totals, $credit, $payloadHash, $customerId, $reservationId): CheckoutAttempt {
                 $hasPendingTerminalPayment = $store->checkoutAttempts()
                     ->where('user_id', $actor->id)
                     ->pendingTerminalPayment()
@@ -103,6 +110,7 @@ class ReviewCheckout
                     'store_id' => $store->id,
                     'user_id' => $actor->id,
                     'customer_id' => $customerId,
+                    'network_reservation_id' => $reservationId,
                     'status' => CheckoutAttemptStatus::OPEN,
                     'revision' => 1,
                     'currency' => Currency::TRY,
@@ -114,7 +122,7 @@ class ReviewCheckout
             });
         }
 
-        return DB::transaction(function () use ($existing, $expectedRevision, $lines, $totals, $credit, $payloadHash, $customerId): CheckoutAttempt {
+        return DB::transaction(function () use ($existing, $expectedRevision, $lines, $totals, $credit, $payloadHash, $customerId, $reservationId): CheckoutAttempt {
             $attempt = CheckoutAttempt::query()->whereKey($existing->id)->lockForUpdate()->firstOrFail();
 
             self::assertOpen($attempt);
@@ -133,6 +141,7 @@ class ReviewCheckout
 
             $attempt->update([
                 'customer_id' => $customerId,
+                'network_reservation_id' => $reservationId,
                 'lines' => $lines,
                 ...$totals,
                 ...$credit,
@@ -204,7 +213,7 @@ class ReviewCheckout
      *
      * @param  list<array<string, mixed>>  $lines
      */
-    public static function payloadHash(Store $store, array $lines, ?int $customerId = null, int $creditMinor = 0): string
+    public static function payloadHash(Store $store, array $lines, ?int $customerId = null, int $creditMinor = 0, ?int $reservationId = null): string
     {
         $payload = [
             'store_id' => $store->id,
@@ -222,6 +231,10 @@ class ReviewCheckout
 
         if ($creditMinor > 0) {
             $payload['credit_minor'] = $creditMinor;
+        }
+
+        if ($reservationId !== null) {
+            $payload['network_reservation_id'] = $reservationId;
         }
 
         return Idempotency::fingerprint($payload);

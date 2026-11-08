@@ -27,6 +27,7 @@ use App\Models\CashboxSession;
 use App\Models\CheckoutAttempt;
 use App\Models\Customer;
 use App\Models\InventoryUnit;
+use App\Models\NetworkReservation;
 use App\Models\ProductDefinition;
 use App\Models\Sale;
 use App\Models\Store;
@@ -69,6 +70,12 @@ class PosCounter extends Component
     /** The sale's customer, or null for a walk-in. Review checks it belongs to this store. */
     #[Locked]
     public ?int $customerId = null;
+
+    /**
+     * The Store Network reservation this sale fulfills, set only from the reservations page link.
+     */
+    #[Locked]
+    public ?int $reservationId = null;
 
     public string $customerSearch = '';
 
@@ -212,6 +219,12 @@ class PosCounter extends Component
         $this->restoreWorkingState();
         $this->syncActiveAttempt();
 
+        $requestedReservation = request()->integer('reservation');
+
+        if ($requestedReservation > 0) {
+            $this->linkReservation($store, $requestedReservation);
+        }
+
         if ($this->attemptKey === null && $this->cart === [] && $this->lastSaleId !== null) {
             $this->step = 'done';
         }
@@ -222,6 +235,7 @@ class PosCounter extends Component
         session()->put($this->sessionKey(), [
             'cart' => $this->cart,
             'customer_id' => $this->customerId,
+            'reservation_id' => $this->reservationId,
             'credit_amount' => $this->creditAmount,
             'attempt_key' => $this->attemptKey,
             'last_sale_id' => $this->lastSaleId,
@@ -541,7 +555,7 @@ class PosCounter extends Component
         $credit = self::canonicalAmount($this->creditAmount, 'credit_amount');
 
         try {
-            $attempt = $review(auth()->user(), $store, $this->cartInput(), $this->attemptKey, $this->attemptKey === null ? null : $this->attemptRevision, $this->customerId, $credit);
+            $attempt = $review(auth()->user(), $store, $this->cartInput(), $this->attemptKey, $this->attemptKey === null ? null : $this->attemptRevision, $this->customerId, $credit, $this->reservationId);
         } catch (ModelNotFoundException) {
             $this->forgetAttempt();
             $this->notify('error', __('pos.errors.attempt_missing'));
@@ -769,10 +783,21 @@ class PosCounter extends Component
 
         $this->cart = [];
         $this->customerId = null;
+        $this->reservationId = null;
         $this->creditAmount = '';
         $this->lastSaleId = null;
         $this->forgetAttempt();
         $this->resetPaymentFields();
+    }
+
+    public function unlinkReservation(): void
+    {
+        $this->authorizeCounter();
+
+        if ($this->ensureCartEditable()) {
+            $this->reservationId = null;
+            $this->cartChanged();
+        }
     }
 
     public function resumeAttempt(string $key): void
@@ -798,6 +823,7 @@ class PosCounter extends Component
 
         $this->cart = self::cartFromAttempt($attempt);
         $this->customerId = $attempt->customer_id;
+        $this->reservationId = $attempt->network_reservation_id;
         $this->creditAmount = self::creditInput($attempt);
         $this->attemptKey = $attempt->key;
         $this->attemptRevision = $attempt->revision;
@@ -1056,6 +1082,7 @@ class PosCounter extends Component
 
         $this->cart = [];
         $this->customerId = null;
+        $this->reservationId = null;
         $this->creditAmount = '';
         $this->attemptKey = null;
         $this->attemptRevision = null;
@@ -1099,6 +1126,35 @@ class PosCounter extends Component
         }
 
         return true;
+    }
+
+    /**
+     * Start a sale under a Store Network reservation held for this branch: link it and add its
+     * device to the cart. Review and payment check the reservation again on the server.
+     */
+    private function linkReservation(Store $store, int $reservationId): void
+    {
+        if (! $this->ensureCartEditable()) {
+            return;
+        }
+
+        $reservation = NetworkReservation::query()->find($reservationId);
+
+        if ($reservation === null || ! $reservation->isActive() || $reservation->isInTransit()
+            || ! $store->units()->whereKey($reservation->inventory_unit_id)->exists()) {
+            $this->notify('error', __('network.reservation.errors.link_invalid'));
+
+            return;
+        }
+
+        $this->reservationId = $reservation->id;
+        $target = app(ResolveCounterCode::class)->target(auth()->user(), $store, $reservation->product_definition_id, $reservation->inventory_unit_id);
+
+        if ($target !== null && ! isset($this->cart['u'.$reservation->inventory_unit_id])) {
+            $this->addTarget($target);
+        }
+
+        $this->cartChanged();
     }
 
     private function cartChanged(): void
@@ -1177,6 +1233,7 @@ class PosCounter extends Component
         }
 
         if ($attempt->isFrozen() || $this->workingCartMissing) {
+            $this->reservationId = $attempt->network_reservation_id;
             $this->cart = self::cartFromAttempt($attempt);
             $this->customerId = $attempt->customer_id;
             $this->creditAmount = self::creditInput($attempt);
@@ -1291,6 +1348,7 @@ class PosCounter extends Component
         $this->workingCartMissing = ! is_array($state['cart'] ?? null);
         $this->cart = $this->workingCartMissing ? [] : $state['cart'];
         $this->customerId = is_int($state['customer_id'] ?? null) ? $state['customer_id'] : null;
+        $this->reservationId = is_int($state['reservation_id'] ?? null) ? $state['reservation_id'] : null;
         $this->creditAmount = is_string($state['credit_amount'] ?? null) ? $state['credit_amount'] : '';
         $this->attemptKey = is_string($state['attempt_key'] ?? null) ? $state['attempt_key'] : null;
         $this->lastSaleId = is_int($state['last_sale_id'] ?? null) ? $state['last_sale_id'] : null;

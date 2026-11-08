@@ -1067,13 +1067,35 @@ The rules for sales attribution, internal store settlement, and employee incenti
 
 ### Status
 
-Publication, discovery, and availability are delivered (tasks 1–5). Reservations (tasks 6–15) are the next batch; storefront publishing stays in Phase 7.5.
+Tasks 1–15 are delivered. Publication, discovery, and availability came first; reservations and inter-branch fulfillment for individually tracked devices came next. Storefront publishing stays in Phase 7.5. Commissions, settlement, and sales attribution wait for the owner's rules (§14.9).
 
 - **Decisions applied.** An owner with the new `share_listings` permission publishes without further approval (§18.4). A device is eligible when it could be sold at the counter: an individually tracked, active product, a device that is `available`, and a selling price. `ListingEligibility` holds the rule.
 - **Publication.** `network_listings` holds one row per device: owning branch, publisher and time, withdrawer and time. `PublishUnitListing` checks eligibility under the definition-then-unit lock order used by checkout. Publishing an already published device, or withdrawing one that is not listed, changes nothing and writes no audit event. Otherwise `store_network` activity events `listing_published` and `listing_unpublished` are recorded. Withdrawing keeps the row, and republishing reuses it. Every publication and withdrawal increments the listing `revision`. Share and withdraw act from the revision shown to the operator. Under the same locks, they refuse a mismatch that would change a newer publication. Publishing writes no stock movement. The device page shows the sharing state, why a shared device is hidden, and the share or withdraw control.
 - **Discovery.** `pos/{store}/network` is open to anyone with counter access to the branch. It searches product name or model, filters by condition and owning branch, and pages by 20. `SharedListings` returns only product, model, condition, asking price, and owning branch; identifiers, costs, minimum prices, and device IDs stay out of the response and the component state.
 - **Availability.** Each request rechecks the device: still held by the publishing branch, `available`, on an active product, and priced. Sold, removed, and in-review devices drop out without changing the listing.
-- **Deployment.** Run the migration, then rerun `OperationalStoreSetupSeeder` to grant `share_listings` to the owner role.
+- **Reservations.** `network_reservations` records:
+  - the listing and the revision the requester saw;
+  - the device, the owning branch, and the requesting branch;
+  - the status: `pending`, `approved`, `rejected`, `cancelled`, `expired`, or `fulfilled`;
+  - the actor and time of each step;
+  - the linked sale.
+
+  `active_unit_id` is unique and set only while a reservation is approved, so a device has one active reservation. Expiry is computed on every read, as described in `NetworkReservation::isActive()` and `blocksSale()`. Approval and receipt store `expired` when they need the device. The request, approve, reject, and cancel actions and `SetReservationHold` are in `App\Actions\Network`. Every reservation change runs through `ReservationLocks`, which locks the definition, then the device, then the listing, then the device's open reservations. `manage_reservations` is owner-only and covers approving, rejecting, dispatching, and setting the branch's hold duration (`stores.reservation_minutes`, with no default). Counter access at the requesting branch covers requesting, receiving, and cancelling. `pos/{store}/reservations` shows incoming and outgoing tabs. The discovery page has a request button, and the counter accepts `?reservation=` to link a sale.
+- **POS protection.** `ReservationGuard` runs at review without locks. It runs again at terminal start and cash intake, which now lock the attempt's definitions and devices before they freeze the attempt. It also runs inside finalization after the device locks, and finalization fulfills the linked reservation in the same transaction. `checkout_attempts.network_reservation_id` is part of the reviewed payload. Approval reads open, frozen attempts that contain the device as the first non-locking read under the device lock. A payment start that commits first is therefore visible to approval, and a later start sees the approval.
+- **Fulfillment.** `DispatchReservation` and `ReceiveReservation` write `transfer_out` (−1, owning branch) and `transfer_in` (+1, requesting branch) through `InventoryLedger`, with the reservation as the reference. The new device status `in_transit` blocks every sale. Receipt moves `inventory_units.store_id`, and the reservation keeps the original owner. Product inventory has an "In transit" filter.
+- **Tests.** `StoreNetworkReservationTest` covers:
+  - pending requests leaving stock on sale;
+  - the hold and expiry without a job;
+  - branch permissions;
+  - approval against a started payment;
+  - linked pickup that completes after expiry;
+  - cancellation;
+  - dispatch, receipt, and reserved sale with retries;
+  - expiry in transit;
+  - the pages.
+
+  `InventoryConcurrencyTest` races competing approvals and an approval against a terminal payment start in separate processes.
+- **Deployment.** Run the migrations, then rerun `OperationalStoreSetupSeeder` to grant `share_listings` and `manage_reservations` to the owner role. Each branch owner sets the reservation time on the reservations page before approving requests.
 
 ---
 

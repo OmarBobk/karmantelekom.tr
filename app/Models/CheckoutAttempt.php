@@ -25,6 +25,7 @@ use Illuminate\Support\Carbon;
  * @property int $store_id
  * @property int $user_id
  * @property int|null $customer_id
+ * @property int|null $network_reservation_id The Store Network reservation this checkout fulfills.
  * @property CheckoutAttemptStatus $status
  * @property int $revision
  * @property Currency $currency
@@ -59,7 +60,7 @@ class CheckoutAttempt extends Model
      * @var list<string>
      */
     protected $fillable = [
-        'key', 'store_id', 'user_id', 'customer_id', 'status', 'revision', 'currency', 'lines',
+        'key', 'store_id', 'user_id', 'customer_id', 'network_reservation_id', 'status', 'revision', 'currency', 'lines',
         'subtotal', 'discount_total', 'total', 'credit_amount', 'credit_authorized_by', 'payload_hash', 'frozen_at',
         'terminal_payment_key', 'terminal_payment_request_key', 'terminal_payment_cleared_key',
         'terminal_payment_terminal_id', 'terminal_payment_amount', 'terminal_payment_started_by',
@@ -112,6 +113,24 @@ class CheckoutAttempt extends Model
     public function isFrozen(): bool
     {
         return $this->frozen_at !== null;
+    }
+
+    /**
+     * @return BelongsTo<NetworkReservation, $this>
+     */
+    public function networkReservation(): BelongsTo
+    {
+        return $this->belongsTo(NetworkReservation::class);
+    }
+
+    /**
+     * Ids of the individually tracked devices in the reviewed cart.
+     *
+     * @return list<int>
+     */
+    public function unitIds(): array
+    {
+        return collect($this->lines)->pluck('unit_id')->filter()->map(fn ($id): int => (int) $id)->unique()->sort()->values()->all();
     }
 
     public function hasStartedTerminalPayment(): bool

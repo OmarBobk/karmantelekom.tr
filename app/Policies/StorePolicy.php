@@ -217,6 +217,24 @@ class StorePolicy
     }
 
     /**
+     * Determine whether the user can request other branches' devices for this store, receive
+     * transfers here, and see this store's reservations.
+     */
+    public function requestReservations(User $user, Store $store): bool
+    {
+        return $this->usePos($user, $store);
+    }
+
+    /**
+     * Determine whether the user can approve, reject, and dispatch reservations of this store's
+     * devices, and set its reservation hold.
+     */
+    public function manageReservations(User $user, Store $store): bool
+    {
+        return $this->ownerHas($user, 'manage_reservations') && $store->isAccessibleBy($user);
+    }
+
+    /**
      * Determine whether the user can grant or revoke counter access and discount limits for employees.
      */
     public function managePosAccess(User $user): bool

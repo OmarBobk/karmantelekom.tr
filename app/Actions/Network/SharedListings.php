@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Network;
 
+use App\Enums\ReservationStatus;
 use App\Enums\TrackingMode;
 use App\Enums\UnitCondition;
 use App\Enums\UnitStatus;
@@ -17,11 +18,11 @@ use Illuminate\Support\Str;
 
 /**
  * Other branches' shared devices as seen from one branch, rechecked against the device on every
- * call: still held by the publishing branch, available, on an active product, and priced. These
- * mirror ListingEligibility and counter sale rules.
+ * call: still held by the publishing branch, available, not held by an active reservation, on an
+ * active product, and priced. These mirror ListingEligibility and counter sale rules.
  *
- * Rows carry display fields only. Identifiers, costs, minimum prices, and record IDs of the
- * device never leave this query.
+ * Rows carry display fields plus the listing id and revision a reservation request is bound to.
+ * Identifiers, costs, minimum prices, and record IDs of the device never leave this query.
  */
 final class SharedListings
 {
@@ -30,7 +31,7 @@ final class SharedListings
     public const MAX_SEARCH_LENGTH = 80;
 
     /**
-     * @return LengthAwarePaginator<int, array{key: int, product: string, model: ?string, condition: UnitCondition, price_minor: int, store_name: string, store_code: string, published_at: string}>
+     * @return LengthAwarePaginator<int, array{key: int, revision: int, product: string, model: ?string, condition: UnitCondition, price_minor: int, store_name: string, store_code: string, published_at: string}>
      */
     public function __invoke(Store $viewer, string $search = '', ?UnitCondition $condition = null, ?int $owningStoreId = null): LengthAwarePaginator
     {
@@ -51,6 +52,11 @@ final class SharedListings
             ->where(fn (Builder $priced) => $priced
                 ->where(fn (Builder $used) => $used->where('definitions.tracking_mode', $usedDevice)->whereNotNull('units.selling_price'))
                 ->orWhere(fn (Builder $shared) => $shared->where('definitions.tracking_mode', '!=', $usedDevice)->whereNotNull('definitions.selling_price')))
+            ->whereNotExists(fn ($reserved) => $reserved->selectRaw('1')
+                ->from('network_reservations')
+                ->whereColumn('network_reservations.active_unit_id', 'units.id')
+                ->where('network_reservations.status', ReservationStatus::APPROVED->value)
+                ->where('network_reservations.expires_at', '>', now()))
             ->when($term !== '', fn (Builder $query) => $query->where(fn (Builder $match) => $match
                 ->where('definitions.name', 'like', $like)
                 ->orWhere('definitions.model', 'like', $like)))
@@ -60,6 +66,7 @@ final class SharedListings
             ->orderByDesc('network_listings.id')
             ->select([
                 'network_listings.id as listing_key',
+                'network_listings.revision as listing_revision',
                 'network_listings.published_at as listed_at',
                 'definitions.name as product_name',
                 'definitions.model as product_model',
@@ -71,6 +78,7 @@ final class SharedListings
             ->paginate(self::PER_PAGE)
             ->through(fn (NetworkListing $row): array => [
                 'key' => (int) $row->getAttribute('listing_key'),
+                'revision' => (int) $row->getAttribute('listing_revision'),
                 'product' => (string) $row->getAttribute('product_name'),
                 'model' => $row->getAttribute('product_model'),
                 'condition' => UnitCondition::from((string) $row->getAttribute('unit_condition')),

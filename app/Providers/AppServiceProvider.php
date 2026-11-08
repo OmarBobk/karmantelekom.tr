@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
+use App\Models\NetworkReservation;
 use App\Models\PurchaseReceiptLine;
 use App\Models\SaleLine;
 use App\Models\User;
@@ -41,6 +42,7 @@ class AppServiceProvider extends ServiceProvider
         Relation::morphMap([
             PurchaseReceiptLine::MORPH_ALIAS => PurchaseReceiptLine::class,
             SaleLine::MORPH_ALIAS => SaleLine::class,
+            NetworkReservation::MORPH_ALIAS => NetworkReservation::class,
         ]);
         //        if (Str::startsWith(request()->uri()->host(), 'sub.') && !Auth::check()) {
         //            abort(Response::redirectTo(config('app.url') . '/404'));
