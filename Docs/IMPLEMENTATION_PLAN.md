@@ -985,7 +985,7 @@ Task 8 of the cashbox list is partly complete: reconciliation is done, and autho
 
 **Acceptance.** A receipt can increase stock only once, an opening entry respects the initial setup boundary, counting 10 against a stable balance of 8 records +2, an intervening sale or receipt makes the count stale, and adjustment access and records are branch-scoped.
 
-**Status.** Quantity-tracked slice delivered: the generic increase/decrease action is replaced by `RecordStockCount`. A count is tied to the latest movement for the branch and product when it starts and is rejected under the definition lock if any later movement exists. It writes `count_correction` with the counted total as `quantity_after` and the signed difference as `quantity_change`. A count equal to the balance writes nothing. The inventory screen links to purchasing for receipts. Individual-device reconciliation (items 2 for units, 4, and device provenance in item 5) is the next slice.
+**Status.** Quantity-tracked slice delivered: the generic increase/decrease action is replaced by `RecordStockCount`. A count is tied to the latest movement for the branch and product when it starts and is rejected under the definition lock if any later movement exists. It writes reason `physical_count` with the counted total as `quantity_after` and the signed difference as `quantity_change`. Legacy `count_correction` rows were relative adjustments, so history keeps showing them with "Balance after". A count equal to the balance writes nothing. The inventory screen links to purchasing for receipts. Individual-device reconciliation (items 2 for units, 4, and device provenance in item 5) is the next slice.
 
 ---
 

@@ -93,7 +93,7 @@ class RecordStockCount
 
                     return [
                         'type' => $difference > 0 ? MovementType::ADJUSTMENT_INCREASE : MovementType::ADJUSTMENT_DECREASE,
-                        'reason' => AdjustmentReason::COUNT_CORRECTION,
+                        'reason' => AdjustmentReason::PHYSICAL_COUNT,
                         'note' => $note,
                         'quantity_change' => $difference,
                         'quantity_after' => $countedQuantity,

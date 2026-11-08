@@ -54,7 +54,7 @@ class StockCountTest extends TestCase
 
         $this->assertSame(10, $this->balance());
         $this->assertSame(MovementType::ADJUSTMENT_INCREASE, $movement->type);
-        $this->assertSame(AdjustmentReason::COUNT_CORRECTION, $movement->reason);
+        $this->assertSame(AdjustmentReason::PHYSICAL_COUNT, $movement->reason);
         $this->assertSame(2, $movement->quantity_change);
         $this->assertSame(10, $movement->quantity_after);
         $this->assertSame(8, $movement->quantity_after - $movement->quantity_change);
@@ -117,6 +117,47 @@ class StockCountTest extends TestCase
     }
 
     #[Test]
+    public function history_shows_a_counted_total_only_for_physical_counts_and_keeps_legacy_corrections_as_balance_after(): void
+    {
+        $legacy = InventoryMovement::query()->create([
+            'store_id' => $this->store->id,
+            'product_definition_id' => $this->cable->id,
+            'type' => MovementType::ADJUSTMENT_DECREASE,
+            'reason' => AdjustmentReason::COUNT_CORRECTION,
+            'quantity_change' => -2,
+            'quantity_after' => 6,
+            'note' => 'Legacy relative adjustment',
+            'user_id' => $this->owner->id,
+            'idempotency_key' => 'legacy',
+            'request_fingerprint' => str_repeat('0', 64),
+            'occurred_at' => now(),
+        ]);
+        InventoryBalance::query()->where('store_id', $this->store->id)->update(['quantity' => 6]);
+
+        $count = $this->recordCount(9, $legacy->id, 'Weekly count');
+
+        $html = Livewire::actingAs($this->owner)
+            ->test(ProductInventory::class, ['store' => $this->store, 'productDefinition' => $this->cable])
+            ->html();
+
+        $legacyRow = $this->historyRow($html, $legacy);
+        $this->assertStringContainsString('تصحيح جرد', $legacyRow);
+        $this->assertStringContainsString('الرصيد بعدها', $legacyRow);
+        $this->assertStringNotContainsString('العدد الفعلي', $legacyRow);
+        $this->assertStringNotContainsString('الرصيد السابق', $legacyRow);
+
+        $countRow = $this->historyRow($html, $count);
+        $this->assertStringContainsString('جرد فعلي', $countRow);
+        $this->assertMatchesRegularExpression('/الرصيد السابق: <span[^>]*>6</', $countRow);
+        $this->assertMatchesRegularExpression('/العدد الفعلي: <span[^>]*>9</', $countRow);
+        $this->assertStringNotContainsString('الرصيد بعدها', $countRow);
+
+        $legacy->refresh();
+        $this->assertSame(AdjustmentReason::COUNT_CORRECTION, $legacy->reason);
+        $this->assertSame([-2, 6], [$legacy->quantity_change, $legacy->quantity_after]);
+    }
+
+    #[Test]
     public function counting_requires_the_branch_adjustment_permission(): void
     {
         $employee = User::factory()->create()->assignRole('employee');
@@ -144,6 +185,13 @@ class StockCountTest extends TestCase
     private function recordCount(int $counted, ?int $countStartedAfter, string $reason, string $key = 'count'): ?InventoryMovement
     {
         return app(RecordStockCount::class)($this->owner, $this->store, $this->cable, $counted, $countStartedAfter, $reason, $key);
+    }
+
+    private function historyRow(string $html, InventoryMovement $movement): string
+    {
+        $this->assertSame(1, preg_match('/wire:key="movement-'.$movement->id.'".*?<\/li>/s', $html, $match));
+
+        return $match[0];
     }
 
     private function balance(): int

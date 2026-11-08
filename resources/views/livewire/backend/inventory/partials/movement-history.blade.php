@@ -30,7 +30,7 @@
                         <p class="mt-0.5 flex flex-wrap gap-x-3 text-xs text-gray-500">
                             <time datetime="{{ $movement->occurred_at->toIso8601String() }}" dir="ltr">{{ $movement->occurred_at->format('Y-m-d H:i') }}</time>
                             <span><bdi>{{ $movement->actor?->name }}</bdi></span>
-                            @if ($movement->quantity_after !== null && $movement->reason === \App\Enums\AdjustmentReason::COUNT_CORRECTION)
+                            @if ($movement->quantity_after !== null && $movement->reason === \App\Enums\AdjustmentReason::PHYSICAL_COUNT)
                                 <span>{{ __('inventory.history.previous_balance') }}: <span dir="ltr" class="font-mono">{{ $movement->quantity_after - $movement->quantity_change }}</span></span>
                                 <span>{{ __('inventory.history.counted_total') }}: <span dir="ltr" class="font-mono">{{ $movement->quantity_after }}</span></span>
                             @elseif ($movement->quantity_after !== null)

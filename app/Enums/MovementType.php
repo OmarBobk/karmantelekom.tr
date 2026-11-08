@@ -27,7 +27,8 @@ enum MovementType: string
     case SALE = 'sale';
 
     /**
-     * Reasons that may accompany this movement type.
+     * Reasons an operator may choose for this movement type. Physical counts record
+     * AdjustmentReason::PHYSICAL_COUNT themselves and are not choosable here.
      *
      * @return list<AdjustmentReason>
      */

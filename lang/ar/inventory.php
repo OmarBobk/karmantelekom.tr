@@ -39,6 +39,7 @@ return [
     'reasons' => [
         'opening_balance' => 'رصيد افتتاحي',
         'count_correction' => 'تصحيح جرد',
+        'physical_count' => 'جرد فعلي',
         'found' => 'تم العثور عليه',
         'damaged' => 'تالف',
         'lost' => 'مفقود',

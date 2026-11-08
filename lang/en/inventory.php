@@ -39,6 +39,7 @@ return [
     'reasons' => [
         'opening_balance' => 'Opening balance',
         'count_correction' => 'Count correction',
+        'physical_count' => 'Physical count',
         'found' => 'Found',
         'damaged' => 'Damaged',
         'lost' => 'Lost',

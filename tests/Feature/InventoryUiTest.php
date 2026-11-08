@@ -83,7 +83,7 @@ class InventoryUiTest extends TestCase
             ->assertHasNoErrors()
             ->assertSet('countInProgress', false)
             ->assertViewHas('quantity', 7)
-            ->assertSee(['رصيد افتتاحي', 'نقص', 'تصحيح جرد', 'الرصيد السابق', 'Crushed in delivery']);
+            ->assertSee(['رصيد افتتاحي', 'نقص', 'جرد فعلي', 'الرصيد السابق', 'Crushed in delivery']);
 
         $this->assertSame(2, InventoryMovement::count());
 
