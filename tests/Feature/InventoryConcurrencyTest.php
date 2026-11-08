@@ -66,18 +66,18 @@ class InventoryConcurrencyTest extends TestCase
     }
 
     #[Test]
-    public function competing_decreases_never_overdraw_stock(): void
+    public function competing_counts_started_from_the_same_stock_record_only_one(): void
     {
         $cable = ProductDefinition::factory()->create(['tracking_mode' => TrackingMode::QUANTITY]);
-        app(RecordOpeningBalance::class)($this->owner, $this->storeOne, $cable, 5, null, 'open');
+        $opening = app(RecordOpeningBalance::class)($this->owner, $this->storeOne, $cable, 5, null, 'open');
 
         $results = $this->raceWhileLocked([$cable], [
-            ['operation' => 'decrease', 'store_id' => $this->storeOne->id, 'definition_id' => $cable->id, 'quantity' => 4, 'key' => 'worker-a'],
-            ['operation' => 'decrease', 'store_id' => $this->storeOne->id, 'definition_id' => $cable->id, 'quantity' => 4, 'key' => 'worker-b'],
+            ['operation' => 'count', 'store_id' => $this->storeOne->id, 'definition_id' => $cable->id, 'counted' => 1, 'count_started_after' => $opening->id, 'key' => 'worker-a'],
+            ['operation' => 'count', 'store_id' => $this->storeOne->id, 'definition_id' => $cable->id, 'counted' => 2, 'count_started_after' => $opening->id, 'key' => 'worker-b'],
         ]);
 
         $this->assertEqualsCanonicalizing(['ok', 'validation'], array_column($results, 'status'));
-        $this->assertSame(1, (int) InventoryBalance::query()->where('store_id', $this->storeOne->id)->value('quantity'));
+        $this->assertSame($results[0]['status'] === 'ok' ? 1 : 2, (int) InventoryBalance::query()->where('store_id', $this->storeOne->id)->value('quantity'));
         $this->assertSame(2, InventoryMovement::count());
     }
 
@@ -85,9 +85,9 @@ class InventoryConcurrencyTest extends TestCase
     public function competing_retries_with_one_key_apply_once_and_return_the_same_movement(): void
     {
         $cable = ProductDefinition::factory()->create(['tracking_mode' => TrackingMode::QUANTITY]);
-        app(RecordOpeningBalance::class)($this->owner, $this->storeOne, $cable, 10, null, 'open');
+        $opening = app(RecordOpeningBalance::class)($this->owner, $this->storeOne, $cable, 10, null, 'open');
 
-        $request = ['operation' => 'decrease', 'store_id' => $this->storeOne->id, 'definition_id' => $cable->id, 'quantity' => 3, 'key' => 'same-submission'];
+        $request = ['operation' => 'count', 'store_id' => $this->storeOne->id, 'definition_id' => $cable->id, 'counted' => 7, 'count_started_after' => $opening->id, 'key' => 'same-submission'];
         $results = $this->raceWhileLocked([$cable], [$request, $request]);
 
         $this->assertSame(['ok', 'ok'], array_column($results, 'status'));

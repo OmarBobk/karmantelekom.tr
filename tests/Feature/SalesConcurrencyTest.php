@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Actions\Inventory\RecordStockCount;
 use App\Enums\CardApprovalStatus;
 use App\Enums\CheckoutAttemptStatus;
 use App\Enums\MovementType;
@@ -124,13 +125,14 @@ class SalesConcurrencyTest extends TestCase
     }
 
     #[Test]
-    public function a_sale_and_a_stock_decrease_never_take_stock_below_zero(): void
+    public function a_sale_and_a_count_started_before_it_never_both_apply(): void
     {
         $attempt = $this->review($this->cashier, $this->cableLine(1));
+        $countStartedAfter = RecordStockCount::latestMovementId($this->store, $this->cable);
 
         $results = $this->raceWhileLocked($this->definitionLock($this->cable), [
             $this->finalizeRequest($this->cashier, $attempt, '50'),
-            ['operation' => 'decrease', 'actor_id' => $this->owner->id, 'store_id' => $this->store->id, 'definition_id' => $this->cable->id, 'quantity' => 1, 'key' => 'damaged'],
+            ['operation' => 'count', 'actor_id' => $this->owner->id, 'store_id' => $this->store->id, 'definition_id' => $this->cable->id, 'counted' => 0, 'count_started_after' => $countStartedAfter, 'key' => 'count'],
         ]);
 
         $this->assertEqualsCanonicalizing(['ok', 'validation'], array_column($results, 'status'));

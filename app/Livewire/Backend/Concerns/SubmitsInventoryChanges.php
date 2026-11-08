@@ -35,12 +35,13 @@ trait SubmitsInventoryChanges
     /**
      * Run an inventory action, mapping its error keys onto this form's properties.
      *
-     * @param  Closure(): InventoryMovement  $action
+     * @param  Closure(): ?InventoryMovement  $action
      * @param  array<string, string>  $errorMap  Action error key => component property.
+     * @param  string|null  $unchangedMessage  Shown when the action completes without writing a movement.
      *
      * @throws ValidationException
      */
-    protected function submitInventoryChange(Closure $action, array $errorMap, string $fallbackErrorKey): ?InventoryMovement
+    protected function submitInventoryChange(Closure $action, array $errorMap, string $fallbackErrorKey, ?string $unchangedMessage = null): ?InventoryMovement
     {
         $this->resetErrorBag([...array_values($errorMap), $fallbackErrorKey]);
 
@@ -62,6 +63,13 @@ trait SubmitsInventoryChanges
         }
 
         $this->renewSubmissionKey();
+
+        if ($movement === null) {
+            $this->dispatch('notify', ['type' => 'info', 'message' => $unchangedMessage]);
+
+            return null;
+        }
+
         $this->dispatch('notify', [
             'type' => $movement->wasRecentlyCreated ? 'success' : 'info',
             'message' => $movement->wasRecentlyCreated

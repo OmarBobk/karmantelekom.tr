@@ -51,11 +51,6 @@ enum MovementType: string
         return in_array($reason, $this->allowedReasons(), true);
     }
 
-    public function requiresNote(): bool
-    {
-        return $this === self::ADJUSTMENT_DECREASE;
-    }
-
     /**
      * Zero-quantity events that never change stock.
      */

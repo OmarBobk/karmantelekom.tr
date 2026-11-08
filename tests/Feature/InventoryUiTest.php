@@ -55,7 +55,7 @@ class InventoryUiTest extends TestCase
     }
 
     #[Test]
-    public function owner_records_opening_stock_and_damage_and_cannot_overdraw(): void
+    public function owner_records_opening_stock_then_counts_the_shelf(): void
     {
         $this->actingAs($this->owner)
             ->get(route('subdomain.inventory.product', [$this->storeOne, $this->cable]))
@@ -70,31 +70,30 @@ class InventoryUiTest extends TestCase
             ->call('recordOpeningBalance')
             ->assertHasNoErrors()
             ->assertDispatched('notify', ['type' => 'success', 'message' => 'تم تسجيل حركة المخزون.'])
-            ->assertSee('تعديل الكمية')
+            ->assertSee(['الجرد الفعلي', 'بدء الجرد'])
             ->assertDontSee('تسجيل الرصيد الافتتاحي');
 
         $component
-            ->set('adjustmentType', 'adjustment_decrease')
-            ->set('adjustmentReason', 'damaged')
-            ->set('adjustmentQuantity', '3')
-            ->call('adjust')
-            ->assertHasErrors(['adjustmentNote' => 'required'])
-            ->set('adjustmentNote', 'Crushed in delivery')
-            ->call('adjust')
+            ->call('startCount')
+            ->set('countedQuantity', '7')
+            ->call('recordCount')
+            ->assertHasErrors(['countReason' => 'required'])
+            ->set('countReason', 'Crushed in delivery')
+            ->call('recordCount')
             ->assertHasNoErrors()
+            ->assertSet('countInProgress', false)
             ->assertViewHas('quantity', 7)
-            ->assertSee(['رصيد افتتاحي', 'نقص', 'تالف', 'Crushed in delivery']);
+            ->assertSee(['رصيد افتتاحي', 'نقص', 'تصحيح جرد', 'الرصيد السابق', 'Crushed in delivery']);
 
         $this->assertSame(2, InventoryMovement::count());
 
         $component
-            ->set('adjustmentReason', 'lost')
-            ->set('adjustmentQuantity', '8')
-            ->set('adjustmentNote', 'Count mismatch')
-            ->call('adjust')
-            ->assertHasErrors('adjustmentQuantity')
-            ->assertSee('الكمية غير كافية. المتوفر حاليًا: 7.')
-            ->assertViewHas('quantity', 7);
+            ->call('startCount')
+            ->set('countedQuantity', '7')
+            ->set('countReason', 'Weekly count')
+            ->call('recordCount')
+            ->assertHasNoErrors()
+            ->assertDispatched('notify', ['type' => 'info', 'message' => 'العدد يطابق الرصيد الحالي. لم يُسجَّل أي تغيير.']);
 
         $this->assertSame(2, InventoryMovement::count());
 

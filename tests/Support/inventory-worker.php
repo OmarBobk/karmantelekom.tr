@@ -10,13 +10,11 @@ declare(strict_types=1);
  */
 
 use App\Actions\Catalog\SaveProductDefinition;
-use App\Actions\Inventory\AdjustQuantity;
 use App\Actions\Inventory\CorrectUnitIdentifier;
 use App\Actions\Inventory\RecordOpeningBalance;
+use App\Actions\Inventory\RecordStockCount;
 use App\Actions\Inventory\RegisterUnit;
 use App\Actions\Inventory\StartRepair;
-use App\Enums\AdjustmentReason;
-use App\Enums\MovementType;
 use App\Enums\RepairerType;
 use App\Enums\UnitCondition;
 use App\Enums\UnitStatus;
@@ -55,9 +53,13 @@ try {
         'opening' => $movementResult(app(RecordOpeningBalance::class)(
             $actor, $store, $definition, $payload['quantity'], null, $payload['key'],
         )),
-        'decrease' => $movementResult(app(AdjustQuantity::class)(
-            $actor, $store, $definition, MovementType::ADJUSTMENT_DECREASE, AdjustmentReason::DAMAGED, $payload['quantity'], 'Concurrent decrease', $payload['key'],
-        )),
+        'count' => (function () use ($actor, $store, $definition, $payload, $movementResult): array {
+            $movement = app(RecordStockCount::class)(
+                $actor, $store, $definition, $payload['counted'], $payload['count_started_after'], 'Concurrent count', $payload['key'],
+            );
+
+            return $movement === null ? ['status' => 'unchanged'] : $movementResult($movement);
+        })(),
         'register' => $movementResult(app(RegisterUnit::class)(
             $actor, $store, $definition, UnitCondition::B, $payload['imei'], null, null, null, $payload['key'],
         )),
