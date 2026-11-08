@@ -7,7 +7,7 @@ namespace Tests\Feature;
 use App\Actions\Catalog\SaveProductDefinition;
 use App\Actions\Inventory\RecordOpeningBalance;
 use App\Actions\Inventory\RecordStockCount;
-use App\Actions\Inventory\RegisterUnit;
+use App\Actions\Inventory\RegisterOpeningUnit;
 use App\Actions\Inventory\RemoveUnit;
 use App\Enums\AdjustmentReason;
 use App\Enums\IdentifierType;
@@ -170,7 +170,7 @@ class InventoryLedgerTest extends TestCase
         $this->assertSame(1, InventoryMovement::count());
 
         $this->assertThrows(
-            fn () => $this->registerUnit($this->storeOne, $this->usedPhone, self::imei('35693803564380'), key: 'fails'),
+            fn () => $this->registerOpeningUnit($this->storeOne, $this->usedPhone, self::imei('35693803564380'), key: 'fails'),
             RuntimeException::class,
         );
 
@@ -264,7 +264,7 @@ class InventoryLedgerTest extends TestCase
         $imei = self::imei('35693803564380');
         $secondImei = self::imei('35693803564381');
 
-        $movement = $this->registerUnit($this->storeOne, $this->usedPhone, $imei, $secondImei, ' SN-001 ', UnitCondition::B, key: 'reg');
+        $movement = $this->registerOpeningUnit($this->storeOne, $this->usedPhone, $imei, $secondImei, ' SN-001 ', UnitCondition::B, key: 'reg');
         $unit = $movement->unit;
 
         $this->assertSame(UnitStatus::AVAILABLE, $unit->status);
@@ -285,18 +285,18 @@ class InventoryLedgerTest extends TestCase
         $this->assertTrue(ValidImei::isValid('490154203237518'));
         $this->assertFalse(ValidImei::isValid('490154203237519'));
 
-        $this->assertValidationError('imei', fn () => $this->registerUnit($this->storeOne, $this->usedPhone, null));
-        $this->assertValidationError('imei', fn () => $this->registerUnit($this->storeOne, $this->usedPhone, '490154203237519'));
-        $this->assertValidationError('imei', fn () => $this->registerUnit($this->storeOne, $this->usedPhone, '49015420323751'));
-        $this->assertValidationError('imei', fn () => $this->registerUnit($this->storeOne, $this->usedPhone, null, '490154203237518'));
-        $this->assertValidationError('secondary_imei', fn () => $this->registerUnit($this->storeOne, $this->usedPhone, '490154203237518', '490154203237518'));
-        $this->assertValidationError('condition', fn () => $this->registerUnit($this->storeOne, $this->usedPhone, '490154203237518', condition: UnitCondition::NEW));
-        $this->assertValidationError('condition', fn () => $this->registerUnit($this->storeOne, $this->newPhone, '490154203237518', condition: UnitCondition::A));
-        $this->assertValidationError('condition', fn () => $this->registerUnit($this->storeOne, $this->cable, '490154203237518', condition: UnitCondition::NEW));
+        $this->assertValidationError('imei', fn () => $this->registerOpeningUnit($this->storeOne, $this->usedPhone, null));
+        $this->assertValidationError('imei', fn () => $this->registerOpeningUnit($this->storeOne, $this->usedPhone, '490154203237519'));
+        $this->assertValidationError('imei', fn () => $this->registerOpeningUnit($this->storeOne, $this->usedPhone, '49015420323751'));
+        $this->assertValidationError('imei', fn () => $this->registerOpeningUnit($this->storeOne, $this->usedPhone, null, '490154203237518'));
+        $this->assertValidationError('secondary_imei', fn () => $this->registerOpeningUnit($this->storeOne, $this->usedPhone, '490154203237518', '490154203237518'));
+        $this->assertValidationError('condition', fn () => $this->registerOpeningUnit($this->storeOne, $this->usedPhone, '490154203237518', condition: UnitCondition::NEW));
+        $this->assertValidationError('condition', fn () => $this->registerOpeningUnit($this->storeOne, $this->newPhone, '490154203237518', condition: UnitCondition::A));
+        $this->assertValidationError('condition', fn () => $this->registerOpeningUnit($this->storeOne, $this->cable, '490154203237518', condition: UnitCondition::NEW));
 
         $this->assertSame(0, InventoryUnit::count());
 
-        $this->registerUnit($this->storeOne, $this->newPhone, null, null, 'SN-ONLY', UnitCondition::NEW);
+        $this->registerOpeningUnit($this->storeOne, $this->newPhone, null, null, 'SN-ONLY', UnitCondition::NEW);
         $this->assertSame(1, InventoryUnit::count());
     }
 
@@ -305,31 +305,31 @@ class InventoryLedgerTest extends TestCase
     {
         $imei = self::imei('35693803564380');
         $secondImei = self::imei('35693803564381');
-        $unit = $this->registerUnit($this->storeOne, $this->usedPhone, $imei, $secondImei, key: 'reg-1')->unit;
+        $unit = $this->registerOpeningUnit($this->storeOne, $this->usedPhone, $imei, $secondImei, key: 'reg-1')->unit;
 
-        $this->assertValidationError('imei', fn () => $this->registerUnit($this->storeTwo, $this->usedPhone, $imei, key: 'reg-2'));
-        $this->assertValidationError('imei', fn () => $this->registerUnit($this->storeTwo, $this->newPhone, $secondImei, condition: UnitCondition::NEW, key: 'reg-3'));
-        $this->assertValidationError('secondary_imei', fn () => $this->registerUnit($this->storeTwo, $this->usedPhone, self::imei('11111111111111'), $imei, key: 'reg-4'));
+        $this->assertValidationError('imei', fn () => $this->registerOpeningUnit($this->storeTwo, $this->usedPhone, $imei, key: 'reg-2'));
+        $this->assertValidationError('imei', fn () => $this->registerOpeningUnit($this->storeTwo, $this->newPhone, $secondImei, condition: UnitCondition::NEW, key: 'reg-3'));
+        $this->assertValidationError('secondary_imei', fn () => $this->registerOpeningUnit($this->storeTwo, $this->usedPhone, self::imei('11111111111111'), $imei, key: 'reg-4'));
 
         app(RemoveUnit::class)($this->owner, $this->storeOne, $unit->id, AdjustmentReason::DAMAGED, 'Screen broken', 'remove-1');
 
-        $this->assertValidationError('imei', fn () => $this->registerUnit($this->storeOne, $this->usedPhone, $imei, key: 'reg-5'));
+        $this->assertValidationError('imei', fn () => $this->registerOpeningUnit($this->storeOne, $this->usedPhone, $imei, key: 'reg-5'));
         $this->assertSame(1, InventoryUnit::count());
     }
 
     #[Test]
     public function serial_is_unique_per_definition_including_removed_units(): void
     {
-        $unit = $this->registerUnit($this->storeOne, $this->newPhone, null, null, 'SN-42', UnitCondition::NEW, key: 'a')->unit;
+        $unit = $this->registerOpeningUnit($this->storeOne, $this->newPhone, null, null, 'SN-42', UnitCondition::NEW, key: 'a')->unit;
 
-        $this->assertValidationError('serial', fn () => $this->registerUnit($this->storeTwo, $this->newPhone, null, null, ' SN-42 ', UnitCondition::NEW, key: 'b'));
-        $this->assertValidationError('serial', fn () => $this->registerUnit($this->storeTwo, $this->newPhone, null, null, 'sn-42', UnitCondition::NEW, key: 'b2'), expectFailure: false);
+        $this->assertValidationError('serial', fn () => $this->registerOpeningUnit($this->storeTwo, $this->newPhone, null, null, ' SN-42 ', UnitCondition::NEW, key: 'b'));
+        $this->assertValidationError('serial', fn () => $this->registerOpeningUnit($this->storeTwo, $this->newPhone, null, null, 'sn-42', UnitCondition::NEW, key: 'b2'), expectFailure: false);
 
         app(RemoveUnit::class)($this->owner, $this->storeOne, $unit->id, AdjustmentReason::LOST, 'Missing', 'remove');
 
-        $this->assertValidationError('serial', fn () => $this->registerUnit($this->storeOne, $this->newPhone, null, null, 'SN-42', UnitCondition::NEW, key: 'c'));
+        $this->assertValidationError('serial', fn () => $this->registerOpeningUnit($this->storeOne, $this->newPhone, null, null, 'SN-42', UnitCondition::NEW, key: 'c'));
 
-        $this->registerUnit($this->storeOne, $this->usedPhone, null, null, 'SN-42', UnitCondition::C, key: 'd');
+        $this->registerOpeningUnit($this->storeOne, $this->usedPhone, null, null, 'SN-42', UnitCondition::C, key: 'd');
         $this->assertSame(3, InventoryUnit::count());
     }
 
@@ -337,8 +337,8 @@ class InventoryLedgerTest extends TestCase
     public function the_database_enforces_identifier_uniqueness(): void
     {
         $imei = self::imei('35693803564380');
-        $first = $this->registerUnit($this->storeOne, $this->usedPhone, $imei, null, 'SN-1', key: 'a')->unit;
-        $second = $this->registerUnit($this->storeTwo, $this->usedPhone, self::imei('35693803564381'), key: 'b')->unit;
+        $first = $this->registerOpeningUnit($this->storeOne, $this->usedPhone, $imei, null, 'SN-1', key: 'a')->unit;
+        $second = $this->registerOpeningUnit($this->storeTwo, $this->usedPhone, self::imei('35693803564381'), key: 'b')->unit;
 
         $duplicates = [
             'imei reused as secondary on another unit' => [$second, IdentifierType::IMEI, 2, $imei, $this->usedPhone],
@@ -374,7 +374,7 @@ class InventoryLedgerTest extends TestCase
     #[Test]
     public function removing_a_unit_preserves_it_and_records_the_status_change(): void
     {
-        $unit = $this->registerUnit($this->storeOne, $this->usedPhone, self::imei('35693803564380'), key: 'reg')->unit;
+        $unit = $this->registerOpeningUnit($this->storeOne, $this->usedPhone, self::imei('35693803564380'), key: 'reg')->unit;
 
         $this->assertValidationError('note', fn () => app(RemoveUnit::class)($this->owner, $this->storeOne, $unit->id, AdjustmentReason::DAMAGED, ' ', 'r-0'));
         $this->assertValidationError('reason', fn () => app(RemoveUnit::class)($this->owner, $this->storeOne, $unit->id, AdjustmentReason::FOUND, 'note', 'r-1'));
@@ -398,7 +398,7 @@ class InventoryLedgerTest extends TestCase
     #[Test]
     public function units_are_only_reachable_through_their_own_store(): void
     {
-        $unit = $this->registerUnit($this->storeOne, $this->usedPhone, self::imei('35693803564380'), key: 'reg')->unit;
+        $unit = $this->registerOpeningUnit($this->storeOne, $this->usedPhone, self::imei('35693803564380'), key: 'reg')->unit;
 
         $this->assertThrows(
             fn () => app(RemoveUnit::class)($this->owner, $this->storeTwo, $unit->id, AdjustmentReason::DAMAGED, 'note', 'cross'),
@@ -462,7 +462,7 @@ class InventoryLedgerTest extends TestCase
         return app(RecordStockCount::class)($this->owner, $store, $this->cable, $counted, $startedAfter, $reason, $key);
     }
 
-    private function registerUnit(
+    private function registerOpeningUnit(
         Store $store,
         ProductDefinition $definition,
         ?string $imei,
@@ -471,7 +471,7 @@ class InventoryLedgerTest extends TestCase
         UnitCondition $condition = UnitCondition::B,
         ?string $key = null,
     ): InventoryMovement {
-        return app(RegisterUnit::class)($this->owner, $store, $definition, $condition, $imei, $secondaryImei, $serial, null, $key ?? uniqid('reg-', true));
+        return app(RegisterOpeningUnit::class)($this->owner, $store, $definition, $condition, $imei, $secondaryImei, $serial, null, $key ?? uniqid('reg-', true));
     }
 
     private function quantity(Store $store): int

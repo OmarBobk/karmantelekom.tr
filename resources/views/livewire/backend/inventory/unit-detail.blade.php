@@ -109,6 +109,10 @@
                             @else
                                 {{ __('devices.acquisition.receipt') }}
                             @endif
+                        @elseif ($origin === 'opening')
+                            <span class="font-medium text-amber-800" data-testid="origin">{{ __('devices.acquisition.opening') }}</span>
+                        @elseif ($origin === 'found')
+                            <span class="font-medium text-amber-800" data-testid="origin">{{ __('devices.acquisition.found') }}</span>
                         @else
                             <span class="font-medium text-amber-800">{{ __('devices.acquisition.unknown') }}</span>
                         @endif
@@ -157,9 +161,14 @@
 
         @if ($unit->status === \App\Enums\UnitStatus::REMOVED)
             <p class="border-t border-gray-100 bg-gray-50 px-5 py-3 text-sm text-gray-700">{{ __('inventory.remove.already_removed') }}</p>
+        @elseif ($unit->status === \App\Enums\UnitStatus::REVIEW)
+            <p class="border-t border-orange-100 bg-orange-50 px-5 py-3 text-sm text-orange-900">{{ __('inventory.review.banner') }}</p>
         @endif
-        @if ($canInspect || $canStartRepair || $canCloseRepair || $canRecordCost || $canRemove)
+        @if ($canInspect || $canStartRepair || $canCloseRepair || $canRecordCost || $canRemove || $canApproveReview)
             <div class="flex flex-wrap gap-2 border-t border-gray-100 bg-gray-50/60 px-5 py-4" role="group" aria-label="{{ __('devices.actions.label') }}">
+                @if ($canApproveReview)
+                    <button type="button" x-on:click="$dispatch('open-dialog', { id: 'approve-review' })" class="{{ $primaryButton }}">{{ __('inventory.review.approve') }}</button>
+                @endif
                 @if ($canCloseRepair)
                     <button type="button" x-on:click="$dispatch('open-dialog', { id: 'complete-repair' })" class="{{ $primaryButton }}">{{ __('devices.complete.action') }}</button>
                     <button type="button" x-on:click="$dispatch('open-dialog', { id: 'cancel-repair' })" class="{{ $secondaryButton }}">{{ __('devices.cancel.action') }}</button>

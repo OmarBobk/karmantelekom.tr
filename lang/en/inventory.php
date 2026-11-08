@@ -9,6 +9,7 @@ return [
         'available' => 'Available',
         'inspection' => 'Awaiting inspection',
         'in_repair' => 'In repair',
+        'review' => 'Awaiting review',
         'removed' => 'Removed',
         'sold' => 'Sold',
     ],
@@ -33,6 +34,7 @@ return [
         'device_cost_recorded' => 'Cost recorded',
         'device_cost_reversed' => 'Cost corrected',
         'identifier_corrected' => 'Identifier corrected',
+        'review_approved' => 'Review approved',
         'sale' => 'Sale',
     ],
 
@@ -48,6 +50,7 @@ return [
         'repair' => 'Repair',
         'device_cost' => 'Device cost',
         'identity_correction' => 'Identity correction',
+        'review' => 'Review',
         'sale' => 'Sale',
     ],
 
@@ -91,6 +94,9 @@ return [
         'serial_taken' => 'This serial number is already registered for this product.',
         'unit_not_available' => 'This unit is not available in stock.',
         'submission_conflict' => 'This form was already used for a different operation. Review the details and submit again.',
+        'setup_completed' => 'Initial inventory setup is complete for this branch. New supplier stock is received on its purchase invoice; a found device is reconciled for review.',
+        'reconcile_reason_required' => 'Enter the reason for this reconciliation.',
+        'review_verification_required' => 'Describe how the device’s source was verified.',
     ],
 
     'messages' => [
@@ -154,8 +160,8 @@ return [
     ],
 
     'register' => [
-        'title' => 'Register unit',
-        'help' => 'Register one available device in this store’s stock.',
+        'title' => 'Opening stock: register device',
+        'help' => 'Initial setup only. Record a device already on hand in this branch. Its acquisition cost stays unknown.',
         'identifier_help' => 'An IMEI is unique across the whole system and a serial number is unique per product, even after removal.',
         'submit' => 'Register unit',
     ],
@@ -173,6 +179,7 @@ return [
         'filters' => [
             'available' => 'Available',
             'in_service' => 'Inspection & repair',
+            'review' => 'Awaiting review',
             'removed' => 'Removed',
             'sold' => 'Sold',
             'all' => 'All',
@@ -188,6 +195,48 @@ return [
         'previous_balance' => 'Previous balance',
         'counted_total' => 'Counted total',
         'status_change' => 'Status',
+    ],
+
+    'setup' => [
+        'title' => 'Initial inventory setup',
+        'open' => 'Open',
+        'completed' => 'Completed',
+        'open_help' => 'Opening balances and opening device registration are allowed while setup is open. Complete it once the branch’s existing stock is recorded.',
+        'completed_help' => 'Completed on :date by :name. New supplier stock is received on its purchase invoice.',
+        'confirm' => 'Complete initial setup for this branch? Opening stock can no longer be recorded here afterwards.',
+        'complete' => 'Complete setup',
+        'completed_message' => 'Initial inventory setup completed.',
+        'completed_product_help' => 'Initial setup is complete for this branch. New devices arrive through purchase receiving; use reconciliation below for discrepancies.',
+    ],
+
+    'reconcile' => [
+        'title' => 'Reconcile a device',
+        'help' => 'Scan or type the IMEI or serial of a device that differs from the records.',
+        'code' => 'IMEI or serial',
+        'find' => 'Find',
+        'markMissing' => 'Mark missing',
+        'markMissing_help' => 'This device is recorded in stock. If it is not on the shelf, record it as lost.',
+        'markFound' => 'Mark found for review',
+        'markFound_help' => 'This device was removed from stock. If it is on the shelf, return it awaiting review. It is not sellable until an owner approves it.',
+        'ambiguous' => 'This identifier matches more than one device of this product. Choose the device you are holding before continuing.',
+        'choose' => 'Choose this device',
+        'in_review' => 'This device is already awaiting review. Approve or remove it on its device page.',
+        'no_action' => 'This device is :status. No reconciliation applies.',
+        'other_product' => 'This identifier belongs to :product in this branch.',
+        'open_device' => 'Open device',
+        'other_branch' => 'This identifier is registered at another branch. Do not record it here; ask the owner to check it.',
+        'invalid' => 'Enter a 15-digit IMEI or a serial number.',
+        'not_found_help' => 'No device has this identifier. Record it awaiting review; it is not sellable until an owner verifies its source.',
+        'record_found' => 'Record for review',
+        'clear' => 'Clear',
+        'stale' => 'This device changed after you looked it up (now :status). Find it again before continuing.',
+    ],
+
+    'review' => [
+        'approve' => 'Approve as sellable',
+        'approve_help' => 'Only approve once the device’s source is verified.',
+        'verification' => 'How the source was verified',
+        'banner' => 'This device was found without a verified source. It is not sellable until an owner approves it or removes it from stock.',
     ],
 
     'remove' => [

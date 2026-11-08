@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Livewire\Backend\Inventory;
 
+use App\Actions\Inventory\ApproveUnitReview;
 use App\Actions\Inventory\CloseRepair;
 use App\Actions\Inventory\CorrectUnitIdentifier;
 use App\Actions\Inventory\DeviceCostInput;
@@ -85,6 +86,8 @@ class UnitDetail extends Component
     public string $removalReason = '';
 
     public string $removalNote = '';
+
+    public string $reviewVerification = '';
 
     public string $inspectionOutcome = '';
 
@@ -202,6 +205,27 @@ class UnitDetail extends Component
             'removalReason',
             'remove-unit',
             ['removalReason', 'removalNote'],
+        );
+    }
+
+    public function approveReview(ApproveUnitReview $approveUnitReview): void
+    {
+        $this->authorize('adjustInventory', $this->store);
+        $this->resetErrorBag();
+
+        $this->runLifecycleAction(
+            fn () => $approveUnitReview(
+                auth()->user(),
+                $this->store,
+                $this->unitId,
+                $this->expectedRevision,
+                $this->reviewVerification,
+                $this->submissionKey,
+            ),
+            ['note' => 'reviewVerification'],
+            'reviewVerification',
+            'approve-review',
+            ['reviewVerification'],
         );
     }
 
@@ -492,6 +516,8 @@ class UnitDetail extends Component
             'canRecordCost' => $canManageCosts && $isUsedDevice,
             'canCorrectIdentity' => Gate::allows('correctUnitIdentity', $this->store),
             'canRemove' => $unit->status->allowsRemoval() && Gate::allows('adjustInventory', $this->store),
+            'canApproveReview' => UnitLifecycle::allows($unit->status, UnitLifecycle::APPROVE_REVIEW) && Gate::allows('adjustInventory', $this->store),
+            'origin' => $this->origin($unit),
             'canSetUnitPrice' => $isUsedDevice && ! in_array($unit->status, [UnitStatus::SOLD, UnitStatus::REMOVED], true) && Gate::allows('setUnitSellingPrices', $this->store),
             'soldOn' => $unit->status === UnitStatus::SOLD ? $unit->saleLine()->with('sale:id,store_id,user_id,number,completed_at')->first()?->sale : null,
             'removalReasons' => MovementType::ADJUSTMENT_DECREASE->allowedReasons(),
@@ -508,6 +534,21 @@ class UnitDetail extends Component
     private function unitQuery(): Builder
     {
         return $this->store->units()->whereKey($this->unitId)->getQuery();
+    }
+
+    /**
+     * How the unit entered stock, from its first movement: purchase, opening, or found.
+     */
+    private function origin(InventoryUnit $unit): ?string
+    {
+        $first = $unit->movements()->orderBy('id')->first(['id', 'type', 'reason', 'unit_status_before']);
+
+        return match (true) {
+            $first?->type === MovementType::PURCHASE_RECEIPT => 'purchase',
+            $first?->type === MovementType::OPENING_BALANCE => 'opening',
+            $first?->reason === AdjustmentReason::FOUND && $first->unit_status_before === null => 'found',
+            default => null,
+        };
     }
 
     private function adoptState(InventoryUnit $unit): void

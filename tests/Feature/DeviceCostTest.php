@@ -234,7 +234,7 @@ class DeviceCostTest extends TestCase
 
         Livewire::actingAs($this->owner)
             ->test(UnitDetail::class, ['store' => $this->store, 'unit' => $this->unit])
-            ->assertSee('Unknown — registered without a purchase receipt');
+            ->assertSee('Initial stock setup — cost unknown');
     }
 
     #[Test]

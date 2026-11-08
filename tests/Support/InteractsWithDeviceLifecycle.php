@@ -7,7 +7,7 @@ namespace Tests\Support;
 use App\Actions\Inventory\CloseRepair;
 use App\Actions\Inventory\DeviceCostInput;
 use App\Actions\Inventory\RecordInspection;
-use App\Actions\Inventory\RegisterUnit;
+use App\Actions\Inventory\RegisterOpeningUnit;
 use App\Actions\Inventory\StartRepair;
 use App\Enums\InspectionOutcome;
 use App\Enums\RepairerType;
@@ -27,7 +27,7 @@ trait InteractsWithDeviceLifecycle
 {
     protected function registerDevice(User $actor, Store $store, ProductDefinition $definition, ?string $imei, ?string $serial = null, ?string $secondaryImei = null, UnitCondition $condition = UnitCondition::B): InventoryUnit
     {
-        $movement = app(RegisterUnit::class)($actor, $store, $definition, $condition, $imei, $secondaryImei, $serial, null, (string) Str::uuid());
+        $movement = app(RegisterOpeningUnit::class)($actor, $store, $definition, $condition, $imei, $secondaryImei, $serial, null, (string) Str::uuid());
 
         return InventoryUnit::query()->findOrFail($movement->inventory_unit_id);
     }

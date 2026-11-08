@@ -68,6 +68,8 @@ return [
         'invoice' => 'Purchase invoice :number',
         'receipt' => 'Received on a purchase invoice',
         'unknown' => 'Unknown — registered without a purchase receipt',
+        'opening' => 'Initial stock setup — cost unknown',
+        'found' => 'Found during reconciliation — source unverified, cost unknown',
     ],
 
     'actions' => [

@@ -63,7 +63,7 @@ class DeviceLifecycleUiTest extends TestCase
         $this->actingAs($this->owner)->get(route('subdomain.inventory.unit', [$this->store, $unit]))
             ->assertOk()
             ->assertSee(['dir="rtl" lang="ar"', 'inputmode="decimal"'], false)
-            ->assertSee(['iPhone 13', 'A2633', $imei, 'متاح', 'KT01', 'في الفرع', 'تسجيل فحص', 'غير معروف — سُجّل دون استلام مشتريات'])
+            ->assertSee(['iPhone 13', 'A2633', $imei, 'متاح', 'KT01', 'في الفرع', 'تسجيل فحص', 'إعداد المخزون الأولي — التكلفة غير معروفة'])
             ->assertDontSee('بدء الصيانة</button>', false);
 
         $page = Livewire::actingAs($this->owner)->test(UnitDetail::class, ['store' => $this->store, 'unit' => $unit]);

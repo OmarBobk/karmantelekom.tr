@@ -13,7 +13,7 @@ use App\Actions\Catalog\SaveProductDefinition;
 use App\Actions\Inventory\CorrectUnitIdentifier;
 use App\Actions\Inventory\RecordOpeningBalance;
 use App\Actions\Inventory\RecordStockCount;
-use App\Actions\Inventory\RegisterUnit;
+use App\Actions\Inventory\RegisterOpeningUnit;
 use App\Actions\Inventory\StartRepair;
 use App\Enums\RepairerType;
 use App\Enums\UnitCondition;
@@ -60,7 +60,7 @@ try {
 
             return $movement === null ? ['status' => 'unchanged'] : $movementResult($movement);
         })(),
-        'register' => $movementResult(app(RegisterUnit::class)(
+        'register' => $movementResult(app(RegisterOpeningUnit::class)(
             $actor, $store, $definition, UnitCondition::B, $payload['imei'], null, null, null, $payload['key'],
         )),
         'start_repair' => $movementResult(app(StartRepair::class)(

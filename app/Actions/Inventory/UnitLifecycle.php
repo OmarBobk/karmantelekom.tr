@@ -29,6 +29,10 @@ final class UnitLifecycle
 
     public const REMOVE = 'remove';
 
+    public const MARK_FOUND = 'mark_found';
+
+    public const APPROVE_REVIEW = 'approve_review';
+
     public const MAX_TEXT_LENGTH = 1000;
 
     /**
@@ -38,7 +42,9 @@ final class UnitLifecycle
         self::INSPECT => [UnitStatus::AVAILABLE, UnitStatus::INSPECTION],
         self::START_REPAIR => [UnitStatus::INSPECTION],
         self::CLOSE_REPAIR => [UnitStatus::IN_REPAIR],
-        self::REMOVE => [UnitStatus::AVAILABLE, UnitStatus::INSPECTION],
+        self::REMOVE => [UnitStatus::AVAILABLE, UnitStatus::INSPECTION, UnitStatus::REVIEW],
+        self::MARK_FOUND => [UnitStatus::REMOVED],
+        self::APPROVE_REVIEW => [UnitStatus::REVIEW],
     ];
 
     public static function allows(UnitStatus $from, string $action): bool

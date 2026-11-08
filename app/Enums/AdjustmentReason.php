@@ -22,6 +22,7 @@ enum AdjustmentReason: string
     case REPAIR = 'repair';
     case DEVICE_COST = 'device_cost';
     case IDENTITY_CORRECTION = 'identity_correction';
+    case REVIEW = 'review';
     case SALE = 'sale';
 
     public function label(): string

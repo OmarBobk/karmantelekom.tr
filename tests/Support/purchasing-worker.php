@@ -11,7 +11,7 @@ declare(strict_types=1);
 
 use App\Actions\Cashbox\StartCashboxTransfer;
 use App\Actions\Catalog\SaveProductDefinition;
-use App\Actions\Inventory\RegisterUnit;
+use App\Actions\Inventory\RegisterOpeningUnit;
 use App\Actions\Purchasing\PostPurchase;
 use App\Actions\Purchasing\ReceivePurchase;
 use App\Actions\Purchasing\RecordSupplierPayment;
@@ -63,7 +63,7 @@ try {
             return ['status' => 'ok', 'applied' => $result->applied];
         })(),
         'register' => (function () use ($actor, $payload): array {
-            $movement = app(RegisterUnit::class)(
+            $movement = app(RegisterOpeningUnit::class)(
                 $actor,
                 Store::query()->findOrFail($payload['store_id']),
                 ProductDefinition::query()->findOrFail($payload['definition_id']),

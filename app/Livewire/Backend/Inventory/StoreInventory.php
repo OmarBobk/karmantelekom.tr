@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Livewire\Backend\Inventory;
 
+use App\Actions\Inventory\CompleteInventorySetup;
 use App\Enums\UnitStatus;
 use App\Livewire\Backend\Concerns\UsesOperationalLocale;
 use App\Models\InventoryBalance;
@@ -12,6 +13,7 @@ use App\Models\Store;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Url;
@@ -44,6 +46,14 @@ class StoreInventory extends Component
     public function updatedSearch(): void
     {
         $this->resetPage();
+    }
+
+    public function completeSetup(CompleteInventorySetup $completeInventorySetup): void
+    {
+        $this->authorize('adjustInventory', $this->store);
+
+        $this->store = $completeInventorySetup(auth()->user(), $this->store);
+        $this->dispatch('notify', ['type' => 'success', 'message' => __('inventory.setup.completed_message')]);
     }
 
     /**
@@ -98,6 +108,8 @@ class StoreInventory extends Component
             'products' => $products,
             'catalogMatches' => $this->catalogMatches(),
             'isFiltering' => trim($this->search) !== '',
+            'setupOpen' => $this->store->refresh()->inventorySetupIsOpen(),
+            'canAdjust' => Gate::allows('adjustInventory', $this->store),
             ...$this->localeViewData(),
         ])->title($this->store->code.' — '.__('inventory.title'));
     }

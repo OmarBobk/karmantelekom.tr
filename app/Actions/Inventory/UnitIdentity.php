@@ -138,7 +138,7 @@ class UnitIdentity
     }
 
     /**
-     * Create an available unit with its identifiers. Call inside a transaction holding the definition lock.
+     * Create a unit with its identifiers. Call inside a transaction holding the definition lock.
      */
     public static function create(
         Store $store,
@@ -147,11 +147,12 @@ class UnitIdentity
         ?string $imei,
         ?string $secondaryImei,
         ?string $serial,
+        UnitStatus $status = UnitStatus::AVAILABLE,
     ): InventoryUnit {
         $unit = InventoryUnit::query()->create([
             'store_id' => $store->id,
             'product_definition_id' => $definition->id,
-            'status' => UnitStatus::AVAILABLE,
+            'status' => $status,
             'condition' => $condition,
         ]);
 

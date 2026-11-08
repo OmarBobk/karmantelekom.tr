@@ -8,6 +8,7 @@ use Database\Factories\StoreFactory;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
@@ -32,6 +33,34 @@ class Store extends Model
         'phone',
         'address',
     ];
+
+    /**
+     * @return array<string, string>
+     */
+    protected function casts(): array
+    {
+        return [
+            'inventory_setup_completed_at' => 'datetime',
+        ];
+    }
+
+    /**
+     * Whether opening stock may still be recorded in this branch.
+     */
+    public function inventorySetupIsOpen(): bool
+    {
+        return $this->inventory_setup_completed_at === null;
+    }
+
+    /**
+     * The owner who closed this branch's initial inventory setup.
+     *
+     * @return BelongsTo<User, $this>
+     */
+    public function inventorySetupCompleter(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'inventory_setup_completed_by');
+    }
 
     /**
      * Users assigned to this store as employees.
