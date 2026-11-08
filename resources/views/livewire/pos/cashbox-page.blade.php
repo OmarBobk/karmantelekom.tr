@@ -140,22 +140,7 @@
                                 @foreach ($movements as $movement)
                                     <tr wire:key="movement-{{ $movement->id }}">
                                         <td class="px-4 py-2"><time dir="ltr" datetime="{{ $movement->occurred_at->toIso8601String() }}" class="text-gray-700">{{ Sale::displayTime($movement->occurred_at) }}</time></td>
-                                        <td class="px-4 py-2">
-                                            <span class="block text-xs text-gray-600">{{ $movement->type->label() }}</span>
-                                            @if ($movement->salePayment?->sale)
-                                                <a href="{{ route('pos.sales.show', [$store, $movement->salePayment->sale]) }}" dir="ltr" class="font-mono font-semibold text-blue-700 underline">{{ $movement->salePayment->sale->number }}</a>
-                                            @elseif ($movement->customerPayment)
-                                                <bdi dir="ltr" class="font-mono">{{ $movement->customerPayment->receipt_number }}</bdi>
-                                                <span class="text-gray-700">{{ $movement->customerPayment->customer?->name }}</span>
-                                            @elseif ($movement->expense)
-                                                <span class="text-gray-700">{{ $movement->expense->category->label() }} · <span dir="auto">{{ $movement->expense->description }}</span></span>
-                                            @elseif ($movement->supplierPayment)
-                                                <bdi dir="ltr" class="font-mono">{{ $movement->supplierPayment->reference }}</bdi>
-                                                <span class="text-gray-700">{{ $movement->supplierPayment->supplier?->name }}</span>
-                                            @elseif ($movement->transfer)
-                                                <span dir="auto" class="text-gray-700">{{ $movement->transfer->reason }}</span>
-                                            @endif
-                                        </td>
+                                        <td class="px-4 py-2">@include('livewire.pos.partials.cash-movement-source')</td>
                                         <td class="px-4 py-2 text-gray-700">{{ $movement->recorder?->name }}</td>
                                         <td dir="ltr" @class(['px-4 py-2 text-end font-semibold tabular-nums', 'text-gray-900' => $movement->signedMinor() > 0, 'text-red-700' => $movement->signedMinor() < 0])>{{ $signed($movement->signedMinor()) }}</td>
                                     </tr>
@@ -245,7 +230,7 @@
                             @php($difference = \App\Services\Purchasing\Money::fromDecimal($closed->closing_difference))
                             <tr wire:key="closed-{{ $closed->id }}">
                                 <td class="px-4 py-2">
-                                    <span dir="ltr" class="block text-gray-900">{{ Sale::displayTime($closed->opened_at) }} – {{ Sale::displayTime($closed->closed_at) }}</span>
+                                    <a href="{{ route('pos.cashbox.session', [$store, $closed->id]) }}" class="block font-medium text-blue-700 underline focus-visible:outline-2 focus-visible:outline-blue-600" aria-label="{{ __('pos.cashbox.reconciliation.open_session', ['period' => Sale::displayTime($closed->opened_at).' – '.Sale::displayTime($closed->closed_at)]) }}"><span dir="ltr">{{ Sale::displayTime($closed->opened_at) }} – {{ Sale::displayTime($closed->closed_at) }}</span></a>
                                     <span class="block text-xs text-gray-600">{{ $closed->opener?->name }} · {{ $closed->closer?->name }}</span>
                                     @if ($closed->opening_note)
                                         <span class="block text-xs text-gray-700">{{ $closed->opening_note }}</span>
@@ -263,6 +248,7 @@
                     </tbody>
                 </table>
             </div>
+            <div class="px-4 py-3">{{ $history->links() }}</div>
         @endif
     </section>
 

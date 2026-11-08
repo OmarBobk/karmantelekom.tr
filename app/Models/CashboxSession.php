@@ -48,6 +48,13 @@ class CashboxSession extends Model
     public const MAX_NOTE_LENGTH = 500;
 
     /**
+     * 9,999,999,999,999.99 in minor units: the decimal(15,2) ceiling of the session's counts and
+     * totals. A session sums many payments, each capped at Money::MAX_TOTAL_AMOUNT, so its
+     * figures use this storage limit instead of the per-payment one.
+     */
+    public const MAX_AMOUNT = 999_999_999_999_999;
+
+    /**
      * @var list<string>
      */
     protected $fillable = [

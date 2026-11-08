@@ -41,6 +41,13 @@ class CashMovement extends Model
 {
     public const UPDATED_AT = null;
 
+    /** Relations the movement tables load to show who recorded each movement and its source. */
+    public const DISPLAY_RELATIONS = [
+        'recorder:id,name', 'transfer:id,kind,reason', 'salePayment.sale:id,number', 'customerPayment:id,receipt_number,customer_id',
+        'customerPayment.customer:id,name', 'expense:id,category,description', 'supplierPayment:id,reference,operational_supplier_id',
+        'supplierPayment.supplier:id,name',
+    ];
+
     /**
      * @var list<string>
      */

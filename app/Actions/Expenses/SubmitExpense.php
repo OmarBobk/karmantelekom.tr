@@ -12,6 +12,8 @@ use App\Models\CashboxSession;
 use App\Models\CashPayout;
 use App\Models\Expense;
 use App\Models\ExpenseSubmission;
+use App\Models\InventoryUnit;
+use App\Models\OperationalSupplier;
 use App\Models\Store;
 use App\Models\User;
 use App\Services\Idempotency;
@@ -32,18 +34,22 @@ use Illuminate\Validation\ValidationException;
  * within the expected cash minus pending payouts; ConfirmCashPayout records the expense once the
  * cash is handed out.
  *
- * The store row is locked exclusively as the first statement, as opening and closing do, so
- * submissions are serialized with each other and with closing. The request key is claimed in
- * expense_submissions together with the payout or expense, and its unique index refuses a second
- * claim from any concurrent transaction. An identical resubmission by the same actor returns the
- * original submission, with wasRecentlyCreated false, even after its payout completed or was
- * released; anything else under the key, including another method, conflicts.
+ * The store row is locked exclusively, as opening and closing do, so submissions are serialized
+ * with each other and with closing. Lock order: the linked device's unit, as a checkout locks
+ * its units before the store row; the linked supplier in share mode; then the store row. Both
+ * references are checked under those locks. The
+ * request key is claimed in expense_submissions together with the payout or expense, and its
+ * unique index refuses a second claim from any concurrent transaction. An existing request is
+ * resolved before the supplier and device are checked, so an identical resubmission by the same
+ * actor returns the original submission, with wasRecentlyCreated false, even after its payout
+ * completed or was released, its supplier was deactivated, or its device moved; anything else
+ * under the key, including another method, conflicts.
  */
 class SubmitExpense
 {
     /**
      * @param  int|null  $sessionId  The open session the form was shown with; used for cash only.
-     * @param  array{method?: mixed, category?: mixed, description?: mixed, amount?: mixed, expense_date?: mixed, reference?: mixed}  $input
+     * @param  array{method?: mixed, category?: mixed, description?: mixed, amount?: mixed, expense_date?: mixed, reference?: mixed, operational_supplier_id?: mixed, inventory_unit_id?: mixed}  $input
      *
      * @throws AuthorizationException
      * @throws ValidationException
@@ -69,8 +75,16 @@ class SubmitExpense
             ...$details->fingerprintPayload(),
         ]);
 
+        $existing = ExpenseSubmission::query()->where('request_key', $key)->first();
+
+        if ($existing !== null) {
+            return self::replay($existing, $store, $actor, $fingerprint);
+        }
+
         try {
             return DB::transaction(function () use ($actor, $store, $method, $sessionId, $details, $key, $fingerprint): ExpenseSubmission {
+                $unit = $details->unitId === null ? null : InventoryUnit::query()->whereKey($details->unitId)->lockForUpdate()->first();
+                $supplier = $details->supplierId === null ? null : OperationalSupplier::query()->whereKey($details->supplierId)->sharedLock()->first();
                 Store::query()->whereKey($store->id)->lockForUpdate()->firstOrFail();
 
                 $existing = ExpenseSubmission::query()->where('request_key', $key)->first();
@@ -78,6 +92,8 @@ class SubmitExpense
                 if ($existing !== null) {
                     return self::replay($existing, $store, $actor, $fingerprint);
                 }
+
+                $details->assertReferencesEligible($actor, $store, $unit, $supplier);
 
                 $now = now();
                 $payout = $method === ExpenseMethod::CASH ? self::reserve($actor, $store, $sessionId, $details, $now) : null;
@@ -90,6 +106,8 @@ class SubmitExpense
                     'expense_date' => $details->expenseDate,
                     'method' => $method,
                     'reference' => $details->reference,
+                    'operational_supplier_id' => $details->supplierId,
+                    'inventory_unit_id' => $details->unitId,
                     'user_id' => $actor->id,
                     'recorded_at' => $now,
                 ]) : null;
@@ -145,6 +163,8 @@ class SubmitExpense
             'description' => $details->description,
             'expense_date' => $details->expenseDate,
             'reference' => $details->reference,
+            'operational_supplier_id' => $details->supplierId,
+            'inventory_unit_id' => $details->unitId,
             'status' => CashPayoutStatus::PENDING,
             'started_by' => $actor->id,
             'started_at' => $now,
