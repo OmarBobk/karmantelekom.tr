@@ -97,6 +97,31 @@
                     </section>
                 @endif
 
+                @if ($pendingTransfers->isNotEmpty())
+                    <section aria-labelledby="cashbox-transfers-pending-title" class="rounded-xl bg-amber-50 shadow-sm ring-2 ring-amber-400">
+                        <h2 id="cashbox-transfers-pending-title" class="border-b border-amber-200 px-4 py-3 text-base font-semibold text-amber-950">{{ __('pos.cashbox.transfers.pending_title') }}</h2>
+                        <ul class="divide-y divide-amber-200">
+                            @foreach ($pendingTransfers as $transfer)
+                                @php
+                                    $transferAmountText = LocalizedMoney::format($transfer->amountMinor());
+                                @endphp
+                                <li wire:key="transfer-{{ $transfer->id }}" class="flex flex-wrap items-center gap-3 px-4 py-3 text-sm">
+                                    <div class="min-w-0 flex-1">
+                                        <p class="font-medium text-gray-900">{{ $transfer->kind->label() }} · <span dir="ltr" class="tabular-nums">{{ $transferAmountText }}</span> TRY · <span dir="auto">{{ $transfer->reason }}</span></p>
+                                        @if ($transfer->id === $instructedTransferId)
+                                            <p class="mt-1 font-semibold text-amber-950" data-transfer-move>{{ __($transfer->kind === \App\Enums\CashboxTransferKind::DEPOSIT ? 'pos.cashbox.transfers.move_deposit' : 'pos.cashbox.transfers.move_withdrawal', ['amount' => $transferAmountText]) }}</p>
+                                        @else
+                                            <p class="mt-1 text-amber-950" data-transfer-verify>{{ __('pos.cashbox.transfers.verify', ['kind' => $transfer->kind->label(), 'amount' => $transferAmountText, 'time' => Sale::displayTime($transfer->started_at), 'name' => $transfer->starter?->name]) }}</p>
+                                        @endif
+                                    </div>
+                                    <button type="button" wire:click="confirmTransfer({{ $transfer->id }})" wire:loading.attr="disabled" wire:target="confirmTransfer" class="{{ $secondaryButton }} bg-gray-900 text-white ring-gray-900 hover:bg-gray-800">{{ __('pos.cashbox.transfers.confirm') }}</button>
+                                    <button type="button" wire:click="openTransferRelease({{ $transfer->id }})" class="{{ $secondaryButton }} text-red-700">{{ __('pos.cashbox.transfers.release') }}</button>
+                                </li>
+                            @endforeach
+                        </ul>
+                    </section>
+                @endif
+
                 <section aria-labelledby="cashbox-movements-title" class="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-200">
                     <h2 id="cashbox-movements-title" class="border-b border-gray-100 px-4 py-3 text-base font-semibold text-gray-900">{{ __('pos.cashbox.movements_title') }}</h2>
                     @if ($movements->isEmpty())
@@ -127,6 +152,8 @@
                                             @elseif ($movement->supplierPayment)
                                                 <bdi dir="ltr" class="font-mono">{{ $movement->supplierPayment->reference }}</bdi>
                                                 <span class="text-gray-700">{{ $movement->supplierPayment->supplier?->name }}</span>
+                                            @elseif ($movement->transfer)
+                                                <span dir="auto" class="text-gray-700">{{ $movement->transfer->reason }}</span>
                                             @endif
                                         </td>
                                         <td class="px-4 py-2 text-gray-700">{{ $movement->recorder?->name }}</td>
@@ -139,7 +166,33 @@
                 </section>
             </div>
 
-            <section aria-labelledby="cashbox-close-title" class="lg:col-span-5">
+            <section aria-labelledby="cashbox-close-title" class="space-y-4 lg:col-span-5">
+                <form wire:submit="startTransfer" aria-labelledby="cashbox-transfer-title" class="space-y-4 rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-200">
+                    <h2 id="cashbox-transfer-title" class="text-base font-semibold text-gray-900">{{ __('pos.cashbox.transfers.title') }}</h2>
+                    <p class="text-sm text-gray-600">{{ __('pos.cashbox.transfers.help') }}</p>
+                    <fieldset>
+                        <legend class="block text-sm font-medium text-gray-800">{{ __('pos.cashbox.transfers.fields.kind') }}</legend>
+                        <div class="mt-1 grid grid-cols-2 gap-2">
+                            @foreach ($transferKinds as $kind)
+                                <label class="flex min-h-11 items-center gap-2 rounded-lg px-3 ring-1 ring-gray-300 has-[:checked]:bg-blue-50 has-[:checked]:ring-blue-500">
+                                    <input type="radio" wire:model.live="transferKind" value="{{ $kind->value }}" class="text-blue-600 focus:ring-blue-500">
+                                    <span class="text-sm text-gray-900">{{ $kind->label() }}</span>
+                                </label>
+                            @endforeach
+                        </div>
+                    </fieldset>
+                    <x-operations.money-input id="cashbox-transfer-amount" wire:model="transferAmount" error="amount" :label="__('pos.cashbox.transfers.fields.amount')" />
+                    @if ($transferKind === 'withdrawal' && $available !== null)
+                        <p class="text-sm text-gray-700" data-transfer-available>{{ __('pos.cashbox.transfers.available', ['amount' => LocalizedMoney::format(max(0, $available))]) }}</p>
+                    @endif
+                    <div>
+                        <label for="cashbox-transfer-reason" class="block text-sm font-medium text-gray-800">{{ __('pos.cashbox.transfers.fields.reason') }}</label>
+                        <textarea id="cashbox-transfer-reason" dir="auto" rows="2" maxlength="{{ \App\Models\CashboxTransfer::MAX_REASON_LENGTH }}" wire:model="transferReason" required @error('reason') aria-invalid="true" @enderror class="{{ $inputClass }} mt-1"></textarea>
+                        @error('reason') <p class="mt-1 text-sm text-red-700" role="alert">{{ $message }}</p> @enderror
+                    </div>
+                    <button type="submit" wire:loading.attr="disabled" wire:target="startTransfer" class="{{ $primaryButton }} bg-blue-600 hover:bg-blue-700">{{ __('pos.cashbox.transfers.submit') }}</button>
+                </form>
+
                 {{-- The difference preview is presentation only; closing checks the count on the server. --}}
                 <form
                     wire:submit="close"
@@ -165,7 +218,7 @@
                         <textarea id="cashbox-closing-note" dir="auto" rows="2" maxlength="{{ \App\Models\CashboxSession::MAX_NOTE_LENGTH }}" wire:model="closingNote" aria-describedby="cashbox-closing-note-help" class="{{ $inputClass }} mt-1"></textarea>
                         @error('closing_note') <p class="mt-1 text-sm text-red-700" role="alert">{{ $message }}</p> @enderror
                     </div>
-                    <button type="submit" wire:loading.attr="disabled" wire:target="close" @disabled($pendingIntakes->isNotEmpty() || $pendingPayoutCount > 0) class="{{ $primaryButton }} bg-gray-900 hover:bg-gray-800">{{ __('pos.cashbox.close') }}</button>
+                    <button type="submit" wire:loading.attr="disabled" wire:target="close" @disabled($pendingIntakes->isNotEmpty() || $pendingPayoutCount > 0 || $pendingTransfers->isNotEmpty()) class="{{ $primaryButton }} bg-gray-900 hover:bg-gray-800">{{ __('pos.cashbox.close') }}</button>
                 </form>
             </section>
         @endif
@@ -223,6 +276,30 @@
                 @error('release_note') <p class="mt-1 text-sm text-red-700" role="alert">{{ $message }}</p> @enderror
             </div>
             <button type="submit" wire:loading.attr="disabled" wire:target="release" class="{{ $primaryButton }} bg-red-700 hover:bg-red-800">{{ __('pos.cashbox.confirm_release') }}</button>
+        </form>
+    </x-operations.dialog>
+
+    <x-operations.dialog :id="CashboxPage::TRANSFER_RELEASE_DIALOG" :title="__('pos.cashbox.transfers.release_title')" :direction="$textDirection">
+        <form wire:submit="releaseTransfer" class="space-y-3">
+            <p class="text-sm text-gray-700">{{ __('pos.cashbox.transfers.release_help') }}</p>
+            <fieldset>
+                <legend class="block text-sm font-medium text-gray-800">{{ __('pos.expenses.fields.resolution') }}</legend>
+                <div class="mt-1 space-y-2">
+                    @foreach ($resolutions as $resolution)
+                        <label class="flex min-h-11 items-center gap-2 rounded-lg px-3 ring-1 ring-gray-300">
+                            <input type="radio" wire:model="transferResolution" value="{{ $resolution->value }}" class="text-blue-600 focus:ring-blue-500">
+                            <span class="text-sm text-gray-900">{{ __('pos.cashbox.transfers.resolutions.'.$resolution->value) }}</span>
+                        </label>
+                    @endforeach
+                </div>
+                @error('transferResolution') <p class="mt-1 text-sm text-red-700" role="alert">{{ $message }}</p> @enderror
+            </fieldset>
+            <div>
+                <label for="cashbox-transfer-release-note" class="block text-sm font-medium text-gray-800">{{ __('pos.cashbox.release_note') }}</label>
+                <textarea id="cashbox-transfer-release-note" dir="auto" rows="2" maxlength="{{ \App\Models\CashPayout::MAX_NOTE_LENGTH }}" wire:model="transferReleaseNote" class="{{ $inputClass }} mt-1"></textarea>
+                @error('transferReleaseNote') <p class="mt-1 text-sm text-red-700" role="alert">{{ $message }}</p> @enderror
+            </div>
+            <button type="submit" wire:loading.attr="disabled" wire:target="releaseTransfer" class="{{ $primaryButton }} bg-red-700 hover:bg-red-800">{{ __('pos.cashbox.transfers.release_submit') }}</button>
         </form>
     </x-operations.dialog>
 </section>

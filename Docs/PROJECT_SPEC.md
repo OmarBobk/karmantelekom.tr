@@ -667,8 +667,8 @@ Corrections must follow approved procedures rather than silently replacing histo
 **Movements**
 
 - Recording a sale or debt payment posts exactly one movement per source, in the same transaction. A sale posts the net cash kept after change.
-- Movements are append-only. Releasing intakes, supplier payouts, additions, withdrawals, and corrections are separate procedures.
-- Each movement states its direction. Amounts are always positive. Sales and debt payments move cash in; confirmed cash expenses (§12.1) move cash out. The expected amount is the opening count plus cash in minus cash out.
+- Movements are append-only. Releasing intakes, payouts, and owner transfers (§11.7) are separate procedures, and so are corrections.
+- Each movement states its direction. Amounts are always positive. Sales, debt payments, and owner deposits move cash in. Confirmed cash expenses (§12.1), supplier cash payouts (§12.2), and owner withdrawals move cash out. The expected amount is the opening count plus cash in minus cash out.
 
 **Tracking start**
 
@@ -680,8 +680,29 @@ Corrections must follow approved procedures rather than silently replacing histo
 
 - The store row is the cashbox's single lock point.
 - Binding and posting cash take it in share mode as their last lock: after the attempt or customer row, the intake, and the number sequence.
-- Opening and closing take it exclusively as their first statement, so a close sees every committed movement and refuses while any intake or payout is pending.
+- Opening and closing take it exclusively as their first statement, so a close sees every committed movement and refuses while any intake, payout, or owner transfer is pending.
 - Starting, confirming, and releasing a cash payout also take it exclusively first, so payouts are serialized with each other and with closing, and the available cash they check includes every reservation.
+
+### 11.7 Owner Deposits and Withdrawals (decided 2026-11-08, Phase 6C4)
+
+The owner moves their own TRY cash into or out of the drawer from the branch Cashbox page. These are internal cashbox transfers. They are neither sales nor expenses, and reports must not count them as revenue or spending.
+
+**Session**
+
+- Only the owner (`manage_cashbox`) records, confirms, or releases a transfer.
+- A transfer needs a positive amount, a reason, and the open session the page showed. If that session is no longer open, the request is refused and the page shows the current session.
+- The transfer is saved as pending before the owner is told to move cash. The move instruction appears only on the screen that created it. After a reload or a retry, the screen asks the owner to check the drawer first.
+- A pending withdrawal reserves its amount. It must fit within the available cash: the expected amount minus all pending expense payouts, supplier payouts, and withdrawals. A pending deposit reserves nothing.
+- Pending transfers survive reloads and block closing.
+- Confirming names the transfer and the session shown. It posts one append-only movement, a cash deposit (in) or a cash withdrawal (out), linked to the transfer. The transfer completes in the same transaction.
+- A retry with the same request key returns the original transfer in its current state. A repeated confirmation returns the original movement. Either way, nothing new is written. Reusing a key with different details is refused.
+- If the cash was never moved, or was moved back, the owner releases the transfer with the verified resolution and a required note. The release is logged and posts nothing.
+
+**Locking**
+
+- Starting, confirming, and releasing a transfer take the store row exclusively as their first statement, then lock the transfer.
+- The available cash and the open session are read only after that lock. So a withdrawal is serialized with payouts and closing, and its check sees every committed reservation.
+- A supplier cash payout locks the invoice before the store row (§12.2). A transfer never touches invoices, so the two meet only at the store row, and their lock order cannot invert.
 
 ---
 
@@ -1058,10 +1079,10 @@ Cursor must not silently choose business rules for these areas.
 
 ### 18.2 Cashbox Decisions
 
-Decided in §11.6: multiple employees work under one owner-opened session, and each movement is attributed to its recorder. Opening and closing differences need a note and stay visible. Still open:
+Decided in §11.6: multiple employees work under one owner-opened session, and each movement is attributed to its recorder. Opening and closing differences need a note and stay visible. Owner deposits and withdrawals are decided in §11.7. Still open:
 
 - Session handover procedures.
-- Rules for cash additions, withdrawals, and corrections.
+- Rules for cash corrections.
 - Approval requirements for cashbox discrepancies.
 
 ### 18.3 Inventory and Device Decisions
