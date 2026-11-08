@@ -7,6 +7,7 @@ namespace Tests\Feature;
 use App\Actions\Cashbox\OpenCashboxSession;
 use App\Enums\PurchaseStatus;
 use App\Enums\TrackingMode;
+use App\Models\CashboxTransfer;
 use App\Models\InventoryBalance;
 use App\Models\InventoryMovement;
 use App\Models\InventoryUnit;
@@ -168,6 +169,24 @@ class PurchasingConcurrencyTest extends TestCase
         $this->assertSame(['payout', 1, 0], [collect($results)->firstWhere('status', 'ok')['kind'], SupplierCashPayout::count(), SupplierPayment::count()]);
         $this->assertSame(['amount'], collect($results)->firstWhere('status', 'validation')['errors']);
         $this->assertSame(30_000, $session->refresh()->availableForPayoutMinor());
+    }
+
+    #[Test]
+    public function an_owner_withdrawal_and_a_supplier_cash_payout_never_reserve_more_than_the_drawer_holds(): void
+    {
+        $session = app(OpenCashboxSession::class)($this->owner, $this->store, '1000', null);
+
+        $results = $this->raceWhileLocked(Store::query()->whereKey($this->store->id), [
+            ['operation' => 'start_transfer', 'store_id' => $this->store->id, 'session_id' => $session->id, 'key' => 'withdraw',
+                'input' => ['kind' => 'withdrawal', 'amount' => '700.00', 'reason' => 'Owner draw']],
+            ['operation' => 'pay', 'purchase_id' => $this->purchase->id, 'session_id' => $session->id, 'key' => 'CASH-1',
+                'input' => $this->paymentInput('700.00', 'CASH-1', ['method' => 'cash'])],
+        ]);
+
+        $this->assertEqualsCanonicalizing(['ok', 'validation'], array_column($results, 'status'));
+        $this->assertSame(['amount'], collect($results)->firstWhere('status', 'validation')['errors']);
+        $this->assertSame(1, CashboxTransfer::count() + SupplierCashPayout::count());
+        $this->assertSame([0, 30_000], [SupplierPayment::count(), $session->refresh()->availableForPayoutMinor()]);
     }
 
     #[Test]

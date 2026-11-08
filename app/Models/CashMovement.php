@@ -16,8 +16,8 @@ use LogicException;
  * Physical cash that entered or left a store's cashbox during a session, attributed to the
  * employee who recorded it. The amount is always positive and the direction says which way it
  * moved. Exactly one per source: each sale cash payment, customer cash payment, cash intake,
- * cash payout, expense, supplier cash payout, and supplier payment posts at most once. Sales
- * post the net cash kept, after change.
+ * cash payout, expense, supplier cash payout, supplier payment, and cashbox transfer posts at
+ * most once. Sales post the net cash kept, after change.
  * Append-only.
  *
  * @property int $id
@@ -33,6 +33,7 @@ use LogicException;
  * @property int|null $expense_id
  * @property int|null $supplier_cash_payout_id
  * @property int|null $supplier_payment_id
+ * @property int|null $cashbox_transfer_id
  * @property int $user_id
  * @property Carbon $occurred_at
  */
@@ -46,7 +47,7 @@ class CashMovement extends Model
     protected $fillable = [
         'store_id', 'cashbox_session_id', 'type', 'direction', 'amount', 'cash_intake_id', 'sale_payment_id',
         'customer_payment_id', 'cash_payout_id', 'expense_id', 'supplier_cash_payout_id', 'supplier_payment_id',
-        'user_id', 'occurred_at',
+        'cashbox_transfer_id', 'user_id', 'occurred_at',
     ];
 
     protected static function booted(): void
@@ -91,6 +92,14 @@ class CashMovement extends Model
     public function expense(): BelongsTo
     {
         return $this->belongsTo(Expense::class);
+    }
+
+    /**
+     * @return BelongsTo<CashboxTransfer, $this>
+     */
+    public function transfer(): BelongsTo
+    {
+        return $this->belongsTo(CashboxTransfer::class, 'cashbox_transfer_id');
     }
 
     /**

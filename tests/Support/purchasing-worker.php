@@ -9,6 +9,7 @@ declare(strict_types=1);
  * Usage: php tests/Support/purchasing-worker.php '<json payload>'
  */
 
+use App\Actions\Cashbox\StartCashboxTransfer;
 use App\Actions\Catalog\SaveProductDefinition;
 use App\Actions\Inventory\RegisterUnit;
 use App\Actions\Purchasing\PostPurchase;
@@ -50,6 +51,11 @@ try {
             $payment = app(RecordSupplierPayment::class)($actor, $purchase, $payload['input'], $payload['key'], $payload['session_id'] ?? null);
 
             return ['status' => 'ok', 'payment_id' => $payment->id, 'kind' => $payment instanceof SupplierCashPayout ? 'payout' : 'payment', 'created' => $payment->wasRecentlyCreated];
+        })(),
+        'start_transfer' => (function () use ($actor, $payload): array {
+            $transfer = app(StartCashboxTransfer::class)($actor, Store::query()->findOrFail($payload['store_id']), $payload['session_id'], $payload['input'], $payload['key']);
+
+            return ['status' => 'ok', 'transfer_id' => $transfer->id, 'created' => $transfer->wasRecentlyCreated];
         })(),
         'post' => (function () use ($actor, $purchase, $payload): array {
             $result = app(PostPurchase::class)($actor, $purchase, $payload['revision']);

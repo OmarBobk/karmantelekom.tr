@@ -88,6 +88,12 @@ class CloseCashboxSession
                 throw ValidationException::withMessages(['cashbox' => trans_choice('pos.cashbox.errors.pending_payouts', $pendingPayouts, ['count' => $pendingPayouts])]);
             }
 
+            $pendingTransfers = $session->pendingTransferCount();
+
+            if ($pendingTransfers > 0) {
+                throw ValidationException::withMessages(['cashbox' => trans_choice('pos.cashbox.errors.pending_transfers', $pendingTransfers, ['count' => $pendingTransfers])]);
+            }
+
             $expected = $session->expectedMinor();
 
             if ($expected !== $shownMinor) {

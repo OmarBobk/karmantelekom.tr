@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\CashboxSessionStatus;
+use App\Enums\CashboxTransferKind;
 use App\Enums\CashIntakeStatus;
 use App\Enums\CashMovementDirection;
 use App\Services\Purchasing\Money;
@@ -19,8 +20,9 @@ use LogicException;
  * One counted period of a store's cashbox. At most one is open per store: open_store_id holds
  * the store id while open and is cleared on closing. A closed session is final.
  *
- * Cash posting locks the store row in share mode as its last lock; opening, closing, and expense
- * payouts lock it exclusively first, and supplier cash payouts right after their invoice, so a
+ * Cash posting locks the store row in share mode as its last lock; opening, closing, expense
+ * payouts, and cashbox transfers lock it exclusively first, and supplier cash payouts right after
+ * their invoice, so a
  * close sees every committed movement and no posting can follow it, and payouts see every
  * reservation made before them.
  *
@@ -158,14 +160,28 @@ class CashboxSession extends Model
     }
 
     /**
-     * Expected cash not already reserved by pending expense or supplier payouts: the most a new
-     * payout may take.
+     * Expected cash not already reserved by pending expense, supplier, or withdrawal payouts: the
+     * most a new payout may take. Pending deposits add nothing until confirmed.
      */
     public function availableForPayoutMinor(): int
     {
         return $this->expectedMinor()
             - Money::fromDecimal((string) $this->payouts()->pending()->sum('amount'))
-            - Money::fromDecimal((string) $this->supplierPayouts()->pending()->sum('amount'));
+            - Money::fromDecimal((string) $this->supplierPayouts()->pending()->sum('amount'))
+            - Money::fromDecimal((string) $this->transfers()->pending()->where('kind', CashboxTransferKind::WITHDRAWAL)->sum('amount'));
+    }
+
+    public function pendingTransferCount(): int
+    {
+        return $this->transfers()->pending()->count();
+    }
+
+    /**
+     * @return HasMany<CashboxTransfer, $this>
+     */
+    public function transfers(): HasMany
+    {
+        return $this->hasMany(CashboxTransfer::class);
     }
 
     public function pendingIntakeCount(): int
