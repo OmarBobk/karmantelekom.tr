@@ -603,7 +603,7 @@ Each session must record:
 - Relevant notes.
 - Approved corrections where applicable.
 
-The exact session rules, including whether multiple employees can operate under one open session, must be documented before implementation.
+The session rules, including how multiple employees operate under one open session, are documented in §11.6.
 
 ### 11.3 Employee Accountability
 
@@ -642,6 +642,44 @@ The owner and authorized employees must be able to compare expected and actual c
 Discrepancies must remain visible and auditable.
 
 Corrections must follow approved procedures rather than silently replacing historical values.
+
+### 11.6 Session Rules (decided 2026-11-07, Phase 6C1)
+
+**Sessions**
+
+- A branch has at most one open session. Only the owner (`manage_cashbox`) opens and closes it.
+- Every employee with counter access works under the open session. Each movement records the employee who recorded it, not the session's opener.
+- Opening requires an explicit count, zero included. If it differs from the previous session's closing count, a note is required, and the expected amount and difference are kept.
+- Closing requires an explicit count. The expected amount is the opening count plus every movement in the session. A difference requires a note. The expected amount, count, and difference are kept, and a closed session is final.
+- A close is refused when the expected amount changed after the owner was shown it, for example because a sale posted cash while the owner was counting. The owner counts again against the new figure.
+- A close names the session and expected amount shown together. A form for an earlier session never closes a later one, even with the same expected amount. An identical retry returns the original close.
+
+**Cash intake**
+
+- Before staff are told to accept cash for a sale or a debt payment, a cash intake binds that amount to the open session.
+- Taking cash requires an open session. Card-only and fully credited sales do not.
+- In a mixed checkout, the approved card amount is kept. The intake binds only the remaining cash, and the sale's cart is then frozen.
+- A pending intake survives reloads and failed submissions, and it blocks closing the session.
+- A debt-payment intake reserves its amount of the customer's balance, so no other payment can consume that part.
+- An intake ends in one of two ways. It completes when its sale or payment is recorded for exactly that amount. Or the owner releases it with a required note when completion is impossible, after confirming the cash was not kept. A release is logged and posts nothing.
+- Confirming a sale or debt payment names the intake shown on the screen. It is checked under the sale or customer lock. A released intake is never swapped for a newer pending one: the screen shows the new intake and staff confirm again. A retry after a lost response returns the original sale or payment and posts nothing more.
+
+**Movements**
+
+- Recording a sale or debt payment posts exactly one movement per source, in the same transaction. A sale posts the net cash kept after change.
+- Movements are append-only. Releasing intakes, expenses, supplier payouts, additions, withdrawals, and corrections are separate procedures.
+
+**Tracking start**
+
+- Cash tracking starts in each branch when its first session opens. Earlier sales and payments remain as recorded and have no movements.
+- From then on, cash always needs an open session and an intake.
+- A cash sale or debt payment without an intake rechecks tracking with a locking read as its last lock, after its number sequence and in share mode on the store row. If the first session opened first, the write is refused and needs an intake.
+
+**Locking**
+
+- The store row is the cashbox's single lock point.
+- Binding and posting cash take it in share mode as their last lock: after the attempt or customer row, the intake, and the number sequence.
+- Opening and closing take it exclusively as their first statement, so a close sees every committed movement and refuses while any intake is pending.
 
 ---
 
@@ -989,7 +1027,8 @@ Cursor must not silently choose business rules for these areas.
 
 ### 18.2 Cashbox Decisions
 
-- Whether multiple employees can operate under one open session.
+Decided in §11.6: multiple employees work under one owner-opened session, and each movement is attributed to its recorder. Opening and closing differences need a note and stay visible. Still open:
+
 - Session handover procedures.
 - Rules for cash additions, withdrawals, and corrections.
 - Approval requirements for cashbox discrepancies.

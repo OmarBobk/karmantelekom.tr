@@ -61,6 +61,10 @@ class ResolveVoidedApproval
                 throw ValidationException::withMessages(['attempt' => __('pos.errors.no_approval_to_void')]);
             }
 
+            if ($locked->hasPendingCashIntake()) {
+                throw ValidationException::withMessages(['attempt' => __('pos.cashbox.errors.void_with_cash_intake')]);
+            }
+
             $now = now();
 
             $approval->update([

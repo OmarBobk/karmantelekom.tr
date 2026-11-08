@@ -125,9 +125,9 @@ trait InteractsWithPos
         return app(RecordCardApproval::class)($actor, $attempt->store, $attempt->key, $attempt->revision, $paymentKey, $terminal->id, $reference, $amount);
     }
 
-    protected function finalize(User $actor, CheckoutAttempt $attempt, ?string $cash = null): Sale
+    protected function finalize(User $actor, CheckoutAttempt $attempt, ?string $cash = null, ?int $cashIntakeId = null): Sale
     {
-        return app(FinalizeCheckout::class)($actor, $attempt->store, $attempt->key, $attempt->revision, $cash);
+        return app(FinalizeCheckout::class)($actor, $attempt->store, $attempt->key, $attempt->revision, $cash, $cashIntakeId);
     }
 
     /**

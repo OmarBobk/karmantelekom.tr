@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Livewire\Pos;
 
+use App\Actions\Cashbox\StartSaleCashIntake;
 use App\Actions\Customers\FindCounterCustomers;
 use App\Actions\Customers\SaveCounterCustomer;
 use App\Actions\Pos\CancelCheckoutAttempt;
@@ -22,6 +23,7 @@ use App\Enums\TrackingMode;
 use App\Exceptions\Inventory\IdempotencyConflictException;
 use App\Exceptions\Purchasing\InvalidAmountException;
 use App\Livewire\Pos\Concerns\UsesPosLocale;
+use App\Models\CashboxSession;
 use App\Models\CheckoutAttempt;
 use App\Models\Customer;
 use App\Models\InventoryUnit;
@@ -181,6 +183,21 @@ class PosCounter extends Component
     public string $resolvePaymentSummary = '';
 
     /**
+     * Request key of the next cash intake start; a retry from the same page returns the same
+     * intake. Renewed after each confirmed new intake.
+     */
+    #[Locked]
+    public string $cashRequestKey = '';
+
+    /** The one cash intake this page confirmed as new; only then is the cashier told to take the cash. */
+    #[Locked]
+    public ?int $cashInstructedFor = null;
+
+    /** The pending cash intake this page shows; completing the sale names it, so it is never swapped silently. */
+    #[Locked]
+    public ?int $displayedCashIntakeId = null;
+
+    /**
      * Mount found an active attempt but no saved cart, so the attempt's reviewed cart is the
      * working cart. A saved empty cart is the cashier's edit and is kept.
      */
@@ -190,6 +207,7 @@ class PosCounter extends Component
     {
         $this->storeId = $store->id;
         $this->startRequestKey = (string) Str::uuid();
+        $this->cashRequestKey = (string) Str::uuid();
         $this->authorizeCounter();
         $this->restoreWorkingState();
         $this->syncActiveAttempt();
@@ -626,6 +644,37 @@ class PosCounter extends Component
         $this->notify('success', __('pos.payment.card_recorded'));
     }
 
+    /**
+     * Bind the cash due to the open cashbox session before the cashier is told to take it.
+     */
+    public function startCashIntake(StartSaleCashIntake $start): void
+    {
+        $store = $this->authorizeCounter();
+
+        if ($this->attemptKey === null || $this->attemptRevision === null) {
+            return;
+        }
+
+        $this->assertSelectionReviewed();
+
+        try {
+            $intake = $start(auth()->user(), $store, $this->attemptKey, $this->attemptRevision, $this->cashRequestKey);
+        } catch (ValidationException $exception) {
+            $this->syncActiveAttempt();
+
+            throw $exception;
+        }
+
+        $this->resetValidation();
+        $this->cashRequestKey = (string) Str::uuid();
+        $this->syncActiveAttempt();
+
+        if ($intake->wasRecentlyCreated) {
+            $this->cashInstructedFor = $intake->id;
+            $this->notify('info', __('pos.cashbox.intake_title', ['amount' => LocalizedMoney::format($intake->amountMinor())]));
+        }
+    }
+
     public function finalize(FinalizeCheckout $finalize): void
     {
         $store = $this->authorizeCounter();
@@ -638,7 +687,13 @@ class PosCounter extends Component
         $cashTendered = self::canonicalAmount($this->cashTendered, 'cash_tendered');
 
         try {
-            $sale = $finalize(auth()->user(), $store, $this->attemptKey, $this->attemptRevision, $cashTendered);
+            $sale = $finalize(auth()->user(), $store, $this->attemptKey, $this->attemptRevision, $cashTendered, $this->displayedCashIntakeId);
+        } catch (ValidationException $exception) {
+            if (array_key_exists('cashbox', $exception->errors())) {
+                $this->syncActiveAttempt();
+            }
+
+            throw $exception;
         } catch (IdempotencyConflictException) {
             $this->syncActiveAttempt();
             $this->notify('error', __('pos.errors.finalize_conflict'));
@@ -662,6 +717,7 @@ class PosCounter extends Component
         match ($attempt->status) {
             CheckoutAttemptStatus::COMPLETED => $this->completed($attempt->sale),
             CheckoutAttemptStatus::OPEN => $this->notify('warning', match (true) {
+                $attempt->hasPendingCashIntake() => __('pos.cashbox.recovery_intake', ['amount' => LocalizedMoney::format($attempt->pendingCashIntake->amountMinor())]),
                 $attempt->cardApproval !== null => __('pos.recovery.open_with_card', ['amount' => LocalizedMoney::format($attempt->cardApproval->amountMinor()), 'reference' => $attempt->cardApproval->reference]),
                 $attempt->hasStartedTerminalPayment() => __('pos.recovery.open_terminal_pending', [
                     'amount' => LocalizedMoney::format((int) $attempt->terminalPaymentAmountMinor()),
@@ -676,6 +732,8 @@ class PosCounter extends Component
             $this->attemptRevision = $attempt->revision;
             $this->displayedPaymentKey = $attempt->terminal_payment_key;
             $this->chargeInstructedFor = null;
+            $this->cashInstructedFor = null;
+            $this->displayedCashIntakeId = $attempt->pendingCashIntake()->value('id');
             $this->step = $this->unreviewedChange($attempt) === null ? 'payment' : 'cart';
         }
     }
@@ -732,7 +790,7 @@ class PosCounter extends Component
 
         $active = $this->activeAttempt();
 
-        if ($active !== null && $active->id !== $attempt->id && $active->isOpen() && ($active->hasStartedTerminalPayment() || $active->cardApproval()->exists())) {
+        if ($active !== null && $active->id !== $attempt->id && $active->isOpen() && ($active->hasStartedTerminalPayment() || $active->cardApproval()->exists() || $active->hasPendingCashIntake())) {
             $this->notify('error', __('pos.errors.new_sale_blocked'));
 
             return;
@@ -745,6 +803,8 @@ class PosCounter extends Component
         $this->attemptRevision = $attempt->revision;
         $this->displayedPaymentKey = $attempt->terminal_payment_key;
         $this->chargeInstructedFor = null;
+        $this->cashInstructedFor = null;
+        $this->displayedCashIntakeId = $attempt->pendingCashIntake()->value('id');
         $this->lastSaleId = null;
         $this->step = 'payment';
         $this->resetPaymentFields();
@@ -831,14 +891,20 @@ class PosCounter extends Component
     {
         $store = $this->authorizeCounter();
         $user = auth()->user();
-        $attempt = $this->activeAttempt()?->load(['cardApproval.terminal', 'terminalPaymentTerminal', 'customer']);
+        $attempt = $this->activeAttempt()?->load(['cardApproval.terminal', 'terminalPaymentTerminal', 'customer', 'pendingCashIntake']);
         $cartLines = $attempt?->isOpen() && $attempt->isFrozen() ? self::reviewedCartLines($attempt) : $this->cartLinesWithCurrentPrices();
         $terminalPending = $attempt !== null && $attempt->isOpen() && $attempt->hasPendingTerminalPayment();
+        $cashIntake = $attempt?->isOpen() ? $attempt->pendingCashIntake : null;
+        $cashSessionOpen = CashboxSession::openFor($store) !== null;
 
         return view('livewire.pos.pos-counter', [
             'store' => $store,
             'attempt' => $attempt,
             'terminalPending' => $terminalPending,
+            'cashIntake' => $cashIntake,
+            'takeCashNow' => $cashIntake !== null && $this->cashInstructedFor === $cashIntake->id,
+            'cashTracked' => $cashSessionOpen || CashboxSession::trackingStarted($store),
+            'cashSessionOpen' => $cashSessionOpen,
             'chargeNow' => $terminalPending
                 && $this->chargeInstructedFor !== null
                 && $this->chargeInstructedFor === $attempt->terminal_payment_key
@@ -995,6 +1061,8 @@ class PosCounter extends Component
         $this->attemptRevision = null;
         $this->displayedPaymentKey = null;
         $this->chargeInstructedFor = null;
+        $this->cashInstructedFor = null;
+        $this->displayedCashIntakeId = null;
         $this->lastSaleId = $sale->id;
         $this->step = 'done';
         $this->resetPaymentFields();
@@ -1048,6 +1116,8 @@ class PosCounter extends Component
         $this->attemptRevision = null;
         $this->displayedPaymentKey = null;
         $this->chargeInstructedFor = null;
+        $this->cashInstructedFor = null;
+        $this->displayedCashIntakeId = null;
         $this->step = 'cart';
     }
 
@@ -1098,6 +1168,12 @@ class PosCounter extends Component
 
         if ($this->chargeInstructedFor !== $attempt->terminal_payment_key) {
             $this->chargeInstructedFor = null;
+        }
+
+        $this->displayedCashIntakeId = $attempt->pendingCashIntake()->value('id');
+
+        if ($this->cashInstructedFor !== $this->displayedCashIntakeId) {
+            $this->cashInstructedFor = null;
         }
 
         if ($attempt->isFrozen() || $this->workingCartMissing) {
@@ -1402,7 +1478,7 @@ class PosCounter extends Component
             ->unresolved()
             ->when(! $user->can('viewAllSales', $store), fn ($query) => $query->where('user_id', $user->id))
             ->when($this->attemptKey !== null, fn ($query) => $query->where('key', '!=', $this->attemptKey))
-            ->with(['cardApproval.terminal', 'terminalPaymentTerminal', 'cashier:id,name'])
+            ->with(['cardApproval.terminal', 'terminalPaymentTerminal', 'cashier:id,name', 'pendingCashIntake'])
             ->latest('updated_at')
             ->limit(20)
             ->get();

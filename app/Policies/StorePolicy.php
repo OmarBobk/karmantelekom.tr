@@ -167,6 +167,15 @@ class StorePolicy
     }
 
     /**
+     * Determine whether the user can open and close this store's cashbox sessions and release
+     * cash intakes that cannot complete (owner only).
+     */
+    public function manageCashbox(User $user, Store $store): bool
+    {
+        return $this->ownerHas($user, 'manage_cashbox') && $this->usePos($user, $store);
+    }
+
+    /**
      * Determine whether the user can record the resolution of a voided terminal approval (owner only).
      */
     public function resolveCheckoutAttempts(User $user, Store $store): bool

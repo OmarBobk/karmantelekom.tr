@@ -3,13 +3,16 @@
 declare(strict_types=1);
 
 /*
- * Test-only worker for SalesConcurrencyTest and CustomerPaymentConcurrencyTest: runs one counter,
- * customer payment, or inventory action in its own
+ * Test-only worker for the POS concurrency tests: runs one counter, customer payment, cashbox,
+ * or inventory action in its own
  * process (own database connection) and prints the outcome as JSON.
  *
  * Usage: php tests/Support/pos-worker.php '<json payload>'
  */
 
+use App\Actions\Cashbox\CloseCashboxSession;
+use App\Actions\Cashbox\OpenCashboxSession;
+use App\Actions\Cashbox\StartSaleCashIntake;
 use App\Actions\Catalog\SaveProductDefinition;
 use App\Actions\Customers\RecordCustomerPayment;
 use App\Actions\Customers\SaveCounterCustomer;
@@ -58,7 +61,7 @@ if ($payload['fail_late'] ?? false) {
 try {
     $result = match ($payload['operation']) {
         'finalize' => (function () use ($actor, $store, $payload): array {
-            $sale = app(FinalizeCheckout::class)($actor, $store, $payload['attempt_key'], $payload['revision'], $payload['cash'] ?? null);
+            $sale = app(FinalizeCheckout::class)($actor, $store, $payload['attempt_key'], $payload['revision'], $payload['cash'] ?? null, $payload['cash_intake_id'] ?? null);
 
             return ['status' => 'ok', 'sale_id' => $sale->id, 'number' => $sale->number];
         })(),
@@ -97,6 +100,21 @@ try {
             $payment = app(RecordCustomerPayment::class)($actor, $store, Customer::query()->findOrFail($payload['customer_id']), $payload['input'], $payload['key']);
 
             return ['status' => 'ok', 'payment_id' => $payment->id, 'created' => $payment->wasRecentlyCreated];
+        })(),
+        'cash_intake' => (function () use ($actor, $store, $payload): array {
+            $intake = app(StartSaleCashIntake::class)($actor, $store, $payload['attempt_key'], $payload['revision'], $payload['request_key']);
+
+            return ['status' => 'ok', 'intake_id' => $intake->id];
+        })(),
+        'open_cashbox' => (function () use ($actor, $store, $payload): array {
+            $session = app(OpenCashboxSession::class)($actor, $store, $payload['counted'], $payload['note'] ?? null);
+
+            return ['status' => 'ok', 'session_id' => $session->id];
+        })(),
+        'close_cashbox' => (function () use ($actor, $store, $payload): array {
+            $session = app(CloseCashboxSession::class)($actor, $store, $payload['session_id'], $payload['expected_shown'], $payload['counted'], $payload['note'] ?? null);
+
+            return ['status' => 'ok', 'expected_closing' => $session->expected_closing];
         })(),
         'set_price' => (function () use ($actor, $payload): array {
             $definition = ProductDefinition::query()->findOrFail($payload['definition_id']);

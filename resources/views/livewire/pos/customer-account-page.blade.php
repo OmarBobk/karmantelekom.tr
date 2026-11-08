@@ -82,7 +82,23 @@
             </section>
         </div>
 
-        <section aria-labelledby="record-payment-title" class="lg:col-span-5">
+        <section aria-labelledby="record-payment-title" class="space-y-4 lg:col-span-5">
+            @if ($cashIntake)
+                <div wire:key="customer-cash-intake-{{ $cashIntake->id }}" class="rounded-xl bg-sky-50 p-4 text-sm text-sky-950 ring-2 ring-sky-500" role="status" aria-live="polite">
+                    <p class="text-base font-semibold">{{ __('pos.cashbox.customer_intake_title', ['amount' => LocalizedMoney::format($cashIntake->amountMinor())]) }}</p>
+                    <p class="mt-1">{{ __('pos.cashbox.customer_intake_detail') }}</p>
+                    <p class="mt-1 text-xs">
+                        <time dir="ltr" datetime="{{ $cashIntake->started_at->toIso8601String() }}">{{ Sale::displayTime($cashIntake->started_at) }}</time>
+                        @can('manageCashbox', $store)
+                            · <a href="{{ route('pos.cashbox', $store) }}" class="font-medium underline">{{ __('pos.nav.cashbox') }}</a>
+                        @endcan
+                    </p>
+                    @error('cashbox') <p class="mt-2 text-sm text-red-700" role="alert">{{ $message }}</p> @enderror
+                    <button type="button" wire:click="confirmCash" wire:loading.attr="disabled" wire:target="confirmCash" class="mt-3 inline-flex min-h-12 w-full items-center justify-center rounded-lg bg-emerald-600 px-5 text-base font-semibold text-white shadow-sm hover:bg-emerald-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 disabled:cursor-not-allowed disabled:opacity-60">
+                        {{ __('pos.cashbox.customer_confirm') }}
+                    </button>
+                </div>
+            @endif
             <form wire:submit="record" class="space-y-4 rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-200" x-data="{ method: $wire.entangle('method') }">
                 <h2 id="record-payment-title" class="text-base font-semibold text-gray-900">{{ __('pos.customer_accounts.record_title') }}</h2>
                 @if ($totalDue === 0)
@@ -111,6 +127,12 @@
                     </fieldset>
 
                     <p x-show="method === 'cash'" class="text-xs text-gray-600">{{ __('pos.customer_accounts.cash_help') }}</p>
+                    @if ($cashTracked && ! $cashSessionOpen)
+                        <p x-show="method === 'cash'" class="rounded-lg bg-amber-50 px-3 py-2 text-sm text-amber-950 ring-1 ring-amber-300">{{ __('pos.cashbox.customer_no_session') }}</p>
+                    @endif
+                    @unless ($cashIntake)
+                        @error('cashbox') <p class="text-sm text-red-700" role="alert">{{ $message }}</p> @enderror
+                    @endunless
                     <div x-show="method !== 'cash'" x-cloak>
                         <label for="customer-payment-reference" class="block text-sm font-medium text-gray-800">{{ __('pos.customer_accounts.fields.reference') }} <span class="text-red-700" aria-hidden="true">*</span></label>
                         <input id="customer-payment-reference" type="text" dir="ltr" autocomplete="off" maxlength="{{ \App\Models\CustomerPayment::MAX_REFERENCE_LENGTH }}" wire:model="reference" @error('reference') aria-invalid="true" aria-describedby="customer-payment-reference-error" @enderror class="{{ $inputClass }} mt-1 font-mono">
@@ -124,7 +146,14 @@
                     </div>
 
                     <button type="submit" wire:loading.attr="disabled" wire:target="record" class="inline-flex min-h-12 w-full items-center justify-center rounded-lg bg-emerald-600 px-5 text-base font-semibold text-white shadow-sm hover:bg-emerald-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-emerald-600 disabled:cursor-not-allowed disabled:opacity-60">
-                        <span wire:loading.remove wire:target="record">{{ __('pos.customer_accounts.record') }}</span>
+                        <span wire:loading.remove wire:target="record">
+                            @if ($cashTracked)
+                                <span x-show="method === 'cash'">{{ __('pos.cashbox.customer_start') }}</span>
+                                <span x-show="method !== 'cash'" x-cloak>{{ __('pos.customer_accounts.record') }}</span>
+                            @else
+                                {{ __('pos.customer_accounts.record') }}
+                            @endif
+                        </span>
                         <span wire:loading wire:target="record">{{ __('pos.customer_accounts.recording') }}</span>
                     </button>
                 </fieldset>

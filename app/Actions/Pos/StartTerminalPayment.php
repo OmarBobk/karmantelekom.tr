@@ -82,6 +82,10 @@ class StartTerminalPayment
                 throw ValidationException::withMessages(['attempt' => __('pos.errors.approval_already_recorded')]);
             }
 
+            if ($locked->hasPendingCashIntake()) {
+                throw ValidationException::withMessages(['attempt' => __('pos.cashbox.errors.card_after_cash_intake')]);
+            }
+
             if ($locked->revision !== $expectedRevision) {
                 throw ValidationException::withMessages(['attempt' => __('pos.errors.attempt_changed')]);
             }
@@ -117,12 +121,12 @@ class StartTerminalPayment
     /**
      * Refuse to freeze a cart whose list prices or discount limits changed since review.
      *
-     * Once the start is saved the charged total is final, so this is the last point where a
-     * stricter limit or a new price can send the cashier back to review instead of charging.
+     * Once a card or cash payment start is saved the total is final, so this is the last point
+     * where a stricter limit or a new price can send the cashier back to review instead of paying.
      *
      * @throws ValidationException
      */
-    private static function assertReviewedPricesCurrent(User $actor, CheckoutAttempt $attempt): void
+    public static function assertReviewedPricesCurrent(User $actor, CheckoutAttempt $attempt): void
     {
         /** @var list<array<string, mixed>> $lines */
         $lines = $attempt->lines;

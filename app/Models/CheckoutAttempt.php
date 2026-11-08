@@ -5,12 +5,14 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Enums\CardApprovalStatus;
+use App\Enums\CashIntakeStatus;
 use App\Enums\CheckoutAttemptStatus;
 use App\Enums\Currency;
 use App\Services\Purchasing\Money;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Carbon;
 
@@ -234,6 +236,29 @@ class CheckoutAttempt extends Model
         $approvalId = $this->cardApproval()->value('id');
 
         return $approvalId === null ? null : CardApproval::query()->whereKey($approvalId)->lockForUpdate()->first();
+    }
+
+    /**
+     * The cash intake currently binding this attempt's cash to the open session, if any.
+     *
+     * @return HasOne<CashIntake, $this>
+     */
+    public function pendingCashIntake(): HasOne
+    {
+        return $this->hasOne(CashIntake::class)->where('status', CashIntakeStatus::PENDING);
+    }
+
+    public function hasPendingCashIntake(): bool
+    {
+        return $this->relationLoaded('pendingCashIntake') ? $this->pendingCashIntake !== null : $this->pendingCashIntake()->exists();
+    }
+
+    /**
+     * @return HasMany<CashIntake, $this>
+     */
+    public function cashIntakes(): HasMany
+    {
+        return $this->hasMany(CashIntake::class);
     }
 
     /**

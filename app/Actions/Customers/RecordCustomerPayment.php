@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace App\Actions\Customers;
 
+use App\Actions\Cashbox\CashIntakePosting;
+use App\Enums\CashMovementType;
 use App\Enums\Currency;
 use App\Enums\CustomerPaymentMethod;
 use App\Exceptions\Inventory\IdempotencyConflictException;
 use App\Exceptions\Purchasing\InvalidAmountException;
+use App\Models\CashboxSession;
+use App\Models\CashIntake;
 use App\Models\Customer;
 use App\Models\CustomerPayment;
 use App\Models\CustomerPaymentAllocation;
@@ -32,8 +36,11 @@ use Illuminate\Validation\ValidationException;
  *
  * Payments for one customer are serialized by locking the customer row as the transaction's
  * first statement, so balances read afterwards include every committed payment and debt. The
- * payment, its allocations, and any cash receipt number are written together; debts and sales
- * are never changed. The request key replays an identical submission by the same actor and
+ * payment, its allocations, any cash receipt number, and the cash movement are written
+ * together; debts and sales are never changed. Once the store tracks its cashbox, cash needs the
+ * customer's pending intake for the same amount, and the part of the balance a pending intake
+ * reserves is not available to other payments. Lock order: the customer, the pending intake,
+ * the receipt sequence, then the store row in share mode with its open cashbox session. The request key replays an identical submission by the same actor and
  * conflicts otherwise. A card or transfer reference already recorded for this store and method
  * returns that payment only for an identical submission.
  */
@@ -42,7 +49,8 @@ class RecordCustomerPayment
     public function __construct(private readonly CustomerAccount $account) {}
 
     /**
-     * @param  array{amount?: mixed, method?: mixed, reference?: mixed, note?: mixed}  $input  The amount is a canonical decimal.
+     * @param  array{amount?: mixed, method?: mixed, reference?: mixed, note?: mixed, cash_intake_id?: mixed}  $input  The amount is a canonical decimal;
+     *                                                                                                                 cash_intake_id is the pending intake the screen displayed for a cash payment.
      *
      * @throws AuthorizationException
      * @throws ValidationException
@@ -63,6 +71,7 @@ class RecordCustomerPayment
             'method' => ['required', Rule::enum(CustomerPaymentMethod::class)],
             'reference' => ['nullable', 'string', 'max:'.CustomerPayment::MAX_REFERENCE_LENGTH],
             'note' => ['nullable', 'string', 'max:'.CustomerPayment::MAX_NOTE_LENGTH],
+            'cash_intake_id' => ['nullable', 'integer'],
         ], [], [
             'amount' => __('pos.customer_accounts.fields.amount'),
             'method' => __('pos.customer_accounts.fields.method'),
@@ -85,8 +94,9 @@ class RecordCustomerPayment
         }
 
         $note = Str::trim((string) ($validated['note'] ?? '')) ?: null;
+        $cashIntakeId = $method === CustomerPaymentMethod::CASH && isset($validated['cash_intake_id']) ? (int) $validated['cash_intake_id'] : null;
 
-        $fingerprint = Idempotency::fingerprint([
+        $payload = [
             'operation' => 'customer_payment',
             'store_id' => $store->id,
             'customer_id' => $customer->id,
@@ -94,10 +104,16 @@ class RecordCustomerPayment
             'method' => $method->value,
             'reference_key' => $referenceKey,
             'note' => $note,
-        ]);
+        ];
+
+        if ($cashIntakeId !== null) {
+            $payload['cash_intake'] = $cashIntakeId;
+        }
+
+        $fingerprint = Idempotency::fingerprint($payload);
 
         try {
-            return DB::transaction(function () use ($actor, $store, $customer, $amount, $method, $reference, $referenceKey, $note, $key, $fingerprint): CustomerPayment {
+            return DB::transaction(function () use ($actor, $store, $customer, $amount, $method, $reference, $referenceKey, $note, $cashIntakeId, $key, $fingerprint): CustomerPayment {
                 Customer::query()->whereKey($customer->id)->lockForUpdate()->firstOrFail();
 
                 $existing = $this->findExisting($store, $key, $method, $referenceKey);
@@ -106,13 +122,25 @@ class RecordCustomerPayment
                     return $this->replay($existing, $actor, $fingerprint, $key);
                 }
 
+                $intake = $method === CustomerPaymentMethod::CASH
+                    ? CashIntake::lockDisplayed(CashIntake::customerSource($customer), $cashIntakeId)
+                    : CashIntake::query()->where('pending_source', CashIntake::customerSource($customer))->first();
                 $openDebts = $this->account->openDebts($customer);
                 $due = CustomerAccount::totalDueMinor($openDebts);
+                $postsIntake = $method === CustomerPaymentMethod::CASH && $intake !== null;
 
-                if ($amount > $due) {
-                    throw ValidationException::withMessages(['amount' => $due === 0
-                        ? __('pos.customer_accounts.errors.nothing_due')
-                        : __('pos.customer_accounts.errors.amount_exceeds_due', ['due' => LocalizedMoney::format($due)])]);
+                if ($method === CustomerPaymentMethod::CASH) {
+                    self::assertCashBound($store, $intake, $amount);
+                }
+
+                $reserved = $intake !== null && ! $postsIntake ? $intake->amountMinor() : 0;
+
+                if ($amount > $due - $reserved) {
+                    throw ValidationException::withMessages(['amount' => match (true) {
+                        $due === 0 => __('pos.customer_accounts.errors.nothing_due'),
+                        $reserved > 0 => __('pos.cashbox.errors.amount_exceeds_unreserved', ['available' => LocalizedMoney::format(max(0, $due - $reserved)), 'reserved' => LocalizedMoney::format($reserved)]),
+                        default => __('pos.customer_accounts.errors.amount_exceeds_due', ['due' => LocalizedMoney::format($due)]),
+                    }]);
                 }
 
                 $now = now();
@@ -133,6 +161,10 @@ class RecordCustomerPayment
                     'received_at' => $now,
                 ]);
 
+                if ($method === CustomerPaymentMethod::CASH && $intake === null && CashboxSession::lockTrackingStarted($store)) {
+                    throw ValidationException::withMessages(['cashbox' => __('pos.cashbox.errors.cash_intake_required')]);
+                }
+
                 $remaining = $amount;
 
                 foreach ($openDebts as $debt) {
@@ -148,6 +180,10 @@ class RecordCustomerPayment
                         'customer_debt_id' => $debt->id,
                         'amount' => Money::toDecimal($applied),
                     ]);
+                }
+
+                if ($postsIntake) {
+                    CashIntakePosting::post($actor, $store, $intake, CashMovementType::CUSTOMER_PAYMENT_CASH, $amount, ['customer_payment_id' => $payment->id], $now);
                 }
 
                 return $payment;
@@ -188,6 +224,30 @@ class RecordCustomerPayment
         }
 
         throw ValidationException::withMessages(['reference' => __('pos.customer_accounts.errors.reference_used')]);
+    }
+
+    /**
+     * Once a store tracks its cashbox, cash is recorded only against the customer's pending
+     * intake for exactly that amount.
+     *
+     * @throws ValidationException
+     */
+    private static function assertCashBound(Store $store, ?CashIntake $intake, int $amount): void
+    {
+        if ($intake === null) {
+            if (CashboxSession::trackingStarted($store)) {
+                throw ValidationException::withMessages(['cashbox' => __('pos.cashbox.errors.cash_intake_required')]);
+            }
+
+            return;
+        }
+
+        if ($intake->amountMinor() !== $amount) {
+            throw ValidationException::withMessages(['amount' => __('pos.cashbox.errors.intake_amount_mismatch', [
+                'intake' => LocalizedMoney::format($intake->amountMinor()),
+                'due' => LocalizedMoney::format($amount),
+            ])]);
+        }
     }
 
     private function nextReceiptSequence(Store $store): int
