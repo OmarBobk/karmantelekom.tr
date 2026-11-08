@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Enums\CashboxSessionStatus;
 use App\Enums\CashIntakeStatus;
+use App\Enums\CashMovementDirection;
 use App\Services\Purchasing\Money;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -18,8 +19,9 @@ use LogicException;
  * One counted period of a store's cashbox. At most one is open per store: open_store_id holds
  * the store id while open and is cleared on closing. A closed session is final.
  *
- * Cash posting locks the store row in share mode as its last lock; opening and closing lock it
- * exclusively first, so a close sees every committed movement and no posting can follow it.
+ * Cash posting locks the store row in share mode as its last lock; opening, closing, and cash
+ * payouts lock it exclusively first, so a close sees every committed movement and no posting can
+ * follow it, and payouts see every reservation made before them.
  *
  * @property int $id
  * @property int $store_id
@@ -137,16 +139,47 @@ class CashboxSession extends Model
     }
 
     /**
-     * Opening count plus every movement posted to this session.
+     * Opening count plus cash moved in, minus cash moved out, in this session.
      */
     public function expectedMinor(): int
     {
-        return $this->openingCountedMinor() + Money::fromDecimal((string) $this->movements()->sum('amount'));
+        return $this->openingCountedMinor() + $this->cashInMinor() - $this->cashOutMinor();
+    }
+
+    public function cashInMinor(): int
+    {
+        return Money::fromDecimal((string) $this->movements()->where('direction', CashMovementDirection::IN)->sum('amount'));
+    }
+
+    public function cashOutMinor(): int
+    {
+        return Money::fromDecimal((string) $this->movements()->where('direction', CashMovementDirection::OUT)->sum('amount'));
+    }
+
+    /**
+     * Expected cash not already reserved by pending payouts: the most a new payout may take.
+     */
+    public function availableForPayoutMinor(): int
+    {
+        return $this->expectedMinor() - Money::fromDecimal((string) $this->payouts()->pending()->sum('amount'));
     }
 
     public function pendingIntakeCount(): int
     {
         return $this->intakes()->where('status', CashIntakeStatus::PENDING)->count();
+    }
+
+    public function pendingPayoutCount(): int
+    {
+        return $this->payouts()->pending()->count();
+    }
+
+    /**
+     * @return HasMany<CashPayout, $this>
+     */
+    public function payouts(): HasMany
+    {
+        return $this->hasMany(CashPayout::class);
     }
 
     /**

@@ -7,13 +7,17 @@ namespace Tests\Feature;
 use App\Actions\Cashbox\CloseCashboxSession;
 use App\Actions\Cashbox\OpenCashboxSession;
 use App\Actions\Cashbox\StartSaleCashIntake;
+use App\Actions\Expenses\SubmitExpense;
 use App\Enums\CashboxSessionStatus;
 use App\Models\CashboxSession;
 use App\Models\CashIntake;
 use App\Models\CashMovement;
+use App\Models\CashPayout;
 use App\Models\CheckoutAttempt;
 use App\Models\Customer;
 use App\Models\CustomerPayment;
+use App\Models\Expense;
+use App\Models\ExpenseSubmission;
 use App\Models\Sale;
 use App\Models\Store;
 use Illuminate\Database\Eloquent\Builder;
@@ -121,6 +125,84 @@ class CashboxConcurrencyTest extends TestCase
         $this->assertSame(1, Sale::query()->count());
         $this->assertSame(0, CustomerPayment::query()->count());
         $this->assertSame(0, CashMovement::query()->count());
+    }
+
+    #[Test]
+    public function a_close_racing_a_cash_payout_either_closes_first_or_is_refused_by_the_reservation(): void
+    {
+        $session = $this->openSession();
+
+        [$payout, $close] = $this->raceWhileLocked(Store::query()->whereKey($this->store->id), [
+            ['operation' => 'submit_expense', 'session_id' => $session->id, 'input' => $this->payoutInput('200'), 'request_key' => (string) Str::uuid()],
+            $this->closeRequest($session, '1000'),
+        ]);
+
+        $this->assertEqualsCanonicalizing(['ok', 'validation'], [$payout['status'], $close['status']], json_encode([$payout, $close]));
+        $session->refresh();
+
+        if ($close['status'] === 'ok') {
+            $this->assertSame(['cashbox'], $payout['errors']);
+            $this->assertSame([CashboxSessionStatus::CLOSED, 0], [$session->status, CashPayout::query()->count()]);
+        } else {
+            $this->assertSame(['cashbox'], $close['errors']);
+            $this->assertSame([CashboxSessionStatus::OPEN, $session->id], [$session->status, CashPayout::query()->sole()->cashbox_session_id]);
+        }
+    }
+
+    #[Test]
+    public function a_close_racing_a_payout_confirmation_never_misses_the_cash_paid_out(): void
+    {
+        $session = $this->openSession();
+        $payout = app(SubmitExpense::class)($this->owner, $this->store, $session->id, $this->payoutInput('200'), (string) Str::uuid())->payout;
+
+        [$confirm, $close] = $this->raceWhileLocked(Store::query()->whereKey($this->store->id), [
+            ['operation' => 'confirm_payout', 'payout_id' => $payout->id, 'session_id' => $session->id],
+            $this->closeRequest($session, '1000'),
+        ]);
+
+        $this->assertSame('ok', $confirm['status'], json_encode($confirm));
+        $this->assertSame('validation', $close['status']);
+        $this->assertContains($close['errors'][0], ['cashbox', 'counted_closing'], 'Closing first sees the pending payout; closing after the confirmation sees a changed expected amount.');
+        $this->assertSame([1, 80_000], [Expense::query()->count(), $session->fresh()->expectedMinor()]);
+        $this->assertTrue($session->fresh()->isOpen());
+    }
+
+    #[Test]
+    public function concurrent_identical_expense_submissions_share_one_request_key_and_one_payout(): void
+    {
+        $session = $this->openSession();
+        $request = ['operation' => 'submit_expense', 'session_id' => $session->id, 'input' => $this->payoutInput('200'), 'request_key' => (string) Str::uuid()];
+
+        [$first, $second] = $this->raceWhileLocked(Store::query()->whereKey($this->store->id), [$request, $request]);
+
+        $this->assertSame(['ok', 'ok'], [$first['status'], $second['status']], json_encode([$first, $second]));
+        $this->assertSame($first['submission_id'], $second['submission_id']);
+        $this->assertEqualsCanonicalizing([true, false], [$first['created'], $second['created']]);
+        $this->assertSame([1, 1, 0], [ExpenseSubmission::query()->count(), CashPayout::query()->count(), Expense::query()->count()]);
+    }
+
+    #[Test]
+    public function concurrent_cash_and_card_submissions_under_one_request_key_record_only_one(): void
+    {
+        $session = $this->openSession();
+        $key = (string) Str::uuid();
+
+        [$cash, $card] = $this->raceWhileLocked(Store::query()->whereKey($this->store->id), [
+            ['operation' => 'submit_expense', 'session_id' => $session->id, 'input' => $this->payoutInput('200'), 'request_key' => $key],
+            ['operation' => 'submit_expense', 'session_id' => $session->id, 'input' => $this->payoutInput('200', 'card'), 'request_key' => $key],
+        ]);
+
+        $this->assertEqualsCanonicalizing(['ok', 'conflict'], [$cash['status'], $card['status']], json_encode([$cash, $card]));
+        $this->assertSame(1, ExpenseSubmission::query()->count());
+        $this->assertSame(1, CashPayout::query()->count() + Expense::query()->count());
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function payoutInput(string $amount, string $method = 'cash'): array
+    {
+        return ['method' => $method, 'category' => 'supplies', 'description' => 'Printer paper', 'amount' => $amount, 'expense_date' => now(Sale::DISPLAY_TIMEZONE)->toDateString()];
     }
 
     private function openSession(): CashboxSession

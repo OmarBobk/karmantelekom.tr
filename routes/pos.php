@@ -7,6 +7,7 @@ use App\Http\Controllers\Pos\SaleReceiptController;
 use App\Livewire\Pos\CashboxPage;
 use App\Livewire\Pos\CustomerAccountPage;
 use App\Livewire\Pos\CustomerAccounts;
+use App\Livewire\Pos\ExpensesPage;
 use App\Livewire\Pos\PosCounter;
 use App\Livewire\Pos\PosHome;
 use App\Livewire\Pos\SalesHistory;
@@ -36,6 +37,10 @@ Route::get('{store}/cashbox', CashboxPage::class)
     ->middleware('can:manageCashbox,store')
     ->whereNumber('store')
     ->name('cashbox');
+Route::get('{store}/expenses', ExpensesPage::class)
+    ->middleware('can:manageExpenses,store')
+    ->whereNumber('store')
+    ->name('expenses');
 Route::get('{store}/sales/{sale}', SaleReceiptController::class)
     ->middleware(['can:usePos,store', 'can:view,sale'])
     ->whereNumber(['store', 'sale'])

@@ -176,6 +176,15 @@ class StorePolicy
     }
 
     /**
+     * Determine whether the user can record this store's general expenses and see their history
+     * (owner only). Cash expenses also reserve and pay out cash from the open session.
+     */
+    public function manageExpenses(User $user, Store $store): bool
+    {
+        return $this->ownerHas($user, 'manage_expenses') && $this->usePos($user, $store);
+    }
+
+    /**
      * Determine whether the user can record the resolution of a voided terminal approval (owner only).
      */
     public function resolveCheckoutAttempts(User $user, Store $store): bool

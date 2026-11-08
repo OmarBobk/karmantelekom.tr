@@ -667,7 +667,8 @@ Corrections must follow approved procedures rather than silently replacing histo
 **Movements**
 
 - Recording a sale or debt payment posts exactly one movement per source, in the same transaction. A sale posts the net cash kept after change.
-- Movements are append-only. Releasing intakes, expenses, supplier payouts, additions, withdrawals, and corrections are separate procedures.
+- Movements are append-only. Releasing intakes, supplier payouts, additions, withdrawals, and corrections are separate procedures.
+- Each movement states its direction. Amounts are always positive. Sales and debt payments move cash in; confirmed cash expenses (§12.1) move cash out. The expected amount is the opening count plus cash in minus cash out.
 
 **Tracking start**
 
@@ -679,7 +680,8 @@ Corrections must follow approved procedures rather than silently replacing histo
 
 - The store row is the cashbox's single lock point.
 - Binding and posting cash take it in share mode as their last lock: after the attempt or customer row, the intake, and the number sequence.
-- Opening and closing take it exclusively as their first statement, so a close sees every committed movement and refuses while any intake is pending.
+- Opening and closing take it exclusively as their first statement, so a close sees every committed movement and refuses while any intake or payout is pending.
+- Starting, confirming, and releasing a cash payout also take it exclusively first, so payouts are serialized with each other and with closing, and the available cash they check includes every reservation.
 
 ---
 
@@ -704,6 +706,26 @@ The system must distinguish general operating expenses from costs attributable t
 Expense classification and its effect on inventory valuation, device profitability, and financial reporting must follow approved business rules.
 
 An expense record must not automatically create an inventory movement or change a device's cost basis without an explicitly defined rule.
+
+### 12.1 General Branch Expenses (decided 2026-11-08, Phase 6C2)
+
+**Recording**
+
+- Only the owner (`manage_expenses`) records a branch's general expenses and sees their history, per branch.
+- Each expense records a category, a description, an exact TRY amount, the branch's calendar date (no future dates), the payment method (cash, card, or bank transfer), the recording employee, and an optional supporting reference.
+- Categories are a fixed list: rent, utilities, salaries and wages, supplies, maintenance and repairs, transport, marketing, taxes and fees, and other.
+- Card and bank transfer expenses appear in expense history only and post nothing to the cashbox.
+- Each form submission carries one request key, and a key records at most one submission across all methods, even under concurrent retries. An identical retry returns the original result and writes nothing. A different amount, detail, or method under the same key is refused as a conflict.
+- Expenses are never edited or deleted. Supplier payouts, device costs, and expense corrections are separate procedures.
+
+**Cash expenses**
+
+- A cash expense needs an open session. It first reserves its amount as a pending payout on the session the form was shown with, before staff are told to hand the cash out. A form shown with an earlier session is refused.
+- The amount may not exceed the cash available: the expected amount minus pending payouts.
+- Confirming names the payout and session displayed. It records the cash expense and one outgoing cash movement together, then completes the payout. A retry after a lost response returns the original expense and writes nothing more. A released payout is never confirmed or replaced.
+- Pending payouts survive reloads and block closing the session.
+- Only the submission that newly creates a payout tells staff to hand out cash. A retried submission instead shows the original payout's current state (pending, completed, or released), and a reload lists pending payouts with a prompt to verify whether cash was already handed out before confirming.
+- The owner (`manage_cashbox`) releases a pending payout after verifying the cash was not handed out, or was handed back. The release records that resolution and a required note, is logged, and records no expense.
 
 ---
 
