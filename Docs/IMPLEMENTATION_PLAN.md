@@ -973,6 +973,20 @@ Task 8 of the cashbox list is partly complete: reconciliation is done, and autho
 
 ---
 
+## 10A. Phase 6.5 — Stock Entry and Physical Count Reconciliation
+
+**Sequence.** Complete this before Phase 7. Use the stock source rules in `PROJECT_SPEC.md` §5.5 and the existing `InventoryLedger`.
+
+1. Replace the general stock addition entry point with explicit purchase receiving, initial stock setup, and physical count adjustment actions. Link purchase receiving to the existing invoice and receipt flow.
+2. Limit opening stock to initial setup. Apply the existing first-movement rule for quantity-tracked items and use explicit initial setup for individually tracked units.
+3. Implement an absolute physical count for quantity-tracked items. Require branch adjustment permission and a reason. Derive the signed difference from the locked, verified balance and record it through the ledger. Reject stale counts after any intervening stock movement.
+4. Apply device adjustments to a specific identified unit under the existing lifecycle rules. Route unverified devices for review before sale.
+5. Show provenance in stock and device movement histories, with authorized access to receipt and invoice details.
+
+**Acceptance.** A receipt can increase stock only once, an opening entry respects the initial setup boundary, counting 10 against a stable balance of 8 records +2, an intervening sale or receipt makes the count stale, and adjustment access and records are branch-scoped.
+
+---
+
 ## 11. Phase 7 — Store Network
 
 ### Objective
@@ -1035,6 +1049,19 @@ The rules for sales attribution, internal store settlement, and employee incenti
 - Concurrent operations cannot reserve or sell the same device inconsistently.
 - Transfers and sales preserve correct inventory and device history.
 - Tests cover simultaneous requests, expired reservations, and unavailable devices.
+
+---
+
+## 11A. Phase 7.5 — Storefront Publishing
+
+**Sequence.** Start after Phase 7. Follow `PROJECT_SPEC.md` §14A. Keep the existing storefront and branch operations and connect them through approved listings.
+
+1. Let branches explicitly make stock eligible for online publication, independently of internal Store Network sharing. Support a quantity or an exact device as appropriate.
+2. Add the authorized publisher workspace for reviewing eligible stock, matching and linking existing storefront listings, creating listings when needed, and publishing or unpublishing by channel. Preserve existing URLs, images, translations, and order references. Scope wholesale visibility using the existing storefront audience rules.
+3. Show current storefront availability from branch stock and the shared online allocation. Verify that retail and wholesale draw from the same quantity and that a local sale or reservation changes online availability.
+4. Enable orders against linked stock only after branch confirmation atomically reserves stock with the same conflict checks as POS and Store Network. A submitted order starts as pending. Resolve branch selection, payment timing, and reservation release rules before enabling this slice.
+
+**Acceptance.** Internal-only shares are not publishable, a publisher can link a matching legacy listing without breaking its URL, channel visibility and permissions hold on the server, and concurrent branch confirmation and POS sale cannot claim the same stock.
 
 ---
 
@@ -1197,6 +1224,7 @@ The following decisions do not need to block foundation work, but must be resolv
 | Store Network reservation duration and configuration | Reservation implementation |
 | Cross-store sale attribution and financial settlement | Store Network sale completion |
 | Employee incentives for cross-store referrals | Any commission or incentive feature |
+| Online fulfillment branch selection, payment timing, cancellation and hold release | Online order activation against branch stock |
 | Exact reports required for daily operations | Dashboard and reporting phase |
 
 Each decision must have an owner-approved outcome or an explicitly documented deferral before its affected workflow is considered complete.
