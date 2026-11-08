@@ -770,6 +770,8 @@ An expense record must not automatically create an inventory movement or change 
 - An expense may reference one supplier and one device, both optional. The references are kept on the pending cash payout and copied to the expense when it is confirmed, and expense history shows them.
 - A supplier must be active, and the owner must be allowed to see suppliers (`manage_suppliers`). A device must belong to the same branch, found by exact IMEI or serial through the branch's device lookup, and the owner must be allowed to see its inventory (`view_inventory`). The server checks both.
 - The references are part of the submission fingerprint only when set. A submission without references keeps its earlier fingerprint, so older requests still replay. A retry under the same key with a different or missing reference is refused as a conflict.
+- An existing request is resolved, after the owner and branch checks, before supplier and device eligibility. An identical retry by the same owner returns the original result even after the supplier was deactivated or the device moved; a new request checks current eligibility.
+- Lock order, as at checkout: the linked device's unit, then the linked supplier in share mode, then the store row. Eligibility is checked under those locks. Confirming a linked payout locks its unit before the store row and rechecks the payout's stored reference under lock.
 - The links are for traceability only. They create no inventory movement and change no device cost basis or supplier balance. Device costs are still recorded through the device-cost workflow (§6), and supplier obligations through purchasing (§8).
 
 ---

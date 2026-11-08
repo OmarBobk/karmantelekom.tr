@@ -13,6 +13,7 @@ use App\Models\CashboxSession;
 use App\Models\CashMovement;
 use App\Models\CashPayout;
 use App\Models\Expense;
+use App\Models\InventoryUnit;
 use App\Models\Store;
 use App\Models\User;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -28,7 +29,9 @@ use LogicException;
  * The confirmation names the payout and the session the screen displayed; a payout from another
  * session or branch is refused, and a released payout is never replaced by another. Confirming
  * a completed payout again returns its expense without writing, so a retry after a lost
- * response is safe. The store row is locked exclusively first, then the payout.
+ * response is safe. Lock order: the payout's linked device unit, as a checkout locks its units
+ * before the store row; the store row exclusively; then the payout, whose stored device
+ * reference is rechecked under lock.
  */
 class ConfirmCashPayout
 {
@@ -40,10 +43,20 @@ class ConfirmCashPayout
     {
         Gate::forUser($actor)->authorize('manageExpenses', $store);
 
-        return DB::transaction(function () use ($actor, $store, $payoutId, $sessionId): Expense {
+        $unitId = CashPayout::query()->where('store_id', $store->id)->findOrFail($payoutId)->inventory_unit_id;
+
+        return DB::transaction(function () use ($actor, $store, $payoutId, $sessionId, $unitId): Expense {
+            if ($unitId !== null) {
+                InventoryUnit::query()->whereKey($unitId)->lockForUpdate()->first();
+            }
+
             Store::query()->whereKey($store->id)->lockForUpdate()->firstOrFail();
 
             $payout = CashPayout::query()->where('store_id', $store->id)->lockForUpdate()->findOrFail($payoutId);
+
+            if ($payout->inventory_unit_id !== $unitId) {
+                throw new LogicException("Cash payout {$payout->id} changed its device reference.");
+            }
 
             if ($payout->cashbox_session_id !== $sessionId) {
                 throw ValidationException::withMessages(['cashbox' => __('pos.expenses.errors.payout_changed')]);

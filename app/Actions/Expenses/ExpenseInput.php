@@ -39,15 +39,15 @@ final readonly class ExpenseInput
     ) {}
 
     /**
-     * The supplier and device references are optional and for traceability only. A supplier must
-     * be active and the actor must be allowed to see suppliers; a device must belong to this
-     * branch and the actor must be allowed to see its inventory.
+     * The supplier and device references are optional and for traceability only. Only their form
+     * is checked here; their current eligibility can change, so assertReferencesEligible checks
+     * it for a new submission only, after any existing request was resolved.
      *
      * @param  array{category?: mixed, description?: mixed, amount?: mixed, expense_date?: mixed, reference?: mixed, operational_supplier_id?: mixed, inventory_unit_id?: mixed}  $input
      *
      * @throws ValidationException
      */
-    public static function from(array $input, User $actor, Store $store): self
+    public static function from(array $input): self
     {
         $validated = Validator::make($input, [
             'category' => ['required', Rule::enum(ExpenseCategory::class)],
@@ -70,16 +70,6 @@ final readonly class ExpenseInput
         $supplierId = blank($validated['operational_supplier_id'] ?? null) ? null : (int) $validated['operational_supplier_id'];
         $unitId = blank($validated['inventory_unit_id'] ?? null) ? null : (int) $validated['inventory_unit_id'];
 
-        if ($supplierId !== null && (Gate::forUser($actor)->denies('viewAny', OperationalSupplier::class)
-            || ! OperationalSupplier::query()->whereKey($supplierId)->where('is_active', true)->exists())) {
-            throw ValidationException::withMessages(['operational_supplier_id' => __('pos.expenses.errors.supplier_invalid')]);
-        }
-
-        if ($unitId !== null && (Gate::forUser($actor)->denies('viewInventory', $store)
-            || ! InventoryUnit::query()->whereKey($unitId)->where('store_id', $store->id)->exists())) {
-            throw ValidationException::withMessages(['inventory_unit_id' => __('pos.expenses.errors.device_invalid')]);
-        }
-
         $description = Str::trim($validated['description']);
 
         if ($description === '') {
@@ -101,6 +91,26 @@ final readonly class ExpenseInput
             $supplierId,
             $unitId,
         );
+    }
+
+    /**
+     * A new submission's references must be currently eligible: an active supplier the actor may
+     * see, and a device of this branch whose inventory the actor may see. Both are the rows the
+     * caller already locked, so neither can change before the write.
+     *
+     * @throws ValidationException
+     */
+    public function assertReferencesEligible(User $actor, Store $store, ?InventoryUnit $lockedUnit, ?OperationalSupplier $lockedSupplier): void
+    {
+        if ($this->supplierId !== null && (Gate::forUser($actor)->denies('viewAny', OperationalSupplier::class)
+            || $lockedSupplier?->id !== $this->supplierId || ! $lockedSupplier->is_active)) {
+            throw ValidationException::withMessages(['operational_supplier_id' => __('pos.expenses.errors.supplier_invalid')]);
+        }
+
+        if ($this->unitId !== null && (Gate::forUser($actor)->denies('viewInventory', $store)
+            || $lockedUnit?->id !== $this->unitId || $lockedUnit->store_id !== $store->id)) {
+            throw ValidationException::withMessages(['inventory_unit_id' => __('pos.expenses.errors.device_invalid')]);
+        }
     }
 
     /**

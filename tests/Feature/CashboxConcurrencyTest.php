@@ -18,6 +18,7 @@ use App\Models\Customer;
 use App\Models\CustomerPayment;
 use App\Models\Expense;
 use App\Models\ExpenseSubmission;
+use App\Models\InventoryUnit;
 use App\Models\Sale;
 use App\Models\Store;
 use Illuminate\Database\Eloquent\Builder;
@@ -165,6 +166,24 @@ class CashboxConcurrencyTest extends TestCase
         $this->assertContains($close['errors'][0], ['cashbox', 'counted_closing'], 'Closing first sees the pending payout; closing after the confirmation sees a changed expected amount.');
         $this->assertSame([1, 80_000], [Expense::query()->count(), $session->fresh()->expectedMinor()]);
         $this->assertTrue($session->fresh()->isOpen());
+    }
+
+    #[Test]
+    public function a_checkout_and_an_expense_linked_to_the_same_device_lock_the_unit_before_the_store(): void
+    {
+        $session = $this->openSession();
+        $attempt = $this->review($this->owner, $this->phoneLine());
+        $intake = app(StartSaleCashIntake::class)($this->owner, $this->store, $attempt->key, $attempt->revision, (string) Str::uuid());
+
+        [$finalize, $expense] = $this->raceWhileLocked(InventoryUnit::query()->whereKey($this->phone->id), [
+            ['operation' => 'finalize', 'attempt_key' => $attempt->key, 'revision' => $attempt->revision, 'cash' => '12500', 'cash_intake_id' => $intake->id],
+            ['operation' => 'submit_expense', 'session_id' => $session->id, 'input' => [...$this->payoutInput('200'), 'inventory_unit_id' => $this->phone->id], 'request_key' => (string) Str::uuid()],
+        ]);
+
+        $this->assertSame(['ok', 'ok'], [$finalize['status'], $expense['status']], json_encode([$finalize, $expense]));
+        $this->assertSame([1, $this->phone->id], [Sale::query()->count(), CashPayout::query()->sole()->inventory_unit_id]);
+        $this->assertSame(1_350_000, $session->fresh()->expectedMinor());
+        $this->assertSame(1_330_000, $session->fresh()->availableForPayoutMinor());
     }
 
     #[Test]

@@ -31,6 +31,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
@@ -289,6 +290,32 @@ class ExpenseTest extends TestCase
             'operation' => 'expense_submission', 'store_id' => $this->store->id, 'method' => 'card', 'session_id' => null,
             'category' => 'supplies', 'description' => 'Printer paper', 'amount' => 4_000, 'expense_date' => Carbon::now(Sale::DISPLAY_TIMEZONE)->toDateString(), 'reference' => null,
         ]), $plain->request_fingerprint);
+    }
+
+    #[Test]
+    public function an_identical_retry_returns_the_original_after_its_supplier_is_deactivated_and_its_device_moves(): void
+    {
+        $session = $this->openSession('1000');
+        $supplier = OperationalSupplier::factory()->create();
+        $input = [...$this->details('150'), 'operational_supplier_id' => $supplier->id, 'inventory_unit_id' => $this->phone->id];
+        $key = (string) Str::uuid();
+        $first = $this->submit($input, $session->id, $key);
+
+        DB::table('operational_suppliers')->where('id', $supplier->id)->update(['is_active' => false]);
+        DB::table('inventory_units')->where('id', $this->phone->id)->update(['store_id' => Store::factory()->create(['code' => 'KT02'])->id]);
+
+        $replayed = $this->submit($input, $session->id, $key);
+        $this->assertSame([$first->id, false], [$replayed->id, $replayed->wasRecentlyCreated]);
+        $this->assertThrows(fn () => $this->submit([...$input, 'description' => 'Changed'], $session->id, $key), IdempotencyConflictException::class);
+        $this->assertThrows(fn () => app(SubmitExpense::class)($this->createOwner(), $this->store, $session->id, $input, $key), IdempotencyConflictException::class);
+        $this->assertThrows(fn () => app(SubmitExpense::class)($this->cashier, $this->store, $session->id, $input, $key), AuthorizationException::class);
+
+        $this->assertValidationError(fn () => $this->submit($input, $session->id), 'operational_supplier_id');
+        $this->assertValidationError(fn () => $this->submit([...$input, 'operational_supplier_id' => null], $session->id), 'inventory_unit_id');
+
+        $expense = app(ConfirmCashPayout::class)($this->owner, $this->store, $first->cash_payout_id, $session->id);
+        $this->assertSame([$supplier->id, $this->phone->id], [$expense->operational_supplier_id, $expense->inventory_unit_id]);
+        $this->assertSame([1, 1], [ExpenseSubmission::query()->count(), CashPayout::query()->count()]);
     }
 
     private function openSession(string $counted): CashboxSession
