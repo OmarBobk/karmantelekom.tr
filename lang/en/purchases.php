@@ -221,6 +221,33 @@ return [
         'reversed_detail' => 'Reversed by :name on :date: :reason',
         'by' => 'by :name',
         'settled' => 'This invoice is fully paid.',
+        'cashbox_help' => 'Cash is taken from the open cashbox session: :available available. The amount is reserved first; hand it out only when asked.',
+        'reserved' => 'Reserved for pending cash payouts: :amount',
+    ],
+
+    'cash_payouts' => [
+        'title' => 'Cash waiting to be handed to the supplier',
+        'hand_out_title' => 'Hand out the cash now',
+        'hand_out' => 'Hand out :amount TRY in cash to the supplier, then confirm.',
+        'verify' => 'Reserved :time by :name. Check whether this cash was already handed out before confirming or releasing it.',
+        'confirm' => 'Confirm handed out',
+        'confirmed' => 'Cash payment recorded. :outstanding still outstanding.',
+        'already_confirmed' => 'This cash payment was already recorded; nothing was repeated.',
+        'release' => 'Release',
+        'release_title' => 'Release this cash payout?',
+        'release_help' => 'Release only after you verified the cash was not handed out, or was handed back. Nothing is recorded as paid.',
+        'release_submit' => 'Release payout',
+        'released' => 'Cash payout released. Nothing was recorded as paid.',
+        'replay_pending' => 'This cash payment was already submitted and is still waiting. Check whether :amount TRY was already handed out before confirming.',
+        'replay_released' => 'This cash payment was already submitted and was released; nothing was paid.',
+        'cash_badge' => 'From cashbox',
+        'errors' => [
+            'session_changed' => 'The cashbox session changed after this form was opened. Reload and check the available cash.',
+            'exceeds_available' => 'Only :available TRY is available in the cashbox after pending payouts.',
+            'payout_changed' => 'This payout belongs to another cashbox session. Reload the page.',
+            'payout_not_pending' => 'This payout is no longer waiting; reload to see its state.',
+            'not_reversible' => 'This payment was handed out from the cashbox and cannot be reversed here.',
+        ],
     ],
 
     'reverse' => [

@@ -124,6 +124,9 @@
                                                 <span class="text-gray-700">{{ $movement->customerPayment->customer?->name }}</span>
                                             @elseif ($movement->expense)
                                                 <span class="text-gray-700">{{ $movement->expense->category->label() }} · <span dir="auto">{{ $movement->expense->description }}</span></span>
+                                            @elseif ($movement->supplierPayment)
+                                                <bdi dir="ltr" class="font-mono">{{ $movement->supplierPayment->reference }}</bdi>
+                                                <span class="text-gray-700">{{ $movement->supplierPayment->supplier?->name }}</span>
                                             @endif
                                         </td>
                                         <td class="px-4 py-2 text-gray-700">{{ $movement->recorder?->name }}</td>

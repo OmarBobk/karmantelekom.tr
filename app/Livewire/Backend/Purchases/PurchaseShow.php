@@ -4,16 +4,23 @@ declare(strict_types=1);
 
 namespace App\Livewire\Backend\Purchases;
 
+use App\Actions\Purchasing\ConfirmSupplierCashPayout;
 use App\Actions\Purchasing\CopyPurchaseAsCorrection;
 use App\Actions\Purchasing\RecordSupplierPayment;
+use App\Actions\Purchasing\ReleaseSupplierCashPayout;
 use App\Actions\Purchasing\ReversePurchase;
 use App\Actions\Purchasing\ReverseSupplierPayment;
+use App\Enums\CashPayoutResolution;
+use App\Enums\Currency;
 use App\Enums\SupplierPaymentMethod;
 use App\Exceptions\Inventory\IdempotencyConflictException;
 use App\Livewire\Backend\Concerns\SubmitsInventoryChanges;
 use App\Livewire\Backend\Concerns\UsesOperationalLocale;
+use App\Models\CashboxSession;
 use App\Models\Purchase;
+use App\Models\SupplierCashPayout;
 use App\Models\SupplierPayment;
+use App\Services\Purchasing\LocalizedMoney;
 use App\Services\Purchasing\Money;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
@@ -50,12 +57,32 @@ class PurchaseShow extends Component
 
     public string $reverseReason = '';
 
+    /**
+     * The open cashbox session TRY cash would be reserved on, as shown with the payment form.
+     */
+    #[Locked]
+    public ?int $sessionShown = null;
+
+    /**
+     * The payout this screen just created and told the operator to hand out.
+     */
+    #[Locked]
+    public ?int $instructedPayoutId = null;
+
+    #[Locked]
+    public ?int $releasePayoutId = null;
+
+    public string $releaseResolution = '';
+
+    public string $releaseNote = '';
+
     public function mount(Purchase $purchase): void
     {
         $this->authorize('view', $purchase);
 
         $this->purchaseId = $purchase->id;
         $this->paymentDate = now()->toDateString();
+        $this->snapshotSession($purchase);
 
         if ($purchase->isDraft() && Gate::allows('update', $purchase)) {
             $this->redirectRoute('subdomain.purchases.edit', $purchase, navigate: true);
@@ -81,8 +108,9 @@ class PurchaseShow extends Component
                 'method' => $this->paymentMethod,
                 'reference' => $this->paymentReference,
                 'note' => $this->paymentNote,
-            ], $this->submissionKey);
+            ], $this->submissionKey, $this->sessionShown);
         } catch (ValidationException $exception) {
+            $this->snapshotSession($purchase);
             $map = ['amount' => 'paymentAmount', 'paid_on' => 'paymentDate', 'method' => 'paymentMethod', 'reference' => 'paymentReference', 'note' => 'paymentNote'];
 
             throw ValidationException::withMessages(collect($exception->errors())->mapWithKeys(fn ($messages, $key) => [$map[$key] ?? 'paymentAmount' => $messages])->all());
@@ -97,6 +125,21 @@ class PurchaseShow extends Component
         $this->reset('paymentAmount', 'paymentReference', 'paymentNote');
         $this->dispatch('close-dialog', id: 'record-payment');
 
+        if ($payment instanceof SupplierCashPayout) {
+            $this->instructedPayoutId = $payment->wasRecentlyCreated ? $payment->id : null;
+            $amount = LocalizedMoney::format($payment->amountMinor());
+            $this->dispatch('notify', [
+                'type' => $payment->wasRecentlyCreated ? 'warning' : 'info',
+                'message' => match (true) {
+                    $payment->wasRecentlyCreated => __('purchases.cash_payouts.hand_out', ['amount' => $amount]),
+                    $payment->isPending() => __('purchases.cash_payouts.replay_pending', ['amount' => $amount]),
+                    default => __('purchases.cash_payouts.replay_released'),
+                },
+            ]);
+
+            return;
+        }
+
         $outstanding = $purchase->refresh()->outstandingMinor();
         $this->dispatch('notify', [
             'type' => $payment->wasRecentlyCreated ? 'success' : 'info',
@@ -106,6 +149,82 @@ class PurchaseShow extends Component
                 default => __('purchases.payments.already_recorded'),
             },
         ]);
+    }
+
+    /**
+     * Confirm the displayed payout's cash was handed to the supplier, naming the session it was shown with.
+     */
+    public function confirmPayout(ConfirmSupplierCashPayout $confirmSupplierCashPayout, int $payoutId, int $sessionId): void
+    {
+        $purchase = $this->purchase();
+        $this->authorize('pay', $purchase);
+        $this->resetErrorBag();
+
+        try {
+            $payment = $confirmSupplierCashPayout(auth()->user(), $purchase, $payoutId, $sessionId);
+        } catch (ModelNotFoundException) {
+            $this->addError('cashbox', __('purchases.cash_payouts.errors.payout_not_pending'));
+
+            return;
+        } finally {
+            $this->snapshotSession($purchase);
+        }
+
+        if ($this->instructedPayoutId === $payoutId) {
+            $this->instructedPayoutId = null;
+        }
+
+        $this->dispatch('notify', [
+            'type' => $payment->wasRecentlyCreated ? 'success' : 'info',
+            'message' => $payment->wasRecentlyCreated
+                ? __('purchases.cash_payouts.confirmed', ['outstanding' => Money::format($purchase->refresh()->outstandingMinor()).' '.$purchase->currency->value])
+                : __('purchases.cash_payouts.already_confirmed'),
+        ]);
+    }
+
+    public function openRelease(int $payoutId): void
+    {
+        $purchase = $this->purchase();
+        $this->authorize('manageCashbox', $purchase->store);
+        $payout = $purchase->cashPayouts()->pending()->find($payoutId);
+
+        if ($payout === null) {
+            $this->addError('cashbox', __('purchases.cash_payouts.errors.payout_not_pending'));
+
+            return;
+        }
+
+        $this->resetErrorBag();
+        $this->releasePayoutId = $payout->id;
+        $this->reset('releaseResolution', 'releaseNote');
+        $this->dispatch('open-dialog', id: 'release-payout');
+    }
+
+    public function releasePayout(ReleaseSupplierCashPayout $releaseSupplierCashPayout): void
+    {
+        $purchase = $this->purchase();
+
+        if ($this->releasePayoutId === null) {
+            return;
+        }
+
+        try {
+            $releaseSupplierCashPayout(auth()->user(), $purchase, $this->releasePayoutId, $this->releaseResolution ?: null, $this->releaseNote);
+        } catch (ValidationException $exception) {
+            $map = ['resolution' => 'releaseResolution', 'release_note' => 'releaseNote'];
+
+            throw ValidationException::withMessages(collect($exception->errors())->mapWithKeys(fn ($messages, $key) => [$map[$key] ?? 'releaseNote' => $messages])->all());
+        }
+
+        if ($this->instructedPayoutId === $this->releasePayoutId) {
+            $this->instructedPayoutId = null;
+        }
+
+        $this->releasePayoutId = null;
+        $this->reset('releaseResolution', 'releaseNote');
+        $this->snapshotSession($purchase);
+        $this->dispatch('close-dialog', id: 'release-payout');
+        $this->dispatch('notify', ['type' => 'success', 'message' => __('purchases.cash_payouts.released')]);
     }
 
     public function reversePayment(ReverseSupplierPayment $reverseSupplierPayment): void
@@ -187,9 +306,17 @@ class PurchaseShow extends Component
         $this->authorize('view', $purchase);
 
         $activePaid = $purchase->payments->reject(fn (SupplierPayment $payment) => $payment->isReversed())->sum(fn (SupplierPayment $payment) => $payment->amountMinor());
+        $tracksCash = $purchase->currency === Currency::TRY && CashboxSession::trackingStarted($purchase->store);
+        $session = $tracksCash ? CashboxSession::openFor($purchase->store) : null;
 
         return view('livewire.backend.purchases.purchase-show', [
             'purchase' => $purchase,
+            'pendingPayouts' => $purchase->cashPayouts()->pending()->with('starter:id,name')->orderBy('id')->get(),
+            'payable' => $purchase->payableMinor(),
+            'tracksCash' => $tracksCash,
+            'cashAvailable' => $session !== null && $session->id === $this->sessionShown ? $session->availableForPayoutMinor() : null,
+            'canRelease' => Gate::allows('manageCashbox', $purchase->store),
+            'resolutions' => CashPayoutResolution::cases(),
             'activePaid' => $activePaid,
             'isReconciled' => ! $purchase->isPosted() || $purchase->paidTotalMinor() === $activePaid,
             'canUpdate' => Gate::allows('update', $purchase),
@@ -205,5 +332,10 @@ class PurchaseShow extends Component
     private function purchase(): Purchase
     {
         return Purchase::query()->findOrFail($this->purchaseId);
+    }
+
+    private function snapshotSession(Purchase $purchase): void
+    {
+        $this->sessionShown = $purchase->currency === Currency::TRY ? CashboxSession::openFor($purchase->store)?->id : null;
     }
 }

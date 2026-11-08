@@ -19,9 +19,10 @@ use LogicException;
  * One counted period of a store's cashbox. At most one is open per store: open_store_id holds
  * the store id while open and is cleared on closing. A closed session is final.
  *
- * Cash posting locks the store row in share mode as its last lock; opening, closing, and cash
- * payouts lock it exclusively first, so a close sees every committed movement and no posting can
- * follow it, and payouts see every reservation made before them.
+ * Cash posting locks the store row in share mode as its last lock; opening, closing, and expense
+ * payouts lock it exclusively first, and supplier cash payouts right after their invoice, so a
+ * close sees every committed movement and no posting can follow it, and payouts see every
+ * reservation made before them.
  *
  * @property int $id
  * @property int $store_id
@@ -157,11 +158,14 @@ class CashboxSession extends Model
     }
 
     /**
-     * Expected cash not already reserved by pending payouts: the most a new payout may take.
+     * Expected cash not already reserved by pending expense or supplier payouts: the most a new
+     * payout may take.
      */
     public function availableForPayoutMinor(): int
     {
-        return $this->expectedMinor() - Money::fromDecimal((string) $this->payouts()->pending()->sum('amount'));
+        return $this->expectedMinor()
+            - Money::fromDecimal((string) $this->payouts()->pending()->sum('amount'))
+            - Money::fromDecimal((string) $this->supplierPayouts()->pending()->sum('amount'));
     }
 
     public function pendingIntakeCount(): int
@@ -171,7 +175,7 @@ class CashboxSession extends Model
 
     public function pendingPayoutCount(): int
     {
-        return $this->payouts()->pending()->count();
+        return $this->payouts()->pending()->count() + $this->supplierPayouts()->pending()->count();
     }
 
     /**
@@ -180,6 +184,14 @@ class CashboxSession extends Model
     public function payouts(): HasMany
     {
         return $this->hasMany(CashPayout::class);
+    }
+
+    /**
+     * @return HasMany<SupplierCashPayout, $this>
+     */
+    public function supplierPayouts(): HasMany
+    {
+        return $this->hasMany(SupplierCashPayout::class);
     }
 
     /**

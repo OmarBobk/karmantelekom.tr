@@ -5,7 +5,8 @@ declare(strict_types=1);
 namespace App\Enums;
 
 /**
- * How a supplier payment was made. Recorded for reference only; no cashbox entries yet.
+ * How a supplier payment was made. Only TRY cash from a branch whose cash tracking started moves
+ * cashbox cash, through a supplier cash payout; every other payment is recorded for reference.
  */
 enum SupplierPaymentMethod: string
 {

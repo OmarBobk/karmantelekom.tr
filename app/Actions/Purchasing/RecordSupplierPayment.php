@@ -4,15 +4,21 @@ declare(strict_types=1);
 
 namespace App\Actions\Purchasing;
 
+use App\Enums\CashPayoutStatus;
+use App\Enums\Currency;
 use App\Enums\PurchaseStatus;
 use App\Enums\SupplierLedgerEntryType;
 use App\Enums\SupplierPaymentMethod;
 use App\Exceptions\Inventory\IdempotencyConflictException;
+use App\Models\CashboxSession;
 use App\Models\Purchase;
+use App\Models\Store;
+use App\Models\SupplierCashPayout;
 use App\Models\SupplierLedgerEntry;
 use App\Models\SupplierPayment;
 use App\Models\User;
 use App\Services\Idempotency;
+use App\Services\Purchasing\LocalizedMoney;
 use App\Services\Purchasing\Money;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -26,20 +32,36 @@ use Illuminate\Validation\ValidationException;
 class RecordSupplierPayment
 {
     /**
-     * Record a partial or full payment against one posted invoice, in the invoice currency.
+     * Submit a partial or full payment against one posted invoice, in the invoice currency.
+     *
+     * TRY cash from a branch whose cash tracking started is not recorded at once: it reserves the
+     * amount as a pending supplier cash payout on the session the form was shown with, within the
+     * drawer cash available and the invoice amount payable, and ConfirmSupplierCashPayout records
+     * the payment once the cash is handed out. Every other payment, including TRY cash before the
+     * branch's first session, is recorded at once as before. Pending payouts reduce the amount any
+     * payment may cover.
      *
      * The operator's payment reference identifies the real-world payment: resubmitting the
      * same reference on the same invoice (with the old or a new key) returns the original
-     * payment only for the same actor and identical details; anything else is rejected
-     * without revealing the existing payment.
+     * payment or pending payout only for the same actor and identical details; anything else is
+     * rejected without revealing it. The key is checked against payments and payouts alike, and
+     * replays come before any tracking or balance check, so old payments still replay.
+     *
+     * Lock order for every supplier payment write: the invoice, then the store row, then a payout.
+     * Inserting a payment or ledger entry takes a share lock on the store row through its foreign
+     * key, so the invoice must come first for every writer; TRY cash then locks the store row
+     * exclusively, which serializes it with opening, closing, and other payouts. No consistent
+     * read happens before these locks, so the snapshot that computes the payable invoice amount
+     * and the drawer cash available is taken after them and sees every write they waited for.
      *
      * @param  array{amount?: mixed, paid_on?: mixed, method?: mixed, reference?: mixed, note?: mixed}  $input
+     * @param  int|null  $sessionId  The open session the form was shown with; used for tracked TRY cash only.
      *
      * @throws AuthorizationException
      * @throws ValidationException
      * @throws IdempotencyConflictException when the key was used for a different submission.
      */
-    public function __invoke(User $actor, Purchase $purchase, array $input, string $idempotencyKey): SupplierPayment
+    public function __invoke(User $actor, Purchase $purchase, array $input, string $idempotencyKey, ?int $sessionId = null): SupplierPayment|SupplierCashPayout
     {
         Gate::forUser($actor)->authorize('pay', $purchase);
 
@@ -76,9 +98,15 @@ class RecordSupplierPayment
             'note' => $note,
         ]);
 
+        $drawerCash = $purchase->currency === Currency::TRY && $validated['method'] === SupplierPaymentMethod::CASH->value;
+
         try {
-            return DB::transaction(function () use ($actor, $purchase, $validated, $amount, $reference, $referenceKey, $note, $key, $fingerprint): SupplierPayment {
+            return DB::transaction(function () use ($actor, $purchase, $validated, $amount, $reference, $referenceKey, $note, $key, $fingerprint, $drawerCash, $sessionId): SupplierPayment|SupplierCashPayout {
                 $locked = Purchase::query()->whereKey($purchase->id)->lockForUpdate()->firstOrFail();
+
+                if ($drawerCash) {
+                    Store::query()->whereKey($locked->store_id)->lockForUpdate()->firstOrFail();
+                }
 
                 $existing = $this->findExisting($locked->id, $key, $referenceKey);
 
@@ -90,12 +118,16 @@ class RecordSupplierPayment
                     throw ValidationException::withMessages(['amount' => __('purchases.errors.pay_requires_posted')]);
                 }
 
-                $outstanding = $locked->outstandingMinor();
+                $payable = $locked->payableMinor();
 
-                if ($amount > $outstanding) {
+                if ($amount > $payable) {
                     throw ValidationException::withMessages(['amount' => __('purchases.errors.amount_exceeds_outstanding', [
-                        'outstanding' => Money::format($outstanding).' '.$locked->currency->value,
+                        'outstanding' => Money::format(max(0, $payable)).' '.$locked->currency->value,
                     ])]);
+                }
+
+                if ($drawerCash && CashboxSession::trackingStarted($locked->store)) {
+                    return $this->reserve($actor, $locked, $sessionId, $amount, $validated['paid_on'], $reference, $referenceKey, $note, $key, $fingerprint);
                 }
 
                 $now = now();
@@ -133,7 +165,7 @@ class RecordSupplierPayment
                 return $payment;
             });
         } catch (UniqueConstraintViolationException $exception) {
-            // The losing transaction rolled back; resolve against the committed payment.
+            // The losing transaction rolled back; resolve against the committed payment or payout.
             $existing = $this->findExisting($purchase->id, $key, $referenceKey);
 
             if ($existing === null) {
@@ -144,23 +176,72 @@ class RecordSupplierPayment
         }
     }
 
-    private function findExisting(int $purchaseId, string $key, string $referenceKey): ?SupplierPayment
+    /**
+     * @throws ValidationException
+     */
+    private function reserve(User $actor, Purchase $purchase, ?int $sessionId, int $amount, string $paidOn, string $reference, string $referenceKey, ?string $note, string $key, string $fingerprint): SupplierCashPayout
+    {
+        $session = CashboxSession::openFor($purchase->store);
+
+        if ($session === null) {
+            throw ValidationException::withMessages(['cashbox' => __('pos.cashbox.errors.no_open_session')]);
+        }
+
+        if ($session->id !== $sessionId) {
+            throw ValidationException::withMessages(['cashbox' => __('purchases.cash_payouts.errors.session_changed')]);
+        }
+
+        $available = $session->availableForPayoutMinor();
+
+        if ($amount > $available) {
+            throw ValidationException::withMessages(['amount' => __('purchases.cash_payouts.errors.exceeds_available', ['available' => LocalizedMoney::format(max(0, $available))])]);
+        }
+
+        return SupplierCashPayout::query()->create([
+            'store_id' => $purchase->store_id,
+            'purchase_id' => $purchase->id,
+            'cashbox_session_id' => $session->id,
+            'amount' => Money::toDecimal($amount),
+            'paid_on' => $paidOn,
+            'reference' => $reference,
+            'reference_key' => $referenceKey,
+            'note' => $note,
+            'request_key' => $key,
+            'request_fingerprint' => $fingerprint,
+            'status' => CashPayoutStatus::PENDING,
+            'started_by' => $actor->id,
+            'started_at' => now(),
+        ]);
+    }
+
+    /**
+     * The payment or payout this submission repeats: by key first, then by reference on the
+     * invoice. A completed payout is found through its payment; a released one frees its
+     * reference but keeps its key.
+     */
+    private function findExisting(int $purchaseId, string $key, string $referenceKey): SupplierPayment|SupplierCashPayout|null
     {
         return SupplierPayment::query()->where('idempotency_key', $key)->first()
-            ?? SupplierPayment::query()->where('purchase_id', $purchaseId)->where('reference_key', $referenceKey)->first();
+            ?? SupplierCashPayout::query()->where('request_key', $key)->first()
+            ?? SupplierPayment::query()->where('purchase_id', $purchaseId)->where('reference_key', $referenceKey)->first()
+            ?? SupplierCashPayout::query()->pending()->where('purchase_id', $purchaseId)->where('reference_key', $referenceKey)->first();
     }
 
     /**
      * @throws IdempotencyConflictException
      * @throws ValidationException
      */
-    private function replay(SupplierPayment $existing, User $actor, string $fingerprint, string $key): SupplierPayment
+    private function replay(SupplierPayment|SupplierCashPayout $existing, User $actor, string $fingerprint, string $key): SupplierPayment|SupplierCashPayout
     {
-        if (Idempotency::matches($existing->user_id, $existing->request_fingerprint, $actor, $fingerprint)) {
+        [$ownerId, $existingKey] = $existing instanceof SupplierPayment
+            ? [$existing->user_id, $existing->idempotency_key]
+            : [$existing->started_by, $existing->request_key];
+
+        if (Idempotency::matches($ownerId, $existing->request_fingerprint, $actor, $fingerprint)) {
             return $existing;
         }
 
-        if ($existing->idempotency_key === $key) {
+        if ($existingKey === $key) {
             throw new IdempotencyConflictException;
         }
 

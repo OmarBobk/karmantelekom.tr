@@ -716,7 +716,7 @@ An expense record must not automatically create an inventory movement or change 
 - Categories are a fixed list: rent, utilities, salaries and wages, supplies, maintenance and repairs, transport, marketing, taxes and fees, and other.
 - Card and bank transfer expenses appear in expense history only and post nothing to the cashbox.
 - Each form submission carries one request key, and a key records at most one submission across all methods, even under concurrent retries. An identical retry returns the original result and writes nothing. A different amount, detail, or method under the same key is refused as a conflict.
-- Expenses are never edited or deleted. Supplier payouts, device costs, and expense corrections are separate procedures.
+- Expenses are never edited or deleted. Supplier payouts (§12.2), device costs, and expense corrections are separate procedures.
 
 **Cash expenses**
 
@@ -726,6 +726,15 @@ An expense record must not automatically create an inventory movement or change 
 - Pending payouts survive reloads and block closing the session.
 - Only the submission that newly creates a payout tells staff to hand out cash. A retried submission instead shows the original payout's current state (pending, completed, or released), and a reload lists pending payouts with a prompt to verify whether cash was already handed out before confirming.
 - The owner (`manage_cashbox`) releases a pending payout after verifying the cash was not handed out, or was handed back. The release records that resolution and a required note, is logged, and records no expense.
+
+### 12.2 Supplier Cash Payouts (decided 2026-11-08, Phase 6C3)
+
+- Only TRY cash paid to a supplier from a branch whose cash tracking started (§11.6) moves cashbox cash. Before the branch's first session, TRY cash supplier payments are recorded at once, as before. USD payments and non-cash payments stay in the supplier ledger only.
+- Tracked TRY cash first reserves a pending supplier cash payout on the session the payment form was shown with. Its amount may not exceed the drawer cash available after all pending payouts, nor the invoice outstanding minus pending supplier cash payouts. Every other payment on the invoice is also limited by those pending payouts.
+- The payment form's request key and reference cover payments and payouts alike. Replays are resolved before any tracking or balance check, so payments recorded before tracking still replay.
+- Confirming names the payout and session displayed (`pay_suppliers`). It records the supplier payment, its ledger entry, and one outgoing cash movement linked to both, then completes the payout. A retry returns the original payment. Only the submission that creates a payout tells staff to hand out cash; reloads show pending payouts with a prompt to verify first.
+- Pending supplier payouts block closing the session and reversing the invoice. The owner (`manage_cashbox`) releases one with a resolution and note, logged; nothing is recorded as paid.
+- A supplier payment handed out from the cashbox is not reversed through the payment reversal, since its cash already left the drawer. Correcting it is a separate procedure.
 
 ---
 
