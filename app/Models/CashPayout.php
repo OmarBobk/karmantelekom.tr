@@ -32,8 +32,6 @@ use LogicException;
  * @property Carbon $expense_date
  * @property string|null $reference
  * @property CashPayoutStatus $status
- * @property string $request_key
- * @property string $request_fingerprint
  * @property int $started_by
  * @property Carbon $started_at
  * @property Carbon|null $completed_at
@@ -51,8 +49,7 @@ class CashPayout extends Model
      */
     protected $fillable = [
         'store_id', 'cashbox_session_id', 'amount', 'category', 'description', 'expense_date', 'reference', 'status',
-        'request_key', 'request_fingerprint', 'started_by', 'started_at', 'completed_at', 'released_by', 'released_at',
-        'resolution', 'release_note',
+        'started_by', 'started_at', 'completed_at', 'released_by', 'released_at', 'resolution', 'release_note',
     ];
 
     protected static function booted(): void
@@ -113,6 +110,14 @@ class CashPayout extends Model
     public function starter(): BelongsTo
     {
         return $this->belongsTo(User::class, 'started_by');
+    }
+
+    /**
+     * @return BelongsTo<User, $this>
+     */
+    public function releaser(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'released_by');
     }
 
     /**

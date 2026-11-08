@@ -5,9 +5,8 @@ declare(strict_types=1);
 namespace App\Livewire\Pos;
 
 use App\Actions\Expenses\ConfirmCashPayout;
-use App\Actions\Expenses\RecordExpense;
 use App\Actions\Expenses\ReleaseCashPayout;
-use App\Actions\Expenses\StartCashPayout;
+use App\Actions\Expenses\SubmitExpense;
 use App\Enums\CashPayoutResolution;
 use App\Enums\ExpenseCategory;
 use App\Enums\ExpenseMethod;
@@ -17,6 +16,7 @@ use App\Livewire\Pos\Concerns\UsesPosLocale;
 use App\Models\CashboxSession;
 use App\Models\CashPayout;
 use App\Models\Expense;
+use App\Models\ExpenseSubmission;
 use App\Models\Sale;
 use App\Models\Store;
 use App\Services\Purchasing\LocalizedMoney;
@@ -35,7 +35,9 @@ use Livewire\WithPagination;
  * A cash expense first reserves its amount on the session the form was shown with; staff are
  * told to hand the cash out only after that succeeds. Each pending payout is confirmed or
  * released by naming the payout and session it was displayed with. The request key is kept
- * through failures and retries and renewed only after a confirmed submission.
+ * through failures and retries and renewed only after a confirmed submission. The hand-out
+ * instruction follows only a newly created payout; a resent submission shows the payout's
+ * current state instead, and pending payouts after a reload ask the operator to check first.
  */
 class ExpensesPage extends Component
 {
@@ -54,9 +56,16 @@ class ExpensesPage extends Component
     #[Locked]
     public ?int $sessionShown = null;
 
-    /** The payout this page just reserved; only then is the owner told to hand the cash out. */
+    /** The payout this page just created; only then is the owner told to hand the cash out. */
     #[Locked]
     public ?int $instructedPayoutId = null;
+
+    /**
+     * A submission this page resent and got back as already recorded. Its current state is shown
+     * instead of a hand-out instruction, so the operator checks before handing out any cash.
+     */
+    #[Locked]
+    public ?int $replayedSubmissionId = null;
 
     public string $category = '';
 
@@ -91,7 +100,7 @@ class ExpensesPage extends Component
         $this->resetValidation();
     }
 
-    public function record(RecordExpense $record, StartCashPayout $startPayout): void
+    public function record(SubmitExpense $submit): void
     {
         $store = $this->authorizeExpenses();
 
@@ -102,6 +111,7 @@ class ExpensesPage extends Component
         }
 
         $input = [
+            'method' => $this->method,
             'category' => $this->category,
             'description' => $this->description,
             'amount' => $amount,
@@ -110,11 +120,7 @@ class ExpensesPage extends Component
         ];
 
         try {
-            if ($this->method === ExpenseMethod::CASH->value) {
-                $payout = $startPayout(auth()->user(), $store, $this->sessionShown, $input, $this->requestKey);
-            } else {
-                $expense = $record(auth()->user(), $store, ['method' => $this->method, ...$input], $this->requestKey);
-            }
+            $submission = $submit(auth()->user(), $store, $this->sessionShown, $input, $this->requestKey);
         } catch (IdempotencyConflictException) {
             throw ValidationException::withMessages(['amount' => __('pos.expenses.errors.request_conflict')]);
         } catch (ValidationException $exception) {
@@ -126,16 +132,27 @@ class ExpensesPage extends Component
         }
 
         $this->resetForm();
+        $this->resetPage();
 
-        if (isset($payout)) {
-            $this->instructedPayoutId = $payout->isPending() ? $payout->id : null;
+        if (! $submission->wasRecentlyCreated) {
+            $this->instructedPayoutId = null;
+            $this->replayedSubmissionId = $submission->id;
+            $this->notify('info', __('pos.expenses.replay.notice'));
+
+            return;
+        }
+
+        $this->replayedSubmissionId = null;
+        $payout = $submission->payout;
+
+        if ($payout !== null) {
+            $this->instructedPayoutId = $payout->id;
             $this->notify('info', __('pos.expenses.hand_out_title', ['amount' => LocalizedMoney::format($payout->amountMinor())]));
 
             return;
         }
 
-        $this->resetPage();
-        $this->notify('success', __('pos.expenses.recorded', ['amount' => LocalizedMoney::format($expense->amountMinor())]));
+        $this->notify('success', __('pos.expenses.recorded', ['amount' => LocalizedMoney::format($submission->expense->amountMinor())]));
     }
 
     /**
@@ -210,6 +227,10 @@ class ExpensesPage extends Component
             'session' => $session,
             'sessionMatches' => $session?->id === $this->sessionShown,
             'available' => $session?->availableForPayoutMinor(),
+            'replayed' => $this->replayedSubmissionId === null ? null : ExpenseSubmission::query()
+                ->where('store_id', $store->id)
+                ->with(['payout.releaser:id,name', 'payout.expense', 'expense'])
+                ->find($this->replayedSubmissionId),
             'pendingPayouts' => CashPayout::query()
                 ->where('store_id', $store->id)
                 ->pending()

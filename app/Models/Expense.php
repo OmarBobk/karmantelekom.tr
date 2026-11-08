@@ -15,9 +15,9 @@ use LogicException;
 
 /**
  * A general branch expense in TRY. A cash expense comes from exactly one confirmed cash payout
- * and posts one outgoing cash movement; card and bank transfer expenses carry their own request
- * key and post nothing to the cashbox. Corrections are a separate procedure, so expenses are
- * never edited or deleted.
+ * and posts one outgoing cash movement; a card or bank transfer expense comes from exactly one
+ * expense submission and posts nothing to the cashbox. Corrections are a separate procedure, so
+ * expenses are never edited or deleted.
  *
  * @property int $id
  * @property int $store_id
@@ -30,8 +30,6 @@ use LogicException;
  * @property string|null $reference
  * @property int $user_id
  * @property int|null $cash_payout_id
- * @property string|null $idempotency_key
- * @property string|null $request_fingerprint
  * @property Carbon $recorded_at
  */
 class Expense extends Model
@@ -45,7 +43,7 @@ class Expense extends Model
      */
     protected $fillable = [
         'store_id', 'currency', 'category', 'description', 'amount', 'expense_date', 'method', 'reference', 'user_id',
-        'cash_payout_id', 'idempotency_key', 'request_fingerprint', 'recorded_at',
+        'cash_payout_id', 'recorded_at',
     ];
 
     protected static function booted(): void

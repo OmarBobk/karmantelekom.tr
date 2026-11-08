@@ -20,11 +20,15 @@
                     @error('cashbox') <p class="mx-4 mt-2 rounded-lg bg-red-50 px-3 py-2 text-sm text-red-800 ring-1 ring-red-200" role="alert">{{ $message }}</p> @enderror
                     <ul class="divide-y divide-gray-100">
                         @foreach ($pendingPayouts as $payout)
-                            @php($instructed = $payout->id === $instructedPayoutId)
+                            @php
+                                $instructed = $payout->id === $instructedPayoutId;
+                            @endphp
                             <li wire:key="payout-{{ $payout->id }}" @class(['space-y-2 px-4 py-3 text-sm', 'bg-sky-50 ring-2 ring-inset ring-sky-500' => $instructed])>
                                 @if ($instructed)
                                     <p class="text-base font-semibold text-sky-950" role="status" aria-live="polite">{{ __('pos.expenses.hand_out_title', ['amount' => LocalizedMoney::format($payout->amountMinor())]) }}</p>
                                     <p class="text-sky-950">{{ __('pos.expenses.hand_out_detail') }}</p>
+                                @else
+                                    <p class="text-xs font-medium text-amber-900" data-payout-verify>{{ __('pos.expenses.pending_verify') }}</p>
                                 @endif
                                 <div class="flex flex-wrap items-center gap-3">
                                     <div class="min-w-0 flex-1">
@@ -94,7 +98,37 @@
             </section>
         </div>
 
-        <section aria-labelledby="expenses-record-title" class="lg:col-span-5">
+        <section aria-labelledby="expenses-record-title" class="space-y-4 lg:col-span-5">
+            @if ($replayed)
+                @php
+                    $replayedPayout = $replayed->payout;
+                    $replayState = match (true) {
+                        $replayedPayout === null => 'recorded',
+                        $replayedPayout->status === \App\Enums\CashPayoutStatus::COMPLETED => 'completed',
+                        $replayedPayout->status === \App\Enums\CashPayoutStatus::RELEASED => 'released',
+                        default => 'pending',
+                    };
+                    $replayAmount = LocalizedMoney::format(($replayedPayout ?? $replayed->expense)->amountMinor());
+                @endphp
+                <div wire:key="expense-replay-{{ $replayed->id }}-{{ $replayState }}" data-replay-state="{{ $replayState }}" @class([
+                    'rounded-xl p-4 text-sm ring-2',
+                    'bg-amber-50 text-amber-950 ring-amber-400' => $replayState === 'pending',
+                    'bg-gray-50 text-gray-900 ring-gray-300' => $replayState !== 'pending',
+                ]) role="status" aria-live="polite">
+                    <p class="text-base font-semibold">{{ __('pos.expenses.replay.title') }}</p>
+                    <p class="mt-1">
+                        @if ($replayState === 'pending')
+                            {{ __('pos.expenses.replay.pending', ['amount' => $replayAmount, 'time' => Sale::displayTime($replayedPayout->started_at)]) }}
+                        @elseif ($replayState === 'completed')
+                            {{ __('pos.expenses.replay.completed', ['amount' => $replayAmount, 'time' => Sale::displayTime($replayedPayout->completed_at)]) }}
+                        @elseif ($replayState === 'released')
+                            {{ __('pos.expenses.replay.released', ['amount' => $replayAmount, 'time' => Sale::displayTime($replayedPayout->released_at), 'resolution' => $replayedPayout->resolution?->label(), 'name' => $replayedPayout->releaser?->name]) }}
+                        @else
+                            {{ __('pos.expenses.replay.recorded', ['amount' => $replayAmount, 'method' => $replayed->expense->method->label(), 'time' => Sale::displayTime($replayed->expense->recorded_at)]) }}
+                        @endif
+                    </p>
+                </div>
+            @endif
             <form wire:submit="record" class="space-y-4 rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-200" x-data="{ method: $wire.entangle('method') }">
                 <h2 id="expenses-record-title" class="text-base font-semibold text-gray-900">{{ __('pos.expenses.record_title') }}</h2>
 

@@ -7,9 +7,8 @@ namespace Tests\Feature;
 use App\Actions\Cashbox\CloseCashboxSession;
 use App\Actions\Cashbox\OpenCashboxSession;
 use App\Actions\Expenses\ConfirmCashPayout;
-use App\Actions\Expenses\RecordExpense;
 use App\Actions\Expenses\ReleaseCashPayout;
-use App\Actions\Expenses\StartCashPayout;
+use App\Actions\Expenses\SubmitExpense;
 use App\Enums\CashMovementDirection;
 use App\Enums\CashMovementType;
 use App\Enums\CashPayoutStatus;
@@ -20,6 +19,7 @@ use App\Models\CashboxSession;
 use App\Models\CashMovement;
 use App\Models\CashPayout;
 use App\Models\Expense;
+use App\Models\ExpenseSubmission;
 use App\Models\Sale;
 use App\Models\Store;
 use App\Models\User;
@@ -144,7 +144,7 @@ class ExpenseTest extends TestCase
     #[Test]
     public function a_cash_payout_needs_the_open_session_the_form_showed(): void
     {
-        $this->assertValidationError(fn () => app(StartCashPayout::class)($this->owner, $this->store, null, $this->details('10'), (string) Str::uuid()), 'cashbox');
+        $this->assertValidationError(fn () => $this->submit($this->details('10'), null), 'cashbox');
 
         $first = $this->openSession('100');
         $page = Livewire::actingAs($this->owner)->test(ExpensesPage::class, ['store' => $this->store]);
@@ -165,20 +165,77 @@ class ExpenseTest extends TestCase
     public function card_and_transfer_expenses_need_no_session_replay_by_request_key_and_are_owner_only(): void
     {
         $key = (string) Str::uuid();
-        $input = ['method' => 'bank_transfer', ...$this->details('1500.75'), 'category' => 'rent', 'reference' => 'EFT-0042'];
-        $expense = app(RecordExpense::class)($this->owner, $this->store, $input, $key);
+        $input = [...$this->details('1500.75', 'bank_transfer'), 'category' => 'rent', 'reference' => 'EFT-0042'];
+        $submission = $this->submit($input, null, $key);
+        $expense = $submission->expense;
 
+        $this->assertTrue($submission->wasRecentlyCreated);
         $this->assertSame(['1500.75', ExpenseMethod::BANK_TRANSFER, 'EFT-0042'], [$expense->amount, $expense->method, $expense->reference]);
-        $this->assertSame($expense->id, app(RecordExpense::class)($this->owner, $this->store, $input, $key)->id);
-        $this->assertThrows(fn () => app(RecordExpense::class)($this->owner, $this->store, [...$input, 'amount' => '1500.76'], $key), IdempotencyConflictException::class);
-        $this->assertValidationError(fn () => app(RecordExpense::class)($this->owner, $this->store, [...$input, 'method' => 'cash'], (string) Str::uuid()), 'method');
+        $replay = $this->submit($input, null, $key);
+        $this->assertSame([$submission->id, $expense->id, false], [$replay->id, $replay->expense_id, $replay->wasRecentlyCreated]);
+        $this->assertThrows(fn () => $this->submit([...$input, 'amount' => '1500.76'], null, $key), IdempotencyConflictException::class);
         $tomorrow = Carbon::now(Sale::DISPLAY_TIMEZONE)->addDay()->toDateString();
-        $this->assertValidationError(fn () => app(RecordExpense::class)($this->owner, $this->store, [...$input, 'expense_date' => $tomorrow], (string) Str::uuid()), 'expense_date');
+        $this->assertValidationError(fn () => $this->submit([...$input, 'expense_date' => $tomorrow], null), 'expense_date');
         $this->assertSame([1, 0, false], [Expense::query()->count(), CashMovement::query()->count(), CashboxSession::trackingStarted($this->store)]);
 
-        $this->assertThrows(fn () => app(RecordExpense::class)($this->cashier, $this->store, $input, (string) Str::uuid()), AuthorizationException::class);
+        $this->assertThrows(fn () => app(SubmitExpense::class)($this->cashier, $this->store, null, $input, (string) Str::uuid()), AuthorizationException::class);
         $this->actingAs($this->cashier)->get(route('pos.expenses', $this->store))->assertForbidden();
         $this->actingAs($this->owner)->get(route('pos.expenses', $this->store))->assertOk()->assertSee('1.500,75')->assertSee('EFT-0042');
+    }
+
+    #[Test]
+    public function only_a_newly_created_payout_says_hand_out_cash_and_a_resent_submission_shows_its_current_state(): void
+    {
+        $session = $this->openSession('1000');
+        $resend = function (string $amount, string $method = 'cash', ?callable $afterFirst = null) use ($session) {
+            $page = Livewire::actingAs($this->owner)->test(ExpensesPage::class, ['store' => $this->store]);
+            $first = $this->submit($this->details($amount, $method), $session->id, $page->get('requestKey'));
+            $afterFirst && $afterFirst($first);
+
+            return $page->set('method', $method)->set('category', 'supplies')->set('description', 'Printer paper')->set('amount', $amount)
+                ->call('record')
+                ->assertHasNoErrors()
+                ->assertSet('instructedPayoutId', null)
+                ->assertSee('This expense was already submitted')
+                ->assertDontSee("Hand out {$amount},00 TRY in cash");
+        };
+
+        $resend('120')->assertSeeHtml('data-replay-state="pending"');
+        $resend('80', afterFirst: fn (ExpenseSubmission $first) => app(ConfirmCashPayout::class)($this->owner, $this->store, $first->cash_payout_id, $session->id))
+            ->assertSeeHtml('data-replay-state="completed"');
+        $resend('50', afterFirst: fn (ExpenseSubmission $first) => app(ReleaseCashPayout::class)($this->owner, $this->store, $first->cash_payout_id, 'not_handed_out', 'Shop was closed'))
+            ->assertSeeHtml('data-replay-state="released"');
+        $resend('40', 'card')->assertSeeHtml('data-replay-state="recorded"');
+
+        $this->assertSame([4, 3, 2], [ExpenseSubmission::query()->count(), CashPayout::query()->count(), Expense::query()->count()]);
+
+        Livewire::actingAs($this->owner)->test(ExpensesPage::class, ['store' => $this->store])
+            ->assertSeeHtml('data-payout-verify')
+            ->assertDontSee('Hand out 120,00 TRY in cash')
+            ->set('method', 'cash')->set('category', 'supplies')->set('description', 'Tea')->set('amount', '30')
+            ->call('record')
+            ->assertHasNoErrors()
+            ->assertSee('Hand out 30,00 TRY in cash')
+            ->assertSet('replayedSubmissionId', null);
+    }
+
+    #[Test]
+    public function one_request_key_records_one_submission_across_cash_and_non_cash_methods(): void
+    {
+        $session = $this->openSession('1000');
+        $cardKey = (string) Str::uuid();
+        $card = $this->submit($this->details('50', 'card'), null, $cardKey);
+
+        $this->assertThrows(fn () => $this->submit($this->details('50'), $session->id, $cardKey), IdempotencyConflictException::class);
+        $this->assertThrows(fn () => $this->submit($this->details('50', 'bank_transfer'), null, $cardKey), IdempotencyConflictException::class);
+        $this->assertSame($card->id, $this->submit($this->details('50', 'card'), $session->id, $cardKey)->id);
+
+        $cashKey = (string) Str::uuid();
+        $cash = $this->submit($this->details('70'), $session->id, $cashKey);
+
+        $this->assertThrows(fn () => $this->submit($this->details('70', 'card'), null, $cashKey), IdempotencyConflictException::class);
+        $this->assertSame([$cash->id, $cash->cash_payout_id], [$this->submit($this->details('70'), $session->id, $cashKey)->id, $cash->payout->id]);
+        $this->assertSame([2, 1, 1], [ExpenseSubmission::query()->count(), CashPayout::query()->count(), Expense::query()->count()]);
     }
 
     private function openSession(string $counted): CashboxSession
@@ -188,15 +245,24 @@ class ExpenseTest extends TestCase
 
     private function startPayout(CashboxSession $session, string $amount, ?string $requestKey = null): CashPayout
     {
-        return app(StartCashPayout::class)($this->owner, $this->store, $session->id, $this->details($amount), $requestKey ?? (string) Str::uuid());
+        return $this->submit($this->details($amount), $session->id, $requestKey)->payout;
     }
 
     /**
-     * @return array{category: string, description: string, amount: string, expense_date: string}
+     * @param  array<string, string>  $input
      */
-    private function details(string $amount): array
+    private function submit(array $input, ?int $sessionId, ?string $requestKey = null): ExpenseSubmission
+    {
+        return app(SubmitExpense::class)($this->owner, $this->store, $sessionId, $input, $requestKey ?? (string) Str::uuid());
+    }
+
+    /**
+     * @return array{method: string, category: string, description: string, amount: string, expense_date: string}
+     */
+    private function details(string $amount, string $method = 'cash'): array
     {
         return [
+            'method' => $method,
             'category' => 'supplies',
             'description' => 'Printer paper',
             'amount' => $amount,

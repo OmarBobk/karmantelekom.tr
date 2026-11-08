@@ -17,7 +17,7 @@ use App\Actions\Catalog\SaveProductDefinition;
 use App\Actions\Customers\RecordCustomerPayment;
 use App\Actions\Customers\SaveCounterCustomer;
 use App\Actions\Expenses\ConfirmCashPayout;
-use App\Actions\Expenses\StartCashPayout;
+use App\Actions\Expenses\SubmitExpense;
 use App\Actions\Inventory\AdjustQuantity;
 use App\Actions\Inventory\RecordInspection;
 use App\Actions\Pos\FinalizeCheckout;
@@ -108,10 +108,10 @@ try {
 
             return ['status' => 'ok', 'intake_id' => $intake->id];
         })(),
-        'start_payout' => (function () use ($actor, $store, $payload): array {
-            $payout = app(StartCashPayout::class)($actor, $store, $payload['session_id'], $payload['input'], $payload['request_key']);
+        'submit_expense' => (function () use ($actor, $store, $payload): array {
+            $submission = app(SubmitExpense::class)($actor, $store, $payload['session_id'] ?? null, $payload['input'], $payload['request_key']);
 
-            return ['status' => 'ok', 'payout_id' => $payout->id];
+            return ['status' => 'ok', 'submission_id' => $submission->id, 'payout_id' => $submission->cash_payout_id, 'created' => $submission->wasRecentlyCreated];
         })(),
         'confirm_payout' => (function () use ($actor, $store, $payload): array {
             $expense = app(ConfirmCashPayout::class)($actor, $store, $payload['payout_id'], $payload['session_id']);

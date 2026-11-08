@@ -13,7 +13,9 @@ return new class extends Migration
      *
      * General branch expenses in TRY, and cash payouts that reserve an expense's cash on the open
      * cashbox session before staff hand it out. Confirming a payout records its expense and one
-     * outgoing cash movement; card and bank transfer expenses post no movement.
+     * outgoing cash movement; card and bank transfer expenses post no movement. Each submission of
+     * the expense form claims its request key once in expense_submissions, whichever method it
+     * used, and links to the payout or expense it created.
      *
      * Cash movements gain an explicit direction. Existing rows are all cash received, so they are
      * backfilled as 'in'; the default is then dropped so every new movement states its direction.
@@ -30,8 +32,6 @@ return new class extends Migration
             $table->date('expense_date');
             $table->string('reference', 100)->nullable();
             $table->string('status', 16);
-            $table->string('request_key', 64)->unique();
-            $table->char('request_fingerprint', 64);
             $table->foreignId('started_by')->constrained('users')->restrictOnDelete();
             $table->timestamp('started_at')->useCurrent();
             $table->timestamp('completed_at')->nullable();
@@ -57,12 +57,23 @@ return new class extends Migration
             $table->string('reference', 100)->nullable();
             $table->foreignId('user_id')->constrained()->restrictOnDelete();
             $table->foreignId('cash_payout_id')->nullable()->unique()->constrained()->restrictOnDelete();
-            $table->string('idempotency_key', 64)->nullable()->unique();
-            $table->char('request_fingerprint', 64)->nullable();
             $table->timestamp('recorded_at')->useCurrent();
             $table->timestamps();
 
             $table->index(['store_id', 'expense_date', 'id']);
+        });
+
+        Schema::create('expense_submissions', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('store_id')->constrained()->restrictOnDelete();
+            $table->string('request_key', 64)->unique();
+            $table->string('method', 16);
+            $table->char('request_fingerprint', 64);
+            $table->foreignId('user_id')->constrained()->restrictOnDelete();
+            $table->foreignId('cash_payout_id')->nullable()->unique()->constrained()->restrictOnDelete();
+            $table->foreignId('expense_id')->nullable()->unique()->constrained()->restrictOnDelete();
+            $table->timestamp('submitted_at')->useCurrent();
+            $table->timestamps();
         });
 
         Schema::table('cash_movements', function (Blueprint $table) {
@@ -76,7 +87,8 @@ return new class extends Migration
             DB::statement('alter table cash_movements drop constraint cash_movements_source_check');
             DB::statement("alter table cash_movements add constraint cash_movements_source_check check (amount > 0 and ((direction = 'in' and cash_intake_id is not null and cash_payout_id is null and expense_id is null and ((type = 'sale_cash' and sale_payment_id is not null and customer_payment_id is null) or (type = 'customer_payment_cash' and customer_payment_id is not null and sale_payment_id is null))) or (direction = 'out' and type = 'expense_cash' and cash_payout_id is not null and expense_id is not null and cash_intake_id is null and sale_payment_id is null and customer_payment_id is null)))");
             DB::statement("alter table cash_payouts add constraint cash_payouts_state_check check (amount > 0 and ((status = 'pending' and completed_at is null and released_at is null) or (status = 'completed' and completed_at is not null and released_at is null) or (status = 'released' and completed_at is null and released_by is not null and released_at is not null and resolution is not null and release_note is not null)))");
-            DB::statement("alter table expenses add constraint expenses_state_check check (amount > 0 and currency = 'TRY' and ((method = 'cash' and cash_payout_id is not null and idempotency_key is null) or (method in ('card', 'bank_transfer') and cash_payout_id is null and idempotency_key is not null and request_fingerprint is not null)))");
+            DB::statement("alter table expenses add constraint expenses_state_check check (amount > 0 and currency = 'TRY' and ((method = 'cash' and cash_payout_id is not null) or (method in ('card', 'bank_transfer') and cash_payout_id is null)))");
+            DB::statement("alter table expense_submissions add constraint expense_submissions_result_check check ((method = 'cash' and cash_payout_id is not null and expense_id is null) or (method in ('card', 'bank_transfer') and expense_id is not null and cash_payout_id is null))");
         }
     }
 
@@ -98,6 +110,7 @@ return new class extends Migration
             $table->dropColumn('direction');
         });
 
+        Schema::dropIfExists('expense_submissions');
         Schema::dropIfExists('expenses');
         Schema::dropIfExists('cash_payouts');
     }

@@ -714,7 +714,8 @@ An expense record must not automatically create an inventory movement or change 
 - Only the owner (`manage_expenses`) records a branch's general expenses and sees their history, per branch.
 - Each expense records a category, a description, an exact TRY amount, the branch's calendar date (no future dates), the payment method (cash, card, or bank transfer), the recording employee, and an optional supporting reference.
 - Categories are a fixed list: rent, utilities, salaries and wages, supplies, maintenance and repairs, transport, marketing, taxes and fees, and other.
-- Card and bank transfer expenses appear in expense history only and post nothing to the cashbox. The form's request key replays an identical submission and conflicts otherwise.
+- Card and bank transfer expenses appear in expense history only and post nothing to the cashbox.
+- Each form submission carries one request key, and a key records at most one submission across all methods, even under concurrent retries. An identical retry returns the original result and writes nothing. A different amount, detail, or method under the same key is refused as a conflict.
 - Expenses are never edited or deleted. Supplier payouts, device costs, and expense corrections are separate procedures.
 
 **Cash expenses**
@@ -723,6 +724,7 @@ An expense record must not automatically create an inventory movement or change 
 - The amount may not exceed the cash available: the expected amount minus pending payouts.
 - Confirming names the payout and session displayed. It records the cash expense and one outgoing cash movement together, then completes the payout. A retry after a lost response returns the original expense and writes nothing more. A released payout is never confirmed or replaced.
 - Pending payouts survive reloads and block closing the session.
+- Only the submission that newly creates a payout tells staff to hand out cash. A retried submission instead shows the original payout's current state (pending, completed, or released), and a reload lists pending payouts with a prompt to verify whether cash was already handed out before confirming.
 - The owner (`manage_cashbox`) releases a pending payout after verifying the cash was not handed out, or was handed back. The release records that resolution and a required note, is logged, and records no expense.
 
 ---
