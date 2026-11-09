@@ -461,6 +461,7 @@ class ProductInventory extends Component
         return match ($this->unitStatusFilter) {
             'in_service' => [UnitStatus::INSPECTION, UnitStatus::IN_REPAIR],
             'review' => [UnitStatus::REVIEW],
+            'in_transit' => [UnitStatus::IN_TRANSIT],
             'removed' => [UnitStatus::REMOVED],
             'sold' => [UnitStatus::SOLD],
             default => [UnitStatus::AVAILABLE],

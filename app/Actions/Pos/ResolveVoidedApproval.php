@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Pos;
 
+use App\Actions\Network\ReservationGuard;
 use App\Enums\CardApprovalStatus;
 use App\Enums\CheckoutAttemptStatus;
 use App\Models\CheckoutAttempt;
@@ -81,6 +82,8 @@ class ResolveVoidedApproval
                 'resolved_at' => $now,
                 'resolution_note' => $note,
             ]);
+
+            ReservationGuard::releaseClaim($locked, $actor);
 
             activity('checkout_resolution')
                 ->performedOn($locked)

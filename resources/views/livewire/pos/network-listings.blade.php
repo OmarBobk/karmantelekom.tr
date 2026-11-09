@@ -37,6 +37,10 @@
         @endif
     </form>
 
+    @error('listing')
+        <p role="alert" class="rounded-lg bg-red-50 px-4 py-3 text-sm font-medium text-red-800 ring-1 ring-red-200">{{ $message }}</p>
+    @enderror
+
     <div class="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-200" wire:loading.class="opacity-60" data-testid="network-listings">
         @if ($listings->isEmpty())
             <p class="px-4 py-8 text-center text-sm text-gray-600">{{ $filtered ? __('network.discovery.empty_filtered') : __('network.discovery.empty') }}</p>
@@ -60,6 +64,13 @@
                         <span dir="ltr" class="ms-auto font-semibold tabular-nums text-gray-900">
                             <span class="sr-only">{{ __('network.fields.price') }}:</span> {{ LocalizedMoney::format($listing['price_minor']) }} TRY
                         </span>
+                        @if (in_array($listing['key'], $requestedListingIds, true))
+                            <a href="{{ route('pos.reservations', ['store' => $store, 'tab' => 'outgoing']) }}" class="inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-semibold text-blue-700 ring-1 ring-blue-200 hover:bg-blue-50">{{ __('network.reservation.requested') }}</a>
+                        @else
+                            <button type="button" wire:click="requestDevice({{ $listing['key'] }}, {{ $listing['revision'] }})" wire:loading.attr="disabled" wire:target="requestDevice" class="inline-flex min-h-11 items-center rounded-lg bg-blue-600 px-3 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60">
+                                {{ __('network.reservation.request') }}<span class="sr-only">: {{ $listing['product'] }}, {{ $listing['store_code'] }}</span>
+                            </button>
+                        @endif
                     </li>
                 @endforeach
             </ul>

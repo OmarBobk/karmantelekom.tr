@@ -10,6 +10,7 @@ return [
         'inspection' => 'Awaiting inspection',
         'in_repair' => 'In repair',
         'review' => 'Awaiting review',
+        'in_transit' => 'In transit',
         'removed' => 'Removed',
         'sold' => 'Sold',
     ],
@@ -36,6 +37,8 @@ return [
         'identifier_corrected' => 'Identifier corrected',
         'review_approved' => 'Review approved',
         'sale' => 'Sale',
+        'transfer_out' => 'Transferred out',
+        'transfer_in' => 'Transferred in',
     ],
 
     'reasons' => [
@@ -52,6 +55,7 @@ return [
         'identity_correction' => 'Identity correction',
         'review' => 'Review',
         'sale' => 'Sale',
+        'transfer' => 'Branch transfer',
     ],
 
     'identifier_types' => [
@@ -180,6 +184,7 @@ return [
             'available' => 'Available',
             'in_service' => 'Inspection & repair',
             'review' => 'Awaiting review',
+            'in_transit' => 'In transit',
             'removed' => 'Removed',
             'sold' => 'Sold',
             'all' => 'All',

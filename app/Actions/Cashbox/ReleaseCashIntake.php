@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Cashbox;
 
+use App\Actions\Network\ReservationGuard;
 use App\Enums\CashIntakeSource;
 use App\Enums\CashIntakeStatus;
 use App\Models\CashIntake;
@@ -71,6 +72,7 @@ class ReleaseCashIntake
 
             if ($attempt !== null && $attempt->isOpen() && ! $attempt->hasStartedTerminalPayment() && ! $attempt->cardApproval()->exists()) {
                 $attempt->update(['frozen_at' => null]);
+                ReservationGuard::releaseClaim($attempt, $actor);
             }
 
             activity('cashbox')

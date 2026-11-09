@@ -10,7 +10,9 @@ namespace App\Enums;
  * Only AVAILABLE counts as available stock. INSPECTION, IN_REPAIR, and REVIEW are still owned
  * by the store but unavailable; REVIEW holds a device found without a verified source until an
  * owner approves or removes it. A removed device found again returns through REVIEW; otherwise
- * REMOVED and SOLD are final until an approved return workflow exists. Values must fit the
+ * REMOVED and SOLD are final until an approved return workflow exists. IN_TRANSIT is a device
+ * dispatched for a Store Network reservation; it stays on the sending branch's record and is
+ * unavailable everywhere until the receiving branch confirms receipt. Values must fit the
  * 16-character columns.
  */
 enum UnitStatus: string
@@ -19,6 +21,7 @@ enum UnitStatus: string
     case INSPECTION = 'inspection';
     case IN_REPAIR = 'in_repair';
     case REVIEW = 'review';
+    case IN_TRANSIT = 'in_transit';
     case REMOVED = 'removed';
     case SOLD = 'sold';
 
@@ -47,6 +50,7 @@ enum UnitStatus: string
             self::INSPECTION => 'bg-amber-50 text-amber-800 ring-amber-600/30',
             self::IN_REPAIR => 'bg-sky-50 text-sky-800 ring-sky-600/30',
             self::REVIEW => 'bg-orange-50 text-orange-800 ring-orange-600/30',
+            self::IN_TRANSIT => 'bg-indigo-50 text-indigo-800 ring-indigo-600/30',
             self::REMOVED => 'bg-gray-100 text-gray-700 ring-gray-500/20',
             self::SOLD => 'bg-violet-50 text-violet-800 ring-violet-600/20',
         };

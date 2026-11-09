@@ -7,10 +7,16 @@ namespace Tests\Feature;
 use App\Actions\Inventory\RecordInspection;
 use App\Actions\Inventory\RecordOpeningBalance;
 use App\Actions\Inventory\RegisterOpeningUnit;
+use App\Actions\Network\PublishUnitListing;
+use App\Actions\Network\RequestReservation;
+use App\Actions\Network\SetReservationHold;
+use App\Actions\Pos\ReviewCheckout;
 use App\Enums\InspectionOutcome;
+use App\Enums\ReservationStatus;
 use App\Enums\TrackingMode;
 use App\Enums\UnitCondition;
 use App\Enums\UnitStatus;
+use App\Models\CardTerminal;
 use App\Models\DeviceRepair;
 use App\Models\InventoryBalance;
 use App\Models\InventoryMovement;
@@ -18,11 +24,13 @@ use App\Models\InventoryUnit;
 use App\Models\InventoryUnitIdentifier;
 use App\Models\InventoryUnitIdentifierCorrection;
 use App\Models\NetworkListing;
+use App\Models\NetworkReservation;
 use App\Models\ProductDefinition;
 use App\Models\Store;
 use App\Models\User;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use PHPUnit\Framework\Attributes\Test;
 use RuntimeException;
 use Spatie\Activitylog\Models\Activity;
@@ -184,6 +192,46 @@ class InventoryConcurrencyTest extends TestCase
     }
 
     #[Test]
+    public function competing_approvals_of_one_device_leave_one_active_reservation(): void
+    {
+        [$phone, $unitId, $listing] = $this->sharedPhone();
+        $storeThree = Store::factory()->create(['code' => 'KT03']);
+        $first = app(RequestReservation::class)($this->owner, $this->storeTwo, $listing->id, 1);
+        $second = app(RequestReservation::class)($this->owner, $storeThree, $listing->id, 1);
+
+        $results = $this->raceWhileLocked([$phone], [
+            ['operation' => 'approve_reservation', 'store_id' => $this->storeOne->id, 'definition_id' => $phone->id, 'reservation_id' => $first->id],
+            ['operation' => 'approve_reservation', 'store_id' => $this->storeOne->id, 'definition_id' => $phone->id, 'reservation_id' => $second->id],
+        ]);
+
+        $this->assertEqualsCanonicalizing(['ok', 'validation'], array_column($results, 'status'));
+        $this->assertSame(1, NetworkReservation::query()->where('status', ReservationStatus::APPROVED)->count());
+        $this->assertSame(1, NetworkReservation::query()->where('active_unit_id', $unitId)->count());
+        $this->assertSame(1, NetworkReservation::query()->where('status', ReservationStatus::PENDING)->count());
+        $this->assertSame(1, Activity::query()->where('event', 'reservation_approved')->count());
+    }
+
+    #[Test]
+    public function a_reservation_approval_and_a_payment_start_cannot_both_succeed(): void
+    {
+        [$phone, $unitId, $listing] = $this->sharedPhone();
+        $reservation = app(RequestReservation::class)($this->owner, $this->storeTwo, $listing->id, 1);
+        $terminal = CardTerminal::factory()->create(['store_id' => $this->storeOne->id]);
+        $attempt = app(ReviewCheckout::class)($this->owner, $this->storeOne, ['u'.$unitId => ['definition_id' => $phone->id, 'unit_id' => $unitId, 'quantity' => 1]]);
+
+        $results = $this->raceWhileLocked([$phone], [
+            ['operation' => 'approve_reservation', 'store_id' => $this->storeOne->id, 'definition_id' => $phone->id, 'reservation_id' => $reservation->id],
+            ['operation' => 'start_terminal_payment', 'store_id' => $this->storeOne->id, 'definition_id' => $phone->id, 'attempt_key' => $attempt->key, 'revision' => $attempt->revision, 'request_key' => (string) Str::uuid(), 'terminal_id' => $terminal->id, 'amount' => '9000.00'],
+        ]);
+
+        $this->assertEqualsCanonicalizing(['ok', 'validation'], array_column($results, 'status'));
+        $approvalWon = $results[0]['status'] === 'ok';
+        $this->assertSame($approvalWon ? ReservationStatus::APPROVED : ReservationStatus::PENDING, $reservation->fresh()->status);
+        $this->assertSame($approvalWon, $attempt->fresh()->frozen_at === null);
+        $this->assertSame($approvalWon ? 1 : 0, Activity::query()->where('event', 'reservation_approved')->count());
+    }
+
+    #[Test]
     public function a_tracking_mode_change_and_a_stock_write_cannot_both_succeed(): void
     {
         $cable = ProductDefinition::factory()->create(['tracking_mode' => TrackingMode::QUANTITY]);
@@ -307,6 +355,21 @@ class InventoryConcurrencyTest extends TestCase
      * @param  list<array<string, mixed>>  $requests
      * @return list<array<string, mixed>>
      */
+    /**
+     * A priced used phone in store one, shared on Store Network with a reservation hold set.
+     *
+     * @return array{0: ProductDefinition, 1: int, 2: NetworkListing}
+     */
+    private function sharedPhone(): array
+    {
+        $phone = ProductDefinition::factory()->create(['tracking_mode' => TrackingMode::USED_DEVICE]);
+        $unitId = app(RegisterOpeningUnit::class)($this->owner, $this->storeOne, $phone, UnitCondition::B, self::imei('35693803564380'), null, null, null, 'unit')->inventory_unit_id;
+        InventoryUnit::query()->whereKey($unitId)->update(['selling_price' => '9000.00']);
+        app(SetReservationHold::class)($this->owner, $this->storeOne, 60);
+
+        return [$phone, $unitId, app(PublishUnitListing::class)($this->owner, $this->storeOne, $unitId, NetworkListing::UNLISTED_REVISION)];
+    }
+
     private function raceWhileLocked(array $lockedDefinitions, array $requests): array
     {
         $processes = [];

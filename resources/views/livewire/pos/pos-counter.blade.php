@@ -162,7 +162,19 @@
                     <p class="border-b border-amber-100 bg-amber-50 px-4 py-2 text-sm text-amber-900">{{ __('pos.errors.attempt_frozen') }}</p>
                 @endif
 
+                @if ($reservationId !== null)
+                    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-indigo-100 bg-indigo-50 px-4 py-2 text-sm text-indigo-900" data-testid="reservation-link">
+                        <p>{{ __('network.reservation.counter_link', ['number' => $reservationId]) }}</p>
+                        @if ($cartEditable)
+                            <button type="button" wire:click="unlinkReservation" class="inline-flex min-h-11 items-center rounded-lg px-3 font-semibold text-indigo-800 hover:bg-indigo-100">{{ __('network.reservation.unlink') }}</button>
+                        @endif
+                    </div>
+                @endif
+
                 @error('cart')
+                    <p class="px-4 pt-3 text-sm text-red-700" role="alert">{{ $message }}</p>
+                @enderror
+                @error('reservation')
                     <p class="px-4 pt-3 text-sm text-red-700" role="alert">{{ $message }}</p>
                 @enderror
 

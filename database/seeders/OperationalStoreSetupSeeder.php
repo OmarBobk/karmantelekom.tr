@@ -54,12 +54,19 @@ class OperationalStoreSetupSeeder extends Seeder
         self::MANAGE_CASHBOX_PERMISSION,
         self::MANAGE_EXPENSES_PERMISSION,
         self::SHARE_LISTINGS_PERMISSION,
+        self::MANAGE_RESERVATIONS_PERMISSION,
     ];
 
     /**
      * Publishing a branch's devices to Store Network and withdrawing them. Owner only.
      */
     public const SHARE_LISTINGS_PERMISSION = 'share_listings';
+
+    /**
+     * Approving, rejecting, and dispatching other branches' reservations of this branch's
+     * devices, and setting the branch's reservation hold. Owner only.
+     */
+    public const MANAGE_RESERVATIONS_PERMISSION = 'manage_reservations';
 
     /**
      * Opening and closing cashbox sessions and releasing cash intakes and payouts. Owner only.

@@ -897,6 +897,8 @@ The system must record:
 - Expiration timestamp when applicable.
 - Relevant notes.
 
+**Implemented rules (Phase 7).** Any employee with counter access to a branch may request a device another branch has shared. The request records the listing revision the employee saw. It leaves the device on sale and visible until approval. Repeating an open request returns it unchanged. Only a user with the owner-only `manage_reservations` permission at the owning branch can approve or reject, and rejection needs a reason. Approval rechecks the request under the device locks: the listing must still be at the requested revision and published by the owning branch, and the branch must still hold the device. The device must still be sellable, with no other active reservation and no checkout of it that has started payment. A device has at most one active reservation, enforced by a unique database key. Withdrawing a listing does not affect an approved reservation. A pending request whose listing was withdrawn or republished cannot be approved.
+
 ### 14.6 Reservation Expiration
 
 Approved reservations must expire automatically according to a configurable duration.
@@ -910,6 +912,8 @@ Expiration must be enforced on the server and must not depend on a browser remai
 An expired reservation must be treated as inactive even if a background job has not yet updated its displayed status.
 
 After expiration, the item may become available for another request, provided no other valid business condition prevents it.
+
+**Implemented rules (Phase 7).** Each owning branch sets its own hold duration in minutes, from 15 to 10,080. There is no system default, and approvals are refused until the owner sets it. The hold starts at approval. Every check compares `expires_at` with the current time, so no scheduled job is needed. Stored statuses become `expired` only when a later action needs the device. A device in transit stays unavailable after its hold expires until the receiving branch confirms receipt. Approved reservations cannot be extended. When a linked sale starts payment, it claims the reservation exclusively. Until that payment is completed or its funds are resolved, every other checkout of the device is refused, even after the hold time passes.
 
 ### 14.7 Reservation and Inventory Integrity
 
@@ -927,6 +931,8 @@ The implementation must handle situations in which:
 
 The system must not leave the item in an inconsistent state if one of these operations fails.
 
+**Implemented rules (Phase 7).** An active reservation refuses ordinary checkout of its device at review, at terminal or cash payment start, and at finalization. A checkout linked to the reservation may sell the device at the branch currently holding it: the owning branch before dispatch, or the requesting branch after receipt. Reservation actions, terminal start, cash intake, and finalization all lock the product definition and then the device, in that order, so the first to commit wins. Approval is refused if payment has already started. A payment that starts first is refused once the reservation is approved. A linked payment that started before expiry may still complete or go through the existing recovery flow, and no new reservation can take the device in the meantime. Finalization closes the reservation as fulfilled and records the sale in the same transaction. A retried finalization returns the original sale with no new payments, movements, or audit events. Cancellation needs a reason. It is open to the requesting branch's counter staff or the owning branch's reservation managers until dispatch, and refused once a checkout of the device has started payment.
+
 ### 14.8 Fulfillment and Store Coordination
 
 Store Network must preserve the distinction between:
@@ -943,6 +949,8 @@ Possible fulfillment arrangements include collection from the owning store or an
 A reservation does not itself transfer ownership, move stock, or complete a sale.
 
 Actual transfers and sales must use their corresponding business workflows and create the appropriate inventory and financial records.
+
+**Implemented rules (Phase 7).** The reservation can be fulfilled by pickup, where the owning branch sells the device under the reservation, or by transfer. For a transfer, a reservation manager at the owning branch dispatches the device against an active, undispatched reservation. That writes a `transfer_out` movement of −1 at the owning branch, sets the device to `in_transit`, and withdraws its listing. The device stays on the owning branch's record and cannot be sold anywhere. Counter staff at the requesting branch then confirm receipt. That writes a `transfer_in` movement of +1 there, moves the device record to the requesting branch, and makes it `available`. If the hold is still running, the device can be sold there only under the reservation. If the hold expired in transit, the reservation closes as expired and the device goes on sale normally. The reservation keeps the original owning branch, the requesting branch, and the actor and time of each step. The device record shows where the device is now. Both movements go through `InventoryLedger` with keys unique to the reservation, so a retried step writes nothing.
 
 ### 14.9 Cross-Store Financial Rules
 
@@ -968,6 +976,19 @@ Important Store Network events must be traceable, including:
 - Related sales.
 
 Each event must identify the relevant user, store, item, timestamp, and associated transaction where applicable.
+
+**Implemented rules (Phase 7).** The `store_network` activity log records each of these as an event on the reservation:
+
+- `reservation_requested`
+- `reservation_approved`
+- `reservation_rejected`
+- `reservation_cancelled`
+- `reservation_dispatched`
+- `reservation_received`, which notes whether receipt released an expired hold
+- `reservation_fulfilled`, which names the sale
+- `reservation_hold_changed`, recorded when an owner changes a branch's hold duration
+
+Each event records the acting user, the branch acting, the owning and requesting branches, and the device. Commissions, settlement, and attribution remain out of scope (§14.9).
 
 ## 14A. Storefront Publishing
 
@@ -1141,11 +1162,11 @@ Decided in §11.6: multiple employees work under one owner-opened session, and e
 
 ### 18.4 Store Network Decisions
 
-- Default reservation duration.
+- Default reservation duration. *Applied in Phase 7: no default. Each owning branch's owner sets the duration, and approvals are refused until then (§14.6).*
 - Which product categories are eligible for sharing.
 - Whether listing publication requires additional approval.
-- Detailed reservation cancellation and extension rules.
-- Exact fulfillment and transfer workflow.
+- Detailed reservation cancellation and extension rules. *Applied in Phase 7: cancellation needs a reason and is allowed until dispatch or payment start. There are no extensions (§14.7).*
+- Exact fulfillment and transfer workflow. *Applied in Phase 7: pickup at the owning branch, or dispatch and confirmed receipt (§14.8).*
 - Sales attribution when one store finds the customer and the other owns the device.
 - Internal settlement or profit allocation between stores.
 - Employee incentives or referral commissions.

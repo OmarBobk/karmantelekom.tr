@@ -35,12 +35,20 @@ class Store extends Model
     ];
 
     /**
+     * Shortest and longest hold a branch may configure for approved Store Network reservations.
+     */
+    public const MIN_RESERVATION_MINUTES = 15;
+
+    public const MAX_RESERVATION_MINUTES = 10080;
+
+    /**
      * @return array<string, string>
      */
     protected function casts(): array
     {
         return [
             'inventory_setup_completed_at' => 'datetime',
+            'reservation_minutes' => 'integer',
         ];
     }
 

@@ -62,6 +62,9 @@
                         @can('discoverListings', $posStore)
                             <a href="{{ route('pos.network', $posStore) }}" @class(['inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-medium', 'bg-blue-50 text-blue-700' => request()->routeIs('pos.network'), 'text-gray-700 hover:bg-gray-100' => ! request()->routeIs('pos.network')]) @if (request()->routeIs('pos.network')) aria-current="page" @endif>{{ __('network.nav') }}</a>
                         @endcan
+                        @can('requestReservations', $posStore)
+                            <a href="{{ route('pos.reservations', $posStore) }}" @class(['inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-medium', 'bg-blue-50 text-blue-700' => request()->routeIs('pos.reservations'), 'text-gray-700 hover:bg-gray-100' => ! request()->routeIs('pos.reservations')]) @if (request()->routeIs('pos.reservations')) aria-current="page" @endif>{{ __('network.reservations.nav') }}</a>
+                        @endcan
                         @can('receiveCustomerPayments', $posStore)
                             <a href="{{ route('pos.customers', $posStore) }}" @class(['inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-medium', 'bg-blue-50 text-blue-700' => request()->routeIs('pos.customers*'), 'text-gray-700 hover:bg-gray-100' => ! request()->routeIs('pos.customers*')]) @if (request()->routeIs('pos.customers*')) aria-current="page" @endif>{{ __('pos.nav.customers') }}</a>
                         @endcan

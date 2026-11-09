@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Cashbox;
 
+use App\Actions\Network\ReservationGuard;
 use App\Actions\Pos\FinalizeCheckout;
 use App\Actions\Pos\ReviewCheckout;
 use App\Actions\Pos\StartTerminalPayment;
@@ -32,6 +33,8 @@ use Illuminate\Validation\ValidationException;
  */
 class StartSaleCashIntake
 {
+    public function __construct(private readonly ReservationGuard $reservationGuard) {}
+
     /**
      * @throws AuthorizationException
      * @throws ValidationException
@@ -85,6 +88,8 @@ class StartSaleCashIntake
             if ($cashDue <= 0) {
                 throw ValidationException::withMessages(['cash_tendered' => __('pos.errors.no_cash_due')]);
             }
+
+            $this->reservationGuard->lockForPaymentStart($locked, $actor);
 
             if (! $locked->isFrozen()) {
                 StartTerminalPayment::assertReviewedPricesCurrent($actor, $locked);

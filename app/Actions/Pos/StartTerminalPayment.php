@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Pos;
 
+use App\Actions\Network\ReservationGuard;
 use App\Exceptions\Purchasing\InvalidAmountException;
 use App\Models\CheckoutAttempt;
 use App\Models\ProductDefinition;
@@ -34,6 +35,8 @@ use Illuminate\Validation\ValidationException;
  */
 class StartTerminalPayment
 {
+    public function __construct(private readonly ReservationGuard $reservationGuard) {}
+
     /**
      * @throws AuthorizationException
      * @throws ValidationException
@@ -99,6 +102,8 @@ class StartTerminalPayment
                     ? __('pos.credit.errors.card_above_payable', ['amount' => LocalizedMoney::format($locked->payableMinor())])
                     : __('pos.errors.card_amount_above_total')]);
             }
+
+            $this->reservationGuard->lockForPaymentStart($locked, $actor);
 
             self::assertReviewedPricesCurrent($actor, $locked);
 

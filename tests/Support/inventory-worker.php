@@ -15,7 +15,9 @@ use App\Actions\Inventory\RecordOpeningBalance;
 use App\Actions\Inventory\RecordStockCount;
 use App\Actions\Inventory\RegisterOpeningUnit;
 use App\Actions\Inventory\StartRepair;
+use App\Actions\Network\ApproveReservation;
 use App\Actions\Network\PublishUnitListing;
+use App\Actions\Pos\StartTerminalPayment;
 use App\Enums\RepairerType;
 use App\Enums\UnitCondition;
 use App\Enums\UnitStatus;
@@ -72,6 +74,10 @@ try {
             $actor, $store, $payload['unit_id'], $payload['identifier_id'], $payload['expected_value'], $payload['new_value'], 'Concurrent correction', $payload['key'],
         )),
         'publish_listing' => ['status' => 'ok', 'listing_id' => app(PublishUnitListing::class)($actor, $store, $payload['unit_id'], $payload['expected_revision'])->id],
+        'approve_reservation' => ['status' => 'ok', 'reservation_id' => app(ApproveReservation::class)($actor, $store, $payload['reservation_id'])->id],
+        'start_terminal_payment' => ['status' => 'ok', 'attempt_id' => app(StartTerminalPayment::class)(
+            $actor, $store, $payload['attempt_key'], $payload['revision'], $payload['request_key'], $payload['terminal_id'], $payload['amount'],
+        )->attempt->id],
         'change_tracking_mode' => (function () use ($actor, $definition, $payload): array {
             app(SaveProductDefinition::class)($actor, $definition, ['name' => $definition->name, 'tracking_mode' => $payload['tracking_mode']]);
 
