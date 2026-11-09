@@ -9,6 +9,7 @@ use App\Actions\Storefront\LinkStorefrontProduct;
 use App\Actions\Storefront\SetStorefrontChannel;
 use App\Actions\Storefront\SetStorefrontDevice;
 use App\Actions\Storefront\SetStorefrontQuantity;
+use App\Actions\Storefront\StorefrontOrderGuard;
 use App\Actions\Storefront\UnlinkStorefrontProduct;
 use App\Enums\OrderStatus;
 use App\Enums\StorefrontChannel;
@@ -130,6 +131,55 @@ class StorefrontPublishingTest extends TestCase
         app(UnlinkStorefrontProduct::class)($this->publisher, $listing->id);
         $this->assertSame(0, StorefrontListing::count());
         $this->assertNotNull($this->legacyCable->fresh());
+        $this->assertContains($this->legacyCable->id, $this->visibleIds(StorefrontChannel::RETAIL));
+        StorefrontOrderGuard::assertOrderable([$this->legacyCable->id]);
+    }
+
+    #[Test]
+    public function a_publisher_created_product_stays_hidden_and_unorderable_after_unlinking_and_can_be_relinked(): void
+    {
+        $listing = app(CreateStorefrontProduct::class)($this->publisher, $this->cable->id, $this->category->id);
+        $created = $listing->product;
+        ProductPrice::factory()->create(['product_id' => $created->id, 'currency_id' => $this->currencyId(), 'base_price' => 20.00, 'converted_price' => 20.00]);
+        $this->publish($listing, StorefrontChannel::RETAIL);
+        $this->publish($listing, StorefrontChannel::RETAIL, false);
+        app(UnlinkStorefrontProduct::class)($this->publisher, $listing->id);
+
+        $kept = Product::query()->find($created->id);
+        $this->assertNotNull($kept);
+        $this->assertSame($created->slug, $kept->slug);
+        $this->assertTrue($kept->is_active);
+        foreach (StorefrontChannel::cases() as $channel) {
+            $this->assertFalse(Product::query()->visibleInChannels([$channel])->whereKey($created->id)->exists());
+        }
+        $this->openModal($this->wholesaleBuyer, $kept)->assertSet('showModal', false);
+        $this->assertThrows(fn () => app(CartService::class)->addToCart($this->wholesaleBuyer->id, null, $kept, 1), ValidationException::class);
+        $this->assertSame([$created->id], StorefrontOrderGuard::displayOnlyProductIds([$created->id, $this->unrelated->id]));
+
+        $relinked = app(LinkStorefrontProduct::class)($this->publisher, $this->cable->id, $created->id);
+        $this->assertSame($created->id, $relinked->product_id);
+        $this->assertSame($created->slug, $relinked->product->slug);
+    }
+
+    #[Test]
+    public function linked_wholesale_tiers_reach_only_wholesale_viewers_of_a_wholesale_listing(): void
+    {
+        $listing = $this->link($this->legacyCable);
+        WholesaleProduct::query()->create(['product_id' => $this->legacyCable->id, 'currency_id' => $this->currencyId(), 'price' => '37.45', 'min_qty' => 6, 'max_qty' => 60, 'is_active' => true]);
+        WholesaleProduct::query()->create(['product_id' => $this->unrelated->id, 'currency_id' => $this->currencyId(), 'price' => '11.15', 'min_qty' => 5, 'max_qty' => 50, 'is_active' => true]);
+        $this->publish($listing, StorefrontChannel::RETAIL);
+        $retailPrice = $this->legacyCable->prices()->firstOrFail()->getFormattedPrice();
+
+        $guest = $this->openModal(null, $this->legacyCable)->assertSet('showModal', true)->assertSee($retailPrice);
+        $this->assertNoTiers($guest);
+        $this->assertNoTiers($guest->call('selectImage', null, null)->assertSee($retailPrice));
+        $this->assertNoTiers($this->openModal($this->wholesaleBuyer, $this->legacyCable)->assertSet('showModal', true));
+
+        $this->publish($listing, StorefrontChannel::WHOLESALE);
+        $this->openModal($this->wholesaleBuyer, $this->legacyCable)->assertSee('37.45')->call('selectImage', null, null)->assertSee('37.45');
+        $this->assertNoTiers($this->openModal(null, $this->legacyCable)->assertSee($retailPrice));
+
+        $this->openModal(null, $this->unrelated)->assertSee('11.15');
     }
 
     #[Test]
@@ -332,6 +382,15 @@ class StorefrontPublishingTest extends TestCase
         $component = $viewer === null ? Livewire::test(ProductModalComponent::class) : Livewire::actingAs($viewer)->test(ProductModalComponent::class);
 
         return $component->call('openProductModal', $product->id);
+    }
+
+    private function assertNoTiers(Testable $modal): void
+    {
+        $rendered = $modal->html().json_encode($modal->snapshot);
+
+        foreach (['37.45', 'priceTiers', 'wholesalePrices', 'min_qty'] as $tierData) {
+            $this->assertStringNotContainsString($tierData, $rendered);
+        }
     }
 
     private function currencyId(): int

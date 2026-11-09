@@ -122,6 +122,8 @@ class CartComponent extends Component
             DB::transaction(function () use ($items, $subtotal) {
                 Log::info('Starting order Transaction');
 
+                StorefrontOrderGuard::lockOrderable(array_column($items, 'product_id'), 'order');
+
                 $cartItems = collect($items); // Get fresh cart data
 
                 // Calculate total price
@@ -161,6 +163,9 @@ class CartComponent extends Component
                 'message' => 'Order placed successfully!',
             ]);
 
+        } catch (ValidationException $exception) {
+            $this->addError('order', $exception->getMessage());
+            $this->dispatch('notify', [['type' => 'alert-danger', 'message' => $exception->getMessage(), 'sec' => 5000]]);
         } catch (\Exception $e) {
             $this->addError('order', 'Failed to place order. Please try again. Error: '.$e->getMessage());
         } finally {

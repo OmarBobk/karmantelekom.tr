@@ -59,6 +59,8 @@ class Product extends Model
 
     protected $appends = ['translated_name', 'translated_description', 'translated_slug'];
 
+    protected $hidden = ['storefront_managed'];
+
     /**
      * The attributes that should be cast.
      *
@@ -66,6 +68,7 @@ class Product extends Model
      */
     protected $casts = [
         'is_active' => 'boolean',
+        'storefront_managed' => 'boolean',
     ];
 
     /**
@@ -196,21 +199,28 @@ class Product extends Model
     }
 
     /**
-     * Excludes linked products published to none of the given channels. Unlinked legacy products
-     * pass unchanged, which keeps the existing direct product links working as before.
+     * Excludes linked products published to none of the given channels, and products the
+     * publisher workspace created that are no longer linked. Unlinked legacy products pass
+     * unchanged, which keeps the existing direct product links working as before.
      *
      * @param  list<StorefrontChannel>  $channels
      */
     public function scopeNotWithheldFrom(Builder $query, array $channels): Builder
     {
-        return $query->whereNotExists(fn ($hidden) => $hidden->selectRaw('1')
-            ->from('storefront_listings')
-            ->whereColumn('storefront_listings.product_id', 'products.id')
-            ->where(function ($unpublished) use ($channels): void {
-                foreach ($channels as $channel) {
-                    $unpublished->whereNull('storefront_listings.'.$channel->column());
-                }
-            }));
+        return $query
+            ->where(fn (Builder $legacyOrLinked) => $legacyOrLinked
+                ->where('products.storefront_managed', false)
+                ->orWhereExists(fn ($linked) => $linked->selectRaw('1')
+                    ->from('storefront_listings')
+                    ->whereColumn('storefront_listings.product_id', 'products.id')))
+            ->whereNotExists(fn ($hidden) => $hidden->selectRaw('1')
+                ->from('storefront_listings')
+                ->whereColumn('storefront_listings.product_id', 'products.id')
+                ->where(function ($unpublished) use ($channels): void {
+                    foreach ($channels as $channel) {
+                        $unpublished->whereNull('storefront_listings.'.$channel->column());
+                    }
+                }));
     }
 
     /**

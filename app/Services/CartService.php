@@ -8,7 +8,6 @@ use App\Actions\Storefront\StorefrontOrderGuard;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\Product;
-use App\Models\StorefrontListing;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -136,7 +135,7 @@ class CartService
             'user_cart_id' => $userCart->id,
         ]);
 
-        $displayOnly = StorefrontListing::linkedProductIds($guestCart->items->pluck('product_id'));
+        $displayOnly = StorefrontOrderGuard::displayOnlyProductIds($guestCart->items->pluck('product_id'));
 
         foreach ($guestCart->items as $guestItem) {
             if (in_array((int) $guestItem->product_id, $displayOnly, true)) {
@@ -193,7 +192,7 @@ class CartService
 
             // Linked branch stock is display-only: drop it from the request and the stored cart,
             // then send the stored cart back so the browser drops it too.
-            $displayOnly = StorefrontListing::linkedProductIds([...array_column($items, 'product_id'), ...$cart->items->pluck('product_id')]);
+            $displayOnly = StorefrontOrderGuard::displayOnlyProductIds([...array_column($items, 'product_id'), ...$cart->items->pluck('product_id')]);
 
             if ($displayOnly !== []) {
                 $items = array_values(array_filter($items, fn (array $item): bool => ! in_array((int) $item['product_id'], $displayOnly, true)));

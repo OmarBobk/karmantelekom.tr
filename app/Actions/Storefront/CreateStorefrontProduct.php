@@ -21,7 +21,8 @@ final class CreateStorefrontProduct
      * The new product takes the operational name and description and the chosen storefront
      * category. Its code is the SKU, or OP-{id} when there is none or it is taken. It has no
      * prices or images: those stay with the legacy product admin and its pricing permissions.
-     * The link starts unpublished. A product that is already linked is refused.
+     * The link starts unpublished. A product that is already linked is refused. The product is
+     * marked storefront-managed, so it stays hidden and unorderable if it is later unlinked.
      *
      * @throws AuthorizationException
      * @throws ValidationException
@@ -57,6 +58,7 @@ final class CreateStorefrontProduct
                 'description' => $definition->description ?? '',
                 'category_id' => $categoryId,
                 'is_active' => true,
+                'storefront_managed' => true,
             ]);
 
             $listing = StorefrontListing::query()->create([

@@ -6,6 +6,9 @@ use App\Actions\Storefront\StorefrontAvailability;
 use App\Enums\StorefrontChannel;
 use App\Facades\Settings;
 use App\Models\Product;
+use App\Models\StorefrontListing;
+use App\Models\WholesaleProduct;
+use Illuminate\Database\Eloquent\Collection;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
 
@@ -40,17 +43,23 @@ class ProductModalComponent extends Component
 
     public function openProductModal($productId): void
     {
-        $this->product = Product::query()->notWithheldFrom(StorefrontChannel::audienceOf(auth()->user()))->with([
-            'category',
-            'images',
-            'prices',
-            'priceTiers' => function ($q) {
-                $q->where('is_active', true)
-                    ->with('currency')
-                    ->orderBy('min_qty');
-            },
-        ])
-            ->find($productId);
+        $this->product = Product::query()->notWithheldFrom(StorefrontChannel::audienceOf(auth()->user()))->find($productId);
+
+        if ($this->product !== null) {
+            // Livewire reloads a model's loaded relations on every request, so linked products never
+            // carry their tiers; visiblePriceTiers() decides per render who may see them.
+            $linked = StorefrontListing::query()->where('product_id', $this->product->id)->exists();
+            $this->product->load([
+                'category',
+                'images',
+                'prices',
+                ...($linked ? [] : ['priceTiers' => function ($q) {
+                    $q->where('is_active', true)
+                        ->with('currency')
+                        ->orderBy('min_qty');
+                }]),
+            ]);
+        }
 
         if ($this->product === null) {
             $this->closeModal();
@@ -100,6 +109,34 @@ class ProductModalComponent extends Component
 
     public function render()
     {
-        return view('livewire.frontend.product-modal-component');
+        return view('livewire.frontend.product-modal-component', [
+            'priceTiers' => $this->visiblePriceTiers(),
+        ]);
+    }
+
+    /**
+     * Wholesale tiers this viewer may see. A linked product shows them only to a wholesale viewer
+     * while it is published to wholesale, and retail viewers get its retail price. Legacy products
+     * keep their existing presentation.
+     *
+     * @return Collection<int, WholesaleProduct>
+     */
+    private function visiblePriceTiers(): Collection
+    {
+        if ($this->product === null) {
+            return new Collection;
+        }
+
+        $listing = StorefrontListing::query()->where('product_id', $this->product->id)->first(['id', 'wholesale_published_at']);
+
+        if ($listing === null) {
+            return $this->product->priceTiers;
+        }
+
+        if (! $listing->isPublishedTo(StorefrontChannel::WHOLESALE) || ! in_array(StorefrontChannel::WHOLESALE, StorefrontChannel::audienceOf(auth()->user()), true)) {
+            return new Collection;
+        }
+
+        return $this->product->priceTiers()->where('is_active', true)->with('currency')->get();
     }
 }

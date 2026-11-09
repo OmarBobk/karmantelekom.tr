@@ -44,24 +44,6 @@ class StorefrontListing extends Model
     }
 
     /**
-     * Ids of the given storefront products that are linked to branch stock. Linked stock is
-     * display-only until branch confirmation exists, so these cannot be carted or ordered.
-     *
-     * @param  iterable<int|string>  $productIds
-     * @return list<int>
-     */
-    public static function linkedProductIds(iterable $productIds): array
-    {
-        $ids = collect($productIds)->map(fn (int|string $id): int => (int) $id)->filter()->unique()->values();
-
-        if ($ids->isEmpty()) {
-            return [];
-        }
-
-        return self::query()->whereIn('product_id', $ids)->pluck('product_id')->map(fn ($id): int => (int) $id)->all();
-    }
-
-    /**
      * @return BelongsTo<ProductDefinition, $this>
      */
     public function productDefinition(): BelongsTo
