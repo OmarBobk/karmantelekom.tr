@@ -98,7 +98,7 @@ final class ReservationLocks
     public static function closeExpired(Collection $open): void
     {
         foreach ($open as $reservation) {
-            if ($reservation->isApproved() && ! $reservation->isInTransit() && ! $reservation->isActive()) {
+            if ($reservation->isApproved() && ! $reservation->isInTransit() && ! $reservation->isActive() && $reservation->claimed_attempt_id === null) {
                 $reservation->update([
                     'status' => ReservationStatus::EXPIRED,
                     'active_unit_id' => null,

@@ -56,7 +56,7 @@ final class SharedListings
                 ->from('network_reservations')
                 ->whereColumn('network_reservations.active_unit_id', 'units.id')
                 ->where('network_reservations.status', ReservationStatus::APPROVED->value)
-                ->where('network_reservations.expires_at', '>', now()))
+                ->where(fn ($held) => $held->where('network_reservations.expires_at', '>', now())->orWhereNotNull('network_reservations.claimed_attempt_id')))
             ->when($term !== '', fn (Builder $query) => $query->where(fn (Builder $match) => $match
                 ->where('definitions.name', 'like', $like)
                 ->orWhere('definitions.model', 'like', $like)))

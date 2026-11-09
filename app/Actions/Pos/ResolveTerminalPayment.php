@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Pos;
 
+use App\Actions\Network\ReservationGuard;
 use App\Enums\TerminalPaymentOutcome;
 use App\Models\CheckoutAttempt;
 use App\Models\Store;
@@ -104,6 +105,8 @@ class ResolveTerminalPayment
                 'terminal_payment_started_by' => null,
                 'terminal_payment_started_at' => null,
             ]);
+
+            ReservationGuard::releaseClaim($locked, $actor);
 
             return $locked;
         });

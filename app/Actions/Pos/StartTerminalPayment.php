@@ -103,11 +103,9 @@ class StartTerminalPayment
                     : __('pos.errors.card_amount_above_total')]);
             }
 
-            self::assertReviewedPricesCurrent($actor, $locked);
+            $this->reservationGuard->lockForPaymentStart($locked, $actor);
 
-            if (! $locked->isFrozen()) {
-                $this->reservationGuard->lockForPaymentStart($locked);
-            }
+            self::assertReviewedPricesCurrent($actor, $locked);
 
             $now = now();
 

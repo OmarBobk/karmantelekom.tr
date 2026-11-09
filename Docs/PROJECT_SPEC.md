@@ -913,7 +913,7 @@ An expired reservation must be treated as inactive even if a background job has 
 
 After expiration, the item may become available for another request, provided no other valid business condition prevents it.
 
-**Implemented rules (Phase 7).** Each owning branch sets its own hold duration in minutes, from 15 to 10,080. There is no system default, and approvals are refused until the owner sets it. The hold starts at approval. Every check compares `expires_at` with the current time, so no scheduled job is needed. Stored statuses become `expired` only when a later action needs the device. A device in transit stays unavailable after its hold expires until the receiving branch confirms receipt. Approved reservations cannot be extended.
+**Implemented rules (Phase 7).** Each owning branch sets its own hold duration in minutes, from 15 to 10,080. There is no system default, and approvals are refused until the owner sets it. The hold starts at approval. Every check compares `expires_at` with the current time, so no scheduled job is needed. Stored statuses become `expired` only when a later action needs the device. A device in transit stays unavailable after its hold expires until the receiving branch confirms receipt. Approved reservations cannot be extended. When a linked sale starts payment, it claims the reservation exclusively. Until that payment is completed or its funds are resolved, every other checkout of the device is refused, even after the hold time passes.
 
 ### 14.7 Reservation and Inventory Integrity
 

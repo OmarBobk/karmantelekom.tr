@@ -48,7 +48,7 @@ final class CancelReservation
                 throw ValidationException::withMessages(['reservation' => __('network.reservation.errors.not_cancellable', ['status' => __('network.reservation_states.'.$reservation->displayState())])]);
             }
 
-            if ($reservation->isApproved() && ReservationLocks::paymentStartedFor($unit)) {
+            if ($reservation->hasLiveClaim() || ($reservation->isApproved() && ReservationLocks::paymentStartedFor($unit))) {
                 throw ValidationException::withMessages(['reservation' => __('network.reservation.errors.payment_started')]);
             }
 

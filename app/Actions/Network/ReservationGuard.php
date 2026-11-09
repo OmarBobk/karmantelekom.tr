@@ -6,7 +6,9 @@ namespace App\Actions\Network;
 
 use App\Actions\Inventory\InventoryLedger;
 use App\Enums\ReservationStatus;
+use App\Enums\UnitStatus;
 use App\Models\CheckoutAttempt;
+use App\Models\InventoryUnit;
 use App\Models\NetworkReservation;
 use App\Models\Sale;
 use App\Models\Store;
@@ -17,9 +19,11 @@ use Illuminate\Validation\ValidationException;
  * Keeps counter sales and Store Network reservations from selling one device twice.
  *
  * An active reservation refuses every checkout of its device except one explicitly linked to
- * it. Payment starts and finalization check this under the device locks, in the checkout lock
- * order (attempt, definitions, devices, reservations); reservation changes take the same
- * device locks, so whichever commits first wins.
+ * it. When that checkout starts payment it claims the reservation: from then until the sale
+ * completes or its funds are resolved, no other checkout may start payment on or sell the
+ * device, even after the hold's nominal expiry. Payment starts and finalization check this
+ * under the device locks, in the checkout lock order (attempt, definitions, devices,
+ * reservations); reservation changes take the same device locks, so whichever commits first wins.
  */
 final class ReservationGuard
 {
@@ -38,7 +42,7 @@ final class ReservationGuard
             $linked = NetworkReservation::query()->find($reservationId);
 
             if ($linked === null || ! in_array($linked->inventory_unit_id, $unitIds, true) || ! $linked->isActive() || $linked->isInTransit()
-                || ! $store->units()->whereKey($linked->inventory_unit_id)->exists()) {
+                || $linked->hasLiveClaim() || ! $store->units()->whereKey($linked->inventory_unit_id)->exists()) {
                 return __('network.reservation.errors.link_invalid');
             }
         }
@@ -53,31 +57,56 @@ final class ReservationGuard
     }
 
     /**
-     * Lock the attempt's devices before a payment start freezes it, and refuse when a device is
-     * reserved for another checkout or the linked reservation is no longer active. Call inside
-     * the transaction, right after the attempt lock.
+     * Before a terminal payment or cash intake starts, lock the attempt's devices and recheck
+     * them: each must still be in the checkout's branch, on the reviewed product, available, and
+     * at the reviewed revision, and none may be reserved for or claimed by another checkout. A
+     * linked reservation is then claimed for this checkout. Call inside the transaction, right
+     * after the attempt lock, on every start; a repeated start keeps the existing claim.
      *
      * @throws ValidationException
      */
-    public function lockForPaymentStart(CheckoutAttempt $lockedAttempt): void
+    public function lockForPaymentStart(CheckoutAttempt $lockedAttempt, User $actor): void
     {
+        $unitLines = collect($lockedAttempt->lines)->whereNotNull('unit_id');
         $unitIds = $lockedAttempt->unitIds();
 
         if ($unitIds === [] && $lockedAttempt->network_reservation_id === null) {
             return;
         }
 
-        $definitionIds = collect($lockedAttempt->lines)->whereNotNull('unit_id')->pluck('definition_id')->all();
-        $this->inventoryLedger->lockDefinitions($definitionIds);
-        Store::query()->whereKey($lockedAttempt->store_id)->firstOrFail()->units()->whereKey($unitIds)->orderBy('id')->lockForUpdate()->get();
+        $this->inventoryLedger->lockDefinitions($unitLines->pluck('definition_id')->all());
+        $units = InventoryUnit::query()->whereKey($unitIds)->orderBy('id')->lockForUpdate()->get()->keyBy('id');
+        $changed = [];
 
-        self::lockedReservationFor($lockedAttempt, $unitIds);
+        foreach ($unitLines as $line) {
+            $unit = $units->get((int) $line['unit_id']);
+
+            if ($unit === null || $unit->store_id !== $lockedAttempt->store_id || $unit->product_definition_id !== (int) $line['definition_id']
+                || $unit->status !== UnitStatus::AVAILABLE || $unit->lifecycle_revision !== (int) $line['unit_revision']) {
+                $changed[] = __('pos.errors.unit_changed', [
+                    'name' => $line['name'],
+                    'status' => $unit === null ? __('pos.errors.unit_missing') : ($unit->store_id !== $lockedAttempt->store_id ? __('network.reservation.errors.other_branch') : $unit->status->label()),
+                ]);
+            }
+        }
+
+        if ($changed !== []) {
+            throw ValidationException::withMessages(['attempt' => $changed]);
+        }
+
+        $linked = self::lockedReservationFor($lockedAttempt, $unitIds);
+
+        if ($linked !== null && $linked->claimed_attempt_id !== $lockedAttempt->id) {
+            $linked->update(['claimed_attempt_id' => $lockedAttempt->id, 'claimed_at' => now()]);
+
+            ReservationLocks::audit($linked, $actor, $lockedAttempt->store_id, 'reservation_claimed', "payment started by checkout {$lockedAttempt->key}", ['checkout_attempt_id' => $lockedAttempt->id]);
+        }
     }
 
     /**
      * Under the device locks, the linked reservation the sale fulfills, or null for an ordinary
-     * sale. Refuses when a device is reserved for another checkout, or the linked reservation
-     * neither is active nor was active when this checkout's payment started.
+     * sale. Refuses when a device is reserved for or claimed by another checkout, or the linked
+     * reservation is neither active nor claimed by this checkout.
      *
      * @param  list<int>  $unitIds
      *
@@ -118,6 +147,26 @@ final class ReservationGuard
     }
 
     /**
+     * Release reservations claimed by this checkout once its funds are resolved: the terminal
+     * payment was cleared, the cash intake released, or the checkout cancelled or voided. Call
+     * inside that resolution's transaction, after the attempt lock.
+     */
+    public static function releaseClaim(CheckoutAttempt $lockedAttempt, User $actor): void
+    {
+        $claimed = NetworkReservation::query()->where('claimed_attempt_id', $lockedAttempt->id)->lockForUpdate()->get();
+
+        foreach ($claimed as $reservation) {
+            if (! $reservation->isApproved()) {
+                continue;
+            }
+
+            $reservation->update(['claimed_attempt_id' => null, 'claimed_at' => null]);
+
+            ReservationLocks::audit($reservation, $actor, $lockedAttempt->store_id, 'reservation_claim_released', "payment claim of checkout {$lockedAttempt->key} released", ['checkout_attempt_id' => $lockedAttempt->id]);
+        }
+    }
+
+    /**
      * Close the linked reservation with the completed sale, inside the finalize transaction.
      */
     public static function fulfill(NetworkReservation $lockedReservation, Sale $sale, User $actor, Store $store): void
@@ -138,8 +187,14 @@ final class ReservationGuard
     {
         $store = $reservation->requestingStore()->first(['name', 'code']);
 
-        return $reservation->isInTransit()
-            ? __('network.reservation.errors.device_in_transit')
-            : __('network.reservation.errors.reserved_for', ['branch' => "{$store?->name} ({$store?->code})", 'until' => $reservation->expires_at?->format('d.m.Y H:i')]);
+        if ($reservation->isInTransit()) {
+            return __('network.reservation.errors.device_in_transit');
+        }
+
+        if (! $reservation->isActive()) {
+            return __('network.reservation.errors.claimed', ['branch' => "{$store?->name} ({$store?->code})"]);
+        }
+
+        return __('network.reservation.errors.reserved_for', ['branch' => "{$store?->name} ({$store?->code})", 'until' => $reservation->expires_at?->format('d.m.Y H:i')]);
     }
 }

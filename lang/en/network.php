@@ -57,6 +57,7 @@ return [
         'approved' => 'Reserved',
         'received' => 'Received, reserved',
         'in_transit' => 'In transit',
+        'payment_started' => 'Payment started',
         'rejected' => 'Rejected',
         'cancelled' => 'Cancelled',
         'expired' => 'Expired',
@@ -123,6 +124,8 @@ return [
             'link_invalid' => 'This reservation is not active for a sale at this branch. Remove it or start a new sale.',
             'device_in_transit' => 'This device is in transit between branches.',
             'reserved_for' => 'This device is reserved for :branch until :until.',
+            'claimed' => 'A sale of this device for :branch is taking payment.',
+            'other_branch' => 'At another branch',
         ],
     ],
 

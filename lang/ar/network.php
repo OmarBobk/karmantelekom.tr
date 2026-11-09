@@ -57,6 +57,7 @@ return [
         'approved' => 'محجوز',
         'received' => 'مستلم ومحجوز',
         'in_transit' => 'قيد النقل',
+        'payment_started' => 'بدأ الدفع',
         'rejected' => 'مرفوض',
         'cancelled' => 'ملغى',
         'expired' => 'منتهي',
@@ -123,6 +124,8 @@ return [
             'link_invalid' => 'هذا الحجز غير صالح للبيع في هذا الفرع. أزله أو ابدأ بيعًا جديدًا.',
             'device_in_transit' => 'هذا الجهاز قيد النقل بين الفروع.',
             'reserved_for' => 'هذا الجهاز محجوز لفرع :branch حتى :until.',
+            'claimed' => 'بيع هذا الجهاز لفرع :branch قيد الدفع.',
+            'other_branch' => 'في فرع آخر',
         ],
     ],
 

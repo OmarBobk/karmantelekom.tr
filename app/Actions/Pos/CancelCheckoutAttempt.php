@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Pos;
 
+use App\Actions\Network\ReservationGuard;
 use App\Enums\CheckoutAttemptStatus;
 use App\Models\CheckoutAttempt;
 use App\Models\Store;
@@ -61,6 +62,8 @@ class CancelCheckoutAttempt
                 'resolved_by' => $actor->id,
                 'resolved_at' => now(),
             ]);
+
+            ReservationGuard::releaseClaim($locked, $actor);
 
             return $locked;
         });

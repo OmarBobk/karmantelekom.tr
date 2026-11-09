@@ -89,9 +89,10 @@ class StartSaleCashIntake
                 throw ValidationException::withMessages(['cash_tendered' => __('pos.errors.no_cash_due')]);
             }
 
+            $this->reservationGuard->lockForPaymentStart($locked, $actor);
+
             if (! $locked->isFrozen()) {
                 StartTerminalPayment::assertReviewedPricesCurrent($actor, $locked);
-                $this->reservationGuard->lockForPaymentStart($locked);
                 $locked->update(['frozen_at' => now()]);
             }
 

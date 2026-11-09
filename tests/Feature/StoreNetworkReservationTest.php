@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Actions\Cashbox\OpenCashboxSession;
+use App\Actions\Cashbox\StartSaleCashIntake;
 use App\Actions\Network\ApproveReservation;
 use App\Actions\Network\CancelReservation;
 use App\Actions\Network\DispatchReservation;
@@ -14,6 +16,7 @@ use App\Actions\Network\RequestReservation;
 use App\Actions\Network\SetReservationHold;
 use App\Actions\Network\SharedListings;
 use App\Actions\Network\UnpublishUnitListing;
+use App\Actions\Pos\ResolveTerminalPayment;
 use App\Actions\Pos\ReviewCheckout;
 use App\Enums\MovementType;
 use App\Enums\ReservationStatus;
@@ -31,6 +34,7 @@ use Closure;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\Test;
@@ -190,7 +194,8 @@ class StoreNetworkReservationTest extends TestCase
 
         $this->travel(61)->minutes();
         $this->assertFalse($reservation->fresh()->isActive());
-        $this->assertReservationError(fn () => $this->approve($this->request()), 'already started taking payment');
+        $this->assertSame($reservation->id, $this->request()->id);
+        $this->assertReservationError(fn () => $this->review($this->owner, $this->phoneLine()), 'is taking payment');
 
         $sale = $this->finalize($this->fatihCashier, $attempt->fresh());
         $replay = $this->finalize($this->fatihCashier, $attempt->fresh());
@@ -203,6 +208,99 @@ class StoreNetworkReservationTest extends TestCase
         $this->assertNull($fulfilled->active_unit_id);
         $this->assertSame(1, $this->auditEvents('reservation_fulfilled'));
         $this->assertSame(1, $sale->payments()->count());
+    }
+
+    #[Test]
+    public function only_one_of_two_checkouts_linked_to_a_reservation_can_take_payment_at_a_time(): void
+    {
+        $terminal = $this->createTerminal();
+        $reservation = $this->approve($this->request());
+        $first = $this->reviewLinked($this->fatihCashier, $this->store, $reservation);
+        $second = $this->reviewLinked($this->owner, $this->store, $reservation);
+
+        $paymentKey = $this->startTerminalPayment($this->fatihCashier, $first, $terminal, '12500.00')->terminal_payment_key;
+        $this->assertSame($first->id, $reservation->fresh()->claimed_attempt_id);
+        $this->assertSame('payment_started', $reservation->fresh()->displayState());
+        $this->assertSame(1, $this->auditEvents('reservation_claimed'));
+
+        $this->assertReservationError(fn () => $this->startTerminalPayment($this->owner, $second, $terminal, '12500.00'), 'not active for a sale');
+        $this->assertReservationError(fn () => $this->finalize($this->owner, $second, '12500.00'), 'not active for a sale');
+        $this->assertReservationError(fn () => $this->reviewLinked($this->owner, $this->store, $reservation), 'not active for a sale');
+        $this->assertNull($second->fresh()->frozen_at);
+
+        app(ResolveTerminalPayment::class)($this->owner, $this->store, $first->key, $paymentKey, 'no_charge', null, 'Terminal declined');
+        $this->assertNull($reservation->fresh()->claimed_attempt_id);
+        $this->assertSame(1, $this->auditEvents('reservation_claim_released'));
+
+        $this->approveCard($this->owner, $second, $terminal, '10000.00');
+        $this->assertSame($second->id, $reservation->fresh()->claimed_attempt_id);
+        $this->assertReservationError(fn () => $this->startTerminalPayment($this->fatihCashier, $first->fresh(), $terminal, '12500.00'), 'not active for a sale');
+
+        $this->travel(61)->minutes();
+        app(OpenCashboxSession::class)($this->owner, $this->store, '0', null);
+        $intake = app(StartSaleCashIntake::class)($this->owner, $this->store, $second->key, $second->fresh()->revision, (string) Str::uuid());
+        $sale = $this->finalize($this->owner, $second->fresh(), '2500', $intake->id);
+
+        $fulfilled = $reservation->fresh();
+        $this->assertSame(ReservationStatus::FULFILLED, $fulfilled->status);
+        $this->assertSame($sale->id, $fulfilled->sale_id);
+        $this->assertSame($second->id, $fulfilled->claimed_attempt_id);
+        $this->assertSame(2, $sale->payments()->count());
+    }
+
+    #[Test]
+    public function an_ordinary_checkout_stays_refused_after_expiry_while_the_linked_payment_is_unresolved(): void
+    {
+        $terminal = $this->createTerminal();
+        $ordinary = $this->review($this->fatihCashier, $this->phoneLine());
+        $reservation = $this->approve($this->request());
+        $linked = $this->reviewLinked($this->fatihCashier, $this->store, $reservation);
+        $this->startTerminalPayment($this->fatihCashier, $linked, $terminal, '12500.00');
+
+        $this->travel(61)->minutes();
+        $this->assertFalse($reservation->fresh()->isActive());
+        $this->assertTrue($reservation->fresh()->blocksSale());
+
+        $this->assertReservationError(fn () => $this->startTerminalPayment($this->fatihCashier, $ordinary, $terminal, '12500.00'), 'is taking payment');
+        $this->assertReservationError(fn () => $this->finalize($this->fatihCashier, $ordinary, '12500.00'), 'is taking payment');
+        $this->assertReservationError(fn () => $this->review($this->fatihCashier, $this->phoneLine()), 'is taking payment');
+        $this->assertReservationError(fn () => $this->dispatchDevice($reservation), 'already started taking payment');
+        $this->assertSame(UnitStatus::AVAILABLE, $this->phone->fresh()->status);
+
+        $this->approveCard($this->fatihCashier, $linked, $terminal, '12500.00');
+        $sale = $this->finalize($this->fatihCashier, $linked->fresh());
+        $this->assertSame(ReservationStatus::FULFILLED, $reservation->fresh()->status);
+        $this->assertSame(UnitStatus::SOLD, $this->phone->fresh()->status);
+        $this->assertSame($this->store->id, $sale->store_id);
+    }
+
+    #[Test]
+    public function checkouts_reviewed_before_dispatch_or_receipt_cannot_take_payment_for_the_moved_device(): void
+    {
+        $terminal = $this->createTerminal();
+        $ordinary = $this->review($this->fatihCashier, $this->phoneLine());
+        $reservation = $this->approve($this->request());
+        $pickup = $this->reviewLinked($this->fatihCashier, $this->store, $reservation);
+
+        $this->dispatchDevice($reservation);
+        $this->assertReservationError(fn () => $this->startTerminalPayment($this->fatihCashier, $pickup, $terminal, '12500.00'), 'changed since review (In transit)');
+        $this->assertReservationError(fn () => app(StartSaleCashIntake::class)($this->fatihCashier, $this->store, $pickup->key, $pickup->revision, (string) Str::uuid()), 'changed since review (In transit)');
+        $this->assertNull($pickup->fresh()->frozen_at);
+
+        $this->travel(2)->hours();
+        $this->receive($reservation);
+        $this->assertSame(ReservationStatus::EXPIRED, $reservation->fresh()->status);
+
+        $this->assertReservationError(fn () => $this->startTerminalPayment($this->fatihCashier, $ordinary, $terminal, '12500.00'), 'changed since review (At another branch)');
+        $this->assertReservationError(fn () => app(StartSaleCashIntake::class)($this->fatihCashier, $this->store, $ordinary->key, $ordinary->revision, (string) Str::uuid()), 'changed since review (At another branch)');
+        $this->assertThrows(fn () => $this->finalize($this->fatihCashier, $ordinary, '12500.00'), ValidationException::class);
+        $this->assertNull($ordinary->fresh()->frozen_at);
+
+        $unit = $this->phone->fresh();
+        $this->assertSame([$this->otherStore->id, UnitStatus::AVAILABLE], [$unit->store_id, $unit->status]);
+        $sale = $this->finalize($this->otherCashier, $this->review($this->otherCashier, $this->phoneLine($unit), store: $this->otherStore), '12500.00');
+        $this->assertSame(UnitStatus::SOLD, $unit->fresh()->status);
+        $this->assertSame($this->otherStore->id, $sale->store_id);
     }
 
     #[Test]

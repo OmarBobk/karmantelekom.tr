@@ -46,12 +46,12 @@ final class DispatchReservation
                 return $reservation;
             }
 
-            if (! $reservation->isActive()) {
-                throw ValidationException::withMessages(['reservation' => __('network.reservation.errors.not_active', ['status' => __('network.reservation_states.'.$reservation->displayState())])]);
+            if ($reservation->hasLiveClaim() || ReservationLocks::paymentStartedFor($unit)) {
+                throw ValidationException::withMessages(['reservation' => __('network.reservation.errors.payment_started')]);
             }
 
-            if (ReservationLocks::paymentStartedFor($unit)) {
-                throw ValidationException::withMessages(['reservation' => __('network.reservation.errors.payment_started')]);
+            if (! $reservation->isActive()) {
+                throw ValidationException::withMessages(['reservation' => __('network.reservation.errors.not_active', ['status' => __('network.reservation_states.'.$reservation->displayState())])]);
             }
 
             if ($unit->store_id !== $owningStore->id || $unit->status !== UnitStatus::AVAILABLE) {
