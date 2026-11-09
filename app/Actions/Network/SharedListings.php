@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace App\Actions\Network;
 
-use App\Enums\ReservationStatus;
 use App\Enums\TrackingMode;
 use App\Enums\UnitCondition;
 use App\Enums\UnitStatus;
 use App\Models\NetworkListing;
+use App\Models\NetworkReservation;
 use App\Models\Store;
 use App\Services\Purchasing\Money;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -49,14 +49,8 @@ final class SharedListings
             ->where('units.status', UnitStatus::AVAILABLE->value)
             ->where('definitions.is_active', true)
             ->whereIn('definitions.tracking_mode', [TrackingMode::SERIALIZED->value, $usedDevice])
-            ->where(fn (Builder $priced) => $priced
-                ->where(fn (Builder $used) => $used->where('definitions.tracking_mode', $usedDevice)->whereNotNull('units.selling_price'))
-                ->orWhere(fn (Builder $shared) => $shared->where('definitions.tracking_mode', '!=', $usedDevice)->whereNotNull('definitions.selling_price')))
-            ->whereNotExists(fn ($reserved) => $reserved->selectRaw('1')
-                ->from('network_reservations')
-                ->whereColumn('network_reservations.active_unit_id', 'units.id')
-                ->where('network_reservations.status', ReservationStatus::APPROVED->value)
-                ->where(fn ($held) => $held->where('network_reservations.expires_at', '>', now())->orWhereNotNull('network_reservations.claimed_attempt_id')))
+            ->tap(fn (Builder $query) => ListingEligibility::wherePriced($query))
+            ->tap(fn (Builder $query) => NetworkReservation::whereUnitNotHeld($query, 'units.id'))
             ->when($term !== '', fn (Builder $query) => $query->where(fn (Builder $match) => $match
                 ->where('definitions.name', 'like', $like)
                 ->orWhere('definitions.model', 'like', $like)))

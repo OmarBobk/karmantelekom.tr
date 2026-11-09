@@ -92,6 +92,9 @@
                                 </div>
                             </div>
 
+                            @if (array_key_exists($product->id, $availability))
+                                @include('livewire.frontend.partials.storefront-availability', ['available' => $availability[$product->id]])
+                            @else
                             <!-- Add to Cart Button -->
                             <div class="mt-auto pt-4">
                                 <button
@@ -107,6 +110,7 @@
                                     {{ __('Add to Cart') }}
                                 </button>
                             </div>
+                            @endif
                         </div>
                     </div>
                 </div>

@@ -40,6 +40,33 @@
         </div>
     @endif
 
+    @if ($canAllocateStorefront || $storefrontAllocated > 0)
+        @php($storefrontError = $errors->first('storefrontQuantity') ?: $errors->first('allocation'))
+        <form wire:submit="saveStorefrontQuantity" class="flex flex-col gap-3 rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-200 sm:flex-row sm:items-end sm:justify-between" aria-labelledby="storefront-title" data-testid="storefront-allocation">
+            <div class="min-w-0">
+                <h2 id="storefront-title" class="text-base font-semibold text-gray-900">{{ __('storefront.allocation.title') }}</h2>
+                <p id="storefront-quantity-help" class="text-xs text-gray-600">{{ __('storefront.allocation.quantity_help', ['quantity' => $quantity]) }}</p>
+            </div>
+            @if ($canAllocateStorefront)
+                <div class="flex items-end gap-2">
+                    <div>
+                        <label for="storefront-quantity" class="block text-sm font-medium text-gray-700">{{ __('storefront.allocation.quantity') }}</label>
+                        <input id="storefront-quantity" type="number" min="0" max="{{ $quantity }}" step="1" inputmode="numeric" dir="ltr" wire:model="storefrontQuantity" aria-describedby="storefront-quantity-help{{ $storefrontError ? ' storefront-quantity-error' : '' }}" @if ($storefrontError) aria-invalid="true" @endif class="mt-1 block min-h-11 w-28 rounded-lg border-gray-300 font-mono shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                    </div>
+                    <button type="submit" wire:loading.attr="disabled" wire:target="saveStorefrontQuantity" class="min-h-11 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60">
+                        <span wire:loading.remove wire:target="saveStorefrontQuantity">{{ __('storefront.allocation.save') }}</span>
+                        <span wire:loading wire:target="saveStorefrontQuantity">{{ __('inventory.form.saving') }}</span>
+                    </button>
+                </div>
+            @else
+                <p dir="ltr" class="font-mono text-lg font-semibold tabular-nums text-gray-900">{{ $storefrontAllocated }}</p>
+            @endif
+            @if ($storefrontError)
+                <p id="storefront-quantity-error" class="text-sm text-red-700 sm:basis-full" role="alert">{{ $storefrontError }}</p>
+            @endif
+        </form>
+    @endif
+
     <div class="grid gap-6 lg:grid-cols-5">
         <div class="space-y-6 lg:col-span-2">
             @if (! $canAdjust)

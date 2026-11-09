@@ -7,7 +7,7 @@ return [
     'in_stock' => 'Stokta',
     'stock_info' => 'Stok Bilgisi',
     'description' => 'Açıklama',
-    'code'  => 'Kod',
+    'code' => 'Kod',
     'serial' => 'Seri',
     'request_quote' => 'Teklif İste',
     'more_info' => 'Daha Fazla Bilgi',
@@ -62,18 +62,16 @@ return [
     'wp_quote_message' => 'Merhaba, bu ürün hakkında teklif almak istiyorum',
     'wp_more_info_message' => 'Merhaba, bu ürün hakkında daha fazla bilgi almak istiyorum',
 
-    'page_not_found'  => 'Sayfa Bulunamadı',
-    '404_message'  => 'Aradığınız sayfa mevcut değil veya taşınmış olabilir.',
-    'back_to_home'  => 'Anasayfaya Dön',
-    'contact_support'  => 'Destek ile İletişime Geç',
+    'page_not_found' => 'Sayfa Bulunamadı',
+    '404_message' => 'Aradığınız sayfa mevcut değil veya taşınmış olabilir.',
+    'back_to_home' => 'Anasayfaya Dön',
+    'contact_support' => 'Destek ile İletişime Geç',
 
     'all' => 'Tümü',
     'add_to_cart' => 'Sepete Ekle',
 
-
     // Product Modal
     'quantity' => 'Adet',
-
 
     'searching' => 'Aranıyor',
     'no_result_found_for' => 'Sonuç bulunamadı',
@@ -105,7 +103,11 @@ return [
     'min' => 'Minimum',
     'price_tiers' => 'Fiyat Seviyeleri',
     'from' => 'itibaren',
-    'catalog' => "Katalog",
+    'catalog' => 'Katalog',
 
-
+    'storefront_in_stock' => '{1} Stokta 1 adet|[2,*] Stokta :count adet',
+    'storefront_out_of_stock' => 'Stokta yok',
+    'storefront_in_store_only' => 'Mağazalarımızdan satın alınabilir. Online sipariş yakında.',
+    'storefront_display_only' => 'Bu ürün şimdilik yalnızca mağazalarımızdan satın alınabilir, bu yüzden sepetinizden çıkarıldı.',
+    'storefront_product_unavailable' => 'Bu ürün mevcut değil.',
 ];

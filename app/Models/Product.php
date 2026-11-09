@@ -2,15 +2,17 @@
 
 namespace App\Models;
 
+use App\Enums\StorefrontChannel;
 use App\Traits\Searchable;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
-use Illuminate\Database\Eloquent\Builder;
 use Spatie\Sluggable\HasSlug;
 use Spatie\Sluggable\SlugOptions;
 
@@ -48,7 +50,7 @@ class Product extends Model
     use HasFactory, HasSlug, Searchable;
 
     public array $searchable_columns = [
-        'code', 'name', 'description', 'serial', 'tr_name', 'ar_name', 'tr_description', 'ar_description'
+        'code', 'name', 'description', 'serial', 'tr_name', 'ar_name', 'tr_description', 'ar_description',
     ];
 
     public array $return_from_search = [];
@@ -63,7 +65,7 @@ class Product extends Model
      * @var array<string, string>
      */
     protected $casts = [
-        'is_active' => 'boolean'
+        'is_active' => 'boolean',
     ];
 
     /**
@@ -83,9 +85,6 @@ class Product extends Model
 
     /**
      * Scope a query to only include active products.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeActive(Builder $query): Builder
     {
@@ -159,9 +158,18 @@ class Product extends Model
     }
 
     /**
-     * Check if the product is visible to the current user.
+     * The link to branch stock, when this storefront product presents an operational product.
+     * Never eager-load it on storefront pages: product cards serialize the whole model.
      *
-     * @return bool
+     * @return HasOne<StorefrontListing, $this>
+     */
+    public function storefrontListing(): HasOne
+    {
+        return $this->hasOne(StorefrontListing::class);
+    }
+
+    /**
+     * Check if the product is visible to the current user.
      */
     public function isVisibleToCurrentUser(): bool
     {
@@ -170,19 +178,43 @@ class Product extends Model
 
     /**
      * Scope to filter products based on the user's role and visibility settings.
-     *
-     * @param Builder $query
-     * @return Builder
      */
     public function scopeVisibleToUser(Builder $query): Builder
     {
-        return $query->where('is_active', true);
+        return $query->visibleInChannels([StorefrontChannel::RETAIL]);
+    }
+
+    /**
+     * Active products a viewer of any of the given channels may see. An unlinked legacy product
+     * follows is_active alone; a linked one must also be published to one of the channels.
+     *
+     * @param  list<StorefrontChannel>  $channels
+     */
+    public function scopeVisibleInChannels(Builder $query, array $channels): Builder
+    {
+        return $query->where('products.is_active', true)->notWithheldFrom($channels);
+    }
+
+    /**
+     * Excludes linked products published to none of the given channels. Unlinked legacy products
+     * pass unchanged, which keeps the existing direct product links working as before.
+     *
+     * @param  list<StorefrontChannel>  $channels
+     */
+    public function scopeNotWithheldFrom(Builder $query, array $channels): Builder
+    {
+        return $query->whereNotExists(fn ($hidden) => $hidden->selectRaw('1')
+            ->from('storefront_listings')
+            ->whereColumn('storefront_listings.product_id', 'products.id')
+            ->where(function ($unpublished) use ($channels): void {
+                foreach ($channels as $channel) {
+                    $unpublished->whereNull('storefront_listings.'.$channel->column());
+                }
+            }));
     }
 
     /**
      * Get the primary image URL for the product.
-     *
-     * @return string
      */
     public function getPrimaryImageUrlAttribute(): string
     {
@@ -193,14 +225,11 @@ class Product extends Model
 
     /**
      * Get the price for the product in the specified currency.
-     *
-     * @param string $currencyCode
-     * @return ?ProductPrice
      */
     public function getPrice(string $currencyCode = 'TRY'): ?ProductPrice
     {
         return $this->prices()
-            ->whereHas('currency', fn($q) => $q->where('code', $currencyCode))
+            ->whereHas('currency', fn ($q) => $q->where('code', $currencyCode))
             ->first();
     }
 
@@ -213,8 +242,6 @@ class Product extends Model
 
     /**
      * Get the translated name based on the current locale.
-     *
-     * @return string
      */
     public function getTranslatedNameAttribute(): string
     {
@@ -229,8 +256,6 @@ class Product extends Model
 
     /**
      * Get the translated description based on the current locale.
-     *
-     * @return string
      */
     public function getTranslatedDescriptionAttribute(): string
     {
@@ -245,8 +270,6 @@ class Product extends Model
 
     /**
      * Get the translated slug based on the current locale.
-     *
-     * @return string
      */
     public function getTranslatedSlugAttribute(): string
     {
@@ -269,5 +292,4 @@ class Product extends Model
             ->where('max_qty', '>=', $qty)
             ->value('price');
     }
-
 }

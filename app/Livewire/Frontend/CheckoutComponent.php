@@ -2,11 +2,15 @@
 
 namespace App\Livewire\Frontend;
 
-use App\Models\Shop;
-use App\Models\Order;
 use App\Enums\OrderStatus;
+use App\Events\OrderCreated;
 use App\Facades\Cart;
+use App\Models\Order;
+use App\Models\Shop;
+use App\Models\StorefrontListing;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 use LaravelDaily\Invoices\Classes\Buyer;
 use LaravelDaily\Invoices\Classes\InvoiceItem;
@@ -14,17 +18,19 @@ use LaravelDaily\Invoices\Invoice;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Title;
 use Livewire\Component;
-use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Auth;
 use Spatie\Browsershot\Browsershot;
 use Throwable;
 
 class CheckoutComponent extends Component
 {
     public ?int $selectedShopId = null;
+
     public string $orderNotes = '';
+
     public bool $isProcessing = false;
+
     public bool $showInvoiceModal = false;
+
     public int $invoiceOrderId = 0;
 
     protected array $rules = [
@@ -39,7 +45,7 @@ class CheckoutComponent extends Component
         ];
 
         // Only require shop selection for non-shop owners
-        if (!$this->isShopOwner) {
+        if (! $this->isShopOwner) {
             $rules['selectedShopId'] = 'required|exists:shops,id';
         }
 
@@ -75,6 +81,7 @@ class CheckoutComponent extends Component
         if ($this->isShopOwner) {
             return auth()->user()->ownedShop;
         }
+
         return null;
     }
 
@@ -102,8 +109,18 @@ class CheckoutComponent extends Component
 
         Log::info('Order Validation passed');
 
-        if (!$this->hasItemsInCart()) {
+        if (! $this->hasItemsInCart()) {
             $this->addError('cart', 'Your cart is empty. Please add items before placing an order.');
+
+            return;
+        }
+
+        $displayOnly = StorefrontListing::linkedProductIds($this->cart->items->pluck('product_id'));
+
+        if ($displayOnly !== []) {
+            $this->cart->items()->whereIn('product_id', $displayOnly)->delete();
+            $this->addError('cart', __('main.storefront_display_only'));
+
             return;
         }
 
@@ -148,9 +165,8 @@ class CheckoutComponent extends Component
                 Cart::clearCart(Auth::id(), null);
 
                 // Dispatch OrderCreated event
-                \App\Events\OrderCreated::dispatch($order, Auth::id());
+                OrderCreated::dispatch($order, Auth::id());
             });
-
 
             // Reset form after successful transaction
             $this->reset(['selectedShopId', 'orderNotes']);
@@ -160,14 +176,13 @@ class CheckoutComponent extends Component
 
             $this->dispatch('notify', [
                 'type' => 'alert-success',
-                'message' => 'Order placed successfully!'
+                'message' => 'Order placed successfully!',
             ]);
 
             $this->showInvoiceConfirmation($this->invoiceOrderId);
 
-
         } catch (\Exception $e) {
-            $this->addError('order', 'Failed to place order. Please try again. Error: ' . $e->getMessage());
+            $this->addError('order', 'Failed to place order. Please try again. Error: '.$e->getMessage());
         } finally {
             $this->isProcessing = false;
         }
@@ -189,7 +204,7 @@ class CheckoutComponent extends Component
                 'serial' => $order->id,
                 'date' => $order->updated_at->format('d M Y'),
                 'invoice_records' => $order->items,
-                'total' => $order->total_price
+                'total' => $order->total_price,
             ]);
 
             $invoice = Invoice::make()
@@ -197,13 +212,12 @@ class CheckoutComponent extends Component
                 ->buyer($customer)
                 ->discountByPercent(10)
                 ->taxRate(18)
-                ->addItem((new InvoiceItem())->pricePerUnit(2));
-
+                ->addItem((new InvoiceItem)->pricePerUnit(2));
 
             $html = view('vendor.invoices.templates.indirimgo', compact('invoice'))->render();
 
             return response()->stream(function () use ($html) {
-                print Browsershot::html($html)
+                echo Browsershot::html($html)
                     ->format('A4')
                     ->noSandbox()
                     ->waitUntilNetworkIdle()
@@ -218,7 +232,7 @@ class CheckoutComponent extends Component
         } catch (Throwable $e) {
             $this->dispatch('notify', [
                 'type' => 'alert-error',
-                'message' => 'Failed to export order: ' . $e->getMessage()
+                'message' => 'Failed to export order: '.$e->getMessage(),
             ]);
 
             dd($e->getMessage());

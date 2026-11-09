@@ -13,6 +13,7 @@ use App\Actions\Inventory\RecordOpeningBalance;
 use App\Actions\Inventory\RecordStockCount;
 use App\Actions\Inventory\RegisterOpeningUnit;
 use App\Actions\Inventory\RemoveUnit;
+use App\Actions\Storefront\SetStorefrontQuantity;
 use App\Enums\AdjustmentReason;
 use App\Enums\UnitCondition;
 use App\Enums\UnitStatus;
@@ -25,6 +26,7 @@ use App\Models\Purchase;
 use App\Models\PurchaseReceiptLine;
 use App\Models\SaleLine;
 use App\Models\Store;
+use App\Models\StorefrontAllocation;
 use Closure;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
@@ -113,6 +115,11 @@ class ProductInventory extends Component
 
     public string $foundSerial = '';
 
+    /**
+     * Online quantity this branch offers on the storefront; a ceiling against on-hand stock.
+     */
+    public string $storefrontQuantity = '0';
+
     public function mount(Store $store, ProductDefinition $productDefinition): void
     {
         $this->authorize('viewInventory', $store);
@@ -121,6 +128,31 @@ class ProductInventory extends Component
         $this->definition = $productDefinition;
         $this->unitCondition = UnitCondition::allowedFor($productDefinition->tracking_mode)[0]->value ?? '';
         $this->foundCondition = $this->unitCondition;
+        $this->storefrontQuantity = (string) $this->storefrontAllocation();
+    }
+
+    public function saveStorefrontQuantity(SetStorefrontQuantity $setStorefrontQuantity): void
+    {
+        $this->authorize('allocateStorefrontStock', $this->store);
+
+        $this->validate(
+            ['storefrontQuantity' => ['required', 'integer', 'min:0', 'max:'.StorefrontAllocation::MAX_QUANTITY]],
+            attributes: ['storefrontQuantity' => __('storefront.allocation.quantity')],
+        );
+
+        $setStorefrontQuantity(auth()->user(), $this->store, $this->definition->id, (int) $this->storefrontQuantity);
+
+        $this->storefrontQuantity = (string) $this->storefrontAllocation();
+        $this->dispatch('notify', ['type' => 'success', 'message' => __('storefront.allocation.quantity_saved')]);
+    }
+
+    private function storefrontAllocation(): int
+    {
+        return (int) StorefrontAllocation::query()
+            ->where('store_id', $this->store->id)
+            ->where('product_definition_id', $this->definition->id)
+            ->whereNull('inventory_unit_id')
+            ->value('quantity');
     }
 
     public function updatedUnitStatusFilter(): void
@@ -439,6 +471,8 @@ class ProductInventory extends Component
             'movements' => $movements,
             'units' => $units,
             'canAdjust' => Gate::allows('adjustInventory', $this->store),
+            'canAllocateStorefront' => ! $tracksUnits && Gate::allows('allocateStorefrontStock', $this->store),
+            'storefrontAllocated' => $tracksUnits ? 0 : $this->storefrontAllocation(),
             'setupOpen' => $this->store->refresh()->inventorySetupIsOpen(),
             'reconcileUnit' => $tracksUnits && $this->reconcileUnitId !== null
                 ? $this->store->units()->with(['identifiers', 'productDefinition:id,name,model'])->find($this->reconcileUnitId)

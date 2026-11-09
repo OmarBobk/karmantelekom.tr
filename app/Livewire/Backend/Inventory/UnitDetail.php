@@ -18,6 +18,8 @@ use App\Actions\Network\ListingEligibility;
 use App\Actions\Network\PublishUnitListing;
 use App\Actions\Network\UnpublishUnitListing;
 use App\Actions\Pos\SetUnitSellingPrice;
+use App\Actions\Storefront\SetStorefrontDevice;
+use App\Actions\Storefront\StorefrontEligibility;
 use App\Enums\AdjustmentReason;
 use App\Enums\Currency;
 use App\Enums\DeviceCostCategory;
@@ -39,6 +41,7 @@ use App\Models\Purchase;
 use App\Models\PurchaseReceiptLine;
 use App\Models\SaleLine;
 use App\Models\Store;
+use App\Models\StorefrontAllocation;
 use App\Services\Purchasing\Money;
 use Closure;
 use Illuminate\Contracts\View\View;
@@ -477,6 +480,22 @@ class UnitDetail extends Component
         );
     }
 
+    public function allowOnStorefront(SetStorefrontDevice $setStorefrontDevice): void
+    {
+        $this->authorize('allocateStorefrontStock', $this->store);
+        $this->resetErrorBag('allocation');
+        $setStorefrontDevice(auth()->user(), $this->store, $this->unitId, true);
+        $this->dispatch('notify', ['type' => 'success', 'message' => __('storefront.allocation.device_allowed')]);
+    }
+
+    public function withdrawFromStorefront(SetStorefrontDevice $setStorefrontDevice): void
+    {
+        $this->authorize('allocateStorefrontStock', $this->store);
+        $this->resetErrorBag('allocation');
+        $setStorefrontDevice(auth()->user(), $this->store, $this->unitId, false);
+        $this->dispatch('notify', ['type' => 'success', 'message' => __('storefront.allocation.device_withdrawn')]);
+    }
+
     /**
      * Apply a share or withdraw from the shown revision. A refusal re-renders the current listing,
      * so the operator's next action is bound to the state now on screen.
@@ -574,6 +593,9 @@ class UnitDetail extends Component
             'listing' => $unit->networkListing()->with('publisher:id,name')->first(),
             'listingProblem' => ListingEligibility::problem($unit->productDefinition, $unit),
             'canShare' => Gate::allows('shareListings', $this->store),
+            'onStorefront' => StorefrontAllocation::query()->where('inventory_unit_id', $unit->id)->where('store_id', $this->store->id)->where('quantity', '>', 0)->exists(),
+            'storefrontProblem' => StorefrontEligibility::deviceProblem($unit->productDefinition, $unit),
+            'canAllocateStorefront' => Gate::allows('allocateStorefrontStock', $this->store),
             'canSetUnitPrice' => $isUsedDevice && ! in_array($unit->status, [UnitStatus::SOLD, UnitStatus::REMOVED], true) && Gate::allows('setUnitSellingPrices', $this->store),
             'soldOn' => $unit->status === UnitStatus::SOLD ? $unit->saleLine()->with('sale:id,store_id,user_id,number,completed_at')->first()?->sale : null,
             'removalReasons' => MovementType::ADJUSTMENT_DECREASE->allowedReasons(),

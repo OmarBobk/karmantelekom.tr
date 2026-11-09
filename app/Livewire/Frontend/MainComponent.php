@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Livewire\Frontend;
 
+use App\Actions\Storefront\StorefrontAvailability;
 use App\Facades\Cart as CartFacade;
 use App\Models\Cart;
 use App\Models\Currency;
@@ -12,6 +13,7 @@ use App\Models\Section;
 use App\Models\Setting;
 use App\Services\LanguageService;
 use Illuminate\Support\Facades\App;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
 use Livewire\Attributes\Title;
@@ -192,6 +194,12 @@ class MainComponent extends Component
             // Dispatch cart update event
             $this->dispatch('cart-updated');
 
+        } catch (ValidationException $e) {
+            $this->dispatch('notify', [
+                'type' => 'error',
+                'message' => $e->getMessage(),
+                'sec' => 4000,
+            ]);
         } catch (\Exception $e) {
             $this->dispatch('notify', [
                 'type' => 'error',
@@ -205,9 +213,14 @@ class MainComponent extends Component
     #[Title('Home')]
     public function render()
     {
+        $productIds = collect([$this->sections, $this->contentSections])
+            ->filter()
+            ->flatMap(fn ($sections) => $sections->flatMap(fn (Section $section) => $section->products->pluck('id')));
+
         return view('livewire.frontend.main-component', [
             'canSwitchCurrency' => $this->canSwitchCurrency,
             'direction' => $this->currentDirection,
+            'availability' => app(StorefrontAvailability::class)->forProducts($productIds),
         ]);
     }
 

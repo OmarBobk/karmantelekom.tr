@@ -4,12 +4,15 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Actions\Storefront\StorefrontOrderGuard;
 use App\Models\Cart;
-use App\Models\Product;
 use App\Models\CartItem;
+use App\Models\Product;
+use App\Models\StorefrontListing;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 use InvalidArgumentException;
 use Throwable;
 
@@ -28,8 +31,13 @@ class CartService
         throw new InvalidArgumentException('Either user_id or session_id must be provided.');
     }
 
+    /**
+     * @throws ValidationException When the product presents linked branch stock, which is display-only.
+     */
     public function addToCart(?int $userId, ?string $sessionId, Product $product, int $quantity = 1): CartItem
     {
+        StorefrontOrderGuard::assertOrderable([$product->id]);
+
         $cart = $this->getOrCreateCart($userId, $sessionId);
 
         $item = $cart->items()->where('product_id', $product->id)->first();
@@ -43,7 +51,7 @@ class CartService
                 'product_id' => $product->id,
                 'price' => $product->prices->first()->base_price,
                 'quantity' => $quantity,
-                'subtotal' => $product->prices->first()->base_price * $quantity
+                'subtotal' => $product->prices->first()->base_price * $quantity,
             ]);
         }
 
@@ -55,7 +63,7 @@ class CartService
         $cart = $this->getOrCreateCart($userId, $sessionId);
         $item = $cart->items()->where('product_id', $productId)->first();
 
-        if (!$item) {
+        if (! $item) {
             return null;
         }
 
@@ -69,78 +77,90 @@ class CartService
     public function removeFromCart(?int $userId, ?string $sessionId, int $productId): bool
     {
         $cart = $this->getOrCreateCart($userId, null);
+
         return $cart->items()->where('product_id', $productId)->delete() > 0;
     }
 
     public function clearCart(?int $userId, ?string $sessionId): bool
     {
         $cart = $this->getOrCreateCart($userId, null);
+
         return $cart->items()->delete() > 0;
     }
 
     public function getCartTotal(?int $userId, ?string $sessionId): float
     {
         $cart = $this->getOrCreateCart($userId, $sessionId);
-        return (float)$cart->items()->sum('subtotal');
+
+        return (float) $cart->items()->sum('subtotal');
     }
 
     public function getCartItemCount(?int $userId, ?string $sessionId): int
     {
         $cart = $this->getOrCreateCart($userId, $sessionId);
-        return (int)$cart->items()->sum('quantity');
+
+        return (int) $cart->items()->sum('quantity');
     }
 
     public function syncGuestCartToUser(int $userId, string $sessionId): void
     {
-        Log::info("Starting cart sync process", [
+        Log::info('Starting cart sync process', [
             'user_id' => $userId,
-            'session_id' => $sessionId
+            'session_id' => $sessionId,
         ]);
 
         $guestCart = Cart::with('items')->where('session_id', $sessionId)->first();
         $userCart = Cart::with('items')->where('user_id', $userId)->first();
 
-        if (!$guestCart) {
-            Log::info("No guest cart found to sync", ['session_id' => $sessionId]);
+        if (! $guestCart) {
+            Log::info('No guest cart found to sync', ['session_id' => $sessionId]);
+
             return;
         }
 
-        if (!$userCart) {
-            Log::info("No existing user cart found, converting guest cart to user cart", [
+        if (! $userCart) {
+            Log::info('No existing user cart found, converting guest cart to user cart', [
                 'cart_id' => $guestCart->id,
-                'user_id' => $userId
+                'user_id' => $userId,
             ]);
 
             $guestCart->user_id = $userId;
             $guestCart->session_id = null;
             $guestCart->save();
+
             return;
         }
 
-        Log::info("Merging guest cart with user cart", [
+        Log::info('Merging guest cart with user cart', [
             'guest_cart_id' => $guestCart->id,
-            'user_cart_id' => $userCart->id
+            'user_cart_id' => $userCart->id,
         ]);
 
+        $displayOnly = StorefrontListing::linkedProductIds($guestCart->items->pluck('product_id'));
+
         foreach ($guestCart->items as $guestItem) {
+            if (in_array((int) $guestItem->product_id, $displayOnly, true)) {
+                continue;
+            }
+
             $userItem = $userCart->items()->where('product_id', $guestItem->product_id)->first();
 
             if ($userItem) {
                 $newQuantity = $userItem->quantity + $guestItem->quantity;
-                Log::info("Merging existing item", [
+                Log::info('Merging existing item', [
                     'product_id' => $guestItem->product_id,
                     'old_quantity' => $userItem->quantity,
                     'added_quantity' => $guestItem->quantity,
-                    'new_quantity' => $newQuantity
+                    'new_quantity' => $newQuantity,
                 ]);
 
                 $userItem->quantity = $newQuantity;
                 $userItem->subtotal = $userItem->price * $newQuantity;
                 $userItem->save();
             } else {
-                Log::info("Adding new item to user cart", [
+                Log::info('Adding new item to user cart', [
                     'product_id' => $guestItem->product_id,
-                    'quantity' => $guestItem->quantity
+                    'quantity' => $guestItem->quantity,
                 ]);
 
                 $userCart->items()->create([
@@ -152,7 +172,7 @@ class CartService
             }
         }
 
-        Log::info("Deleting guest cart after successful sync", ['cart_id' => $guestCart->id]);
+        Log::info('Deleting guest cart after successful sync', ['cart_id' => $guestCart->id]);
         $guestCart->delete();
     }
 
@@ -162,7 +182,7 @@ class CartService
     public function syncCart(int $user_id, array $items)
     {
         // Validate that user_id is provided and not null
-        if (!$user_id) {
+        if (! $user_id) {
             Log::warning('Attempted to sync cart without user_id');
             throw new InvalidArgumentException('User ID is required for cart syncing');
         }
@@ -171,22 +191,23 @@ class CartService
             Log::info('Start Syncing', ['user_id' => $user_id, 'items_count' => count($items)]);
             $cart = $this->getOrCreateCart($user_id, null);
 
+            // Linked branch stock is display-only: drop it from the request and the stored cart,
+            // then send the stored cart back so the browser drops it too.
+            $displayOnly = StorefrontListing::linkedProductIds([...array_column($items, 'product_id'), ...$cart->items->pluck('product_id')]);
+
+            if ($displayOnly !== []) {
+                $items = array_values(array_filter($items, fn (array $item): bool => ! in_array((int) $item['product_id'], $displayOnly, true)));
+                $cart->items()->whereIn('product_id', $displayOnly)->delete();
+                $cart->load('items.product');
+            }
+
             // if the $items is empty,
             // and the cart has items,
             // we need to sync in the opposite direction from db to localStorage.
             if (empty($items) && $cart->items()->exists()) {
                 Log::info('No items provided, clearing existing cart items', ['cart_id' => $cart->id]);
-                return $cart->items->map(function ($item) {
-                    return [
-                        'product_id' => $item->product_id,
-                        'quantity' => $item->quantity,
-                        'price' => $item->price,
-                        'subtotal' => $item->subtotal,
-                        'name' => $item->product->name ?? '',
-                        'description' => $item->product->description ?? '',
-                        'image' => $item->product->primaryImageUrl ?? '',
-                    ];
-                })->toArray();
+
+                return $this->storedItems($cart);
             }
 
             DB::transaction(function () use ($cart, $items) {
@@ -206,7 +227,7 @@ class CartService
                         Log::info('Updating existing cart item', [
                             'product_id' => $productId,
                             'old_quantity' => $existingItem->quantity,
-                            'new_quantity' => $quantity
+                            'new_quantity' => $quantity,
                         ]);
 
                         $newQuantity = $quantity;
@@ -217,13 +238,14 @@ class CartService
                     } else {
                         Log::info('Creating new cart item', [
                             'product_id' => $productId,
-                            'quantity' => $quantity
+                            'quantity' => $quantity,
                         ]);
 
                         // Get product price safely
                         $product = Product::with('prices')->find($productId);
-                        if (!$product || $product->prices->isEmpty()) {
+                        if (! $product || $product->prices->isEmpty()) {
                             Log::warning('Product not found or has no prices', ['product_id' => $productId]);
+
                             continue;
                         }
 
@@ -260,11 +282,15 @@ class CartService
                 Log::info('End Transaction');
             });
 
+            if ($displayOnly !== []) {
+                return $this->storedItems($cart->load('items.product'));
+            }
+
         } catch (Throwable $th) {
             Log::error('Error syncing cart', [
                 'user_id' => $user_id,
                 'error' => $th->getMessage(),
-                'trace' => $th->getTraceAsString()
+                'trace' => $th->getTraceAsString(),
             ]);
 
             // Re-throw the exception so the calling code can handle it
@@ -272,4 +298,21 @@ class CartService
         }
     }
 
+    /**
+     * The stored cart in the shape the browser cart loads.
+     *
+     * @return list<array{product_id: int, quantity: int, price: mixed, subtotal: mixed, name: string, description: string, image: string}>
+     */
+    private function storedItems(Cart $cart): array
+    {
+        return $cart->items->map(fn (CartItem $item): array => [
+            'product_id' => $item->product_id,
+            'quantity' => $item->quantity,
+            'price' => $item->price,
+            'subtotal' => $item->subtotal,
+            'name' => $item->product->name ?? '',
+            'description' => $item->product->description ?? '',
+            'image' => $item->product->primaryImageUrl ?? '',
+        ])->values()->all();
+    }
 }

@@ -23,6 +23,7 @@ use App\Livewire\Backend\Purchases\SupplierAccountPage;
 use App\Livewire\Backend\Settings\SettingsComponent;
 use App\Livewire\Backend\Shops\ShopComponent;
 use App\Livewire\Backend\Shops\ShopProfileComponent;
+use App\Livewire\Backend\Storefront\StorefrontPublisher;
 use App\Livewire\Backend\Stores\StoreDetail;
 use App\Livewire\Backend\Stores\StoresIndex;
 use App\Livewire\Backend\Suppliers\SuppliersIndex;
@@ -33,6 +34,7 @@ use App\Models\OperationalSupplier;
 use App\Models\ProductDefinition;
 use App\Models\Purchase;
 use App\Models\Store;
+use App\Models\StorefrontListing;
 use Illuminate\Support\Facades\Route;
 
 Route::get('login', function () {
@@ -98,6 +100,9 @@ Route::prefix('operations')->group(function () {
     Route::get('purchases/{purchase}/receive', ReceivePurchaseForm::class)
         ->middleware('can:receive,purchase')
         ->name('purchases.receive');
+    Route::get('storefront', StorefrontPublisher::class)
+        ->middleware('can:viewAny,'.StorefrontListing::class)
+        ->name('storefront');
 });
 
 // PDF Export Route

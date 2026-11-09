@@ -185,6 +185,29 @@
                         @endif
                         @error('listing') <p class="mt-1 text-sm text-red-700" role="alert">{{ $message }}</p> @enderror
                     </div>
+                    <div class="col-span-2" data-testid="storefront-allocation">
+                        <dt class="text-xs font-medium text-gray-600">{{ __('storefront.allocation.title') }}</dt>
+                        <dd class="mt-1 flex flex-wrap items-center gap-2 text-gray-900">
+                            @if ($onStorefront)
+                                <span @class(['inline-flex rounded-full px-2 py-0.5 text-xs font-medium ring-1', 'bg-green-50 text-green-800 ring-green-200' => $storefrontProblem === null, 'bg-amber-50 text-amber-800 ring-amber-200' => $storefrontProblem !== null])>
+                                    {{ $storefrontProblem === null ? __('storefront.allocation.device_eligible') : __('storefront.allocation.device_hidden') }}
+                                </span>
+                            @else
+                                <span class="inline-flex rounded-full bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">{{ __('storefront.allocation.device_not_eligible') }}</span>
+                            @endif
+                            @if ($canAllocateStorefront)
+                                @if ($onStorefront)
+                                    <button type="button" wire:click="withdrawFromStorefront" wire:loading.attr="disabled" wire:target="withdrawFromStorefront" class="min-h-11 rounded-lg px-3 text-sm font-medium text-gray-700 ring-1 ring-gray-300 hover:bg-gray-50 disabled:opacity-60">{{ __('storefront.allocation.withdraw') }}</button>
+                                @elseif ($storefrontProblem === null)
+                                    <button type="button" wire:click="allowOnStorefront" wire:loading.attr="disabled" wire:target="allowOnStorefront" class="min-h-11 rounded-lg px-3 text-sm font-medium text-blue-700 ring-1 ring-blue-200 hover:bg-blue-50 disabled:opacity-60">{{ __('storefront.allocation.allow') }}</button>
+                                @endif
+                            @endif
+                        </dd>
+                        @if ($storefrontProblem !== null && ($onStorefront || $canAllocateStorefront))
+                            <p class="mt-1 text-xs text-gray-600">{{ $storefrontProblem }}</p>
+                        @endif
+                        @error('allocation') <p class="mt-1 text-sm text-red-700" role="alert">{{ $message }}</p> @enderror
+                    </div>
                 @endif
             </dl>
         </div>

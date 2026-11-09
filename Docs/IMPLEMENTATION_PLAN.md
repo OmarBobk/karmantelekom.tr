@@ -1111,6 +1111,28 @@ Tasks 1–15 are delivered. Publication, discovery, and availability came first;
 
 **Acceptance.** Internal-only shares are not publishable, a publisher can link a matching legacy listing without breaking its URL, channel visibility and permissions hold on the server, and concurrent branch confirmation and POS sale cannot claim the same stock.
 
+### Status
+
+Tasks 1–3 are delivered. Task 4, branch confirmation with stock holds for online orders, comes next. Until then, linked branch stock is display-only.
+
+- **Allocation.** `storefront_allocations` holds one row per branch for each quantity-tracked product, and one row per device. A generated `quantity_scope` column keeps the quantity row unique. `allocate_storefront_stock` is owner-only and branch-scoped (`StorePolicy::allocateStorefrontStock`).
+  - `SetStorefrontQuantity` sets a ceiling that cannot exceed on-hand stock when saved. Zero withdraws the product.
+  - `SetStorefrontDevice` runs under the Store Network lock order. Eligibility matches counter sale: an active product, an `available` device, and a price.
+  - Repeating the current value changes nothing. Changes write `storefront` activity events. No action writes a stock movement or reads `network_listings`, so Store Network sharing neither grants nor requires online eligibility.
+  - The product inventory page has the quantity form. The device page has the offer or withdraw control.
+- **Publishing.** `storefront_listings` links one product definition to one legacy `products` row. Both sides are unique, and the listing records the linker and a publish time per channel. `publish_storefront` (`StorefrontListingPolicy`) gates `operations/storefront`. It is separate from pricing permissions; prices stay in the product admin.
+  - The workspace lists allocated or linked products with per-branch allocations and live availability.
+  - It links an unlinked legacy product found by name or code, or creates a new one from the definition with an explicit category. A new product uses the SKU as its code, or `OP-{id}`.
+  - It publishes or withdraws retail and wholesale separately. Linking never edits the legacy product, so URLs, slugs, images, translations, and order items stay as they are. Wholesale needs active price tiers.
+  - Unlinking is refused while a channel is live.
+- **Visibility.** `Product::visibleInChannels()` keeps the legacy `is_active` rule and hides a linked product unless the channel is published. The retail list, search, and home sections use retail. The wholesale catalog uses wholesale. The product modal is the direct-URL path. It refuses a linked product the viewer's audience may not see (`StorefrontChannel::audienceOf`, wholesale for `admin` and `customer_salesperson`) and keeps legacy behavior for unlinked products.
+- **Availability.** `StorefrontAvailability` computes availability on every read and returns counts only. For a quantity product, it counts the smaller of the allocation and the branch balance. For a device, it counts one while the device is in the allocating branch, available, priced, and not held. A device is held by an approved, unexpired reservation or by an unresolved payment claim (`NetworkReservation::whereUnitNotHeld`, shared with Store Network discovery). Retail and wholesale read the same number. Product cards serialize the product model, so availability is passed separately and the listing relation is never loaded on storefront pages.
+- **Display-only enforcement.** `StorefrontOrderGuard` refuses linked products in `CartService::addToCart` and Order now. `syncCart` and the guest merge drop linked items, and the browser cart reloads from the server. `CheckoutComponent::placeOrder` removes linked items and stops with a message. Unlinked products order as before.
+- **Tests.**
+  - `StorefrontAllocationTest` covers permissions and branch isolation, validation and no stock movement, independence from Store Network, quantity availability after a sale, and device availability. The device cases are a status change, reservation, unresolved claim after expiry, dispatch, and sale. It also covers the inventory pages.
+  - `StorefrontPublishingTest` covers the publisher permission and route, preserved legacy data and order items, the link and create rules, per-channel rules, the publisher screen, channel visibility for guests and wholesale buyers, shared availability without internal details, and every cart and checkout path.
+- **Deployment.** Run the two migrations, then rerun `OperationalStoreSetupSeeder` to grant `allocate_storefront_stock` and `publish_storefront` to the owner role. To give a non-owner publishing rights, grant that user `publish_storefront` directly. The user still needs the admin or salesperson role to reach the operations subdomain.
+
 ---
 
 ## 12. Phase 8 — Dashboards, Reports, and Audit Review

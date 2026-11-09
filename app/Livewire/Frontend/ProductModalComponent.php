@@ -2,40 +2,64 @@
 
 namespace App\Livewire\Frontend;
 
+use App\Actions\Storefront\StorefrontAvailability;
+use App\Enums\StorefrontChannel;
 use App\Facades\Settings;
 use App\Models\Product;
+use Livewire\Attributes\Locked;
 use Livewire\Component;
 
 class ProductModalComponent extends Component
 {
     public ?Product $product = null;
+
     public bool $showModal = false;
+
     public ?string $selectedImage = null;
+
     public ?int $selectedImageId = null;
+
     public ?string $requestQuoteUrl = null;
+
     public ?string $moreInfoUrl = null;
 
     public string $productSlugUrl = '';
+
     public string $productIdUrl = '';
 
     protected array $queryString = ['productSlugUrl', 'productIdUrl'];
 
     protected $listeners = ['openProductModal'];
 
+    /**
+     * Units customers can see as available when the product presents linked branch stock, which
+     * is display-only; null for legacy products, which keep their add-to-cart button.
+     */
+    #[Locked]
+    public ?int $storefrontAvailable = null;
+
     public function openProductModal($productId): void
     {
-
-        $this->product = Product::with([
-                'category', 
-                'images', 
-                'prices',
-                'priceTiers' => function($q) {
-                    $q->where('is_active', true)
-                      ->with('currency')
-                      ->orderBy('min_qty');
-                }
-            ])
+        $this->product = Product::query()->notWithheldFrom(StorefrontChannel::audienceOf(auth()->user()))->with([
+            'category',
+            'images',
+            'prices',
+            'priceTiers' => function ($q) {
+                $q->where('is_active', true)
+                    ->with('currency')
+                    ->orderBy('min_qty');
+            },
+        ])
             ->find($productId);
+
+        if ($this->product === null) {
+            $this->closeModal();
+            $this->dispatch('notify', [['type' => 'alert-danger', 'message' => __('main.storefront_product_unavailable'), 'sec' => 4000]]);
+
+            return;
+        }
+
+        $this->storefrontAvailable = app(StorefrontAvailability::class)->forProducts([$this->product->id])[$this->product->id] ?? null;
 
         $this->productSlugUrl = $this->product->slug;
         $this->productIdUrl = $this->product->id;
@@ -46,11 +70,11 @@ class ProductModalComponent extends Component
         $this->selectedImageId = $this->product?->images->where('is_primary', true)->first()?->id
             ?? $this->product?->images->first()?->id;
 
-        $requestQuoteMessage = urlencode(__('main.wp_quote_message') .' *' . $this->product->name . '* '. __('main.code') .': *' . $this->product->code . '*');
-        $this->requestQuoteUrl = 'https://wa.me/' . Settings::get('whatsapp_number', '905353402539') . '?text=' . $requestQuoteMessage;
+        $requestQuoteMessage = urlencode(__('main.wp_quote_message').' *'.$this->product->name.'* '.__('main.code').': *'.$this->product->code.'*');
+        $this->requestQuoteUrl = 'https://wa.me/'.Settings::get('whatsapp_number', '905353402539').'?text='.$requestQuoteMessage;
 
-        $moreInfoMessage = urlencode(__('main.wp_more_info_message') . ' *' . $this->product->name . '* ' . __('main.code') . ': *' . $this->product->code . '*');
-        $this->moreInfoUrl = 'https://wa.me/' . Settings::get('whatsapp_number', '905353402539') . '?text=' . $moreInfoMessage;
+        $moreInfoMessage = urlencode(__('main.wp_more_info_message').' *'.$this->product->name.'* '.__('main.code').': *'.$this->product->code.'*');
+        $this->moreInfoUrl = 'https://wa.me/'.Settings::get('whatsapp_number', '905353402539').'?text='.$moreInfoMessage;
     }
 
     public function selectImage($imageUrl, $imageId): void
@@ -58,6 +82,7 @@ class ProductModalComponent extends Component
         $this->selectedImage = $imageUrl;
         $this->selectedImageId = $imageId;
     }
+
     public function closeModal(): void
     {
         $this->showModal = false;
@@ -66,6 +91,7 @@ class ProductModalComponent extends Component
         $this->requestQuoteUrl = null;
         $this->productIdUrl = '';
         $this->productSlugUrl = '';
+        $this->storefrontAvailable = null;
 
         if (session('openProductModalFromDashboard')) {
             session()->forget('openProductModalFromDashboard');

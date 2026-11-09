@@ -55,7 +55,20 @@ class OperationalStoreSetupSeeder extends Seeder
         self::MANAGE_EXPENSES_PERMISSION,
         self::SHARE_LISTINGS_PERMISSION,
         self::MANAGE_RESERVATIONS_PERMISSION,
+        self::ALLOCATE_STOREFRONT_STOCK_PERMISSION,
+        self::PUBLISH_STOREFRONT_PERMISSION,
     ];
+
+    /**
+     * Making a branch's stock eligible for the storefront: an online quantity or exact devices. Owner only.
+     */
+    public const ALLOCATE_STOREFRONT_STOCK_PERMISSION = 'allocate_storefront_stock';
+
+    /**
+     * Linking, creating, publishing, and withdrawing storefront listings in the publisher
+     * workspace. Held by the owner role; may also be granted directly to a publisher.
+     */
+    public const PUBLISH_STOREFRONT_PERMISSION = 'publish_storefront';
 
     /**
      * Publishing a branch's devices to Store Network and withdrawing them. Owner only.
