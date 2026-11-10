@@ -100,29 +100,29 @@ class CartService
 
     /**
      * Replace the signed-in buyer's stored cart with the browser's cart, only when the browser
-     * last saw the stored cart's current contents. A stale tab, for example one still holding
-     * items a branch order consumed or missing items another tab added, is refused and gets the
-     * stored cart back instead.
+     * holds the stored cart's current revision. A stale tab, for example one still holding items
+     * a branch order consumed or missing items another tab added, is refused and gets the stored
+     * cart back instead.
      *
      * @param  array<int, array{product_id: int|string, quantity: int|string}>  $items
+     * @param  string|null  $adoptionGrant  Revision issued at sign-in for an empty cart; lets a browser with no revision of this cart, a guest cart, sync once.
      * @return array{accepted: bool, revision: string, items: list<array<string, mixed>>|null} Items when the browser must reload them.
      */
-    public function syncBrowserCart(int $userId, array $items, ?string $revision): array
+    public function syncBrowserCart(int $userId, array $items, ?string $revision, ?string $adoptionGrant = null): array
     {
         $buyer = User::query()->find($userId);
 
-        return $this->browserChange($userId, $revision, false, fn (Cart $cart): ?array => $this->syncLockedCart($cart, $buyer, $items));
+        return $this->browserChange($userId, $revision, $adoptionGrant, fn (Cart $cart): ?array => $this->syncLockedCart($cart, $buyer, $items));
     }
 
     /**
-     * Remove a product the buyer removed in the browser; the removal applies even from a stale
-     * tab, which then gets the stored cart back.
+     * Remove a product the buyer removed in the browser, when the browser holds the current revision.
      *
      * @return array{accepted: bool, revision: string, items: list<array<string, mixed>>|null}
      */
     public function removeFromBrowserCart(int $userId, int $productId, ?string $revision): array
     {
-        return $this->browserChange($userId, $revision, true, function (Cart $cart) use ($productId): null {
+        return $this->browserChange($userId, $revision, null, function (Cart $cart) use ($productId): null {
             $cart->items()->where('product_id', $productId)->delete();
 
             return null;
@@ -130,13 +130,13 @@ class CartService
     }
 
     /**
-     * Empty the cart the buyer cleared in the browser, then report the stored cart.
+     * Empty the cart the buyer cleared in the browser, when the browser holds the current revision.
      *
      * @return array{accepted: bool, revision: string, items: list<array<string, mixed>>|null}
      */
     public function clearBrowserCart(int $userId, ?string $revision): array
     {
-        return $this->browserChange($userId, $revision, true, function (Cart $cart): null {
+        return $this->browserChange($userId, $revision, null, function (Cart $cart): null {
             $cart->items()->delete();
 
             return null;
@@ -156,41 +156,50 @@ class CartService
     }
 
     /**
-     * Identifies the stored cart's contents, which the browser sends back with its next change.
+     * The revision a browser must send back with its next change. It names the cart and its
+     * change counter, so it differs after any change, even one back to the same contents.
      */
     public static function revision(Cart $cart): string
     {
-        $contents = CartItem::query()->where('cart_id', $cart->id)->orderBy('product_id')->get(['product_id', 'quantity'])
-            ->map(fn (CartItem $item): array => [(int) $item->product_id, (int) $item->quantity])
-            ->all();
-
-        return hash('sha256', json_encode($contents, JSON_THROW_ON_ERROR));
+        return $cart->id.'.'.(int) Cart::query()->whereKey($cart->id)->value('revision');
     }
 
     /**
-     * Run a browser cart change under the cart lock. The browser is current when its revision
-     * matches the stored cart, or when it has none and the stored cart is empty. A stale change
-     * is skipped unless it is a removal, and the browser then reloads the stored cart.
+     * Advance the cart's revision. Every change to the cart's items must call this inside the
+     * transaction that holds the cart lock; withLockedCart() does so for the changes it runs.
+     */
+    public static function advanceRevision(Cart $cart): void
+    {
+        Cart::query()->whereKey($cart->id)->increment('revision');
+    }
+
+    /**
+     * Run a browser cart change under the cart lock, only when the browser holds the current
+     * revision. Otherwise nothing changes and the browser reloads the stored cart. A browser
+     * holding no revision of this cart may instead present the sign-in adoption grant.
      *
      * @param  callable(Cart): (list<array<string, mixed>>|null)  $change  Returns items the browser must reload, if any.
      * @return array{accepted: bool, revision: string, items: list<array<string, mixed>>|null}
      */
-    private function browserChange(int $userId, ?string $revision, bool $applyWhenStale, callable $change): array
+    private function browserChange(int $userId, ?string $revision, ?string $adoptionGrant, callable $change): array
     {
         $cart = $this->getOrCreateCart($userId, null);
 
-        return $this->withLockedCart($cart, function () use ($cart, $revision, $applyWhenStale, $change): array {
+        return DB::transaction(function () use ($cart, $revision, $adoptionGrant, $change): array {
+            self::lockCart($cart);
             $current = self::revision($cart);
-            $accepted = $revision === null
-                ? ! CartItem::query()->where('cart_id', $cart->id)->exists()
-                : hash_equals($current, $revision);
-            $reload = $accepted || $applyWhenStale ? $change($cart) : null;
+            $holdsThisCart = $revision !== null && str_starts_with($revision, $cart->id.'.');
+            $accepted = $holdsThisCart
+                ? hash_equals($current, $revision)
+                : $adoptionGrant !== null && hash_equals($current, $adoptionGrant);
 
             if (! $accepted) {
-                $reload = $this->storedItems($cart->load('items.product'));
+                return ['accepted' => false, 'revision' => $current, 'items' => $this->storedItems($cart->load('items.product'))];
             }
 
-            return ['accepted' => $accepted, 'revision' => self::revision($cart), 'items' => $reload];
+            $items = $this->changeLocked($cart, fn (): ?array => $change($cart));
+
+            return ['accepted' => true, 'revision' => self::revision($cart), 'items' => $items];
         });
     }
 
@@ -218,8 +227,39 @@ class CartService
         return DB::transaction(function () use ($cart, $change): mixed {
             self::lockCart($cart);
 
-            return $change();
+            return $this->changeLocked($cart, $change);
         });
+    }
+
+    /**
+     * Run a change on a cart this transaction has locked, advancing its revision when the
+     * change altered its items.
+     *
+     * @template TResult
+     *
+     * @param  callable(): TResult  $change
+     * @return TResult
+     */
+    private function changeLocked(Cart $cart, callable $change): mixed
+    {
+        $before = self::contents($cart);
+        $result = $change();
+
+        if (self::contents($cart) !== $before) {
+            self::advanceRevision($cart);
+        }
+
+        return $result;
+    }
+
+    /**
+     * @return list<array{int, int, string}> Product, quantity, and price of each item.
+     */
+    private static function contents(Cart $cart): array
+    {
+        return CartItem::query()->where('cart_id', $cart->id)->orderBy('product_id')->get(['product_id', 'quantity', 'price'])
+            ->map(fn (CartItem $item): array => [(int) $item->product_id, (int) $item->quantity, (string) $item->price])
+            ->all();
     }
 
     public function getCartTotal(?int $userId, ?string $sessionId): float

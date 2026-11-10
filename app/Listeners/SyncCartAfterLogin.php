@@ -2,45 +2,37 @@
 
 namespace App\Listeners;
 
-use App\Models\Cart;
+use App\Livewire\Frontend\Cart\CartComponent;
+use App\Services\CartService;
 use Illuminate\Auth\Events\Login;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Session;
 use Illuminate\Http\Request;
 
 class SyncCartAfterLogin
 {
-    /**
-     * Create the event listener.
-     */
     public function __construct(
-        protected Request $request
-    ) {
-    }
+        protected Request $request,
+        protected CartService $carts,
+    ) {}
 
     /**
-     * Handle the event.
+     * When the buyer signs in to an empty stored cart, let the browser's guest cart be adopted
+     * by its first sync. The grant is the cart's current revision, so any change to the cart
+     * before that sync, such as another tab's, voids it.
      */
     public function handle(Login $event): void
     {
-//        $oldSessionId = $this->request->input('old_session_id');
-//        $user = $event->user;
-//
-//        if (!$oldSessionId) {
-//            Log::warning('No old session ID found during cart sync', [
-//                'user_id' => $user->id,
-//                'current_session' => Session::getId()
-//            ]);
-//            return;
-//        }
-//
-//        Log::info('Syncing cart with old session ID', [
-//            'old_session_id' => $oldSessionId,
-//            'user_id' => $user->id
-//        ]);
-//
-//        app(\App\Services\CartService::class)->syncGuestCartToUser($user->id, $oldSessionId);
+        if (! $this->request->hasSession()) {
+            return;
+        }
+
+        $cart = $this->carts->getOrCreateCart((int) $event->user->getAuthIdentifier(), null);
+
+        if ($cart->items()->exists()) {
+            $this->request->session()->forget(CartComponent::ADOPTION_GRANT);
+
+            return;
+        }
+
+        $this->request->session()->put(CartComponent::ADOPTION_GRANT, CartService::revision($cart));
     }
 }

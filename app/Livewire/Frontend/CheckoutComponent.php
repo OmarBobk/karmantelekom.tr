@@ -11,6 +11,7 @@ use App\Actions\Storefront\SubmitBranchOrder;
 use App\Facades\Cart;
 use App\Models\Order;
 use App\Models\Shop;
+use App\Services\CartService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
@@ -239,7 +240,9 @@ class CheckoutComponent extends Component
             return false;
         }
 
-        $this->cart->items()->whereIn('product_id', $displayOnly)->delete();
+        $cart = $this->cart;
+        $cart->items()->whereIn('product_id', $displayOnly)->delete();
+        CartService::advanceRevision($cart);
         $this->addError('cart', __('main.storefront_display_only'));
 
         return true;

@@ -59,6 +59,7 @@ final class PlaceCartOrder
             }
 
             CartItem::query()->whereKey($items->modelKeys())->delete();
+            CartService::advanceRevision($cart);
 
             return $order;
         });

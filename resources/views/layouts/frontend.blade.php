@@ -41,7 +41,7 @@
                 document.addEventListener('alpine:init', () => {
                     Alpine.store('cart', {
                         items: Alpine.$persist([]).as('cart_items'),
-                        // The stored cart contents this tab last loaded; the server refuses a full sync from a stale tab.
+                        // The stored cart revision this tab last loaded; the server refuses any change from a stale tab.
                         revision: Alpine.$persist(null).as('cart_revision'),
                         itemsCount: 0,
                         subtotal: 0,

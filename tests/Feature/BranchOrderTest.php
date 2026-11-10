@@ -48,6 +48,7 @@ use App\Services\Purchasing\LocalizedMoney;
 use App\Services\Purchasing\Money;
 use Closure;
 use Illuminate\Auth\Access\AuthorizationException;
+use Illuminate\Auth\Events\Login;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
@@ -449,9 +450,78 @@ class BranchOrderTest extends TestCase
             ->assertDispatched('cart-items-from-server', fn (string $name, array $params): bool => $params['items'] === null && $params['revision'] === CartService::revision($cart))
             ->assertNotDispatched('notify');
         $this->assertSame([$this->cableProduct->id => 1, $this->phoneProduct->id => 1], $this->cartContents($cart));
+        $this->assertNotSame($current, CartService::revision($cart));
+    }
 
-        Livewire::actingAs($this->buyer)->test(CartComponent::class)->call('handleClearCart', $staleRevision);
-        $this->assertSame([], $this->cartContents($cart));
+    #[Test]
+    public function a_stale_clear_or_remove_after_a_newer_add_changes_nothing(): void
+    {
+        $cart = $this->fillCart([$this->cableProduct->id => 1]);
+        $staleRevision = CartService::revision($cart);
+        app(CartService::class)->addToCart($this->buyer->id, null, $this->phoneProduct);
+        $bothItems = [$this->cableProduct->id => 1, $this->phoneProduct->id => 1];
+
+        Livewire::actingAs($this->buyer)->test(CartComponent::class)
+            ->call('handleClearCart', $staleRevision)
+            ->assertDispatched('cart-items-from-server', fn (string $name, array $params): bool => count($params['items']) === 2 && $params['revision'] === CartService::revision($cart))
+            ->assertDispatched('notify');
+        Livewire::actingAs($this->buyer)->test(CartComponent::class)->call('handleRemoveItem', $this->cableProduct->id, $staleRevision);
+        Livewire::actingAs($this->buyer)->test(CartComponent::class)->call('handleClearCart', null);
+        $this->assertSame($bothItems, $this->cartContents($cart));
+
+        // Removing and re-adding the phone restores the same contents under a newer revision.
+        $beforeReadd = CartService::revision($cart);
+        app(CartService::class)->removeFromCart($this->buyer->id, null, $this->phoneProduct->id);
+        app(CartService::class)->addToCart($this->buyer->id, null, $this->phoneProduct);
+        $this->assertSame($bothItems, $this->cartContents($cart));
+
+        Livewire::actingAs($this->buyer)->test(CartComponent::class)->call('handleRemoveItem', $this->phoneProduct->id, $beforeReadd);
+        $this->assertSame($bothItems, $this->cartContents($cart));
+
+        Livewire::actingAs($this->buyer)->test(CartComponent::class)
+            ->call('handleRemoveItem', $this->cableProduct->id, CartService::revision($cart))
+            ->assertNotDispatched('notify');
+        $this->assertSame([$this->phoneProduct->id => 1], $this->cartContents($cart));
+    }
+
+    #[Test]
+    public function a_stale_or_missing_revision_sync_after_checkout_empties_the_cart_is_refused(): void
+    {
+        $cart = $this->fillCart([$this->cableProduct->id => 1]);
+        $staleRevision = CartService::revision($cart);
+        $this->submit();
+        $current = CartService::revision($cart);
+        $this->assertNotSame($staleRevision, $current);
+
+        foreach ([$staleRevision, null] as $revision) {
+            Livewire::actingAs($this->buyer)->test(CartComponent::class)
+                ->call('handleSyncCart', [['product_id' => $this->cableProduct->id, 'quantity' => 1]], $revision)
+                ->assertDispatched('cart-items-from-server', fn (string $name, array $params): bool => $params['items'] === [] && $params['revision'] === $current)
+                ->assertDispatched('notify');
+            $this->assertSame([], $this->cartContents($cart));
+        }
+
+        Livewire::actingAs($this->buyer)->test(CartComponent::class)
+            ->call('handleSyncCart', [['product_id' => $this->cableProduct->id, 'quantity' => 1]], $current)
+            ->assertNotDispatched('notify');
+        $this->assertSame([$this->cableProduct->id => 1], $this->cartContents($cart));
+    }
+
+    #[Test]
+    public function a_guest_cart_is_adopted_once_after_signing_in_to_an_empty_cart(): void
+    {
+        $this->app['request']->setLaravelSession($this->app['session.store']);
+        event(new Login('web', $this->buyer, false));
+        $cart = Cart::query()->where('user_id', $this->buyer->id)->sole();
+
+        Livewire::actingAs($this->buyer)->test(CartComponent::class)
+            ->call('handleSyncCart', [['product_id' => $this->cableProduct->id, 'quantity' => 2]], null)
+            ->assertNotDispatched('notify');
+        $this->assertSame([$this->cableProduct->id => 2], $this->cartContents($cart));
+
+        Livewire::actingAs($this->buyer)->test(CartComponent::class)
+            ->call('handleSyncCart', [['product_id' => $this->phoneProduct->id, 'quantity' => 1]], null);
+        $this->assertSame([$this->cableProduct->id => 2], $this->cartContents($cart));
     }
 
     /**

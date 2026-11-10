@@ -185,6 +185,7 @@ final class SubmitBranchOrder
         }
 
         CartItem::query()->whereKey($items->modelKeys())->delete();
+        CartService::advanceRevision($cart);
 
         BranchOrderHolds::audit($storefrontOrder, $buyer, 'storefront_order_submitted', "submitted for pickup at store {$storeId} in the {$channel->value} channel", ['total' => $storefrontOrder->total, 'channel' => $channel->value]);
 
