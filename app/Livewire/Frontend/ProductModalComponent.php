@@ -109,9 +109,59 @@ class ProductModalComponent extends Component
 
     public function render()
     {
+        $this->recheckOpenProduct();
+
         return view('livewire.frontend.product-modal-component', [
             'priceTiers' => $this->visiblePriceTiers(),
+            'cartItem' => $this->cartItem(),
         ]);
+    }
+
+    /**
+     * An open modal can outlive the listing it shows, so every render rechecks the viewer's access
+     * and the current availability. A product withdrawn from the viewer's channels closes; one
+     * linked while open loses its add-to-cart action and tiers it no longer may show.
+     */
+    private function recheckOpenProduct(): void
+    {
+        if ($this->product === null) {
+            return;
+        }
+
+        $visible = Product::query()->notWithheldFrom(StorefrontChannel::audienceOf(auth()->user()))->whereKey($this->product->id)->exists();
+
+        if (! $visible) {
+            $this->closeModal();
+            $this->dispatch('notify', [['type' => 'alert-danger', 'message' => __('main.storefront_product_unavailable'), 'sec' => 4000]]);
+
+            return;
+        }
+
+        $this->storefrontAvailable = app(StorefrontAvailability::class)->forProducts([$this->product->id])[$this->product->id] ?? null;
+
+        if ($this->storefrontAvailable !== null) {
+            $this->product->unsetRelation('priceTiers');
+        }
+    }
+
+    /**
+     * The fields the browser cart stores for a legacy product; null when it cannot be carted.
+     *
+     * @return array{id: int, translated_name: string, translated_description: string, prices: list<array{base_price: mixed}>, images: list<array{image_url: string}>}|null
+     */
+    private function cartItem(): ?array
+    {
+        if ($this->product === null || $this->storefrontAvailable !== null) {
+            return null;
+        }
+
+        return [
+            'id' => $this->product->id,
+            'translated_name' => $this->product->translated_name,
+            'translated_description' => $this->product->translated_description,
+            'prices' => $this->product->prices->take(1)->map(fn ($price): array => ['base_price' => $price->base_price])->values()->all(),
+            'images' => $this->product->images->take(1)->map(fn ($image): array => ['image_url' => $image->image_url])->values()->all(),
+        ];
     }
 
     /**

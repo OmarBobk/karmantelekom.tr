@@ -307,9 +307,10 @@
                 @endif
 
                 <div class="flex flex-col sm:flex-row gap-3">
-                    @if ($storefrontAvailable === null)
+                    @if ($cartItem !== null)
                     <button
-                        @click="$store.cart.addItem({{ json_encode($product) }}, quantity, { catalog: isCatalog }); closeAndReset();"
+                        @click="$store.cart.addItem(@js($cartItem), quantity, { catalog: isCatalog }); closeAndReset();"
+                        data-testid="modal-add-to-cart"
                         class="flex-1 w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-px transition-all duration-300 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                         :class="isCatalog ? 'hidden': 'flex'"
                         aria-label="{{ __('main.add_to_cart') }}">

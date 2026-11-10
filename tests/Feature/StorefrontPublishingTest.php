@@ -183,6 +183,38 @@ class StorefrontPublishingTest extends TestCase
     }
 
     #[Test]
+    public function an_open_modal_rechecks_linking_stock_and_withdrawal_on_every_render(): void
+    {
+        WholesaleProduct::query()->create(['product_id' => $this->legacyCable->id, 'currency_id' => $this->currencyId(), 'price' => '37.45', 'min_qty' => 6, 'max_qty' => 60, 'is_active' => true]);
+        $modal = $this->openModal(null, $this->legacyCable)
+            ->assertSet('showModal', true)
+            ->assertSet('storefrontAvailable', null)
+            ->assertSee('data-testid="modal-add-to-cart"', false)
+            ->assertSee('37.45')
+            ->assertDontSee('&quot;category_id&quot;', false)
+            ->assertDontSee('"category_id"', false);
+
+        $listing = $this->link($this->legacyCable);
+        $this->publish($listing, StorefrontChannel::RETAIL);
+        $modal->call('selectImage', null, null)
+            ->assertSet('showModal', true)
+            ->assertSet('storefrontAvailable', 4)
+            ->assertSee('4 in stock')
+            ->assertDontSee('data-testid="modal-add-to-cart"', false);
+        $this->assertNoTiers($modal);
+
+        app(SetStorefrontQuantity::class)($this->owner, $this->store, $this->cable->id, 3);
+        $modal->call('selectImage', null, null)->assertSee('3 in stock')->assertSet('storefrontAvailable', 3);
+
+        $this->publish($listing, StorefrontChannel::RETAIL, false);
+        $modal->call('selectImage', null, null)
+            ->assertSet('showModal', false)
+            ->assertSet('product', null)
+            ->assertDispatched('notify')
+            ->assertDontSee('USB-C cable 1m');
+    }
+
+    #[Test]
     public function an_unallocated_product_cannot_be_linked_and_a_new_listing_needs_a_category(): void
     {
         $this->assertLinkError(fn () => app(LinkStorefrontProduct::class)($this->publisher, $this->usedPhone->id, $this->unrelated->id), 'No branch has offered this product online');
