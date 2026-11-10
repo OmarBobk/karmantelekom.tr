@@ -113,7 +113,16 @@
                             this.subtotal = this.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
                         },
 
+                        // A guest tab edits the guest cart as stored now, not its own copy: another tab may
+                        // have changed it, or offered it to an account on sign-in and removed it.
+                        loadCurrentGuestItems() {
+                            if (cartOwner === 'guest') {
+                                this.items = JSON.parse(localStorage.getItem(guestItemsKey) ?? '[]');
+                            }
+                        },
+
                         addItem(product, quantity = 1, options = {}) {
+                            this.loadCurrentGuestItems();
                             const { catalog = false } = options;
                             const existingItem = this.items.find(item => item.product_id === product.id);
 
@@ -144,6 +153,7 @@
                         },
 
                         updateQuantity(productId, quantity) {
+                            this.loadCurrentGuestItems();
                             const item = this.items.find(item => item.product_id === productId);
                             if (item) {
                                 if (quantity < 1) {
@@ -157,6 +167,7 @@
                         },
 
                         removeItem(productId) {
+                            this.loadCurrentGuestItems();
                             this.items = this.items.filter(item => item.product_id !== productId);
                             this.updateTotals();
 
