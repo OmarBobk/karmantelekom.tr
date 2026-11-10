@@ -2,12 +2,15 @@
 
 namespace App\Livewire\Frontend;
 
+use App\Actions\Storefront\BranchOrderHolds;
 use App\Actions\Storefront\StorefrontAvailability;
+use App\Actions\Storefront\StorefrontPricing;
 use App\Enums\StorefrontChannel;
 use App\Facades\Settings;
 use App\Models\Product;
 use App\Models\StorefrontListing;
 use App\Models\WholesaleProduct;
+use App\Services\Purchasing\Money;
 use Illuminate\Database\Eloquent\Collection;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
@@ -36,7 +39,7 @@ class ProductModalComponent extends Component
 
     /**
      * Units customers can see as available when the product presents linked branch stock, which
-     * is display-only; null for legacy products, which keep their add-to-cart button.
+     * only branch orders may cart; null for legacy products, which keep their add-to-cart button.
      */
     #[Locked]
     public ?int $storefrontAvailable = null;
@@ -111,10 +114,25 @@ class ProductModalComponent extends Component
     {
         $this->recheckOpenProduct();
 
+        $branchPricing = $this->product !== null && $this->storefrontAvailable !== null && BranchOrderHolds::enabled();
+
         return view('livewire.frontend.product-modal-component', [
             'priceTiers' => $this->visiblePriceTiers(),
             'cartItem' => $this->cartItem(),
+            'branchPricing' => $branchPricing,
+            'branchFromPrice' => $branchPricing ? $this->branchFromPriceMinor() : null,
         ]);
+    }
+
+    /**
+     * The lowest price in the viewer's channel for linked branch stock: the cheapest eligible
+     * device for used devices. Null when the product has no price in that channel.
+     */
+    private function branchFromPriceMinor(): ?int
+    {
+        $channel = StorefrontPricing::orderChannel(auth()->user(), [$this->product->id]);
+
+        return $channel === null ? null : StorefrontPricing::fromPriceMinor($this->product->id, $channel);
     }
 
     /**
@@ -151,8 +169,12 @@ class ProductModalComponent extends Component
      */
     private function cartItem(): ?array
     {
-        if ($this->product === null || $this->storefrontAvailable !== null) {
+        if ($this->product === null) {
             return null;
+        }
+
+        if ($this->storefrontAvailable !== null) {
+            return $this->branchCartItem();
         }
 
         return [
@@ -161,6 +183,34 @@ class ProductModalComponent extends Component
             'translated_description' => $this->product->translated_description,
             'prices' => $this->product->prices->take(1)->map(fn ($price): array => ['base_price' => $price->base_price])->values()->all(),
             'images' => $this->product->images->take(1)->map(fn ($image): array => ['image_url' => $image->image_url])->values()->all(),
+        ];
+    }
+
+    /**
+     * The cart payload for linked branch stock: only for a signed-in buyer while branch orders
+     * are switched on and some branch has it available, priced at the "from" price in the buyer's
+     * channel. The checkout prices each branch exactly.
+     *
+     * @return array{id: int, translated_name: string, translated_description: string, prices: list<array{base_price: string}>, images: list<array{image_url: string}>}|null
+     */
+    private function branchCartItem(): ?array
+    {
+        if (! BranchOrderHolds::enabled() || auth()->guest() || $this->storefrontAvailable < 1) {
+            return null;
+        }
+
+        $price = $this->branchFromPriceMinor();
+
+        if ($price === null) {
+            return null;
+        }
+
+        return [
+            'id' => $this->product->id,
+            'translated_name' => $this->product->translated_name,
+            'translated_description' => $this->product->translated_description,
+            'prices' => [['base_price' => Money::toDecimal($price)]],
+            'images' => [['image_url' => $this->product->primary_image_url]],
         ];
     }
 

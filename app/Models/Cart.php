@@ -6,16 +6,17 @@ namespace App\Models;
 
 use Carbon\Carbon;
 use Database\Factories\CartFactory;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 
 /**
  * @property int $id
  * @property int $user_id
+ * @property int $revision Advances whenever the cart's contents change; see CartService::revision().
  * @property Carbon $created_at
  * @property Carbon $updated_at
  * @property-read Collection|CartItem[] $items
@@ -31,6 +32,7 @@ class Cart extends Model
     protected $fillable = ['user_id', 'session_id'];
 
     protected $casts = [
+        'revision' => 'integer',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
@@ -38,7 +40,7 @@ class Cart extends Model
     protected $appends = [
         'total',
         'subtotal',
-        'items_count'
+        'items_count',
     ];
 
     /**
@@ -104,5 +106,4 @@ class Cart extends Model
     {
         return $this->items()->delete();
     }
-
 }

@@ -218,6 +218,16 @@ class StorePolicy
     }
 
     /**
+     * Determine whether the user can confirm, reprice, and cancel storefront orders this store
+     * fulfills. The owner holds the permission through the admin role; an employee needs a
+     * direct grant and a current assignment to this store.
+     */
+    public function manageStorefrontOrders(User $user, Store $store): bool
+    {
+        return $user->checkPermissionTo('manage_storefront_orders') && $store->isAccessibleBy($user);
+    }
+
+    /**
      * Determine whether the user can browse other branches' Store Network listings from this store.
      */
     public function discoverListings(User $user, Store $store): bool

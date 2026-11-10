@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Actions\Storefront\BranchOrderHolds;
 use App\Enums\ReservationStatus;
 use Carbon\CarbonInterface;
 use Database\Factories\NetworkReservationFactory;
@@ -124,7 +125,7 @@ class NetworkReservation extends Model
     /**
      * Restrict a device query to devices no approved reservation holds: none unexpired and none
      * claimed by a checkout taking payment. The SQL form of blocksSale(); a device in transit is
-     * excluded by its own status.
+     * excluded by its own status. Devices a confirmed storefront order holds are excluded too.
      */
     public static function whereUnitNotHeld(EloquentBuilder|QueryBuilder $query, string $unitColumn): void
     {
@@ -133,6 +134,8 @@ class NetworkReservation extends Model
             ->whereColumn('network_reservations.active_unit_id', $unitColumn)
             ->where('network_reservations.status', ReservationStatus::APPROVED->value)
             ->where(fn (QueryBuilder $held) => $held->where('network_reservations.expires_at', '>', now())->orWhereNotNull('network_reservations.claimed_attempt_id')));
+
+        BranchOrderHolds::whereUnitNotHeld($query, $unitColumn);
     }
 
     /**

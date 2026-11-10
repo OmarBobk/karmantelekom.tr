@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Actions\Pos;
 
 use App\Actions\Network\ReservationGuard;
+use App\Actions\Storefront\BranchOrderHolds;
 use App\Enums\CheckoutAttemptStatus;
 use App\Enums\Currency;
 use App\Enums\TrackingMode;
@@ -14,6 +15,7 @@ use App\Models\CheckoutAttempt;
 use App\Models\InventoryUnit;
 use App\Models\ProductDefinition;
 use App\Models\Store;
+use App\Models\StorefrontOrder;
 use App\Models\User;
 use App\Services\Idempotency;
 use App\Services\Purchasing\LocalizedMoney;
@@ -55,7 +57,7 @@ class ReviewCheckout
      * @throws AuthorizationException
      * @throws ValidationException
      */
-    public function __invoke(User $actor, Store $store, array $cart, ?string $attemptKey = null, ?int $expectedRevision = null, ?int $customerId = null, ?string $creditAmount = null, ?int $reservationId = null): CheckoutAttempt
+    public function __invoke(User $actor, Store $store, array $cart, ?string $attemptKey = null, ?int $expectedRevision = null, ?int $customerId = null, ?string $creditAmount = null, ?int $reservationId = null, ?int $storefrontOrderId = null): CheckoutAttempt
     {
         Gate::forUser($actor)->authorize('usePos', $store);
 
@@ -71,11 +73,21 @@ class ReviewCheckout
 
         $creditMinor = self::parseCredit($creditAmount);
 
+        if ($creditMinor > 0 && $storefrontOrderId !== null) {
+            throw ValidationException::withMessages(['credit_amount' => __('storefront.orders.errors.pay_at_pickup')]);
+        }
+
         if ($creditMinor > 0) {
             self::assertCreditAllowed($actor, $store, $customerId);
         }
 
-        [$lines, $totals] = $this->priceCart($actor, $store, $cart);
+        $storefrontOrder = $storefrontOrderId === null ? null : StorefrontOrder::query()->where('store_id', $store->id)->with('lines')->find($storefrontOrderId);
+
+        if ($storefrontOrderId !== null && $storefrontOrder === null) {
+            throw ValidationException::withMessages(['storefront_order' => __('storefront.orders.errors.link_invalid')]);
+        }
+
+        [$lines, $totals] = $this->priceCart($actor, $store, $cart, $storefrontOrder);
 
         if ($creditMinor > Money::fromDecimal($totals['total'])) {
             throw ValidationException::withMessages(['credit_amount' => __('pos.credit.errors.above_total', ['total' => LocalizedMoney::format(Money::fromDecimal($totals['total']))])]);
@@ -87,14 +99,20 @@ class ReviewCheckout
             throw ValidationException::withMessages(['reservation' => $reservationProblem]);
         }
 
-        $payloadHash = self::payloadHash($store, $lines, $customerId, $creditMinor, $reservationId);
+        $orderProblem = BranchOrderHolds::reviewProblem($store->id, $lines, $storefrontOrderId);
+
+        if ($orderProblem !== null) {
+            throw ValidationException::withMessages(['storefront_order' => $orderProblem]);
+        }
+
+        $payloadHash = self::payloadHash($store, $lines, $customerId, $creditMinor, $reservationId, $storefrontOrderId);
         $credit = [
             'credit_amount' => Money::toDecimal($creditMinor),
             'credit_authorized_by' => $creditMinor > 0 ? $actor->id : null,
         ];
 
         if ($existing === null) {
-            return DB::transaction(function () use ($actor, $store, $lines, $totals, $credit, $payloadHash, $customerId, $reservationId): CheckoutAttempt {
+            return DB::transaction(function () use ($actor, $store, $lines, $totals, $credit, $payloadHash, $customerId, $reservationId, $storefrontOrderId): CheckoutAttempt {
                 $hasPendingTerminalPayment = $store->checkoutAttempts()
                     ->where('user_id', $actor->id)
                     ->pendingTerminalPayment()
@@ -111,6 +129,7 @@ class ReviewCheckout
                     'user_id' => $actor->id,
                     'customer_id' => $customerId,
                     'network_reservation_id' => $reservationId,
+                    'storefront_order_id' => $storefrontOrderId,
                     'status' => CheckoutAttemptStatus::OPEN,
                     'revision' => 1,
                     'currency' => Currency::TRY,
@@ -122,7 +141,7 @@ class ReviewCheckout
             });
         }
 
-        return DB::transaction(function () use ($existing, $expectedRevision, $lines, $totals, $credit, $payloadHash, $customerId, $reservationId): CheckoutAttempt {
+        return DB::transaction(function () use ($existing, $expectedRevision, $lines, $totals, $credit, $payloadHash, $customerId, $reservationId, $storefrontOrderId): CheckoutAttempt {
             $attempt = CheckoutAttempt::query()->whereKey($existing->id)->lockForUpdate()->firstOrFail();
 
             self::assertOpen($attempt);
@@ -142,6 +161,7 @@ class ReviewCheckout
             $attempt->update([
                 'customer_id' => $customerId,
                 'network_reservation_id' => $reservationId,
+                'storefront_order_id' => $storefrontOrderId,
                 'lines' => $lines,
                 ...$totals,
                 ...$credit,
@@ -213,7 +233,7 @@ class ReviewCheckout
      *
      * @param  list<array<string, mixed>>  $lines
      */
-    public static function payloadHash(Store $store, array $lines, ?int $customerId = null, int $creditMinor = 0, ?int $reservationId = null): string
+    public static function payloadHash(Store $store, array $lines, ?int $customerId = null, int $creditMinor = 0, ?int $reservationId = null, ?int $storefrontOrderId = null): string
     {
         $payload = [
             'store_id' => $store->id,
@@ -237,6 +257,10 @@ class ReviewCheckout
             $payload['network_reservation_id'] = $reservationId;
         }
 
+        if ($storefrontOrderId !== null) {
+            $payload['storefront_order_id'] = $storefrontOrderId;
+        }
+
         return Idempotency::fingerprint($payload);
     }
 
@@ -246,7 +270,7 @@ class ReviewCheckout
      *
      * @throws ValidationException
      */
-    private function priceCart(User $actor, Store $store, array $cart): array
+    private function priceCart(User $actor, Store $store, array $cart, ?StorefrontOrder $storefrontOrder = null): array
     {
         if ($cart === []) {
             throw ValidationException::withMessages(['cart' => __('pos.errors.cart_empty')]);
@@ -267,6 +291,8 @@ class ReviewCheckout
         /** @var Collection<int, InventoryUnit> $units */
         $units = $store->units()->whereKey($unitIds)->with('identifiers')->get()->keyBy('id');
         $stock = $store->inventoryBalances()->whereIn('product_definition_id', $definitionIds)->pluck('quantity', 'product_definition_id');
+        $held = BranchOrderHolds::heldQuantities($store->id, $definitionIds, $storefrontOrder?->id);
+        $agreedPrices = $storefrontOrder === null ? [] : BranchOrderHolds::agreedPrices($storefrontOrder);
 
         $errors = [];
         $lines = [];
@@ -294,8 +320,10 @@ class ReviewCheckout
                     continue;
                 }
 
-                if ((int) ($stock[$definition->id] ?? 0) < $quantity) {
-                    $errors["{$field}.quantity"] = __('pos.errors.insufficient_stock', ['available' => (int) ($stock[$definition->id] ?? 0)]);
+                $sellable = (int) ($stock[$definition->id] ?? 0) - ($held[$definition->id] ?? 0);
+
+                if ($sellable < $quantity) {
+                    $errors["{$field}.quantity"] = __('pos.errors.insufficient_stock', ['available' => max(0, $sellable)]);
 
                     continue;
                 }
@@ -315,7 +343,7 @@ class ReviewCheckout
                 }
             }
 
-            $listPrice = SellingPrice::listPriceMinor($definition, $unit);
+            $listPrice = $agreedPrices[$unit === null ? 'd'.$definition->id : 'u'.$unit->id] ?? SellingPrice::listPriceMinor($definition, $unit);
 
             if ($listPrice === null) {
                 $errors["{$field}.price"] = __('pos.errors.not_priced');

@@ -9,5 +9,6 @@ return [
     'order_now' => 'Order Now',
     'clear_cart' => 'Clear Cart',
     'preparing' => 'Preparing',
+    'updated_elsewhere' => 'Your cart changed in another tab or order, so it was refreshed. Check it and make your change again.',
 
 ];

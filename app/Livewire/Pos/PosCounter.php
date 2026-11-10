@@ -18,6 +18,7 @@ use App\Actions\Pos\ResolveVoidedApproval;
 use App\Actions\Pos\ReviewCheckout;
 use App\Actions\Pos\SellingPrice;
 use App\Actions\Pos\StartTerminalPayment;
+use App\Actions\Storefront\BranchOrderHolds;
 use App\Enums\CheckoutAttemptStatus;
 use App\Enums\TrackingMode;
 use App\Exceptions\Inventory\IdempotencyConflictException;
@@ -31,6 +32,7 @@ use App\Models\NetworkReservation;
 use App\Models\ProductDefinition;
 use App\Models\Sale;
 use App\Models\Store;
+use App\Models\StorefrontOrder;
 use App\Services\Purchasing\LocalizedMoney;
 use App\Services\Purchasing\Money;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -76,6 +78,13 @@ class PosCounter extends Component
      */
     #[Locked]
     public ?int $reservationId = null;
+
+    /**
+     * The confirmed storefront order this sale collects, set only from the online orders link.
+     * Its lines and agreed prices are fixed; review and payment check the link on the server.
+     */
+    #[Locked]
+    public ?int $storefrontOrderId = null;
 
     public string $customerSearch = '';
 
@@ -225,6 +234,12 @@ class PosCounter extends Component
             $this->linkReservation($store, $requestedReservation);
         }
 
+        $requestedOrder = request()->integer('order');
+
+        if ($requestedOrder > 0) {
+            $this->linkStorefrontOrder($store, $requestedOrder);
+        }
+
         if ($this->attemptKey === null && $this->cart === [] && $this->lastSaleId !== null) {
             $this->step = 'done';
         }
@@ -236,6 +251,7 @@ class PosCounter extends Component
             'cart' => $this->cart,
             'customer_id' => $this->customerId,
             'reservation_id' => $this->reservationId,
+            'storefront_order_id' => $this->storefrontOrderId,
             'credit_amount' => $this->creditAmount,
             'attempt_key' => $this->attemptKey,
             'last_sale_id' => $this->lastSaleId,
@@ -555,7 +571,7 @@ class PosCounter extends Component
         $credit = self::canonicalAmount($this->creditAmount, 'credit_amount');
 
         try {
-            $attempt = $review(auth()->user(), $store, $this->cartInput(), $this->attemptKey, $this->attemptKey === null ? null : $this->attemptRevision, $this->customerId, $credit, $this->reservationId);
+            $attempt = $review(auth()->user(), $store, $this->cartInput(), $this->attemptKey, $this->attemptKey === null ? null : $this->attemptRevision, $this->customerId, $credit, $this->reservationId, $this->storefrontOrderId);
         } catch (ModelNotFoundException) {
             $this->forgetAttempt();
             $this->notify('error', __('pos.errors.attempt_missing'));
@@ -784,6 +800,7 @@ class PosCounter extends Component
         $this->cart = [];
         $this->customerId = null;
         $this->reservationId = null;
+        $this->storefrontOrderId = null;
         $this->creditAmount = '';
         $this->lastSaleId = null;
         $this->forgetAttempt();
@@ -796,6 +813,20 @@ class PosCounter extends Component
 
         if ($this->ensureCartEditable()) {
             $this->reservationId = null;
+            $this->cartChanged();
+        }
+    }
+
+    /**
+     * Leave the storefront order and empty the cart, since its lines belong to the order.
+     */
+    public function unlinkStorefrontOrder(): void
+    {
+        $this->authorizeCounter();
+
+        if ($this->ensureCartEditable()) {
+            $this->storefrontOrderId = null;
+            $this->cart = [];
             $this->cartChanged();
         }
     }
@@ -824,6 +855,7 @@ class PosCounter extends Component
         $this->cart = self::cartFromAttempt($attempt);
         $this->customerId = $attempt->customer_id;
         $this->reservationId = $attempt->network_reservation_id;
+        $this->storefrontOrderId = $attempt->storefront_order_id;
         $this->creditAmount = self::creditInput($attempt);
         $this->attemptKey = $attempt->key;
         $this->attemptRevision = $attempt->revision;
@@ -939,6 +971,7 @@ class PosCounter extends Component
             'selectedCustomer' => $this->customerId === null ? null : $store->customers()->find($this->customerId),
             'cartTotal' => array_sum(array_column($cartLines, 'line_total')),
             'cartEditable' => ! ($attempt?->isOpen() && $attempt->isFrozen()),
+            'storefrontOrderNumber' => $this->storefrontOrderId === null ? null : StorefrontOrder::query()->whereKey($this->storefrontOrderId)->value('order_id'),
             'payment' => $attempt?->isOpen() ? $this->paymentPreview($attempt) : null,
             'terminals' => $store->cardTerminals()->active()->orderBy('label')->get(),
             'recoverable' => $this->recoverableAttempts($store),
@@ -1083,6 +1116,7 @@ class PosCounter extends Component
         $this->cart = [];
         $this->customerId = null;
         $this->reservationId = null;
+        $this->storefrontOrderId = null;
         $this->creditAmount = '';
         $this->attemptKey = null;
         $this->attemptRevision = null;
@@ -1154,6 +1188,49 @@ class PosCounter extends Component
             $this->addTarget($target);
         }
 
+        $this->cartChanged();
+    }
+
+    /**
+     * Collect a confirmed storefront order: link it and load exactly its lines into the cart.
+     * A linked sale cannot mix in a Store Network reservation or other items.
+     */
+    private function linkStorefrontOrder(Store $store, int $storefrontOrderId): void
+    {
+        if (! BranchOrderHolds::enabled() || ! $this->ensureCartEditable()) {
+            return;
+        }
+
+        $order = StorefrontOrder::query()->where('store_id', $store->id)
+            ->with(['lines.productDefinition', 'lines.unit.identifiers'])->find($storefrontOrderId);
+
+        if ($order === null || ! $order->isConfirmed() || $order->isPastPickup()) {
+            $this->notify('error', __('storefront.orders.errors.link_invalid'));
+
+            return;
+        }
+
+        $cart = [];
+
+        foreach ($order->lines as $line) {
+            $definition = $line->productDefinition;
+            $key = $line->tracksUnits() ? 'u'.$line->inventory_unit_id : 'd'.$line->product_definition_id;
+            $cart[$key] = [
+                'definition_id' => $line->product_definition_id,
+                'unit_id' => $line->tracksUnits() ? $line->inventory_unit_id : null,
+                'quantity' => ($cart[$key]['quantity'] ?? 0) + $line->quantity,
+                'name' => $definition->name,
+                'model' => $definition->model,
+                'identifier' => $line->unit?->primaryIdentifierValue(),
+                'condition' => $line->unit?->condition->value,
+                'adjusted_price' => '',
+                'adjustment_reason' => '',
+            ];
+        }
+
+        $this->storefrontOrderId = $order->id;
+        $this->reservationId = null;
+        $this->cart = $cart;
         $this->cartChanged();
     }
 
@@ -1234,6 +1311,7 @@ class PosCounter extends Component
 
         if ($attempt->isFrozen() || $this->workingCartMissing) {
             $this->reservationId = $attempt->network_reservation_id;
+            $this->storefrontOrderId = $attempt->storefront_order_id;
             $this->cart = self::cartFromAttempt($attempt);
             $this->customerId = $attempt->customer_id;
             $this->creditAmount = self::creditInput($attempt);
@@ -1349,6 +1427,7 @@ class PosCounter extends Component
         $this->cart = $this->workingCartMissing ? [] : $state['cart'];
         $this->customerId = is_int($state['customer_id'] ?? null) ? $state['customer_id'] : null;
         $this->reservationId = is_int($state['reservation_id'] ?? null) ? $state['reservation_id'] : null;
+        $this->storefrontOrderId = is_int($state['storefront_order_id'] ?? null) ? $state['storefront_order_id'] : null;
         $this->creditAmount = is_string($state['credit_amount'] ?? null) ? $state['credit_amount'] : '';
         $this->attemptKey = is_string($state['attempt_key'] ?? null) ? $state['attempt_key'] : null;
         $this->lastSaleId = is_int($state['last_sale_id'] ?? null) ? $state['last_sale_id'] : null;
@@ -1418,12 +1497,14 @@ class PosCounter extends Component
 
         $definitions = ProductDefinition::query()->whereKey(array_column($this->cart, 'definition_id'))->get()->keyBy('id');
         $units = InventoryUnit::query()->where('store_id', $this->storeId)->whereKey(array_filter(array_column($this->cart, 'unit_id')))->get()->keyBy('id');
+        $storefrontOrder = $this->storefrontOrderId === null ? null : StorefrontOrder::query()->where('store_id', $this->storeId)->with('lines')->find($this->storefrontOrderId);
+        $agreedPrices = $storefrontOrder === null ? [] : BranchOrderHolds::agreedPrices($storefrontOrder);
         $lines = [];
 
         foreach ($this->cart as $key => $line) {
             $definition = $definitions->get($line['definition_id']);
             $unit = $line['unit_id'] === null ? null : $units->get($line['unit_id']);
-            $listPrice = $definition === null ? null : SellingPrice::listPriceMinor($definition, $unit);
+            $listPrice = $agreedPrices[$key] ?? ($definition === null ? null : SellingPrice::listPriceMinor($definition, $unit));
             $adjusted = null;
 
             if ($line['adjusted_price'] !== '') {

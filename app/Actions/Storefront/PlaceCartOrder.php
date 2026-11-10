@@ -6,6 +6,7 @@ namespace App\Actions\Storefront;
 
 use App\Enums\OrderStatus;
 use App\Events\OrderCreated;
+use App\Models\CartItem;
 use App\Models\Order;
 use App\Models\User;
 use App\Services\CartService;
@@ -19,16 +20,20 @@ final class PlaceCartOrder
     /**
      * Turn the buyer's stored cart into a pending order for the shop, then empty the cart.
      *
-     * The cart's products are locked and rechecked before any order row is written, so a product
-     * linked to branch stock while checkout waited is refused and nothing is written.
+     * The cart is locked first, as cart changes lock it, and only the items read under that lock
+     * are ordered and deleted. The cart's products are locked and rechecked before any order row
+     * is written, so a product linked to branch stock while checkout waited is refused and nothing
+     * is written.
      *
      * @throws ValidationException Under "cart" when the cart is empty or holds display-only stock.
      */
     public function __invoke(User $buyer, int $shopId, ?string $notes): Order
     {
-        $order = DB::transaction(function () use ($buyer, $shopId, $notes): Order {
-            $cart = $this->carts->getOrCreateCart($buyer->id, null);
-            $items = $cart->items()->get();
+        $cart = $this->carts->getOrCreateCart($buyer->id, null);
+
+        $order = DB::transaction(function () use ($buyer, $cart, $shopId, $notes): Order {
+            CartService::lockCart($cart);
+            $items = CartItem::query()->where('cart_id', $cart->id)->orderBy('id')->lockForUpdate()->get();
 
             if ($items->isEmpty()) {
                 throw ValidationException::withMessages(['cart' => 'Your cart is empty. Please add items before placing an order.']);
@@ -53,7 +58,8 @@ final class PlaceCartOrder
                 ]);
             }
 
-            $cart->items()->delete();
+            CartItem::query()->whereKey($items->modelKeys())->delete();
+            CartService::advanceRevision($cart);
 
             return $order;
         });

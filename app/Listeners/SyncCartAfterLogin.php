@@ -2,45 +2,35 @@
 
 namespace App\Listeners;
 
-use App\Models\Cart;
+use App\Livewire\Frontend\Cart\CartComponent;
+use App\Services\CartService;
 use Illuminate\Auth\Events\Login;
-use Illuminate\Contracts\Queue\ShouldQueue;
-use Illuminate\Queue\InteractsWithQueue;
-use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Session;
 use Illuminate\Http\Request;
 
 class SyncCartAfterLogin
 {
-    /**
-     * Create the event listener.
-     */
     public function __construct(
-        protected Request $request
-    ) {
-    }
+        protected Request $request,
+        protected CartService $carts,
+    ) {}
 
     /**
-     * Handle the event.
+     * When the buyer signs in to an empty stored cart, let the browser's guest cart be adopted
+     * once. The grant is the cart's revision at sign-in, so any change to the cart before the
+     * adoption, such as another tab's, voids it. Signing in replaces any earlier account's grant.
      */
     public function handle(Login $event): void
     {
-//        $oldSessionId = $this->request->input('old_session_id');
-//        $user = $event->user;
-//
-//        if (!$oldSessionId) {
-//            Log::warning('No old session ID found during cart sync', [
-//                'user_id' => $user->id,
-//                'current_session' => Session::getId()
-//            ]);
-//            return;
-//        }
-//
-//        Log::info('Syncing cart with old session ID', [
-//            'old_session_id' => $oldSessionId,
-//            'user_id' => $user->id
-//        ]);
-//
-//        app(\App\Services\CartService::class)->syncGuestCartToUser($user->id, $oldSessionId);
+        if (! $this->request->hasSession()) {
+            return;
+        }
+
+        $grant = $this->carts->adoptionGrant((int) $event->user->getAuthIdentifier());
+
+        if ($grant === null) {
+            $this->request->session()->forget(CartComponent::ADOPTION_GRANT);
+        } else {
+            $this->request->session()->put(CartComponent::ADOPTION_GRANT, $grant);
+        }
     }
 }

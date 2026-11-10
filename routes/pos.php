@@ -14,6 +14,7 @@ use App\Livewire\Pos\NetworkReservations;
 use App\Livewire\Pos\PosCounter;
 use App\Livewire\Pos\PosHome;
 use App\Livewire\Pos\SalesHistory;
+use App\Livewire\Pos\StorefrontOrders;
 use Illuminate\Support\Facades\Route;
 
 // Every page and action re-checks use_pos and store membership; see StorePolicy::usePos.
@@ -35,6 +36,10 @@ Route::get('{store}/reservations', NetworkReservations::class)
     ->middleware('can:requestReservations,store')
     ->whereNumber('store')
     ->name('reservations');
+Route::get('{store}/online-orders', StorefrontOrders::class)
+    ->middleware('can:usePos,store')
+    ->whereNumber('store')
+    ->name('storefront-orders');
 Route::get('{store}/customers', CustomerAccounts::class)
     ->middleware('can:receiveCustomerPayments,store')
     ->whereNumber('store')

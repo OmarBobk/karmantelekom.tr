@@ -39,8 +39,18 @@
                 //     fetch('/keep-alive');
                 // }, 5 * 60 * 1000);
                 document.addEventListener('alpine:init', () => {
+                    // Each account's cart, and the guest cart, live under their own keys, so one account's
+                    // cart is never shown to, or offered for adoption by, a guest or another account.
+                    const cartOwner = @json(auth()->id() ? 'user_'.auth()->id() : 'guest');
+                    const guestItemsKey = 'cart_guest_items';
+                    // Carts stored before the keys were split cannot be attributed to an owner.
+                    localStorage.removeItem('cart_items');
+                    localStorage.removeItem('cart_revision');
+
                     Alpine.store('cart', {
-                        items: Alpine.$persist([]).as('cart_items'),
+                        items: Alpine.$persist([]).as(`cart_${cartOwner}_items`),
+                        // The stored cart revision this tab last loaded; the server refuses any change from a stale tab.
+                        revision: Alpine.$persist(null).as(`cart_${cartOwner}_revision`),
                         itemsCount: 0,
                         subtotal: 0,
                         syncTimeout: null,
@@ -53,26 +63,49 @@
                                 this.syncWithServer();
                             });
 
-                            // Listen for the checkout event from CheckoutComponent to clear the cart.
-                            window.addEventListener('checkout', () => {
-                                this.clear();
+                            // After checkout: a branch order sends the stored cart it left behind, which
+                            // replaces this tab's cart; the legacy checkout still clears it.
+                            window.addEventListener('checkout', (event) => {
+                                if (event.detail?.revision) {
+                                    this.loadItemsFromServer(event.detail.items, event.detail.revision);
+                                } else {
+                                    this.clear();
+                                }
                             });
 
-                            // Listen for cart items from server
+                            // The server's revision after a change, with the stored items when this tab must reload them.
                             window.addEventListener('cart-items-from-server', (event) => {
-                                this.loadItemsFromServer(event.detail[0]);
+                                this.loadItemsFromServer(event.detail.items, event.detail.revision);
                             });
 
-                            // Initial sync with server after a short delay to ensure Livewire is loaded
+                            // The guest cart was offered once; the stored cart has already been loaded.
+                            window.addEventListener('guest-cart-offered', () => {
+                                localStorage.removeItem(guestItemsKey);
+                            });
+
+                            // Initial sync with server after a short delay to ensure Livewire is loaded.
+                            // A signed-in tab first offers any guest cart, which the server adopts only
+                            // into a cart still empty since sign-in.
                             setTimeout(() => {
-                                this.syncWithServer();
+                                const guestItems = cartOwner === 'guest' ? [] : JSON.parse(localStorage.getItem(guestItemsKey) ?? '[]');
+
+                                if (guestItems.length > 0) {
+                                    window.Livewire.dispatch('adopt-guest-cart', {
+                                        items: guestItems.map(item => ({ product_id: item.product_id, quantity: item.quantity })),
+                                    });
+                                } else {
+                                    this.syncWithServer();
+                                }
                             }, 500);
                         },
 
-                        loadItemsFromServer(items) {
-                            console.log('Loading items from server:', items);
-                            this.items = items;
-                            this.updateTotals();
+                        loadItemsFromServer(items, revision) {
+                            this.revision = revision ?? this.revision;
+
+                            if (Array.isArray(items)) {
+                                this.items = items;
+                                this.updateTotals();
+                            }
                         },
 
                         updateTotals() {
@@ -80,7 +113,16 @@
                             this.subtotal = this.items.reduce((sum, item) => sum + (item.price * item.quantity), 0);
                         },
 
+                        // A guest tab edits the guest cart as stored now, not its own copy: another tab may
+                        // have changed it, or offered it to an account on sign-in and removed it.
+                        loadCurrentGuestItems() {
+                            if (cartOwner === 'guest') {
+                                this.items = JSON.parse(localStorage.getItem(guestItemsKey) ?? '[]');
+                            }
+                        },
+
                         addItem(product, quantity = 1, options = {}) {
+                            this.loadCurrentGuestItems();
                             const { catalog = false } = options;
                             const existingItem = this.items.find(item => item.product_id === product.id);
 
@@ -111,6 +153,7 @@
                         },
 
                         updateQuantity(productId, quantity) {
+                            this.loadCurrentGuestItems();
                             const item = this.items.find(item => item.product_id === productId);
                             if (item) {
                                 if (quantity < 1) {
@@ -124,13 +167,14 @@
                         },
 
                         removeItem(productId) {
+                            this.loadCurrentGuestItems();
                             this.items = this.items.filter(item => item.product_id !== productId);
                             this.updateTotals();
 
                             console.log('remove item', productId);
 
                             let id = productId
-                            window.Livewire.dispatch('remove-item', {id});
+                            window.Livewire.dispatch('remove-item', {id, revision: this.revision});
                         },
 
                         clear() {
@@ -139,7 +183,7 @@
 
                             // this.syncWithServer();
 
-                            window.Livewire.dispatch('clear-cart')
+                            window.Livewire.dispatch('clear-cart', {revision: this.revision})
                         },
 
                         scheduleSync() {
@@ -163,7 +207,7 @@
                                     quantity: item.quantity
                                 }));
 
-                                await window.Livewire.dispatch('sync-cart', { items })
+                                await window.Livewire.dispatch('sync-cart', { items, revision: this.revision })
                             } catch (error) {
                                 console.error('Error syncing cart:', error);
                             }

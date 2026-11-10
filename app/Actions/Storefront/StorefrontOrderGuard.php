@@ -4,8 +4,10 @@ declare(strict_types=1);
 
 namespace App\Actions\Storefront;
 
+use App\Enums\StorefrontChannel;
 use App\Models\Product;
 use App\Models\StorefrontListing;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -13,19 +15,23 @@ use Illuminate\Validation\ValidationException;
 use LogicException;
 
 /**
- * Linked branch stock is display-only until branch confirmation and stock holds exist, so no
- * storefront path may cart or order it. Products the publisher workspace created stay
- * display-only after unlinking. Unlinked legacy products order as before.
+ * Linked branch stock is ordered only through a branch order (SubmitBranchOrder), which a branch
+ * confirms with stock holds. While storefront branch orders are switched off it is display-only,
+ * and the legacy order paths (checkout for legacy carts, Order now) never take it. Products the
+ * publisher workspace created stay display-only after unlinking. Unlinked legacy products order
+ * as before.
  */
 final class StorefrontOrderGuard
 {
     /**
-     * The given storefront products that cannot be carted or ordered.
+     * The given storefront products that cannot be carted. With a signed-in buyer and branch
+     * orders switched on, linked products published to a channel the buyer may see, with a price
+     * in that channel, can be carted for a branch order.
      *
      * @param  iterable<int|string>  $productIds
      * @return list<int>
      */
-    public static function displayOnlyProductIds(iterable $productIds): array
+    public static function displayOnlyProductIds(iterable $productIds, ?User $buyer = null): array
     {
         $ids = self::normalize($productIds);
 
@@ -33,21 +39,41 @@ final class StorefrontOrderGuard
             return [];
         }
 
-        return self::displayOnlyAmong($ids, Product::query()->whereIn('id', $ids)->where('storefront_managed', true)->pluck('id'), StorefrontListing::query());
+        $displayOnly = self::displayOnlyAmong($ids, Product::query()->whereIn('id', $ids)->where('storefront_managed', true)->pluck('id'), StorefrontListing::query());
+
+        if ($displayOnly === [] || $buyer === null || ! BranchOrderHolds::enabled()) {
+            return $displayOnly;
+        }
+
+        $branchOrderable = Product::query()->whereIn('id', $displayOnly)->visibleInChannels(StorefrontChannel::audienceOf($buyer))
+            ->whereHas('storefrontListing')->pluck('id')->map(fn (int|string $id): int => (int) $id)
+            ->filter(fn (int $id): bool => StorefrontPricing::hasChannelPrice($id, StorefrontPricing::orderChannel($buyer, [$id])))
+            ->all();
+
+        return array_values(array_diff($displayOnly, $branchOrderable));
     }
 
     /**
-     * Unlocked check for carts and early refusal; order writes must use lockOrderable().
+     * Unlocked check for carts and early refusal; order writes must use lockOrderable() or
+     * SubmitBranchOrder.
      *
      * @param  iterable<int|string>  $productIds
      *
      * @throws ValidationException
      */
-    public static function assertOrderable(iterable $productIds, string $key = 'cart'): void
+    public static function assertOrderable(iterable $productIds, string $key = 'cart', ?User $buyer = null): void
     {
-        if (self::displayOnlyProductIds($productIds) !== []) {
-            throw ValidationException::withMessages([$key => __('main.storefront_display_only')]);
+        if (self::displayOnlyProductIds($productIds, $buyer) !== []) {
+            throw ValidationException::withMessages([$key => self::refusal()]);
         }
+    }
+
+    /**
+     * Why a legacy order path refuses linked stock.
+     */
+    public static function refusal(): string
+    {
+        return BranchOrderHolds::enabled() ? __('main.branch_orders.errors.use_checkout') : __('main.storefront_display_only');
     }
 
     /**
@@ -78,7 +104,7 @@ final class StorefrontOrderGuard
             ->pluck('id');
 
         if (self::displayOnlyAmong($ids, $managed, StorefrontListing::query()->sharedLock()) !== []) {
-            throw ValidationException::withMessages([$key => __('main.storefront_display_only')]);
+            throw ValidationException::withMessages([$key => self::refusal()]);
         }
     }
 

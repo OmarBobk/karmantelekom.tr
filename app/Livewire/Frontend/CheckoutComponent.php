@@ -2,19 +2,27 @@
 
 namespace App\Livewire\Frontend;
 
+use App\Actions\Storefront\BranchOrderHolds;
 use App\Actions\Storefront\PlaceCartOrder;
+use App\Actions\Storefront\QuoteBranchOrder;
 use App\Actions\Storefront\StorefrontOrderGuard;
+use App\Actions\Storefront\StorefrontPricing;
+use App\Actions\Storefront\SubmitBranchOrder;
 use App\Facades\Cart;
 use App\Models\Order;
 use App\Models\Shop;
+use App\Services\CartService;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use LaravelDaily\Invoices\Classes\Buyer;
 use LaravelDaily\Invoices\Classes\InvoiceItem;
 use LaravelDaily\Invoices\Invoice;
 use Livewire\Attributes\Layout;
+use Livewire\Attributes\Locked;
 use Livewire\Attributes\Title;
 use Livewire\Component;
 use Spatie\Browsershot\Browsershot;
@@ -23,6 +31,22 @@ use Throwable;
 class CheckoutComponent extends Component
 {
     public ?int $selectedShopId = null;
+
+    /** The branch that fulfills a cart of linked branch stock. */
+    public ?int $selectedStoreId = null;
+
+    /** Makes a repeated submit of this checkout return the same branch order. */
+    #[Locked]
+    public string $submissionKey = '';
+
+    /**
+     * Branch totals in minor units as last shown, by store id; submission is refused if the
+     * server's prices no longer match the one the buyer chose.
+     *
+     * @var array<int, int>
+     */
+    #[Locked]
+    public array $shownBranchTotals = [];
 
     public string $orderNotes = '';
 
@@ -59,6 +83,8 @@ class CheckoutComponent extends Component
 
     public function mount()
     {
+        $this->submissionKey = (string) Str::uuid();
+
         // Auto-select shop for shop owners
         if (auth()->user() && auth()->user()->hasRole('shop_owner')) {
             $ownedShop = auth()->user()->ownedShop;
@@ -118,6 +144,22 @@ class CheckoutComponent extends Component
             return;
         }
 
+        if (BranchOrderHolds::enabled()) {
+            $kind = QuoteBranchOrder::kind($this->cartQuantities());
+
+            if ($kind === QuoteBranchOrder::MIXED) {
+                $this->addError('cart', __('main.branch_orders.errors.mixed_cart'));
+
+                return;
+            }
+
+            if ($kind === QuoteBranchOrder::BRANCH) {
+                $this->placeBranchOrder();
+
+                return;
+            }
+        }
+
         $this->isProcessing = true;
         $this->showInvoiceModal = false;
 
@@ -149,17 +191,58 @@ class CheckoutComponent extends Component
     }
 
     /**
+     * Submit the cart as a pending order for pickup at the chosen branch, at the total shown.
+     */
+    private function placeBranchOrder(): void
+    {
+        $shownTotal = $this->shownBranchTotals[(int) $this->selectedStoreId] ?? null;
+
+        if ($this->selectedStoreId === null || $shownTotal === null) {
+            $this->addError('selectedStoreId', __('main.branch_orders.errors.choose_branch'));
+
+            return;
+        }
+
+        try {
+            app(SubmitBranchOrder::class)(Auth::user(), (int) $this->selectedShopId, (int) $this->selectedStoreId, $shownTotal, $this->submissionKey, $this->orderNotes);
+        } catch (ValidationException $exception) {
+            foreach ($exception->errors() as $field => $messages) {
+                $this->addError($field, $messages[0]);
+            }
+
+            return;
+        }
+
+        $this->reset(['selectedShopId', 'selectedStoreId', 'orderNotes']);
+        // Submission already removed the ordered items; the browser loads what is left, such as
+        // items added meanwhile, instead of asking the server to clear the cart again.
+        $this->dispatch('checkout', ...Cart::browserCart((int) Auth::id()));
+        session()->flash('success', __('main.branch_orders.submitted'));
+        $this->redirect(route('storefront.orders'));
+    }
+
+    /**
+     * @return Collection<int, int> Cart quantity by product id.
+     */
+    private function cartQuantities(): Collection
+    {
+        return $this->cart->items()->get()->mapWithKeys(fn ($item): array => [(int) $item->product_id => (int) $item->quantity]);
+    }
+
+    /**
      * Drop display-only storefront stock from the cart and tell the buyer; true when any was removed.
      */
     private function removeDisplayOnlyItems(): bool
     {
-        $displayOnly = StorefrontOrderGuard::displayOnlyProductIds($this->cart->items()->pluck('product_id'));
+        $displayOnly = StorefrontOrderGuard::displayOnlyProductIds($this->cart->items()->pluck('product_id'), Auth::user());
 
         if ($displayOnly === []) {
             return false;
         }
 
-        $this->cart->items()->whereIn('product_id', $displayOnly)->delete();
+        $cart = $this->cart;
+        $cart->items()->whereIn('product_id', $displayOnly)->delete();
+        CartService::advanceRevision($cart);
         $this->addError('cart', __('main.storefront_display_only'));
 
         return true;
@@ -235,9 +318,38 @@ class CheckoutComponent extends Component
     public function render()
     {
         $shops = Shop::visibleTo(auth()->user())->get();
+        $cartKind = QuoteBranchOrder::LEGACY;
+        $branches = [];
+        $priceGaps = [];
+        $orderable = true;
+
+        if (BranchOrderHolds::enabled() && $this->cart->items->isNotEmpty()) {
+            $quantities = $this->cartQuantities();
+            $cartKind = QuoteBranchOrder::kind($quantities);
+            $channel = $cartKind === QuoteBranchOrder::BRANCH ? StorefrontPricing::orderChannel(auth()->user(), $quantities->keys()) : null;
+            $orderable = $cartKind !== QuoteBranchOrder::BRANCH || $channel !== null;
+            $priceGaps = $channel === null ? [] : QuoteBranchOrder::priceGaps($quantities, $channel);
+            $branches = $channel !== null && $priceGaps === [] ? app(QuoteBranchOrder::class)->branches($quantities, $channel) : [];
+        }
+
+        $this->shownBranchTotals = collect($branches)->mapWithKeys(fn (array $branch): array => [$branch['store_id'] => $branch['total_minor']])->all();
+
+        if ($this->selectedStoreId !== null && ! isset($this->shownBranchTotals[$this->selectedStoreId])) {
+            $this->selectedStoreId = null;
+        }
+
+        if ($this->selectedStoreId === null && count($branches) === 1) {
+            $this->selectedStoreId = $branches[0]['store_id'];
+        }
 
         return view('livewire.frontend.checkout-component', [
             'shops' => $shops,
+            'cartKind' => $cartKind,
+            'branches' => $branches,
+            'selectedBranch' => collect($branches)->firstWhere('store_id', $this->selectedStoreId),
+            'orderable' => $orderable,
+            'priceGapNames' => $this->cart->items->whereIn('product_id', $priceGaps)->map(fn ($item): string => (string) $item->product?->name)->values()->all(),
+            'productNames' => $this->cart->items->mapWithKeys(fn ($item): array => [(int) $item->product_id => (string) $item->product?->name])->all(),
             'cart' => $this->cart,
             'cartTotal' => $this->cartTotal,
             'isShopOwner' => $this->isShopOwner,

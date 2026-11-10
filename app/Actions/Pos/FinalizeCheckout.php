@@ -8,6 +8,7 @@ use App\Actions\Cashbox\CashIntakePosting;
 use App\Actions\Inventory\InventoryLedger;
 use App\Actions\Inventory\UnitLifecycle;
 use App\Actions\Network\ReservationGuard;
+use App\Actions\Storefront\BranchOrderHolds;
 use App\Enums\AdjustmentReason;
 use App\Enums\CardApprovalStatus;
 use App\Enums\CashMovementType;
@@ -50,9 +51,10 @@ use Throwable;
 /**
  * Complete a reviewed checkout attempt as one sale, in one transaction.
  *
- * Lock order: the attempt, its card approval, its pending cash intake, product definitions
- * (ascending), the store's existing balance rows, then units (ascending), their Store Network
- * reservations, the store's sale number sequence, and last the store row in share mode with its open cashbox session.
+ * Lock order: the attempt, its card approval, its pending cash intake, the storefront order it
+ * collects, product definitions (ascending), the store's existing balance rows, then units
+ * (ascending), their Store Network reservations, storefront order holds, the store's sale number
+ * sequence, and last the store row in share mode with its open cashbox session.
  * Everything reviewed is checked again under those locks; the sale, its lines, the payments
  * actually received, the stock movements, sold unit states, the debt for any reviewed credit,
  * and the cash movement for the net cash kept are written together or not at all. Once the
@@ -152,6 +154,7 @@ class FinalizeCheckout
             throw ValidationException::withMessages(['attempt' => __('pos.errors.terminal_payment_pending')]);
         }
 
+        BranchOrderHolds::assertPaidAtPickup($locked);
         $creditMinor = $locked->creditMinor();
 
         if ($creditMinor > 0 && ! $locked->isFrozen()) {
@@ -165,12 +168,14 @@ class FinalizeCheckout
 
         /** @var list<array<string, mixed>> $lines */
         $lines = $locked->lines;
+        $storefrontOrder = BranchOrderHolds::lockLinkedOrder($locked);
         $definitions = $this->inventoryLedger->lockDefinitions(array_map(fn (array $line): int => (int) $line['definition_id'], $lines));
         $balances = $this->lockBalances($store, $lines, $definitions);
         $units = $this->lockUnits($store, $lines);
 
-        $this->revalidate($lines, $definitions, $balances, $units, $locked->isFrozen() ? null : DiscountAuthority::for($actor, $store));
+        $this->revalidate($lines, $definitions, $balances, $units, $locked->isFrozen() ? null : DiscountAuthority::for($actor, $store), $storefrontOrder !== null);
         $reservation = ReservationGuard::lockedReservationFor($locked, $locked->unitIds());
+        BranchOrderHolds::assertSellable($locked, $storefrontOrder, $balances);
 
         $now = now();
         $sequence = $this->nextSequence($store);
@@ -282,6 +287,10 @@ class FinalizeCheckout
 
         if ($reservation !== null) {
             ReservationGuard::fulfill($reservation, $sale, $actor, $store);
+        }
+
+        if ($storefrontOrder !== null) {
+            BranchOrderHolds::fulfill($storefrontOrder, $sale, $actor);
         }
 
         $locked->update([
@@ -402,10 +411,12 @@ class FinalizeCheckout
      * @param  Collection<int, InventoryUnit>  $units
      * @param  DiscountAuthority|null  $authority  The finalizing cashier's current discount limits; null once a
      *                                             terminal payment started, because the charged total is final.
+     * @param  bool  $agreedPrices  The checkout collects a storefront order, whose agreed prices
+     *                              BranchOrderHolds::assertSellable() checks instead of list prices.
      *
      * @throws CheckoutItemsChangedException
      */
-    private function revalidate(array $lines, Collection $definitions, Collection $balances, Collection $units, ?DiscountAuthority $authority): void
+    private function revalidate(array $lines, Collection $definitions, Collection $balances, Collection $units, ?DiscountAuthority $authority, bool $agreedPrices = false): void
     {
         $unavailable = [];
         $priceChanged = [];
@@ -446,7 +457,7 @@ class FinalizeCheckout
                 }
             }
 
-            if (SellingPrice::listPriceMinor($definition, $unit) !== (int) $line['list_unit_price']) {
+            if (! $agreedPrices && SellingPrice::listPriceMinor($definition, $unit) !== (int) $line['list_unit_price']) {
                 $priceChanged["{$field}.price"] = __('pos.errors.price_changed', ['name' => $line['name']]);
 
                 continue;

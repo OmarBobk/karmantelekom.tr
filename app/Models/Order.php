@@ -3,11 +3,10 @@
 namespace App\Models;
 
 use App\Enums\OrderStatus;
-use App\Traits\Searchable;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * Order Model
@@ -17,9 +16,8 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property string $notes Additional notes for the order
  * @property float $total_price Total price of the order
  * @property-read User $customer Customer who placed the order
-* @property-read Shop $shop Shop where the order was placed
+ * @property-read Shop $shop Shop where the order was placed
  */
-
 class Order extends Model
 {
     use HasFactory;
@@ -36,7 +34,7 @@ class Order extends Model
         'status' => OrderStatus::class,        // Casts to the OrderStatus enum
         'total_price' => 'decimal:2',          // Ensures 2 decimal places for prices
         'created_at' => 'datetime',            // Ensures proper datetime handling
-        'updated_at' => 'datetime'
+        'updated_at' => 'datetime',
     ];
 
     protected $appends = [
@@ -80,6 +78,17 @@ class Order extends Model
         return $this->hasMany(OrderItem::class);
     }
 
+    /**
+     * The branch workflow of an order for linked branch stock; its status changes only through
+     * the storefront order actions, which keep stock holds consistent.
+     *
+     * @return HasOne<StorefrontOrder, $this>
+     */
+    public function storefrontOrder(): HasOne
+    {
+        return $this->hasOne(StorefrontOrder::class);
+    }
+
     public function products()
     {
         return $this->belongsToMany(Product::class, 'order_items')->withPivot(['quantity', 'price']);
@@ -89,8 +98,6 @@ class Order extends Model
      * Get the formatted total price of the order
      *
      * $order->formatted_total_price; // Returns "1,234.56"
-     *
-     * @return string
      */
     public function getFormattedTotalPriceAttribute(): string
     {
@@ -108,6 +115,4 @@ class Order extends Model
     {
         return $this->items->sum('quantity');
     }
-
-
 }

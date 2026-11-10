@@ -244,6 +244,14 @@
                             </div>
                         @endif
                     </div>
+                @elseif($branchPricing)
+                    <p class="text-3xl font-bold text-gray-900 my-2" data-testid="branch-from-price">
+                        @if ($branchFromPrice === null)
+                            <span class="text-base font-medium text-gray-600">{{ __('main.branch_orders.price_unavailable') }}</span>
+                        @else
+                            {{ __('main.branch_orders.from_price', ['price' => \App\Services\Purchasing\LocalizedMoney::format($branchFromPrice).' TL']) }}
+                        @endif
+                    </p>
                 @elseif($product->prices->isNotEmpty())
                     <!-- Fallback to regular prices if no wholesale prices -->
                     <p class="text-3xl font-bold text-gray-900 my-2">

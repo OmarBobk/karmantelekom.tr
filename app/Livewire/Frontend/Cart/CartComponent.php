@@ -25,6 +25,9 @@ use Livewire\Component;
  */
 class CartComponent extends Component
 {
+    /** Session key holding the revision of the empty cart a buyer signed in to. */
+    public const ADOPTION_GRANT = 'cart.adoption_grant';
+
     public Cart $cart;
 
     /**
@@ -32,8 +35,11 @@ class CartComponent extends Component
      */
     public function mount(): void {}
 
+    /**
+     * @param  string|null  $revision  The stored cart revision this tab last loaded; a stale tab is refused.
+     */
     #[On('sync-cart')]
-    public function handleSyncCart(array $items): void
+    public function handleSyncCart(array $items, ?string $revision = null): void
     {
         Log::info('Cart sync requested', ['items_count' => count($items)]);
 
@@ -47,10 +53,8 @@ class CartComponent extends Component
 
                 return;
             } else {
-                $cart = CartFacade::syncCart($user_id, $items);
-                if (is_array($cart)) {
-                    $this->dispatch('cart-items-from-server', $cart);
-                }
+                $result = CartFacade::syncBrowserCart($user_id, $items, $revision);
+                $this->reportCart($result, self::quantities($items) !== self::quantities($result['items'] ?? $items));
 
                 Log::info('Cart synced successfully', ['user_id' => $user_id]);
             }
@@ -63,8 +67,35 @@ class CartComponent extends Component
 
     }
 
+    /**
+     * Offer the browser's guest cart to the signed-in buyer's stored cart, once per sign-in.
+     * The browser then loads the stored cart and discards its guest cart either way.
+     *
+     * @param  array<int, array{product_id: int|string, quantity: int|string}>  $items
+     */
+    #[On('adopt-guest-cart')]
+    public function handleAdoptGuestCart(array $items): void
+    {
+        $user_id = auth()->id();
+
+        if (! $user_id) {
+            return;
+        }
+
+        try {
+            $result = CartFacade::adoptGuestCart($user_id, $items, session()->pull(self::ADOPTION_GRANT));
+            $this->reportCart($result, false);
+        } catch (\Exception $e) {
+            Log::error('Error adopting guest cart', ['user_id' => $user_id, 'error' => $e->getMessage()]);
+
+            return;
+        }
+
+        $this->dispatch('guest-cart-offered');
+    }
+
     #[On('clear-cart')]
-    public function handleClearCart(): void
+    public function handleClearCart(?string $revision = null): void
     {
         $user_id = auth()->id();
         try {
@@ -73,7 +104,8 @@ class CartComponent extends Component
 
                 return;
             } else {
-                CartFacade::clearCart($user_id, null);
+                $result = CartFacade::clearBrowserCart($user_id, $revision);
+                $this->reportCart($result, $result['items'] !== null && $result['items'] !== []);
             }
         } catch (\Exception $e) {
             Log::error('Error Clearing cart', [
@@ -85,7 +117,7 @@ class CartComponent extends Component
     }
 
     #[On('remove-item')]
-    public function handleRemoveItem($id): void
+    public function handleRemoveItem($id, ?string $revision = null): void
     {
         $user_id = auth()->id();
         try {
@@ -94,7 +126,8 @@ class CartComponent extends Component
 
                 return;
             } else {
-                CartFacade::removeFromCart($user_id, null, $id);
+                $result = CartFacade::removeFromBrowserCart($user_id, (int) $id, $revision);
+                $this->reportCart($result, array_key_exists((int) $id, self::quantities($result['items'] ?? [])));
             }
         } catch (\Exception $e) {
             Log::error('Error Clearing cart', [
@@ -171,6 +204,39 @@ class CartComponent extends Component
         } finally {
 
         }
+    }
+
+    /**
+     * Send the browser the stored cart's revision, with its items when the browser must reload
+     * them, and tell the buyer when a refused change would have altered the stored cart.
+     *
+     * @param  array{accepted: bool, revision: string, items: list<array<string, mixed>>|null}  $result
+     * @param  bool  $changeLost  Whether the stored cart differs from what the browser asked for.
+     */
+    private function reportCart(array $result, bool $changeLost): void
+    {
+        $this->dispatch('cart-items-from-server', items: $result['items'], revision: $result['revision']);
+
+        if (! $result['accepted'] && $changeLost) {
+            $this->dispatch('notify', [['type' => 'alert-warning', 'message' => __('cart.updated_elsewhere'), 'sec' => 5000]]);
+        }
+    }
+
+    /**
+     * @param  array<int, array<string, mixed>>  $items
+     * @return array<int, int> Quantity by product id.
+     */
+    private static function quantities(array $items): array
+    {
+        $quantities = [];
+
+        foreach ($items as $item) {
+            $quantities[(int) $item['product_id']] = (int) $item['quantity'];
+        }
+
+        ksort($quantities);
+
+        return $quantities;
     }
 
     /**
