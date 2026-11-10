@@ -6,7 +6,7 @@ description: Build an end-to-end vertical slice (model → UI → validation →
 # Build Feature Slice
 
 ## When to use
-- You want the fastest path to shipping a working feature (not a perfect system).
+- The agreed task is an end-to-end implementation slice. Follow the [collaboration agreement](../../../Docs/COLLABORATION_WORKFLOW.md) for Ask, Agent, review, and handoff.
 
 ## Instructions
 1. Restate the user goal in 1 sentence.
@@ -16,13 +16,7 @@ description: Build an end-to-end vertical slice (model → UI → validation →
    - DB/model (if needed)
    - service/action (business logic)
    - Livewire component (thin)
-   - Blade UI (Flux/Tailwind)
+   - Blade UI with the existing components and installed styling libraries
    - UX states (loading, error, empty)
 5. Add basic validation and meaningful error handling.
-6. Provide a short manual test checklist.
-
-## Output format
-- “Plan” (bullets)
-- “Changes” (file list)
-- “Code” (snippets)
-- “Test checklist”
+6. Apply the relevant verification and handoff rules from the collaboration agreement.

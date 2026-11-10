@@ -1,5 +1,6 @@
 ---
-description:
-globs:
+description: Legacy pointer to the Karman Telekom project entry point
 alwaysApply: false
 ---
+
+Use [the current project entry point](000-core.mdc).

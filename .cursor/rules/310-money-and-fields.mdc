@@ -7,7 +7,7 @@ alwaysApply: false
 # Values must remain correct through editing
 
 - Make the display format, accepted entry format, canonical payload, and stored value explicit. Use one financial format for the whole affected flow.
-- Omar prefers period grouping, for example 10000 displayed as 10.000. For new localized TRY controls, use a decimal comma and Latin digits, for example 10.000,50. Treat this as the proposed Karman financial format, independent of Arabic/English labels, and disclose the choice on first implementation.
+- Omar prefers period grouping, for example 10000 displayed as 10.000. For localized TRY controls, follow the approved format of the affected flow. The existing localized convention uses a decimal comma and Latin digits, for example 10.000,50. Treat a new format as a proposal until approved.
 - Normalize localized money through an explicit boundary into the existing exact canonical decimal or minor-unit contract. Server-side validation and calculation stay authoritative.
 - Existing Purchasing Money::parse interprets a period as a decimal mark. Passing grouped 10.000 directly can become 10.00. Preserve legacy callers and persisted payload interpretation by making localization explicit.
 - Use text inputs with inputmode=decimal for grouped money. Consider the installed Alpine Mask $money helper for caret-aware editing and Intl.NumberFormat for presentation after checking availability and behavior.

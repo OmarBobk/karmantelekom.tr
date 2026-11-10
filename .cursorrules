@@ -1,1 +1,1 @@
-Project instructions are maintained in AGENTS.md and .cursor/rules/000-core.mdc with scoped rules in .cursor/rules. Use those current files when this legacy entry point is read.
+Read the collaboration agreement in Docs/COLLABORATION_WORKFLOW.md and the framework conventions in AGENTS.md. Use .cursor/rules/000-core.mdc and only the scoped Cursor rules relevant to the task.
