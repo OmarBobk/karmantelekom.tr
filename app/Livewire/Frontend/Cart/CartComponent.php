@@ -4,20 +4,20 @@ declare(strict_types=1);
 
 namespace App\Livewire\Frontend\Cart;
 
+use App\Actions\Storefront\StorefrontOrderGuard;
 use App\Enums\OrderStatus;
-use App\Models\Cart;
-use App\Models\CartItem;
+use App\Events\OrderCreated;
 use App\Facades\Cart as CartFacade;
+use App\Models\Cart;
 use App\Models\Order;
 use Illuminate\Contracts\View\View;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\On;
 use Livewire\Component;
-use Livewire\Attributes\Computed;
 
 /**
  * @property-read Cart $cart
@@ -30,10 +30,7 @@ class CartComponent extends Component
     /**
      * Mount the component.
      */
-    public function mount(): void
-    {
-
-    }
+    public function mount(): void {}
 
     #[On('sync-cart')]
     public function handleSyncCart(array $items): void
@@ -45,12 +42,13 @@ class CartComponent extends Component
         // If the user is not authenticated, we cannot sync the cart.
 
         try {
-            if (!$user_id) {
+            if (! $user_id) {
                 Log::info('User is not authenticated, skipping cart sync');
+
                 return;
             } else {
                 $cart = CartFacade::syncCart($user_id, $items);
-                if (is_array($cart) && !empty($cart)) {
+                if (is_array($cart)) {
                     $this->dispatch('cart-items-from-server', $cart);
                 }
 
@@ -59,7 +57,7 @@ class CartComponent extends Component
         } catch (\Exception $e) {
             Log::error('Error syncing cart', [
                 'user_id' => $user_id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
 
@@ -70,8 +68,9 @@ class CartComponent extends Component
     {
         $user_id = auth()->id();
         try {
-            if (!$user_id) {
-                Log::info('User is not authenticated, skipping cart clear User ID: ' . $user_id);
+            if (! $user_id) {
+                Log::info('User is not authenticated, skipping cart clear User ID: '.$user_id);
+
                 return;
             } else {
                 CartFacade::clearCart($user_id, null);
@@ -79,7 +78,7 @@ class CartComponent extends Component
         } catch (\Exception $e) {
             Log::error('Error Clearing cart', [
                 'user_id' => $user_id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
 
@@ -90,8 +89,9 @@ class CartComponent extends Component
     {
         $user_id = auth()->id();
         try {
-            if (!$user_id) {
-                Log::info('User is not authenticated, skipping Removing : ' . $user_id);
+            if (! $user_id) {
+                Log::info('User is not authenticated, skipping Removing : '.$user_id);
+
                 return;
             } else {
                 CartFacade::removeFromCart($user_id, null, $id);
@@ -99,7 +99,7 @@ class CartComponent extends Component
         } catch (\Exception $e) {
             Log::error('Error Clearing cart', [
                 'user_id' => $user_id,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
         }
     }
@@ -110,8 +110,19 @@ class CartComponent extends Component
         Log::info('Order Now', ['items' => $items]);
 
         try {
+            StorefrontOrderGuard::assertOrderable(array_column($items, 'product_id'), 'order');
+        } catch (ValidationException $exception) {
+            $this->addError('order', $exception->getMessage());
+            $this->dispatch('notify', [['type' => 'alert-danger', 'message' => $exception->getMessage(), 'sec' => 5000]]);
+
+            return;
+        }
+
+        try {
             DB::transaction(function () use ($items, $subtotal) {
                 Log::info('Starting order Transaction');
+
+                StorefrontOrderGuard::lockOrderable(array_column($items, 'product_id'), 'order');
 
                 $cartItems = collect($items); // Get fresh cart data
 
@@ -141,21 +152,22 @@ class CartComponent extends Component
                 Log::info('Order items', ['items' => $order->items]);
 
                 // Clear the cart after successful order creation
-                \App\Facades\Cart::clearCart(Auth::id(), null);
+                CartFacade::clearCart(Auth::id(), null);
 
                 // Dispatch OrderCreated event
-                \App\Events\OrderCreated::dispatch($order, Auth::id());
+                OrderCreated::dispatch($order, Auth::id());
             });
-
-
 
             $this->dispatch('notify', [
                 'type' => 'alert-success',
-                'message' => 'Order placed successfully!'
+                'message' => 'Order placed successfully!',
             ]);
 
+        } catch (ValidationException $exception) {
+            $this->addError('order', $exception->getMessage());
+            $this->dispatch('notify', [['type' => 'alert-danger', 'message' => $exception->getMessage(), 'sec' => 5000]]);
         } catch (\Exception $e) {
-            $this->addError('order', 'Failed to place order. Please try again. Error: ' . $e->getMessage());
+            $this->addError('order', 'Failed to place order. Please try again. Error: '.$e->getMessage());
         } finally {
 
         }

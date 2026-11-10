@@ -9,6 +9,7 @@ use App\Enums\TrackingMode;
 use App\Enums\UnitStatus;
 use App\Models\InventoryUnit;
 use App\Models\ProductDefinition;
+use Illuminate\Database\Eloquent\Builder;
 
 /**
  * Whether a device may be shared on Store Network: the same rules that let it be sold at the
@@ -29,5 +30,18 @@ final class ListingEligibility
             SellingPrice::listPriceMinor($definition, $unit) === null => __('network.errors.not_priced'),
             default => null,
         };
+    }
+
+    /**
+     * Restrict a device query to priced devices: a used device by its own price, any other
+     * individually tracked device by its product's shared price. The SQL form of the price rule above.
+     */
+    public static function wherePriced(Builder $query, string $definitions = 'definitions', string $units = 'units'): void
+    {
+        $usedDevice = TrackingMode::USED_DEVICE->value;
+
+        $query->where(fn (Builder $priced) => $priced
+            ->where(fn (Builder $used) => $used->where("{$definitions}.tracking_mode", $usedDevice)->whereNotNull("{$units}.selling_price"))
+            ->orWhere(fn (Builder $shared) => $shared->where("{$definitions}.tracking_mode", '!=', $usedDevice)->whereNotNull("{$definitions}.selling_price")));
     }
 }

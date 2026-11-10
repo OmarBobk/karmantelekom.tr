@@ -4,20 +4,22 @@ declare(strict_types=1);
 
 namespace App\Livewire\Frontend;
 
+use App\Enums\StorefrontChannel;
 use App\Models\Product;
-use App\Models\Category;
 use App\Models\Setting;
 use Illuminate\Support\Facades\Storage;
 use Livewire\Component;
-use Illuminate\Support\Collection;
 
 class SearchComponent extends Component
 {
     public string $searchQuery = '';
+
     public bool $isLoading = false;
+
     public array $searchResults = [];
 
     public bool $arePricesEnabled = false;
+
     private bool $arePricesEnabledLoaded = false;
 
     public function mount(): void
@@ -28,7 +30,7 @@ class SearchComponent extends Component
 
     private function loadArePricesEnabled(): void
     {
-        if (!$this->arePricesEnabledLoaded) {
+        if (! $this->arePricesEnabledLoaded) {
             $this->arePricesEnabled = Setting::where('key', 'product_prices')->first()->value === 'enabled';
             $this->arePricesEnabledLoaded = true;
         }
@@ -50,13 +52,14 @@ class SearchComponent extends Component
     {
         if (strlen($this->searchQuery) < 2) {
             $this->searchResults = [];
+
             return;
         }
 
         $this->isLoading = true;
 
         // Search in products
-        $products = Product::where('is_active', true)
+        $products = Product::visibleInChannels([StorefrontChannel::RETAIL])
             ->with('images', 'prices')
             ->search(
                 $this->searchQuery,

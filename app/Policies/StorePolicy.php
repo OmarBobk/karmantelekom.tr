@@ -209,6 +209,15 @@ class StorePolicy
     }
 
     /**
+     * Determine whether the user can make this store's stock eligible for the storefront (an online
+     * quantity or exact devices) or withdraw it. Independent of Store Network sharing.
+     */
+    public function allocateStorefrontStock(User $user, Store $store): bool
+    {
+        return $this->ownerHas($user, 'allocate_storefront_stock') && $store->isAccessibleBy($user);
+    }
+
+    /**
      * Determine whether the user can browse other branches' Store Network listings from this store.
      */
     public function discoverListings(User $user, Store $store): bool

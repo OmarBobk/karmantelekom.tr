@@ -7,9 +7,11 @@ namespace App\Models;
 use App\Enums\ReservationStatus;
 use Carbon\CarbonInterface;
 use Database\Factories\NetworkReservationFactory;
+use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Carbon;
 
 /**
@@ -117,6 +119,20 @@ class NetworkReservation extends Model
     public function blocksSale(?CarbonInterface $at = null): bool
     {
         return $this->isInTransit() || $this->isActive($at) || $this->hasLiveClaim();
+    }
+
+    /**
+     * Restrict a device query to devices no approved reservation holds: none unexpired and none
+     * claimed by a checkout taking payment. The SQL form of blocksSale(); a device in transit is
+     * excluded by its own status.
+     */
+    public static function whereUnitNotHeld(EloquentBuilder|QueryBuilder $query, string $unitColumn): void
+    {
+        $query->whereNotExists(fn (QueryBuilder $reserved) => $reserved->selectRaw('1')
+            ->from('network_reservations')
+            ->whereColumn('network_reservations.active_unit_id', $unitColumn)
+            ->where('network_reservations.status', ReservationStatus::APPROVED->value)
+            ->where(fn (QueryBuilder $held) => $held->where('network_reservations.expires_at', '>', now())->orWhereNotNull('network_reservations.claimed_attempt_id')));
     }
 
     /**

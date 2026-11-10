@@ -8,7 +8,7 @@ return [
     'in_stock' => 'In Stock',
     'stock_info' => 'Stock Info',
     'description' => 'Description',
-    'code'  => 'Code',
+    'code' => 'Code',
     'serial' => 'Serial',
     'request_quote' => 'Request a Quote',
     'more_info' => 'More Info',
@@ -61,26 +61,22 @@ return [
     'wp_quote_message' => 'hello I want to get quote about this product',
     'wp_more_info_message' => 'hello I want to get more info about this product',
 
-    'page_not_found'  => 'Page Not Found',
-    '404_message'  => 'The page you are looking for does not exist or has been moved.',
-    'back_to_home'  => 'Back to Home',
-    'contact_support'  => 'Contact Support',
-
+    'page_not_found' => 'Page Not Found',
+    '404_message' => 'The page you are looking for does not exist or has been moved.',
+    'back_to_home' => 'Back to Home',
+    'contact_support' => 'Contact Support',
 
     'all' => 'All',
     'add_to_cart' => 'Add to Cart',
 
-
     // Product Modal
     'quantity' => 'Quantity',
-
 
     'searching' => 'Searching',
     'no_result_found_for' => 'No result found for',
     'try_adjusting_your_search_or_filter_to_find_what_you\'re looking for.' => 'Try adjusting your search or filter to find what you\'re looking for.',
 
-
-    'close' => "Close",
+    'close' => 'Close',
 
     // Footer Features
     'fast_shipping_title' => 'FAST SHIPPING',
@@ -92,12 +88,10 @@ return [
     'secure_shopping_title' => 'SECURE SHOPPING',
     'secure_shopping_description' => 'YOUR CARD INFORMATION IS SAFE WITH 256 BIT SSL CERTIFICATE!',
 
-
     'welcome_to_karmantelekom' => 'Welcome to Karman Telekom',
 
     'thank_you_for_the_premium_shopping_experience!' => 'Thank you for the premium shopping experience!',
     'customer_service' => 'Customer Service',
-
 
     'wholesale_prices' => 'Wholesale Prices',
     'min_qty' => 'Min Quantity',
@@ -107,7 +101,11 @@ return [
 
     'price_tiers' => 'Price Tiers',
     'from' => 'From',
-    'catalog' => "Catalog",
+    'catalog' => 'Catalog',
 
-
+    'storefront_in_stock' => '{1} 1 in stock|[2,*] :count in stock',
+    'storefront_out_of_stock' => 'Out of stock',
+    'storefront_in_store_only' => 'Available to buy in our stores. Online ordering is coming soon.',
+    'storefront_display_only' => 'This product can only be bought in our stores for now, so it was removed from your cart.',
+    'storefront_product_unavailable' => 'This product is not available.',
 ];

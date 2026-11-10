@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 use Illuminate\Support\Str;
 
 /**
@@ -198,6 +199,14 @@ class ProductDefinition extends Model
     public function units(): HasMany
     {
         return $this->hasMany(InventoryUnit::class);
+    }
+
+    /**
+     * @return HasOne<StorefrontListing, $this>
+     */
+    public function storefrontListing(): HasOne
+    {
+        return $this->hasOne(StorefrontListing::class);
     }
 
     /**

@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Livewire\Frontend;
 
+use App\Actions\Storefront\StorefrontAvailability;
+use App\Enums\StorefrontChannel;
 use App\Models\Product;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -14,7 +16,9 @@ class CatalogComponent extends Component
     use WithPagination;
 
     public $sortBy = 'newest';
+
     public $perPage = 24;
+
     public $category;
 
     public function mount($category = null)
@@ -31,19 +35,19 @@ class CatalogComponent extends Component
     public function render()
     {
         $query = Product::with([
-                'category',
-                'images' => function($q) {
-                    $q->orderBy('is_primary', 'desc');
-                },
-                'priceTiers' => function($q) {
-                    $q->where('is_active', true)
-                      ->with('currency')
-                      ->orderBy('min_qty');
-                },
-                'priceTiers.tags'
-            ])
-            ->where('is_active', true)
-            ->whereHas('priceTiers', function($q) {
+            'category',
+            'images' => function ($q) {
+                $q->orderBy('is_primary', 'desc');
+            },
+            'priceTiers' => function ($q) {
+                $q->where('is_active', true)
+                    ->with('currency')
+                    ->orderBy('min_qty');
+            },
+            'priceTiers.tags',
+        ])
+            ->visibleInChannels([StorefrontChannel::WHOLESALE])
+            ->whereHas('priceTiers', function ($q) {
                 $q->where('is_active', true);
             });
 
@@ -62,7 +66,8 @@ class CatalogComponent extends Component
         $products = $query->paginate($this->perPage);
 
         return view('livewire.frontend.catalog-component', [
-            'products' => $products
+            'products' => $products,
+            'availability' => app(StorefrontAvailability::class)->forProducts($products->pluck('id')),
         ]);
     }
 }

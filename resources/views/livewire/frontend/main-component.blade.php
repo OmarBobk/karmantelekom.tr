@@ -318,6 +318,9 @@
                                                             @endif
                                                         </div>
 
+                                                        @if (array_key_exists($product->id, $availability))
+                                                            @include('livewire.frontend.partials.storefront-availability', ['available' => $availability[$product->id]])
+                                                        @else
                                                         <!-- Add to Cart Button -->
                                                         <button
                                                             @click="$store.cart.addItem({{ json_encode($product) }}, 1);"
@@ -331,6 +334,7 @@
                                                             </svg>
                                                             {{ __('main.add_to_cart') }}
                                                         </button>
+                                                        @endif
                                                     </div>
                                                 </div>
                                             </div>
@@ -615,6 +619,9 @@
 
                                                     </div>
 
+                                                    @if (array_key_exists($product->id, $availability))
+                                                        @include('livewire.frontend.partials.storefront-availability', ['available' => $availability[$product->id]])
+                                                    @else
                                                     <!-- Add to Cart Button -->
                                                     <div class="mt-4">
                                                         <button
@@ -630,6 +637,7 @@
                                                             {{ __('main.add_to_cart') }}
                                                         </button>
                                                     </div>
+                                                    @endif
                                                 </div>
                                             </div>
                                         </div>

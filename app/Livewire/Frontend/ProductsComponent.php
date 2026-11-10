@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Livewire\Frontend;
 
+use App\Actions\Storefront\StorefrontAvailability;
+use App\Enums\StorefrontChannel;
 use App\Models\Product;
 use Livewire\Attributes\Layout;
 use Livewire\Component;
@@ -14,7 +16,9 @@ class ProductsComponent extends Component
     use WithPagination;
 
     public $sortBy = 'newest';
+
     public $perPage = 24;
+
     public $category;
 
     public function mount($category = null)
@@ -31,7 +35,7 @@ class ProductsComponent extends Component
     public function render()
     {
         $query = Product::with(['category', 'images', 'prices'])
-            ->where('is_active', true);
+            ->visibleInChannels([StorefrontChannel::RETAIL]);
 
         if ($this->category != 'all') {
             $query->whereHas('category', function ($q) {
@@ -48,7 +52,8 @@ class ProductsComponent extends Component
         $products = $query->paginate($this->perPage);
 
         return view('livewire.frontend.products-component', [
-            'products' => $products
+            'products' => $products,
+            'availability' => app(StorefrontAvailability::class)->forProducts($products->pluck('id')),
         ]);
     }
 }

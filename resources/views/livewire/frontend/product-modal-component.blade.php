@@ -16,8 +16,8 @@
             });
         },
         updateQuantityLimits() {
-            @if($product && $product->priceTiers->isNotEmpty())
-                const wholesalePrices = @js($product->priceTiers->map(fn($wp) => ['min_qty' => $wp->min_qty, 'max_qty' => $wp->max_qty]));
+            @if($product && $priceTiers->isNotEmpty())
+                const wholesalePrices = @js($priceTiers->map(fn($wp) => ['min_qty' => $wp->min_qty, 'max_qty' => $wp->max_qty]));
                 if (wholesalePrices.length > 0) {
                     this.minQty = Math.min(...wholesalePrices.map(p => p.min_qty));
                     this.maxQty = Math.max(...wholesalePrices.map(p => p.max_qty));
@@ -170,13 +170,13 @@
                 </div>
 
                 <!-- Wholesale Prices -->
-                @if($product->priceTiers->isNotEmpty())
+                @if($priceTiers->isNotEmpty())
                     <div class="my-4">
                         <h4 class="text-lg font-semibold text-gray-900 mb-3">{{ __('main.wholesale_prices') ?? 'Wholesale Prices' }}:</h4>
-                        @if($product->priceTiers->count() > 1)
+                        @if($priceTiers->count() > 1)
                             <!-- Multiple Wholesale Prices - Show as cards -->
                             <div class="space-y-3 max-h-64 overflow-y-auto">
-                                @foreach($product->priceTiers as $index => $wholesalePrice)
+                                @foreach($priceTiers as $index => $wholesalePrice)
                                     <div class="bg-linear-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 hover:shadow-md transition-all duration-200 hover:border-blue-300">
                                         <div class="flex items-center justify-between">
                                             <div class="flex-1">
@@ -211,7 +211,7 @@
                             </div>
                         @else
                             <!-- Single Wholesale Price - Show prominently -->
-                            @php $wholesalePrice = $product->priceTiers->first(); @endphp
+                            @php $wholesalePrice = $priceTiers->first(); @endphp
                             <div class="bg-linear-to-r from-blue-50 to-indigo-50 border-2 border-blue-300 rounded-xl p-5 shadow-xs">
                                 <div class="flex items-center justify-between">
                                     <div class="flex-1">
@@ -276,7 +276,7 @@
                 <div class="mt-4 sm:mt-2">
                     <label for="quantity" class="font-medium text-gray-700 mb-2 flex items-center gap-2">
                         {{__('main.quantity')}}:
-{{--                        @if($product->priceTiers->isNotEmpty())--}}
+{{--                        @if($priceTiers->isNotEmpty())--}}
 {{--                            <span class="text-xs text-gray-500 font-normal">--}}
 {{--                                ({{ __('main.min') ?? 'Min' }}: <span x-text="minQty"></span> - {{ __('main.max') ?? 'Max' }}: <span x-text="maxQty"></span>)--}}
 {{--                            </span>--}}
@@ -302,10 +302,15 @@
             </div>
 
             <div class="mt-4 sm:mt-8">
+                @if ($storefrontAvailable !== null)
+                    @include('livewire.frontend.partials.storefront-availability', ['available' => $storefrontAvailable])
+                @endif
 
                 <div class="flex flex-col sm:flex-row gap-3">
+                    @if ($cartItem !== null)
                     <button
-                        @click="$store.cart.addItem({{ json_encode($product) }}, quantity, { catalog: isCatalog }); closeAndReset();"
+                        @click="$store.cart.addItem(@js($cartItem), quantity, { catalog: isCatalog }); closeAndReset();"
+                        data-testid="modal-add-to-cart"
                         class="flex-1 w-full flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-md hover:shadow-lg transform hover:-translate-y-px transition-all duration-300 focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
                         :class="isCatalog ? 'hidden': 'flex'"
                         aria-label="{{ __('main.add_to_cart') }}">
@@ -316,6 +321,7 @@
                         </svg>
                         <span>{{ __('main.add_to_cart') }}</span>
                     </button>
+                    @endif
                     <button @click="closeAndReset()"
                             class="flex-1 flex items-center justify-center px-4 py-3 bg-white text-gray-600 font-semibold rounded-xl shadow-md border border-gray-300 hover:bg-gray-50 transition focus:outline-hidden focus:ring-2 focus:ring-offset-2 focus:ring-gray-500">
                         <span>{{__('main.close')}}</span>

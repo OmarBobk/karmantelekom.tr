@@ -114,6 +114,10 @@
                                 </div>
                             </div>
 
+                            @if (array_key_exists($product->id, $availability))
+                                @include('livewire.frontend.partials.storefront-availability', ['available' => $availability[$product->id]])
+                            @endif
+
                             <!-- Add to Cart Button -->
                             <div class="mt-auto pt-4">
                                 <button

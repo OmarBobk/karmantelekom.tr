@@ -7,7 +7,7 @@ return [
     'in_stock' => 'موجود في المخزن',
     'stock_info' => 'معلومات المخزون',
     'description' => 'الوصف',
-    'code'  => 'الكود',
+    'code' => 'الكود',
     'serial' => 'رقم المنتج',
     'request_quote' => 'طلب عرض ',
     'more_info' => 'المزيد من المعلومات',
@@ -49,7 +49,6 @@ return [
     'all_rights_reserved' => 'جميع الحقوق محفوظة',
     'copyright' => 'حقوق النشر',
 
-
     'info_title' => 'معلومات',
     'phone' => 'الهاتف',
     'email' => 'البريد الإلكتروني',
@@ -66,23 +65,21 @@ return [
     'wp_quote_message' => 'مرحبا أريد الحصول على عرض أسعار حول هذا المنتج',
     'wp_more_info_message' => 'مرحبا أريد الحصول على مزيد من المعلومات حول هذا المنتج',
 
-    'page_not_found'  => 'الصفحة غير موجودة',
-    '404_message'  => 'الصفحة التي تبحث عنها غير موجودة أو تم نقلها.',
-    'back_to_home'  => 'العودة إلى الرئيسية',
-    'contact_support'  => 'اتصل بالدعم الفني',
+    'page_not_found' => 'الصفحة غير موجودة',
+    '404_message' => 'الصفحة التي تبحث عنها غير موجودة أو تم نقلها.',
+    'back_to_home' => 'العودة إلى الرئيسية',
+    'contact_support' => 'اتصل بالدعم الفني',
 
     'all' => 'الكل',
     'add_to_cart' => 'أضف إلى السلة',
 
-
     // Product Modal
     'quantity' => 'الكمية',
-
 
     'searching' => 'جار البحث',
     'no_result_found_for' => 'لم يتم العثور على نتائج ',
     'try_adjusting_your_search_or_filter_to_find_what_you\'re looking for.' => 'حاول تعديل بحثك أو التصفية للعثور على ما تبحث عنه.',
-    'close' => "إغلاق",
+    'close' => 'إغلاق',
 
     // Footer Features
     'fast_shipping_title' => 'شحن سريع',
@@ -93,8 +90,6 @@ return [
     'payment_options_description' => 'بطاقة الائتمان وبطاقة الخصم',
     'secure_shopping_title' => 'تسوق آمن',
     'secure_shopping_description' => 'معلومات بطاقتك آمنة مع شهادة SSL 256 بت!',
-
-
 
     'welcome_to_karmantelekom' => 'اهلا وسهلا في متجر كرمان تيليكوم',
 
@@ -111,5 +106,10 @@ return [
     'price_tiers' => 'مستويات الأسعار',
     'from' => 'من',
 
-    'catalog' => "الكتالوج",
+    'catalog' => 'الكتالوج',
+    'storefront_in_stock' => '{1} قطعة واحدة متوفرة|[2,*] :count قطع متوفرة',
+    'storefront_out_of_stock' => 'غير متوفر',
+    'storefront_in_store_only' => 'متاح للشراء في متاجرنا. الطلب عبر الإنترنت قريبًا.',
+    'storefront_display_only' => 'لا يمكن شراء هذا المنتج حاليًا إلا من متاجرنا، لذلك أُزيل من سلتك.',
+    'storefront_product_unavailable' => 'هذا المنتج غير متاح.',
 ];
