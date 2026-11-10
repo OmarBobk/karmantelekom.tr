@@ -16,8 +16,8 @@ class SyncCartAfterLogin
 
     /**
      * When the buyer signs in to an empty stored cart, let the browser's guest cart be adopted
-     * by its first sync. The grant is the cart's current revision, so any change to the cart
-     * before that sync, such as another tab's, voids it.
+     * once. The grant is the cart's revision at sign-in, so any change to the cart before the
+     * adoption, such as another tab's, voids it. Signing in replaces any earlier account's grant.
      */
     public function handle(Login $event): void
     {
@@ -25,14 +25,12 @@ class SyncCartAfterLogin
             return;
         }
 
-        $cart = $this->carts->getOrCreateCart((int) $event->user->getAuthIdentifier(), null);
+        $grant = $this->carts->adoptionGrant((int) $event->user->getAuthIdentifier());
 
-        if ($cart->items()->exists()) {
+        if ($grant === null) {
             $this->request->session()->forget(CartComponent::ADOPTION_GRANT);
-
-            return;
+        } else {
+            $this->request->session()->put(CartComponent::ADOPTION_GRANT, $grant);
         }
-
-        $this->request->session()->put(CartComponent::ADOPTION_GRANT, CartService::revision($cart));
     }
 }

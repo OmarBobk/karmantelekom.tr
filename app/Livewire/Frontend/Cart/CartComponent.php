@@ -53,7 +53,7 @@ class CartComponent extends Component
 
                 return;
             } else {
-                $result = CartFacade::syncBrowserCart($user_id, $items, $revision, session()->pull(self::ADOPTION_GRANT));
+                $result = CartFacade::syncBrowserCart($user_id, $items, $revision);
                 $this->reportCart($result, self::quantities($items) !== self::quantities($result['items'] ?? $items));
 
                 Log::info('Cart synced successfully', ['user_id' => $user_id]);
@@ -65,6 +65,33 @@ class CartComponent extends Component
             ]);
         }
 
+    }
+
+    /**
+     * Offer the browser's guest cart to the signed-in buyer's stored cart, once per sign-in.
+     * The browser then loads the stored cart and discards its guest cart either way.
+     *
+     * @param  array<int, array{product_id: int|string, quantity: int|string}>  $items
+     */
+    #[On('adopt-guest-cart')]
+    public function handleAdoptGuestCart(array $items): void
+    {
+        $user_id = auth()->id();
+
+        if (! $user_id) {
+            return;
+        }
+
+        try {
+            $result = CartFacade::adoptGuestCart($user_id, $items, session()->pull(self::ADOPTION_GRANT));
+            $this->reportCart($result, false);
+        } catch (\Exception $e) {
+            Log::error('Error adopting guest cart', ['user_id' => $user_id, 'error' => $e->getMessage()]);
+
+            return;
+        }
+
+        $this->dispatch('guest-cart-offered');
     }
 
     #[On('clear-cart')]

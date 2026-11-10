@@ -105,14 +105,55 @@ class CartService
      * cart back instead.
      *
      * @param  array<int, array{product_id: int|string, quantity: int|string}>  $items
-     * @param  string|null  $adoptionGrant  Revision issued at sign-in for an empty cart; lets a browser with no revision of this cart, a guest cart, sync once.
      * @return array{accepted: bool, revision: string, items: list<array<string, mixed>>|null} Items when the browser must reload them.
      */
-    public function syncBrowserCart(int $userId, array $items, ?string $revision, ?string $adoptionGrant = null): array
+    public function syncBrowserCart(int $userId, array $items, ?string $revision): array
     {
         $buyer = User::query()->find($userId);
 
-        return $this->browserChange($userId, $revision, $adoptionGrant, fn (Cart $cart): ?array => $this->syncLockedCart($cart, $buyer, $items));
+        return $this->browserChange(
+            $userId,
+            fn (Cart $cart, string $current): bool => $revision !== null && hash_equals($current, $revision),
+            fn (Cart $cart): ?array => $this->syncLockedCart($cart, $buyer, $items),
+        );
+    }
+
+    /**
+     * Move the browser's guest cart into the buyer's stored cart. Only the grant issued at sign-in
+     * allows this, and only while the stored cart is still empty and at the granted revision, so
+     * an item added since, from any tab, is never replaced.
+     *
+     * @param  array<int, array{product_id: int|string, quantity: int|string}>  $items
+     * @return array{accepted: bool, revision: string, items: list<array<string, mixed>>}
+     */
+    public function adoptGuestCart(int $userId, array $items, ?string $adoptionGrant): array
+    {
+        $buyer = User::query()->find($userId);
+
+        return $this->browserChange(
+            $userId,
+            fn (Cart $cart, string $current): bool => $adoptionGrant !== null && hash_equals($current, $adoptionGrant) && ! $cart->items()->exists(),
+            function (Cart $cart) use ($buyer, $items): array {
+                $this->syncLockedCart($cart, $buyer, $items);
+
+                return $this->storedItems($cart->load('items.product'));
+            },
+        );
+    }
+
+    /**
+     * The adoption grant for a buyer signing in: the stored cart's revision when it is empty,
+     * read under the cart lock so the emptiness and the revision describe the same state.
+     */
+    public function adoptionGrant(int $userId): ?string
+    {
+        $cart = $this->getOrCreateCart($userId, null);
+
+        return DB::transaction(function () use ($cart): ?string {
+            self::lockCart($cart);
+
+            return $cart->items()->exists() ? null : self::revision($cart);
+        });
     }
 
     /**
@@ -122,11 +163,15 @@ class CartService
      */
     public function removeFromBrowserCart(int $userId, int $productId, ?string $revision): array
     {
-        return $this->browserChange($userId, $revision, null, function (Cart $cart) use ($productId): null {
-            $cart->items()->where('product_id', $productId)->delete();
+        return $this->browserChange(
+            $userId,
+            fn (Cart $cart, string $current): bool => $revision !== null && hash_equals($current, $revision),
+            function (Cart $cart) use ($productId): null {
+                $cart->items()->where('product_id', $productId)->delete();
 
-            return null;
-        });
+                return null;
+            },
+        );
     }
 
     /**
@@ -136,15 +181,19 @@ class CartService
      */
     public function clearBrowserCart(int $userId, ?string $revision): array
     {
-        return $this->browserChange($userId, $revision, null, function (Cart $cart): null {
-            $cart->items()->delete();
+        return $this->browserChange(
+            $userId,
+            fn (Cart $cart, string $current): bool => $revision !== null && hash_equals($current, $revision),
+            function (Cart $cart): null {
+                $cart->items()->delete();
 
-            return null;
-        });
+                return null;
+            },
+        );
     }
 
     /**
-     * The stored cart as the browser loads it, with its revision.
+     * The stored cart as the browser loads it, with its revision, both read under the cart lock.
      *
      * @return array{revision: string, items: list<array<string, mixed>>}
      */
@@ -152,7 +201,11 @@ class CartService
     {
         $cart = $this->getOrCreateCart($userId, null);
 
-        return ['revision' => self::revision($cart), 'items' => $this->storedItems($cart->load('items.product'))];
+        return DB::transaction(function () use ($cart): array {
+            self::lockCart($cart);
+
+            return ['revision' => self::revision($cart), 'items' => $this->storedItems($cart->load('items.product'))];
+        });
     }
 
     /**
@@ -174,26 +227,22 @@ class CartService
     }
 
     /**
-     * Run a browser cart change under the cart lock, only when the browser holds the current
-     * revision. Otherwise nothing changes and the browser reloads the stored cart. A browser
-     * holding no revision of this cart may instead present the sign-in adoption grant.
+     * Run a browser cart change under the cart lock, only when the browser's claim about the
+     * stored cart still holds. Otherwise nothing changes and the browser reloads the stored cart.
      *
+     * @param  callable(Cart, string): bool  $accepts  Given the cart and its current revision.
      * @param  callable(Cart): (list<array<string, mixed>>|null)  $change  Returns items the browser must reload, if any.
      * @return array{accepted: bool, revision: string, items: list<array<string, mixed>>|null}
      */
-    private function browserChange(int $userId, ?string $revision, ?string $adoptionGrant, callable $change): array
+    private function browserChange(int $userId, callable $accepts, callable $change): array
     {
         $cart = $this->getOrCreateCart($userId, null);
 
-        return DB::transaction(function () use ($cart, $revision, $adoptionGrant, $change): array {
+        return DB::transaction(function () use ($cart, $accepts, $change): array {
             self::lockCart($cart);
             $current = self::revision($cart);
-            $holdsThisCart = $revision !== null && str_starts_with($revision, $cart->id.'.');
-            $accepted = $holdsThisCart
-                ? hash_equals($current, $revision)
-                : $adoptionGrant !== null && hash_equals($current, $adoptionGrant);
 
-            if (! $accepted) {
+            if (! $accepts($cart, $current)) {
                 return ['accepted' => false, 'revision' => $current, 'items' => $this->storedItems($cart->load('items.product'))];
             }
 

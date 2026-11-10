@@ -510,18 +510,87 @@ class BranchOrderTest extends TestCase
     #[Test]
     public function a_guest_cart_is_adopted_once_after_signing_in_to_an_empty_cart(): void
     {
-        $this->app['request']->setLaravelSession($this->app['session.store']);
-        event(new Login('web', $this->buyer, false));
+        $this->signIn($this->buyer);
         $cart = Cart::query()->where('user_id', $this->buyer->id)->sole();
 
         Livewire::actingAs($this->buyer)->test(CartComponent::class)
-            ->call('handleSyncCart', [['product_id' => $this->cableProduct->id, 'quantity' => 2]], null)
+            ->call('handleSyncCart', [['product_id' => $this->phoneProduct->id, 'quantity' => 1]], null);
+        $this->assertSame([], $this->cartContents($cart));
+
+        Livewire::actingAs($this->buyer)->test(CartComponent::class)
+            ->call('handleAdoptGuestCart', [['product_id' => $this->cableProduct->id, 'quantity' => 2]])
+            ->assertDispatched('cart-items-from-server', fn (string $name, array $params): bool => array_column($params['items'], 'product_id') === [$this->cableProduct->id] && $params['revision'] === CartService::revision($cart))
+            ->assertDispatched('guest-cart-offered')
             ->assertNotDispatched('notify');
         $this->assertSame([$this->cableProduct->id => 2], $this->cartContents($cart));
 
         Livewire::actingAs($this->buyer)->test(CartComponent::class)
-            ->call('handleSyncCart', [['product_id' => $this->phoneProduct->id, 'quantity' => 1]], null);
+            ->call('handleAdoptGuestCart', [['product_id' => $this->phoneProduct->id, 'quantity' => 1]]);
         $this->assertSame([$this->cableProduct->id => 2], $this->cartContents($cart));
+    }
+
+    #[Test]
+    public function switching_accounts_in_one_browser_never_moves_one_accounts_cart_to_another(): void
+    {
+        $other = User::factory()->create()->assignRole('shop_owner');
+        $accountA = $this->fillCart([$this->cableProduct->id => 1]);
+        $accountARevision = CartService::revision($accountA);
+
+        $this->signIn($this->buyer);
+        $this->signIn($other);
+        $accountB = Cart::query()->where('user_id', $other->id)->sole();
+
+        foreach ([$accountARevision, null] as $revision) {
+            Livewire::actingAs($other)->test(CartComponent::class)
+                ->call('handleSyncCart', [['product_id' => $this->cableProduct->id, 'quantity' => 1]], $revision)
+                ->assertDispatched('cart-items-from-server', fn (string $name, array $params): bool => $params['items'] === [] && $params['revision'] === CartService::revision($accountB));
+        }
+        $this->assertSame([], $this->cartContents($accountB));
+        $this->assertSame([$this->cableProduct->id => 1], $this->cartContents($accountA));
+
+        // A grant from account A's sign-in to an empty cart does not survive account B's sign-in.
+        app(CartService::class)->removeFromCart($this->buyer->id, null, $this->cableProduct->id);
+        $this->fillCart([$this->phoneProduct->id => 1], $other);
+        $this->signIn($this->buyer);
+        $this->signIn($other);
+
+        Livewire::actingAs($other)->test(CartComponent::class)
+            ->call('handleAdoptGuestCart', [['product_id' => $this->cableProduct->id, 'quantity' => 3]]);
+        $this->assertSame([$this->phoneProduct->id => 1], $this->cartContents($accountB));
+        $this->assertSame([], $this->cartContents($accountA));
+    }
+
+    #[Test]
+    public function a_newer_add_survives_an_attempted_guest_cart_adoption(): void
+    {
+        $this->signIn($this->buyer);
+        $cart = Cart::query()->where('user_id', $this->buyer->id)->sole();
+        app(CartService::class)->addToCart($this->buyer->id, null, $this->phoneProduct);
+
+        Livewire::actingAs($this->buyer)->test(CartComponent::class)
+            ->call('handleAdoptGuestCart', [['product_id' => $this->cableProduct->id, 'quantity' => 2]])
+            ->assertDispatched('cart-items-from-server', fn (string $name, array $params): bool => array_column($params['items'], 'product_id') === [$this->phoneProduct->id] && $params['revision'] === CartService::revision($cart))
+            ->assertDispatched('guest-cart-offered');
+        $this->assertSame([$this->phoneProduct->id => 1], $this->cartContents($cart));
+
+        // Emptied again after sign-in: the cart is empty but no longer at the granted revision.
+        app(CartService::class)->removeFromCart($this->buyer->id, null, $this->phoneProduct->id);
+        $this->signIn($this->buyer);
+        app(CartService::class)->addToCart($this->buyer->id, null, $this->phoneProduct);
+        app(CartService::class)->removeFromCart($this->buyer->id, null, $this->phoneProduct->id);
+
+        Livewire::actingAs($this->buyer)->test(CartComponent::class)
+            ->call('handleAdoptGuestCart', [['product_id' => $this->cableProduct->id, 'quantity' => 2]]);
+        $this->assertSame([], $this->cartContents($cart));
+    }
+
+    /**
+     * Sign in through the login event, as the login form does, in this test's session.
+     */
+    private function signIn(User $user): void
+    {
+        $this->app['request']->setLaravelSession($this->app['session.store']);
+        event(new Login('web', $user, false));
     }
 
     /**
