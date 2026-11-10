@@ -26,7 +26,13 @@ A specific, evidenced defect in an existing PR can go straight to Agent. Return 
 - Each batch delivers a usable, testable path from entry to outcome in a reviewable PR. Keep unrelated phases and fixes separate. Changes to schema or existing functionality must be part of the agreed scope.
 - Within one task, Agent does the targeted inspection, implementation, self-review, related fixes, verification, relevant documentation, and commit.
 - Correct directly affected older tests whose fixtures or expectations are wrong for the agreed behavior. Explain the correction. Briefly record unrelated defects for later.
-- Reuse suitable application logic and components. Prefer the simplest implementation that meets the scope. Introduce a shared abstraction only when it has a clear current use.
+### Keep the implementation simple
+
+- In Ask, start with the most direct change that meets the agreed acceptance criteria. Identify the existing code or framework capability it can reuse. Compare another design only when a concrete constraint makes the direct approach insufficient.
+- In Agent, keep one authoritative implementation of each business rule and reuse it at the affected entry points. Add an abstraction only to enforce a needed boundary or share logic across real callers. Keep simple logic near the code that uses it.
+- Tie each new layer, dependency, state, configuration option, or piece of infrastructure to a current requirement or demonstrated risk. Explain briefly what the simpler approach cannot do. Defer speculative capabilities and unrelated refactors.
+- Simplify the implementation while preserving required authorization, data integrity, concurrency, recovery, and compatibility. Keep the protections that address a concrete failure mode.
+- In Review, ask which acceptance criterion or failure mode each significant addition serves. Remove unused indirection, duplicate rule paths, and optional scope growth from the proposed change. Judge simplicity by how easily the resulting behavior can be understood, tested, and changed.
 
 ## 4. Proportionate verification and cost
 
