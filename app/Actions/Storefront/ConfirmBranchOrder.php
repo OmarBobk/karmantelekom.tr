@@ -8,13 +8,13 @@ use App\Actions\Inventory\InventoryLedger;
 use App\Actions\Network\ListingEligibility;
 use App\Actions\Network\ReservationLocks;
 use App\Actions\Pos\FinalizeCheckout;
-use App\Actions\Pos\SellingPrice;
 use App\Enums\ReservationStatus;
 use App\Enums\StorefrontChannel;
 use App\Enums\StorefrontOrderStatus;
 use App\Models\InventoryBalance;
 use App\Models\InventoryUnit;
 use App\Models\NetworkReservation;
+use App\Models\Product;
 use App\Models\ProductDefinition;
 use App\Models\Store;
 use App\Models\StorefrontAllocation;
@@ -33,13 +33,17 @@ use Illuminate\Validation\ValidationException;
  * Confirm a pending storefront order at its branch and hold its stock, in one transaction.
  *
  * Lock order: the order and its lines, product definitions (ascending), the branch's quantity
- * balances, the chosen devices (ascending), their Store Network reservations, then other orders'
- * holds; the same order counter payment starts and finalization take. Under those locks the
- * listing must still be published to a channel the buyer may see, each quantity must fit the
- * online allocation and the balance less what other orders hold and what counter checkouts that
- * started payment are selling, and each chosen device must be allocated, in the branch,
- * available, priced, and neither reserved, held, nor being paid for at the counter. Every line
- * must still cost its submitted price; a different price first needs the buyer's acceptance.
+ * balances, the chosen devices (ascending), their Store Network reservations, the storefront
+ * products (shared, ascending) and their listings (shared), then other orders' holds; the same
+ * order counter payment starts and finalization take, and linking also locks the definition,
+ * then the product, then the listing. Under those locks the storefront product must still be
+ * active and linked to the line's definition, and the listing published to the order's channel,
+ * which the buyer must still be allowed to see; each quantity must fit the online allocation and
+ * the balance less what other orders hold and what counter checkouts that started payment are
+ * selling; and each chosen device must be allocated, in the branch, available, priced, and
+ * neither reserved, held, nor being paid for at the counter. Every line must still cost its
+ * agreed price in the order's channel (StorefrontPricing); a different price first needs the
+ * buyer's acceptance of a new proposal.
  *
  * The pickup window starts now. Repeating the same confirmation returns the order unchanged.
  */
@@ -105,6 +109,11 @@ final class ConfirmBranchOrder
             throw ValidationException::withMessages(['devices' => __('storefront.orders.errors.choose_devices')]);
         }
 
+        if ($order->accepted_price_proposal !== null
+            && $deviceLines->contains(fn (StorefrontOrderLine $line): bool => $line->proposed_unit_id !== null && $chosen->get($line->id) !== $line->proposed_unit_id)) {
+            throw ValidationException::withMessages(['devices' => __('storefront.orders.errors.accepted_devices')]);
+        }
+
         $definitions = $this->inventoryLedger->lockDefinitions($lines->pluck('product_definition_id')->all());
         $quantityIds = $quantityLines->pluck('product_definition_id')->unique()->sort()->values()->all();
         $balances = InventoryBalance::query()->where('store_id', $store->id)->whereIn('product_definition_id', $quantityIds)
@@ -113,7 +122,9 @@ final class ConfirmBranchOrder
         $units = InventoryUnit::query()->whereKey($unitIds)->orderBy('id')->lockForUpdate()->get()->keyBy('id');
         $reservations = NetworkReservation::query()->whereIn('inventory_unit_id', $unitIds)
             ->whereIn('status', [ReservationStatus::PENDING, ReservationStatus::APPROVED])->orderBy('id')->lockForUpdate()->get();
-        $listings = StorefrontListing::query()->whereIn('product_id', $lines->pluck('product_id')->unique())->sharedLock()->get()->keyBy('product_id');
+        $productIds = $lines->pluck('product_id')->unique()->sort()->values();
+        $products = Product::query()->whereKey($productIds)->orderBy('id')->sharedLock()->get(['id', 'is_active'])->keyBy('id');
+        $listings = StorefrontListing::query()->whereIn('product_id', $productIds)->sharedLock()->get()->keyBy('product_id');
         $allocations = StorefrontAllocation::query()->where('store_id', $store->id)->whereIn('product_definition_id', $definitions->keys())->sharedLock()->get();
         $heldElsewhere = BranchOrderHolds::heldQuantities($store->id, $quantityIds, $order->id, lock: true);
         $unitsHeldElsewhere = BranchOrderHolds::unitHolds($unitIds, lock: true);
@@ -127,8 +138,8 @@ final class ConfirmBranchOrder
             $listing = $listings->get($line->product_id);
             $name = $definition?->name ?? '';
 
-            if ($definition === null || ! $definition->is_active || $listing === null || $listing->product_definition_id !== $definition->id
-                || ! collect($channels)->contains(fn (StorefrontChannel $channel): bool => $listing->{$channel->column()} !== null)) {
+            if ($definition === null || ! $definition->is_active || ! ($products->get($line->product_id)?->is_active) || $listing === null
+                || $listing->product_definition_id !== $definition->id || ! in_array($order->channel, $channels, true) || ! $listing->isPublishedTo($order->channel)) {
                 $errors["lines.{$line->id}"] = __('storefront.orders.errors.not_published', ['name' => $name]);
 
                 continue;
@@ -138,8 +149,11 @@ final class ConfirmBranchOrder
             $problem = $line->tracksUnits()
                 ? $this->deviceProblem($store, $definition, $unit, $allocations, $reservations, $unitsHeldElsewhere)
                 : $this->quantityProblem($line, $quantityLines, $allocations, $balances, $heldElsewhere, $startedQuantities);
+            $price = StorefrontPricing::itemPriceMinor($line->product_id, $definition, $unit, $order->channel, (int) $lines->where('product_id', $line->product_id)->sum('quantity'));
 
-            if ($problem === null && SellingPrice::listPriceMinor($definition, $unit) !== $line->unitPriceMinor()) {
+            if ($problem === null && $price === null) {
+                $problem = __('storefront.orders.errors.price_unavailable');
+            } elseif ($problem === null && $price !== $line->unitPriceMinor()) {
                 $problem = __('storefront.orders.errors.price_differs');
             }
 

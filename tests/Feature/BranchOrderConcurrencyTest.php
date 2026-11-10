@@ -12,9 +12,11 @@ use App\Actions\Storefront\BranchOrderHolds;
 use App\Enums\ReservationStatus;
 use App\Enums\StorefrontOrderStatus;
 use App\Models\CardTerminal;
+use App\Models\CartItem;
 use App\Models\CheckoutAttempt;
 use App\Models\NetworkListing;
 use App\Models\NetworkReservation;
+use App\Models\Order;
 use App\Models\Store;
 use App\Models\StorefrontOrder;
 use Illuminate\Foundation\Testing\DatabaseTruncation;
@@ -26,8 +28,9 @@ use Tests\Support\InteractsWithBranchOrders;
 use Tests\TestCase;
 
 /**
- * Branch confirmation racing a counter payment start and a Store Network approval, from
- * independent PHP processes with their own database connections.
+ * Branch confirmation racing a counter payment start and a Store Network approval, and branch
+ * order submission racing a second tab and a cart change, from independent PHP processes with
+ * their own database connections.
  *
  * The test process runs the first action inside an open transaction, so it holds its locks,
  * starts the competing action in a worker, waits until the database reports the worker blocked,
@@ -127,6 +130,63 @@ class BranchOrderConcurrencyTest extends TestCase
         $this->assertSame(ReservationStatus::APPROVED, $reservation->fresh()->status);
         $this->assertSame(StorefrontOrderStatus::PENDING, StorefrontOrder::query()->find($order->id)->status);
         $this->assertTrue(BranchOrderHolds::unitHolds([$this->phone->id])->isEmpty());
+    }
+
+    #[Test]
+    public function two_tabs_submitting_the_same_cart_with_different_keys_create_one_order(): void
+    {
+        $this->fillCart([$this->cableProduct->id => 1, $this->phoneProduct->id => 1]);
+
+        $result = $this->whileHolding(fn () => $this->submit(key: (string) Str::uuid()), $this->submitPayload((string) Str::uuid()));
+
+        $this->assertSame('validation', $result['status']);
+        $this->assertStringContainsString('Your cart is empty', $result['errors']['cart'][0]);
+        $this->assertSame(1, StorefrontOrder::count());
+        $this->assertSame(1, Order::count());
+        $this->assertSame(0, CartItem::count());
+    }
+
+    #[Test]
+    public function an_identical_retry_racing_the_first_submission_returns_the_same_order(): void
+    {
+        $this->fillCart([$this->cableProduct->id => 1]);
+        $key = (string) Str::uuid();
+        $first = null;
+
+        $result = $this->whileHolding(function () use ($key, &$first): void {
+            $first = $this->submit(key: $key);
+        }, $this->submitPayload($key));
+
+        $this->assertSame('ok', $result['status']);
+        $this->assertSame($first->id, $result['order_id']);
+        $this->assertSame(1, StorefrontOrder::count());
+    }
+
+    #[Test]
+    public function a_cart_addition_waits_for_submission_and_is_kept_instead_of_consumed(): void
+    {
+        $this->fillCart([$this->cableProduct->id => 1]);
+
+        $result = $this->whileHolding(
+            fn () => $this->submit(),
+            ['operation' => 'add_to_cart', 'actor_id' => $this->buyer->id, 'store_id' => $this->store->id, 'product_id' => $this->cableProduct->id, 'quantity' => 1],
+        );
+
+        $this->assertSame('ok', $result['status']);
+        $this->assertSame(1, $result['quantity']);
+        $this->assertSame(1, (int) StorefrontOrder::query()->sole()->lines()->sum('quantity'));
+        $this->assertSame([$this->cableProduct->id => 1], CartItem::query()->pluck('quantity', 'product_id')->map(fn ($quantity): int => (int) $quantity)->all());
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function submitPayload(string $key): array
+    {
+        return [
+            'operation' => 'submit', 'actor_id' => $this->buyer->id, 'store_id' => $this->store->id, 'shop_id' => $this->shop->id,
+            'total' => $this->quotedTotal($this->buyer, $this->store), 'key' => $key,
+        ];
     }
 
     private function pendingReservation(): NetworkReservation

@@ -1136,20 +1136,22 @@ Tasks 1–4 are delivered. Task 4 ships behind `STOREFRONT_BRANCH_ORDERS` (`conf
 
 #### Task 4: branch orders
 
-- **Records.** Each branch order is a legacy `orders` row plus a `storefront_orders` row. The `storefront_orders` row holds the store, buyer, shop, submission key, status, TRY total, pickup window, confirmation fingerprint, sale, and cancellation or expiry details. Each `storefront_order_lines` row points to its `order_items` row. A device line has quantity 1.
+- **Records.** Each branch order is a legacy `orders` row plus a `storefront_orders` row. The `storefront_orders` row holds the store, buyer, shop, submission key, status, sales channel, TRY total, pickup window, confirmation fingerprint, price proposal version and fingerprints, sale, and cancellation, rejection, or expiry details. Each `storefront_order_lines` row points to its `order_items` row. A device line has quantity 1.
   - Holds live on the lines. `held_quantity` holds quantity stock. `active_unit_id`, which is unique, holds a device. Both carry `hold_expires_at`.
   - A hold counts while it is unexpired, or while `claimed_attempt_id` names a counter checkout that started payment.
   - `checkout_attempts.storefront_order_id` links a pickup sale to its order.
-  - `StorefrontOrderStatus` maps to the legacy order status: pending, confirmed, delivered, or canceled. The legacy order status editor refuses branch orders, and bulk delete skips them.
-- **Submission.** `CheckoutComponent` classifies the cart as legacy, branch, or mixed (`QuoteBranchOrder::kind`). A mixed cart is refused and kept. For a branch cart, the checkout lists only the branches that can fulfill the whole cart, with server totals, and auto-selects a single branch.
-  - `SubmitBranchOrder` checks `Shop::visibleTo` and channel publication with the product rows locked, then re-quotes. A changed total is refused.
-  - It writes a pending order with no hold and clears the cart. The buyer and a per-page UUID make it idempotent.
-  - Add-to-cart for linked products is open to signed-in buyers whose audience the product is published to. The modal is the only place to add one, because product cards do not offer it. The cart shows a "from" price.
+  - `StorefrontOrderStatus` maps to the legacy order status: pending, confirmed, delivered, or canceled (cancelled, expired, and rejected). The legacy order status editor refuses branch orders, and bulk delete skips them.
+- **Pricing.** `StorefrontPricing` is the one server-side rule for the product modal, cart, checkout quote, submission, confirmation, and price proposals. `orderChannel` binds an order to wholesale when the buyer's audience includes it and every product is published there, otherwise to retail when every product is published there. Retail uses the product's TRY `product_prices.converted_price` above 0. Wholesale uses the active TRY `wholesale_products` tier whose range covers the product's ordered quantity (highest minimum first). Used devices use the device price in either channel. A product without such a price is display-only for that buyer (`StorefrontOrderGuard`), shown as unavailable in the modal, and refused at checkout and submission.
+- **Submission.** `CheckoutComponent` classifies the cart as legacy, branch, or mixed (`QuoteBranchOrder::kind`). A mixed cart is refused and kept. For a branch cart, the checkout lists price gaps, or only the branches that can fulfill the whole cart with server totals in the order's channel, auto-selects a single branch, and shows the selected branch's exact per-line quote.
+  - `SubmitBranchOrder` locks the cart row first, reads its items with a locking read, and returns an existing order for the same key. It then locks the product rows, reads the listings with a shared lock, binds the channel, refuses price gaps, and re-quotes. A changed total is refused.
+  - It writes a pending order with no hold and deletes exactly the cart items it read. The buyer and a per-page UUID make it idempotent. Every `CartService` change and `PlaceCartOrder` take the same cart lock as the first statement of their transaction, so a second tab finds the cart empty and a concurrent addition is kept.
+  - Add-to-cart for linked products is open to signed-in buyers whose audience the product is published to with a channel price. The modal is the only place to add one, because product cards do not offer it. The modal and cart show the channel "from" price.
   - WhatsApp "Order now" still refuses linked products.
-- **Branch page.** `pos/{store}/online-orders` (`Pos\StorefrontOrders`) requires `use_pos`. Confirming, requesting prices, and cancelling also require the new `manage_storefront_orders` permission and branch access (`StorePolicy::manageStorefrontOrders`).
-  - `ConfirmBranchOrder` takes locks in this order: the order, its lines, definitions, balances, chosen devices, Store Network reservations, listings and allocations (shared), then other orders' holds.
-  - It then makes the first consistent reads for payments already started: `paymentStartedQuantities` and `ReservationLocks::paymentStartedFor`. It rechecks publication to the buyer's audience, the allocation and balance net of other holds and started payments, device eligibility, and price.
-  - `RequestBranchOrderPriceChange` proposes the current prices for the chosen devices. The buyer accepts them on `/branch-orders` (`AcceptBranchOrderPrice`), and the branch then confirms.
+- **Branch page.** `pos/{store}/online-orders` (`Pos\StorefrontOrders`) requires `use_pos`. Confirming, requesting prices, rejecting, and cancelling also require the new `manage_storefront_orders` permission and branch access (`StorePolicy::manageStorefrontOrders`).
+  - `ConfirmBranchOrder` takes locks in this order: the order, its lines, definitions, balances, chosen devices, Store Network reservations, storefront products (shared), listings and allocations (shared), then other orders' holds. Linking locks the definition, then the product, then the listing, so the orders agree.
+  - It then makes the first consistent reads for payments already started: `paymentStartedQuantities` and `ReservationLocks::paymentStartedFor`. It rechecks that the product is active, still linked to the line's definition, and published to the order's channel, which the buyer must still see; the allocation and balance net of other holds and started payments; device eligibility; and the agreed channel price.
+  - `RequestBranchOrderPriceChange` proposes the current channel prices for the chosen devices, increments `price_proposal_version`, and stores a fingerprint of the version and each line's price and device. The buyer page sends that fingerprint to `AcceptBranchOrderPrice`, which validates it under the order lock. A stale fingerprint is refused and the page shows the current proposal. Repeating the accepted fingerprint (`accepted_price_proposal`) returns the order unchanged. After acceptance, confirmation requires the accepted devices.
+  - `CancelBranchOrder::rejectByBranch` rejects a pending order with a required reason, recording `rejected_by` and `rejected_at`. The buyer sees the reason on `/branch-orders`.
   - Confirmed orders whose held stock exceeds the balance, or whose device left the branch or is no longer available, are flagged "Stock short". The counter link is hidden for them.
 - **Holds elsewhere.**
   - `ReviewCheckout` subtracts other orders' holds from stock and refuses held devices.
@@ -1158,31 +1160,35 @@ Tasks 1–4 are delivered. Task 4 ships behind `STOREFRONT_BRANCH_ORDERS` (`conf
   - `ReservationGuard::releaseClaim` releases the order claim on every recovery path.
   - Store Network request and approval refuse held devices. `NetworkReservation::whereUnitNotHeld` excludes them from discovery and from storefront availability.
   - Storefront quantity availability and the counter's code lookup subtract holds.
-- **Pickup.** The "Collect at counter" link opens `pos/{store}?order={id}`. It loads exactly the order's lines at their agreed prices. A collecting checkout must match the order exactly, with no discounts.
-- **Cancellation and expiry.** `CancelBranchOrder` lets the buyer cancel while the order is pending. The branch may cancel a pending or confirmed order, with a reason. Both are refused while a payment claim is open.
+- **Pickup.** The "Collect at counter" link opens `pos/{store}?order={id}`. It loads exactly the order's lines at their agreed prices. A collecting checkout must match the order exactly, with no discounts, and is paid in full: `ReviewCheckout` refuses a credit amount for it, and `BranchOrderHolds::assertPaidAtPickup` refuses one at payment start and finalization.
+- **Cancellation and expiry.** `CancelBranchOrder` lets the buyer cancel while the order is pending. The branch rejects a pending order, and cancels a confirmed order, with a reason. Cancellation is refused while a payment claim is open.
   - `storefront:expire-orders` runs every five minutes (`ExpireBranchOrders`). It expires confirmed orders past the window and leaves claimed orders until their payment resolves.
   - Holds stop counting at the deadline even before that job runs.
-- **Implementation choices not yet approved by Omar.**
-  - The pickup window defaults to 48 hours, with a maximum of 336.
-  - A used-device line is quoted at the branch's cheapest eligible device.
-  - The cart shows the cheapest current price as "from".
-  - The branch may also cancel a pending order, with a reason.
-  - The shortage flag is computed on each read rather than stored.
+- **Approved by Omar on 2026-11-10** (`PROJECT_SPEC.md` §14A.2): the 48-hour default and 336-hour cap on the pickup window, starting at confirmation; branch rejection of pending orders with a reason shown to the buyer; and channel pricing as described above, including the used-device "from" price and exact branch quote.
+- **Implementation choice not yet approved by Omar.** The shortage flag is computed on each read rather than stored.
+- **Known gaps.**
+  - A `customer_salesperson` sees wholesale but has no shop under `Shop::visibleTo`, so cannot submit a branch order.
+  - A linked product without a TRY retail price above 0, or for wholesale an active TRY tier covering the quantity, cannot be ordered in that channel until its prices are set in the product admin.
 - **Tests.**
   - `BranchOrderTest` covers:
     - the flag-off legacy path and hidden pages;
     - pending submission with no hold, and retries;
     - shop and channel checks, and mixed-cart preservation;
     - branch and permission checks on confirmation, and confirmation retries;
-    - price acceptance;
+    - price acceptance, a stale proposal, an accepted retry that never accepts a newer proposal, and the accepted devices at confirmation;
+    - credit refused at pickup review, payment start, and finalization;
+    - confirmation refused for an inactive, withdrawn, or unlinked product, with no holds;
+    - retail channel pricing through pickup, a wholesale tier with a new price needing a new proposal, and an unpriced item kept unorderable;
+    - branch rejection with a reason shown to the buyer;
     - holds against counter review and payment start, Store Network, and availability;
     - pickup and finalize retries;
     - buyer and branch cancellation around a payment claim;
     - expiry with and without a claim;
     - a count below held stock;
     - the branch page and the legacy editor guard.
-  - `BranchOrderConcurrencyTest` runs separate processes with real lock waits. It covers confirmation against terminal payment start on the last cable, in both orders, and confirmation against Store Network approval of the same device, in both orders.
-- **Deployment.** Run migrations `2026_11_10_104843` to `104845`. Rerun `OperationalStoreSetupSeeder` to grant `manage_storefront_orders` to the owner role, and grant it directly to branch staff who confirm orders. Make sure the scheduler runs. Set `STOREFRONT_BRANCH_ORDERS=true` only after Omar approves the rollout.
+  - `BranchOrderConcurrencyTest` runs separate processes with real lock waits. It covers confirmation against terminal payment start on the last cable, in both orders, and confirmation against Store Network approval of the same device, in both orders. It also covers two tabs submitting the same cart with different keys (one order), an identical retry racing the first submission (same order), and a cart addition waiting for submission (kept, not consumed).
+  - `PosCreditSaleTest` keeps ordinary counter credit sales working.
+- **Deployment.** Run migrations `2026_11_10_104843` to `104845`. They were amended in place before ever being applied on `dev.store` (channel, proposal, and rejection columns). Rerun `OperationalStoreSetupSeeder` to grant `manage_storefront_orders` to the owner role, and grant it directly to branch staff who confirm orders. Make sure the scheduler runs. Set `STOREFRONT_BRANCH_ORDERS=true` only after Omar approves the rollout.
 
 ---
 

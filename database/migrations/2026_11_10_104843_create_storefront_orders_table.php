@@ -11,8 +11,10 @@ return new class extends Migration
      * A storefront order for linked branch stock, fulfilled by one selected branch. The legacy
      * `orders` row keeps the order history and items; this row holds the branch workflow:
      * pending without a hold, confirmed with holds and a pickup deadline, then fulfilled by a
-     * counter sale, cancelled, or expired. `submission_key` makes a repeated submit return the
-     * same order.
+     * counter sale, cancelled, or expired; or rejected by the branch while pending.
+     * `submission_key` makes a repeated submit return the same order. `channel` is the sales
+     * channel whose published prices the order uses. A price proposal is identified by
+     * `price_proposal_fingerprint`; the buyer accepts exactly that proposal.
      */
     public function up(): void
     {
@@ -24,11 +26,18 @@ return new class extends Migration
             $table->foreignId('shop_id')->constrained()->restrictOnDelete();
             $table->char('submission_key', 64);
             $table->string('status', 20)->default('pending');
+            $table->string('channel', 20);
             $table->char('currency', 3);
             $table->decimal('total', 12, 2);
             $table->string('notes', 1000)->nullable();
             $table->foreignId('price_change_requested_by')->nullable()->constrained('users')->restrictOnDelete();
             $table->timestamp('price_change_requested_at')->nullable();
+            $table->unsignedInteger('price_proposal_version')->default(0);
+            $table->char('price_proposal_fingerprint', 64)->nullable();
+            $table->char('accepted_price_proposal', 64)->nullable();
+            $table->foreignId('rejected_by')->nullable()->constrained('users')->restrictOnDelete();
+            $table->timestamp('rejected_at')->nullable();
+            $table->string('rejection_reason', 500)->nullable();
             $table->char('confirmation_fingerprint', 64)->nullable();
             $table->foreignId('confirmed_by')->nullable()->constrained('users')->restrictOnDelete();
             $table->timestamp('confirmed_at')->nullable();

@@ -6,12 +6,14 @@ namespace App\Actions\Storefront;
 
 use App\Enums\Currency;
 use App\Enums\OrderStatus;
-use App\Enums\StorefrontChannel;
 use App\Enums\StorefrontOrderStatus;
 use App\Events\OrderCreated;
+use App\Models\Cart;
+use App\Models\CartItem;
 use App\Models\Order;
 use App\Models\Product;
 use App\Models\Shop;
+use App\Models\StorefrontListing;
 use App\Models\StorefrontOrder;
 use App\Models\StorefrontOrderLine;
 use App\Models\User;
@@ -27,11 +29,13 @@ use Illuminate\Validation\ValidationException;
  * Turn the buyer's stored cart of linked branch stock into a pending order at one branch.
  *
  * The buyer must be signed in and allowed to order for the shop, and every product must be
- * linked and published to a channel the buyer may see; this is checked on the server with the
- * product rows locked, as linking locks them. A cart mixing linked and legacy products is
- * refused and kept. Prices are the branch's current TRY prices from the quote, and the order is
- * refused when they no longer match the total the buyer saw. The order holds no stock; the
- * branch confirms it. A repeated submit with the same key returns the same order.
+ * linked and published to the order's channel; this is checked on the server with the product
+ * rows locked, as linking locks them. The order is bound to that channel (StorefrontPricing). A
+ * cart mixing linked and legacy products is refused and kept, and so is a cart with a product
+ * that has no price in the channel. Prices are the branch's current TRY channel prices from the
+ * quote, and the order is refused when they no longer match the total the buyer saw. The order
+ * holds no stock; the branch confirms it. A repeated submit with the same key returns the same
+ * order, even after its cart was emptied.
  */
 final class SubmitBranchOrder
 {
@@ -62,12 +66,16 @@ final class SubmitBranchOrder
         }
 
         $notes = Str::trim((string) $notes);
-        $channels = StorefrontChannel::audienceOf($buyer);
+        $cart = $this->carts->getOrCreateCart($buyer->id, null);
 
         try {
-            $order = DB::transaction(fn (): StorefrontOrder => $this->submit($buyer, $shopId, $storeId, $expectedTotalMinor, $key, $notes === '' ? null : Str::limit($notes, 1000, ''), $channels));
+            $order = DB::transaction(fn (): StorefrontOrder => $this->submit($buyer, $cart, $shopId, $storeId, $expectedTotalMinor, $key, $notes === '' ? null : Str::limit($notes, 1000, '')));
         } catch (UniqueConstraintViolationException $exception) {
             return StorefrontOrder::query()->where('buyer_id', $buyer->id)->where('submission_key', $key)->first() ?? throw $exception;
+        }
+
+        if (! $order->wasRecentlyCreated) {
+            return $order;
         }
 
         OrderCreated::dispatch($order->order, $buyer->id);
@@ -76,23 +84,32 @@ final class SubmitBranchOrder
     }
 
     /**
-     * @param  list<StorefrontChannel>  $channels
+     * The cart row is locked before anything else is read, as cart changes lock it. The cart's
+     * items are then read under lock, the order is made from exactly those items, and only those
+     * items are deleted. A second submission of the same cart waits for the first and finds the
+     * cart empty, or finds its own order when it repeats the same key.
      *
      * @throws ValidationException
      */
-    private function submit(User $buyer, int $shopId, int $storeId, int $expectedTotalMinor, string $key, ?string $notes, array $channels): StorefrontOrder
+    private function submit(User $buyer, Cart $cart, int $shopId, int $storeId, int $expectedTotalMinor, string $key, ?string $notes): StorefrontOrder
     {
-        $cart = $this->carts->getOrCreateCart($buyer->id, null);
-        $items = $cart->items()->get();
+        CartService::lockCart($cart);
+        $items = CartItem::query()->where('cart_id', $cart->id)->orderBy('id')->lockForUpdate()->get();
+        $existing = StorefrontOrder::query()->where('buyer_id', $buyer->id)->where('submission_key', $key)->first();
+
+        if ($existing !== null) {
+            return $existing;
+        }
 
         if ($items->isEmpty()) {
             throw ValidationException::withMessages(['cart' => __('main.branch_orders.errors.cart_empty')]);
         }
 
-        $quantities = $items->mapWithKeys(fn ($item): array => [(int) $item->product_id => (int) $item->quantity]);
+        $quantities = $items->mapWithKeys(fn (CartItem $item): array => [(int) $item->product_id => (int) $item->quantity]);
         $productIds = $quantities->keys()->sort()->values();
 
         Product::query()->whereKey($productIds)->orderBy('id')->lockForUpdate()->get(['id']);
+        $listings = StorefrontListing::query()->whereIn('product_id', $productIds)->sharedLock()->get()->keyBy('product_id');
 
         $kind = QuoteBranchOrder::kind($quantities);
 
@@ -100,13 +117,17 @@ final class SubmitBranchOrder
             throw ValidationException::withMessages(['cart' => __('main.branch_orders.errors.mixed_cart')]);
         }
 
-        $orderable = Product::query()->whereKey($productIds)->visibleInChannels($channels)->whereHas('storefrontListing')->count();
+        $channel = $kind === QuoteBranchOrder::BRANCH ? StorefrontPricing::orderChannel($buyer, $productIds, $listings) : null;
 
-        if ($kind !== QuoteBranchOrder::BRANCH || $orderable !== $productIds->count()) {
+        if ($channel === null || Product::query()->whereKey($productIds)->visibleInChannels([$channel])->count() !== $productIds->count()) {
             throw ValidationException::withMessages(['cart' => __('main.branch_orders.errors.not_orderable')]);
         }
 
-        $branch = collect($this->quote->branches($quantities))->firstWhere('store_id', $storeId);
+        if (QuoteBranchOrder::priceGaps($quantities, $channel) !== []) {
+            throw ValidationException::withMessages(['cart' => __('main.branch_orders.errors.price_unavailable')]);
+        }
+
+        $branch = collect($this->quote->branches($quantities, $channel))->firstWhere('store_id', $storeId);
 
         if ($branch === null) {
             throw ValidationException::withMessages(['selectedStoreId' => __('main.branch_orders.errors.branch_unavailable')]);
@@ -131,6 +152,7 @@ final class SubmitBranchOrder
             'shop_id' => $shopId,
             'submission_key' => $key,
             'status' => StorefrontOrderStatus::PENDING,
+            'channel' => $channel,
             'currency' => Currency::TRY->value,
             'total' => Money::toDecimal($branch['total_minor']),
             'notes' => $notes,
@@ -162,9 +184,9 @@ final class SubmitBranchOrder
             }
         }
 
-        $cart->items()->delete();
+        CartItem::query()->whereKey($items->modelKeys())->delete();
 
-        BranchOrderHolds::audit($storefrontOrder, $buyer, 'storefront_order_submitted', "submitted for pickup at store {$storeId}", ['total' => $storefrontOrder->total]);
+        BranchOrderHolds::audit($storefrontOrder, $buyer, 'storefront_order_submitted', "submitted for pickup at store {$storeId} in the {$channel->value} channel", ['total' => $storefrontOrder->total, 'channel' => $channel->value]);
 
         return $storefrontOrder->setRelation('order', $order);
     }

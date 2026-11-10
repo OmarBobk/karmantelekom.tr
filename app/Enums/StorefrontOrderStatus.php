@@ -9,8 +9,8 @@ namespace App\Enums;
  *
  * PENDING orders hold no stock. CONFIRMED orders hold their lines' stock until the pickup
  * deadline, or longer while a counter checkout holds the payment claim; a confirmed order past
- * its deadline without a claim is effectively expired before anything stores EXPIRED. FULFILLED,
- * CANCELLED, and EXPIRED are final.
+ * its deadline without a claim is effectively expired before anything stores EXPIRED. REJECTED
+ * is the branch declining a pending order. FULFILLED, CANCELLED, EXPIRED, and REJECTED are final.
  */
 enum StorefrontOrderStatus: string
 {
@@ -19,6 +19,15 @@ enum StorefrontOrderStatus: string
     case FULFILLED = 'fulfilled';
     case CANCELLED = 'cancelled';
     case EXPIRED = 'expired';
+    case REJECTED = 'rejected';
+
+    /**
+     * @return list<self>
+     */
+    public static function closed(): array
+    {
+        return [self::FULFILLED, self::CANCELLED, self::EXPIRED, self::REJECTED];
+    }
 
     public function label(): string
     {
@@ -34,7 +43,7 @@ enum StorefrontOrderStatus: string
             self::PENDING => OrderStatus::PENDING,
             self::CONFIRMED => OrderStatus::CONFIRMED,
             self::FULFILLED => OrderStatus::DELIVERED,
-            self::CANCELLED, self::EXPIRED => OrderStatus::CANCELED,
+            self::CANCELLED, self::EXPIRED, self::REJECTED => OrderStatus::CANCELED,
         };
     }
 }

@@ -192,8 +192,22 @@ final class BranchOrderHolds
     }
 
     /**
+     * A counter checkout collecting a storefront order is paid in full at pickup: it carries no
+     * credit. Ordinary counter checkouts are unaffected.
+     *
+     * @throws ValidationException
+     */
+    public static function assertPaidAtPickup(CheckoutAttempt $attempt): void
+    {
+        if ($attempt->storefront_order_id !== null && $attempt->creditMinor() > 0) {
+            throw ValidationException::withMessages(['storefront_order' => __('storefront.orders.errors.pay_at_pickup')]);
+        }
+    }
+
+    /**
      * Under the definition, balance, device, and reservation locks: refuse stock that confirmed
-     * orders hold for others, and check the linked order still matches the checkout. A short
+     * orders hold for others, and check the linked order still matches the checkout and is paid in
+     * full at pickup, with no credit. A short
      * branch refuses every order holding the product until counts are restored or holds released.
      *
      * @param  Collection<int, InventoryBalance>  $balances  Locked balances keyed by product definition.
@@ -204,6 +218,8 @@ final class BranchOrderHolds
     {
         /** @var list<array<string, mixed>> $lines */
         $lines = $lockedAttempt->lines;
+
+        self::assertPaidAtPickup($lockedAttempt);
 
         if ($lockedOrder !== null) {
             $lockedOrder->setRelation('lines', $lockedOrder->lines()->lockForUpdate()->get());

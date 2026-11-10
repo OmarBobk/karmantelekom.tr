@@ -38,6 +38,7 @@
                                 <p class="font-semibold text-gray-900">{{ __('storefront.orders.number', ['number' => $order->order_id]) }}</p>
                                 <p class="text-sm text-gray-600">{{ $order->buyer?->name }} · {{ $order->shop?->name }}</p>
                             </div>
+                            <span class="text-xs font-medium text-gray-600">{{ $order->channel->label() }}</span>
                             <bdi dir="ltr" class="font-semibold tabular-nums text-gray-900">{{ \App\Services\Purchasing\LocalizedMoney::format($order->totalMinor()) }} TRY</bdi>
                             <span @class(['rounded-full px-2.5 py-0.5 text-xs font-medium ring-1 ring-inset', $statusClasses[$status->value] ?? 'bg-gray-100 text-gray-700 ring-gray-500/20'])>{{ $status->label() }}</span>
                             @if ($isShort)
@@ -78,6 +79,9 @@
                             @if ($order->cancellation_reason)
                                 <div><dt class="inline">{{ __('storefront.orders.cancellation_reason') }}</dt> <dd class="inline" dir="auto">{{ $order->cancellation_reason }}</dd></div>
                             @endif
+                            @if ($order->rejection_reason)
+                                <div><dt class="inline">{{ __('storefront.orders.rejection_reason') }}</dt> <dd class="inline" dir="auto">{{ $order->rejection_reason }}</dd></div>
+                            @endif
                         </dl>
 
                         <div class="flex flex-wrap gap-2">
@@ -88,7 +92,7 @@
                                 <a href="{{ route('pos.counter', ['store' => $store, 'order' => $order->id]) }}" class="inline-flex min-h-11 items-center rounded-lg bg-emerald-600 px-4 text-sm font-semibold text-white hover:bg-emerald-700">{{ __('storefront.orders.collect') }}</a>
                             @endif
                             @if ($canManage && in_array($status, [\App\Enums\StorefrontOrderStatus::PENDING, \App\Enums\StorefrontOrderStatus::CONFIRMED], true) && $cancellingId !== $order->id)
-                                <button type="button" wire:click="openCancel({{ $order->id }})" class="inline-flex min-h-11 items-center rounded-lg px-4 text-sm font-semibold text-red-700 ring-1 ring-red-200 hover:bg-red-50">{{ __('storefront.orders.cancel') }}</button>
+                                <button type="button" wire:click="openCancel({{ $order->id }})" class="inline-flex min-h-11 items-center rounded-lg px-4 text-sm font-semibold text-red-700 ring-1 ring-red-200 hover:bg-red-50">{{ $status === \App\Enums\StorefrontOrderStatus::PENDING ? __('storefront.orders.reject') : __('storefront.orders.cancel') }}</button>
                             @endif
                         </div>
 
@@ -126,11 +130,11 @@
 
                         @if ($cancellingId === $order->id)
                             <form wire:submit="cancel" class="space-y-2 rounded-lg bg-gray-50 p-3 ring-1 ring-gray-200">
-                                <label for="cancel-reason" class="block text-sm font-medium text-gray-800">{{ __('storefront.orders.cancel_reason') }}</label>
+                                <label for="cancel-reason" class="block text-sm font-medium text-gray-800">{{ $rejecting ? __('storefront.orders.reject_reason') : __('storefront.orders.cancel_reason') }}</label>
                                 <textarea id="cancel-reason" wire:model="reason" rows="2" maxlength="{{ \App\Models\StorefrontOrder::MAX_NOTE_LENGTH }}" required @error('reason') aria-invalid="true" aria-describedby="cancel-reason-error" @enderror class="{{ $field }}" x-init="$el.focus()"></textarea>
                                 @error('reason') <p id="cancel-reason-error" class="text-sm text-red-700" role="alert">{{ $message }}</p> @enderror
                                 <div class="flex gap-2">
-                                    <button type="submit" class="inline-flex min-h-11 items-center rounded-lg bg-red-600 px-4 text-sm font-semibold text-white hover:bg-red-700">{{ __('storefront.orders.cancel') }}</button>
+                                    <button type="submit" class="inline-flex min-h-11 items-center rounded-lg bg-red-600 px-4 text-sm font-semibold text-white hover:bg-red-700">{{ $rejecting ? __('storefront.orders.reject') : __('storefront.orders.cancel') }}</button>
                                     <button type="button" wire:click="closeForms" class="inline-flex min-h-11 items-center rounded-lg px-4 text-sm font-semibold text-gray-700 ring-1 ring-gray-300 hover:bg-white">{{ __('storefront.orders.keep') }}</button>
                                 </div>
                             </form>

@@ -11,6 +11,7 @@ use App\Actions\Storefront\QuoteBranchOrder;
 use App\Actions\Storefront\SetStorefrontChannel;
 use App\Actions\Storefront\SetStorefrontDevice;
 use App\Actions\Storefront\SetStorefrontQuantity;
+use App\Actions\Storefront\StorefrontPricing;
 use App\Actions\Storefront\SubmitBranchOrder;
 use App\Enums\StorefrontChannel;
 use App\Models\Cart;
@@ -51,8 +52,8 @@ trait InteractsWithBranchOrders
         Role::findOrCreate('shop_owner');
 
         $category = Category::factory()->create();
-        $this->cableProduct = $this->storefrontProduct($category, 'USB-C cable 1m', 'KT-CBL-1');
-        $this->phoneProduct = $this->storefrontProduct($category, 'iPhone 13 128 GB', 'KT-IP13');
+        $this->cableProduct = $this->storefrontProduct($category, 'USB-C cable 1m', 'KT-CBL-1', 49.90);
+        $this->phoneProduct = $this->storefrontProduct($category, 'iPhone 13 128 GB', 'KT-IP13', 20.00);
 
         app(SetStorefrontQuantity::class)($this->owner, $this->store, $this->cable->id, $cablesOnline);
         app(SetStorefrontDevice::class)($this->owner, $this->store, $this->phone->id, true);
@@ -83,14 +84,25 @@ trait InteractsWithBranchOrders
     /**
      * Submit the buyer's cart for pickup at a branch at the total the quote shows now.
      */
-    protected function submit(?Store $store = null, ?string $key = null, ?int $shopId = null): StorefrontOrder
+    protected function submit(?Store $store = null, ?string $key = null, ?int $shopId = null, ?User $buyer = null): StorefrontOrder
     {
         $store ??= $this->store;
-        $quantities = Cart::query()->where('user_id', $this->buyer->id)->sole()->items()->get()
-            ->mapWithKeys(fn ($item): array => [(int) $item->product_id => (int) $item->quantity]);
-        $total = collect(app(QuoteBranchOrder::class)->branches($quantities))->firstWhere('store_id', $store->id)['total_minor'] ?? 0;
+        $buyer ??= $this->buyer;
 
-        return app(SubmitBranchOrder::class)($this->buyer, $shopId ?? $this->shop->id, $store->id, $total, $key ?? (string) Str::uuid(), null);
+        return app(SubmitBranchOrder::class)($buyer, $shopId ?? $this->shop->id, $store->id, $this->quotedTotal($buyer, $store), $key ?? (string) Str::uuid(), null);
+    }
+
+    /**
+     * The total the checkout shows the buyer now for their cart at the branch; 0 when not offered.
+     */
+    protected function quotedTotal(User $buyer, Store $store): int
+    {
+        $quantities = Cart::query()->where('user_id', $buyer->id)->sole()->items()->get()
+            ->mapWithKeys(fn ($item): array => [(int) $item->product_id => (int) $item->quantity]);
+        $channel = StorefrontPricing::orderChannel($buyer, $quantities->keys());
+        $branches = $channel === null ? [] : app(QuoteBranchOrder::class)->branches($quantities, $channel);
+
+        return collect($branches)->firstWhere('store_id', $store->id)['total_minor'] ?? 0;
     }
 
     /**
@@ -139,12 +151,36 @@ trait InteractsWithBranchOrders
         return $cart;
     }
 
-    private function storefrontProduct(Category $category, string $name, string $code): Product
+    /**
+     * A wholesale tier of the storefront product in TRY.
+     */
+    protected function wholesaleTier(Product $product, float $price, int $minQty, int $maxQty, bool $active = true): void
+    {
+        DB::table('wholesale_products')->insert([
+            'product_id' => $product->id, 'currency_id' => $this->tryCurrencyId(), 'price' => $price, 'min_qty' => $minQty, 'max_qty' => $maxQty,
+            'is_active' => $active, 'created_at' => now(), 'updated_at' => now(),
+        ]);
+    }
+
+    /**
+     * Set the storefront product's retail TRY price; 0 means unpriced, as the admin form stores it.
+     */
+    protected function retailPrice(Product $product, float $price): void
+    {
+        ProductPrice::query()->where('product_id', $product->id)->where('currency_id', $this->tryCurrencyId())->update(['base_price' => $price, 'converted_price' => $price]);
+    }
+
+    protected function tryCurrencyId(): int
+    {
+        return (int) (DB::table('currencies')->where('code', 'TRY')->value('id')
+            ?? DB::table('currencies')->insertGetId(['code' => 'TRY', 'name' => 'Turkish lira', 'symbol' => 'TL', 'is_default' => true, 'created_at' => now(), 'updated_at' => now()]));
+    }
+
+    private function storefrontProduct(Category $category, string $name, string $code, float $retailPrice): Product
     {
         $slug = Str::slug($name);
         $product = Product::factory()->create(['name' => $name, 'code' => $code, 'slug' => $slug, 'tr_slug' => $slug.'-tr', 'ar_slug' => $slug.'-ar', 'tr_name' => $name.' TR', 'ar_name' => $name.' AR', 'is_active' => true, 'category_id' => $category->id]);
-        $currencyId = (int) (DB::table('currencies')->value('id') ?? DB::table('currencies')->insertGetId(['code' => 'TRY', 'name' => 'Turkish lira', 'symbol' => 'TL', 'is_default' => true, 'created_at' => now(), 'updated_at' => now()]));
-        ProductPrice::factory()->create(['product_id' => $product->id, 'currency_id' => $currencyId, 'base_price' => 20.00, 'converted_price' => 20.00]);
+        ProductPrice::factory()->create(['product_id' => $product->id, 'currency_id' => $this->tryCurrencyId(), 'base_price' => $retailPrice, 'converted_price' => $retailPrice]);
 
         return $product;
     }

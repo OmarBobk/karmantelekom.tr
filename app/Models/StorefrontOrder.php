@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\StorefrontChannel;
 use App\Enums\StorefrontOrderStatus;
 use App\Services\Purchasing\Money;
 use Carbon\CarbonInterface;
@@ -22,11 +23,18 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  * @property int $shop_id
  * @property string $submission_key
  * @property StorefrontOrderStatus $status
+ * @property StorefrontChannel $channel
  * @property string $currency
  * @property string $total
  * @property string|null $notes
  * @property int|null $price_change_requested_by
  * @property CarbonInterface|null $price_change_requested_at
+ * @property int $price_proposal_version
+ * @property string|null $price_proposal_fingerprint
+ * @property string|null $accepted_price_proposal
+ * @property int|null $rejected_by
+ * @property CarbonInterface|null $rejected_at
+ * @property string|null $rejection_reason
  * @property string|null $confirmation_fingerprint
  * @property int|null $confirmed_by
  * @property CarbonInterface|null $confirmed_at
@@ -50,8 +58,9 @@ class StorefrontOrder extends Model
     public const MAX_PICKUP_HOURS = 336;
 
     protected $fillable = [
-        'order_id', 'store_id', 'buyer_id', 'shop_id', 'submission_key', 'status', 'currency', 'total', 'notes',
-        'price_change_requested_by', 'price_change_requested_at', 'confirmation_fingerprint', 'confirmed_by', 'confirmed_at',
+        'order_id', 'store_id', 'buyer_id', 'shop_id', 'submission_key', 'status', 'channel', 'currency', 'total', 'notes',
+        'price_change_requested_by', 'price_change_requested_at', 'price_proposal_version', 'price_proposal_fingerprint', 'accepted_price_proposal',
+        'rejected_by', 'rejected_at', 'rejection_reason', 'confirmation_fingerprint', 'confirmed_by', 'confirmed_at',
         'pickup_hours', 'expires_at', 'sale_id', 'fulfilled_at', 'cancelled_by', 'cancelled_at', 'cancellation_reason', 'expired_at',
     ];
 
@@ -59,9 +68,12 @@ class StorefrontOrder extends Model
     {
         return [
             'status' => StorefrontOrderStatus::class,
+            'channel' => StorefrontChannel::class,
             'total' => 'decimal:2',
             'pickup_hours' => 'integer',
+            'price_proposal_version' => 'integer',
             'price_change_requested_at' => 'datetime',
+            'rejected_at' => 'datetime',
             'confirmed_at' => 'datetime',
             'expires_at' => 'datetime',
             'fulfilled_at' => 'datetime',
@@ -82,7 +94,24 @@ class StorefrontOrder extends Model
 
     public function awaitsPriceAcceptance(): bool
     {
-        return $this->isPending() && $this->price_change_requested_at !== null;
+        return $this->isPending() && $this->price_proposal_fingerprint !== null;
+    }
+
+    /**
+     * Identifies one price proposal: its version and, per line, the proposed price and device.
+     * The buyer page sends it back on acceptance, so only the proposal the buyer saw is accepted.
+     *
+     * @param  iterable<StorefrontOrderLine>  $lines
+     */
+    public static function proposalFingerprint(int $orderId, int $version, iterable $lines): string
+    {
+        $proposed = [];
+
+        foreach ($lines as $line) {
+            $proposed[] = [$line->id, $line->proposedUnitPriceMinor(), $line->proposed_unit_id];
+        }
+
+        return hash('sha256', json_encode(['order' => $orderId, 'version' => $version, 'lines' => $proposed], JSON_THROW_ON_ERROR));
     }
 
     /**

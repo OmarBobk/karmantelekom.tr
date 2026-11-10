@@ -13,22 +13,26 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
 
 /**
- * The buyer accepts the prices the branch proposed for their pending order. The proposed prices
- * become the order's prices, and the branch may then confirm. Accepting twice changes nothing.
+ * The buyer accepts the exact price proposal their page showed, identified by its fingerprint.
+ * Under the order lock the proposal must still be the pending one and still match its lines;
+ * a stale fingerprint is refused, and the page then shows the current proposal. Accepting the
+ * proposal that was already accepted changes nothing and never accepts a newer one. The
+ * proposed prices become the order's prices and the proposed devices stay its devices, and the
+ * branch may then confirm.
  */
 final class AcceptBranchOrderPrice
 {
     /**
      * @throws ValidationException
      */
-    public function __invoke(User $buyer, int $storefrontOrderId): StorefrontOrder
+    public function __invoke(User $buyer, int $storefrontOrderId, string $proposal): StorefrontOrder
     {
         $order = StorefrontOrder::query()->where('buyer_id', $buyer->id)->findOrFail($storefrontOrderId);
 
-        return DB::transaction(function () use ($buyer, $order): StorefrontOrder {
+        return DB::transaction(function () use ($buyer, $order, $proposal): StorefrontOrder {
             $order = StorefrontOrder::query()->whereKey($order->id)->lockForUpdate()->firstOrFail();
 
-            if ($order->isPending() && $order->price_change_requested_at === null) {
+            if ($proposal !== '' && $order->accepted_price_proposal !== null && hash_equals($order->accepted_price_proposal, $proposal)) {
                 return $order;
             }
 
@@ -37,6 +41,12 @@ final class AcceptBranchOrderPrice
             }
 
             $lines = StorefrontOrderLine::query()->where('storefront_order_id', $order->id)->orderBy('id')->lockForUpdate()->get();
+            $current = StorefrontOrder::proposalFingerprint($order->id, $order->price_proposal_version, $lines);
+
+            if (! hash_equals((string) $order->price_proposal_fingerprint, $proposal) || ! hash_equals($current, $proposal)) {
+                throw ValidationException::withMessages(['order' => __('main.branch_orders.errors.proposal_changed')]);
+            }
+
             $total = 0;
 
             foreach ($lines as $line) {
@@ -48,10 +58,16 @@ final class AcceptBranchOrderPrice
                 OrderItem::query()->whereKey($line->order_item_id)->update(['price' => Money::toDecimal($price), 'subtotal' => Money::toDecimal($subtotal)]);
             }
 
-            $order->update(['total' => Money::toDecimal($total), 'price_change_requested_at' => null, 'price_change_requested_by' => null]);
+            $order->update([
+                'total' => Money::toDecimal($total),
+                'accepted_price_proposal' => $proposal,
+                'price_proposal_fingerprint' => null,
+                'price_change_requested_at' => null,
+                'price_change_requested_by' => null,
+            ]);
             $order->order()->update(['total_price' => Money::toDecimal($total)]);
 
-            BranchOrderHolds::audit($order, $buyer, 'storefront_order_price_accepted', 'buyer accepted the proposed prices', ['total' => $order->total]);
+            BranchOrderHolds::audit($order, $buyer, 'storefront_order_price_accepted', "buyer accepted price proposal {$order->price_proposal_version}", ['total' => $order->total, 'version' => $order->price_proposal_version]);
 
             return $order;
         });

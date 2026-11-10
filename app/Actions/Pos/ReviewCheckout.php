@@ -73,6 +73,10 @@ class ReviewCheckout
 
         $creditMinor = self::parseCredit($creditAmount);
 
+        if ($creditMinor > 0 && $storefrontOrderId !== null) {
+            throw ValidationException::withMessages(['credit_amount' => __('storefront.orders.errors.pay_at_pickup')]);
+        }
+
         if ($creditMinor > 0) {
             self::assertCreditAllowed($actor, $store, $customerId);
         }

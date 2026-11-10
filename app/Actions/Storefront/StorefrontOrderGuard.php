@@ -25,8 +25,8 @@ final class StorefrontOrderGuard
 {
     /**
      * The given storefront products that cannot be carted. With a signed-in buyer and branch
-     * orders switched on, linked products published to a channel the buyer may see can be carted
-     * for a branch order.
+     * orders switched on, linked products published to a channel the buyer may see, with a price
+     * in that channel, can be carted for a branch order.
      *
      * @param  iterable<int|string>  $productIds
      * @return list<int>
@@ -46,7 +46,9 @@ final class StorefrontOrderGuard
         }
 
         $branchOrderable = Product::query()->whereIn('id', $displayOnly)->visibleInChannels(StorefrontChannel::audienceOf($buyer))
-            ->whereHas('storefrontListing')->pluck('id')->map(fn (int|string $id): int => (int) $id)->all();
+            ->whereHas('storefrontListing')->pluck('id')->map(fn (int|string $id): int => (int) $id)
+            ->filter(fn (int $id): bool => StorefrontPricing::hasChannelPrice($id, StorefrontPricing::orderChannel($buyer, [$id])))
+            ->all();
 
         return array_values(array_diff($displayOnly, $branchOrderable));
     }

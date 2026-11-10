@@ -3,8 +3,8 @@
 namespace App\Livewire\Frontend;
 
 use App\Actions\Storefront\BranchOrderHolds;
-use App\Actions\Storefront\QuoteBranchOrder;
 use App\Actions\Storefront\StorefrontAvailability;
+use App\Actions\Storefront\StorefrontPricing;
 use App\Enums\StorefrontChannel;
 use App\Facades\Settings;
 use App\Models\Product;
@@ -114,10 +114,25 @@ class ProductModalComponent extends Component
     {
         $this->recheckOpenProduct();
 
+        $branchPricing = $this->product !== null && $this->storefrontAvailable !== null && BranchOrderHolds::enabled();
+
         return view('livewire.frontend.product-modal-component', [
             'priceTiers' => $this->visiblePriceTiers(),
             'cartItem' => $this->cartItem(),
+            'branchPricing' => $branchPricing,
+            'branchFromPrice' => $branchPricing ? $this->branchFromPriceMinor() : null,
         ]);
+    }
+
+    /**
+     * The lowest price in the viewer's channel for linked branch stock: the cheapest eligible
+     * device for used devices. Null when the product has no price in that channel.
+     */
+    private function branchFromPriceMinor(): ?int
+    {
+        $channel = StorefrontPricing::orderChannel(auth()->user(), [$this->product->id]);
+
+        return $channel === null ? null : StorefrontPricing::fromPriceMinor($this->product->id, $channel);
     }
 
     /**
@@ -173,8 +188,8 @@ class ProductModalComponent extends Component
 
     /**
      * The cart payload for linked branch stock: only for a signed-in buyer while branch orders
-     * are switched on and some branch has it available, priced at the lowest branch price. The
-     * checkout prices each branch exactly.
+     * are switched on and some branch has it available, priced at the "from" price in the buyer's
+     * channel. The checkout prices each branch exactly.
      *
      * @return array{id: int, translated_name: string, translated_description: string, prices: list<array{base_price: string}>, images: list<array{image_url: string}>}|null
      */
@@ -184,7 +199,7 @@ class ProductModalComponent extends Component
             return null;
         }
 
-        $price = QuoteBranchOrder::fromPriceMinor($this->product->id);
+        $price = $this->branchFromPriceMinor();
 
         if ($price === null) {
             return null;

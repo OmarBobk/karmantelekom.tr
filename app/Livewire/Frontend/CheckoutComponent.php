@@ -6,6 +6,7 @@ use App\Actions\Storefront\BranchOrderHolds;
 use App\Actions\Storefront\PlaceCartOrder;
 use App\Actions\Storefront\QuoteBranchOrder;
 use App\Actions\Storefront\StorefrontOrderGuard;
+use App\Actions\Storefront\StorefrontPricing;
 use App\Actions\Storefront\SubmitBranchOrder;
 use App\Facades\Cart;
 use App\Models\Order;
@@ -314,11 +315,16 @@ class CheckoutComponent extends Component
         $shops = Shop::visibleTo(auth()->user())->get();
         $cartKind = QuoteBranchOrder::LEGACY;
         $branches = [];
+        $priceGaps = [];
+        $orderable = true;
 
         if (BranchOrderHolds::enabled() && $this->cart->items->isNotEmpty()) {
             $quantities = $this->cartQuantities();
             $cartKind = QuoteBranchOrder::kind($quantities);
-            $branches = $cartKind === QuoteBranchOrder::BRANCH ? app(QuoteBranchOrder::class)->branches($quantities) : [];
+            $channel = $cartKind === QuoteBranchOrder::BRANCH ? StorefrontPricing::orderChannel(auth()->user(), $quantities->keys()) : null;
+            $orderable = $cartKind !== QuoteBranchOrder::BRANCH || $channel !== null;
+            $priceGaps = $channel === null ? [] : QuoteBranchOrder::priceGaps($quantities, $channel);
+            $branches = $channel !== null && $priceGaps === [] ? app(QuoteBranchOrder::class)->branches($quantities, $channel) : [];
         }
 
         $this->shownBranchTotals = collect($branches)->mapWithKeys(fn (array $branch): array => [$branch['store_id'] => $branch['total_minor']])->all();
@@ -336,6 +342,9 @@ class CheckoutComponent extends Component
             'cartKind' => $cartKind,
             'branches' => $branches,
             'selectedBranch' => collect($branches)->firstWhere('store_id', $this->selectedStoreId),
+            'orderable' => $orderable,
+            'priceGapNames' => $this->cart->items->whereIn('product_id', $priceGaps)->map(fn ($item): string => (string) $item->product?->name)->values()->all(),
+            'productNames' => $this->cart->items->mapWithKeys(fn ($item): array => [(int) $item->product_id => (string) $item->product?->name])->all(),
             'cart' => $this->cart,
             'cartTotal' => $this->cartTotal,
             'isShopOwner' => $this->isShopOwner,

@@ -25,6 +25,7 @@
                         'bg-green-100 text-green-900' => $status === \App\Enums\StorefrontOrderStatus::CONFIRMED,
                         'bg-blue-100 text-blue-900' => $status === \App\Enums\StorefrontOrderStatus::FULFILLED,
                         'bg-gray-100 text-gray-800' => in_array($status, [\App\Enums\StorefrontOrderStatus::CANCELLED, \App\Enums\StorefrontOrderStatus::EXPIRED], true),
+                        'bg-red-100 text-red-900' => $status === \App\Enums\StorefrontOrderStatus::REJECTED,
                     ])>{{ $status->label() }}</span>
                 </div>
 
@@ -36,6 +37,9 @@
                                 <bdi dir="ltr" class="tabular-nums text-gray-900">{{ \App\Services\Purchasing\LocalizedMoney::format($line->unitPriceMinor()) }} TL</bdi>
                                 @if ($order->awaitsPriceAcceptance() && $line->proposedUnitPriceMinor() !== null && $line->proposedUnitPriceMinor() !== $line->unitPriceMinor())
                                     <span class="block font-semibold text-amber-800">{{ __('main.branch_orders.proposed_price', ['price' => \App\Services\Purchasing\LocalizedMoney::format($line->proposedUnitPriceMinor()).' TL']) }}</span>
+                                @endif
+                                @if ($order->awaitsPriceAcceptance() && $line->proposedUnit)
+                                    <span class="block text-gray-600" data-testid="proposed-device">{{ __('main.branch_orders.proposed_device', ['condition' => $line->proposedUnit->condition->label()]) }}</span>
                                 @endif
                             </span>
                         </li>
@@ -53,12 +57,14 @@
                     <p class="mt-3 text-sm text-gray-700">{{ __('main.branch_orders.confirmed_help', ['until' => $order->expires_at?->format('d.m.Y H:i')]) }}</p>
                 @elseif ($status === \App\Enums\StorefrontOrderStatus::CANCELLED && $order->cancellation_reason)
                     <p class="mt-3 text-sm text-gray-700">{{ __('main.branch_orders.cancel_reason', ['reason' => $order->cancellation_reason]) }}</p>
+                @elseif ($status === \App\Enums\StorefrontOrderStatus::REJECTED)
+                    <p class="mt-3 text-sm text-gray-700" data-testid="rejection-reason">{{ __('main.branch_orders.rejection_reason', ['reason' => $order->rejection_reason]) }}</p>
                 @endif
 
                 @if ($status === \App\Enums\StorefrontOrderStatus::PENDING)
                     <div class="mt-4 flex flex-wrap gap-3">
                         @if ($order->awaitsPriceAcceptance())
-                            <button type="button" wire:click="acceptPrices({{ $order->id }})" wire:loading.attr="disabled" class="min-h-11 rounded-xl bg-indigo-600 px-4 font-semibold text-white hover:bg-indigo-700 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">{{ __('main.branch_orders.accept_prices') }}</button>
+                            <button type="button" wire:click="acceptPrices({{ $order->id }}, '{{ $order->price_proposal_fingerprint }}')" wire:loading.attr="disabled" class="min-h-11 rounded-xl bg-indigo-600 px-4 font-semibold text-white hover:bg-indigo-700 focus:outline-hidden focus:ring-2 focus:ring-indigo-500 focus:ring-offset-2">{{ __('main.branch_orders.accept_prices') }}</button>
                         @endif
                         <button type="button" wire:click="cancel({{ $order->id }})" wire:confirm="{{ __('main.branch_orders.cancel_confirm') }}" wire:loading.attr="disabled" class="min-h-11 rounded-xl border border-gray-300 px-4 font-semibold text-gray-700 hover:bg-gray-50 focus:outline-hidden focus:ring-2 focus:ring-gray-500 focus:ring-offset-2">{{ __('main.branch_orders.cancel') }}</button>
                     </div>

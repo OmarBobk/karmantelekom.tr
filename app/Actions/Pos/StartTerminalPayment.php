@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Actions\Pos;
 
 use App\Actions\Network\ReservationGuard;
+use App\Actions\Storefront\BranchOrderHolds;
 use App\Exceptions\Purchasing\InvalidAmountException;
 use App\Models\CheckoutAttempt;
 use App\Models\ProductDefinition;
@@ -92,6 +93,8 @@ class StartTerminalPayment
             if ($locked->revision !== $expectedRevision) {
                 throw ValidationException::withMessages(['attempt' => __('pos.errors.attempt_changed')]);
             }
+
+            BranchOrderHolds::assertPaidAtPickup($locked);
 
             if ($locked->creditMinor() > 0) {
                 ReviewCheckout::assertCreditAllowed($actor, $locked->store, $locked->customer_id);

@@ -154,6 +154,7 @@ class FinalizeCheckout
             throw ValidationException::withMessages(['attempt' => __('pos.errors.terminal_payment_pending')]);
         }
 
+        BranchOrderHolds::assertPaidAtPickup($locked);
         $creditMinor = $locked->creditMinor();
 
         if ($creditMinor > 0 && ! $locked->isFrozen()) {

@@ -325,6 +325,18 @@
                             <p class="text-sm text-gray-600">{{ __('main.branch_orders.pickup_help') }}</p>
                         </div>
                         <div class="space-y-3 p-6">
+                            @if (! $orderable)
+                                <p class="rounded-xl bg-amber-50 p-4 text-sm text-amber-900 ring-1 ring-amber-200" role="alert" data-testid="not-orderable">{{ __('main.branch_orders.errors.not_orderable') }}</p>
+                            @elseif ($priceGapNames !== [])
+                                <div class="rounded-xl bg-amber-50 p-4 text-sm text-amber-900 ring-1 ring-amber-200" role="alert" data-testid="price-gaps">
+                                    <p>{{ __('main.branch_orders.errors.price_unavailable') }}</p>
+                                    <ul class="mt-1 list-disc ps-5">
+                                        @foreach ($priceGapNames as $name)
+                                            <li>{{ $name }}</li>
+                                        @endforeach
+                                    </ul>
+                                </div>
+                            @endif
                             @forelse ($branches as $branch)
                                 <label wire:key="branch-{{ $branch['store_id'] }}" class="flex min-h-11 cursor-pointer items-center justify-between gap-4 rounded-xl border-2 p-4 has-checked:border-indigo-500 has-checked:bg-indigo-50 border-gray-200">
                                     <span class="flex items-center gap-3">
@@ -334,8 +346,20 @@
                                     <bdi dir="ltr" class="font-semibold tabular-nums text-gray-900">{{ \App\Services\Purchasing\LocalizedMoney::format($branch['total_minor']) }} TL</bdi>
                                 </label>
                             @empty
-                                <p class="rounded-xl bg-gray-50 p-4 text-sm text-gray-700" data-testid="no-branch">{{ __('main.branch_orders.no_branch') }}</p>
+                                @if ($orderable && $priceGapNames === [])
+                                    <p class="rounded-xl bg-gray-50 p-4 text-sm text-gray-700" data-testid="no-branch">{{ __('main.branch_orders.no_branch') }}</p>
+                                @endif
                             @endforelse
+                            @if ($selectedBranch !== null)
+                                <ul class="divide-y divide-gray-100 rounded-xl bg-gray-50 px-4 text-sm" data-testid="branch-quote">
+                                    @foreach ($selectedBranch['lines'] as $line)
+                                        <li class="flex justify-between gap-4 py-2">
+                                            <span class="text-gray-800">{{ $productNames[$line['product_id']] ?? '' }} × {{ $line['quantity'] }}</span>
+                                            <bdi dir="ltr" class="tabular-nums text-gray-900">{{ collect($line['unit_prices'])->unique()->map(fn (int $price): string => \App\Services\Purchasing\LocalizedMoney::format($price))->implode(' / ') }} TL</bdi>
+                                        </li>
+                                    @endforeach
+                                </ul>
+                            @endif
                             <p class="text-sm text-gray-600">{{ __('main.branch_orders.payment_note') }}</p>
                             @error('selectedStoreId')
                                 <p class="text-sm text-red-600" role="alert">{{ $message }}</p>

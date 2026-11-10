@@ -26,7 +26,8 @@ use Livewire\WithPagination;
 
 /**
  * Storefront orders one branch fulfills: pending orders to confirm with exact devices and a
- * pickup window, or to reprice or decline; confirmed orders to collect at the counter or cancel.
+ * pickup window, to reprice, or to reject with a reason the buyer sees; confirmed orders to
+ * collect at the counter or cancel.
  * A confirmed order whose held stock is short after a count or device change is flagged for
  * review, and the counter refuses its pickup until the stock is restored or the order cancelled.
  * Every action re-authorizes and rechecks on the server.
@@ -54,6 +55,10 @@ class StorefrontOrders extends Component
 
     #[Locked]
     public ?int $cancellingId = null;
+
+    /** Whether the reason form rejects a pending order rather than cancelling a confirmed one. */
+    #[Locked]
+    public bool $rejecting = false;
 
     public string $reason = '';
 
@@ -110,14 +115,24 @@ class StorefrontOrders extends Component
 
     public function openCancel(int $orderId): void
     {
-        $this->authorizePage();
+        $store = $this->authorizePage();
+        $order = StorefrontOrder::query()->where('store_id', $store->id)->findOrFail($orderId);
+
         $this->closeForms();
-        $this->cancellingId = $orderId;
+        $this->cancellingId = $order->id;
+        $this->rejecting = $order->isPending();
     }
 
     public function cancel(CancelBranchOrder $cancel): void
     {
         if ($this->cancellingId === null) {
+            return;
+        }
+
+        if ($this->rejecting) {
+            $cancel->rejectByBranch(auth()->user(), $this->authorizePage(), $this->cancellingId, $this->reason);
+            $this->done(__('storefront.orders.rejected_message'));
+
             return;
         }
 
@@ -129,6 +144,7 @@ class StorefrontOrders extends Component
     {
         $this->confirmingId = null;
         $this->cancellingId = null;
+        $this->rejecting = false;
         $this->deviceChoices = [];
         $this->pickupHours = '';
         $this->reason = '';
@@ -142,7 +158,7 @@ class StorefrontOrders extends Component
 
         $orders = StorefrontOrder::query()
             ->where('store_id', $store->id)
-            ->whereIn('status', $open ? [StorefrontOrderStatus::PENDING, StorefrontOrderStatus::CONFIRMED] : [StorefrontOrderStatus::FULFILLED, StorefrontOrderStatus::CANCELLED, StorefrontOrderStatus::EXPIRED])
+            ->whereIn('status', $open ? [StorefrontOrderStatus::PENDING, StorefrontOrderStatus::CONFIRMED] : StorefrontOrderStatus::closed())
             ->with(['buyer:id,name', 'shop:id,name', 'sale:id,number', 'lines.productDefinition:id,name,model,tracking_mode', 'lines.unit', 'lines.unit.identifiers'])
             ->orderByRaw('case when status = ? then 0 else 1 end', [StorefrontOrderStatus::PENDING->value])
             ->orderByDesc('id')

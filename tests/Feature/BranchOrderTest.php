@@ -8,6 +8,7 @@ use App\Actions\Inventory\RecordStockCount;
 use App\Actions\Network\PublishUnitListing;
 use App\Actions\Network\RequestReservation;
 use App\Actions\Pos\ResolveTerminalPayment;
+use App\Actions\Pos\ReviewCheckout;
 use App\Actions\Storefront\AcceptBranchOrderPrice;
 use App\Actions\Storefront\BranchOrderHolds;
 use App\Actions\Storefront\CancelBranchOrder;
@@ -16,6 +17,8 @@ use App\Actions\Storefront\RequestBranchOrderPriceChange;
 use App\Actions\Storefront\SetStorefrontChannel;
 use App\Actions\Storefront\SetStorefrontDevice;
 use App\Actions\Storefront\StorefrontAvailability;
+use App\Actions\Storefront\StorefrontOrderGuard;
+use App\Actions\Storefront\UnlinkStorefrontProduct;
 use App\Enums\OrderStatus;
 use App\Enums\StorefrontChannel;
 use App\Enums\StorefrontOrderStatus;
@@ -26,21 +29,31 @@ use App\Livewire\Frontend\CheckoutComponent;
 use App\Livewire\Pos\PosCounter;
 use App\Livewire\Pos\StorefrontOrders;
 use App\Models\Cart;
+use App\Models\CheckoutAttempt;
+use App\Models\Customer;
+use App\Models\InventoryUnit;
 use App\Models\NetworkListing;
 use App\Models\Order;
 use App\Models\Product;
+use App\Models\Sale;
 use App\Models\Shop;
 use App\Models\Store;
 use App\Models\StorefrontListing;
 use App\Models\StorefrontOrder;
+use App\Models\User;
+use App\Services\CartService;
+use App\Services\Purchasing\LocalizedMoney;
+use App\Services\Purchasing\Money;
 use Closure;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\Test;
+use Spatie\Permission\Models\Role;
 use Symfony\Component\HttpKernel\Exception\NotFoundHttpException;
 use Tests\Support\InteractsWithBranchOrders;
 use Tests\TestCase;
@@ -155,6 +168,7 @@ class BranchOrderTest extends TestCase
         $this->assertThrows(fn () => $this->confirm($order, store: $otherStore), ModelNotFoundException::class);
         $this->assertThrows(fn () => $this->confirm($order, actor: $cashier), AuthorizationException::class);
         $this->assertError(fn () => $this->confirm($order, hours: 0), 'pickup window from 1', 'pickup_hours');
+        $this->assertError(fn () => $this->confirm($order, hours: StorefrontOrder::MAX_PICKUP_HOURS + 1), 'from 1 to 336 hours', 'pickup_hours');
 
         $this->travelTo(now()->startOfMinute());
         $confirmed = $this->confirm($order);
@@ -187,13 +201,216 @@ class BranchOrderTest extends TestCase
         $this->assertTrue($order->fresh()->awaitsPriceAcceptance());
         $this->assertError(fn () => $this->confirm($order, devices: $choice), 'not accepted the new prices', 'order');
 
-        app(AcceptBranchOrderPrice::class)($this->buyer, $order->id);
+        app(AcceptBranchOrderPrice::class)($this->buyer, $order->id, $order->fresh()->price_proposal_fingerprint);
         $order->refresh();
         $this->assertSame(1300000 + 4990, $order->totalMinor());
         $this->assertSame('13000.00', $order->order->items()->where('product_id', $this->phoneProduct->id)->value('price'));
 
         $this->confirm($order, devices: []);
         $this->assertSame($dearer->id, $phoneLine->fresh()->active_unit_id);
+    }
+
+    #[Test]
+    public function acceptance_binds_to_the_displayed_proposal_and_a_retry_never_accepts_a_newer_one(): void
+    {
+        $order = $this->pendingOrder(cables: 1);
+        $phoneLine = $order->lines()->get()->first->tracksUnits();
+        $first = $this->offeredPhone('35693803564414', '13000.00');
+        $second = $this->offeredPhone('35693803564422', '14000.00');
+        $request = app(RequestBranchOrderPriceChange::class);
+
+        $request($this->owner, $this->store, $order->id, [$phoneLine->id => $first->id]);
+        $stale = $order->fresh()->price_proposal_fingerprint;
+        $request($this->owner, $this->store, $order->id, [$phoneLine->id => $second->id]);
+        $current = $order->fresh()->price_proposal_fingerprint;
+        $this->assertNotSame($stale, $current);
+
+        Livewire::actingAs($this->buyer)->test(BranchOrdersComponent::class)
+            ->call('acceptPrices', $order->id, $stale)
+            ->assertHasErrors('order')
+            ->assertSee('changed its proposal')
+            ->assertSee(LocalizedMoney::format(1400000))
+            ->assertSee('Device offered');
+        $this->assertSame(1250000 + 4990, $order->fresh()->totalMinor());
+        $this->assertTrue($order->fresh()->awaitsPriceAcceptance());
+
+        Livewire::actingAs($this->buyer)->test(BranchOrdersComponent::class)
+            ->call('acceptPrices', $order->id, $current)
+            ->assertHasNoErrors();
+        $this->assertSame(1400000 + 4990, $order->fresh()->totalMinor());
+        $this->assertSame(1400000 + 4990, app(AcceptBranchOrderPrice::class)($this->buyer, $order->id, $current)->totalMinor());
+        $this->assertError(fn () => $this->confirm($order, devices: [$phoneLine->id => $first->id]), 'accepted specific devices', 'devices');
+
+        $request($this->owner, $this->store, $order->id, [$phoneLine->id => $first->id]);
+        $newer = $order->fresh()->price_proposal_fingerprint;
+        app(AcceptBranchOrderPrice::class)($this->buyer, $order->id, $current);
+
+        $order->refresh();
+        $this->assertSame($newer, $order->price_proposal_fingerprint);
+        $this->assertTrue($order->awaitsPriceAcceptance());
+        $this->assertSame(1400000 + 4990, $order->totalMinor());
+        $this->assertSame('14000.00', $order->order->items()->where('product_id', $this->phoneProduct->id)->value('price'));
+    }
+
+    #[Test]
+    public function pickup_of_a_branch_order_refuses_credit_at_review_payment_start_and_finalization(): void
+    {
+        $order = $this->confirm($this->pendingOrder());
+
+        $this->assertError(fn () => app(ReviewCheckout::class)($this->owner, $this->store, $this->pickupCart($order), null, null, null, '100.00', null, $order->id), 'paid in full at pickup', 'credit_amount');
+
+        $attempt = $this->reviewPickup($order);
+        $customer = Customer::factory()->atCounter($this->store)->create();
+        CheckoutAttempt::query()->whereKey($attempt->id)->update(['customer_id' => $customer->id, 'credit_amount' => '100.00', 'credit_authorized_by' => $this->owner->id]);
+        $attempt->refresh();
+        $terminal = $this->createTerminal();
+
+        $this->assertError(fn () => $this->startTerminalPayment($this->owner, $attempt, $terminal, $attempt->total), 'paid in full at pickup', 'storefront_order');
+        $this->assertError(fn () => $this->finalize($this->owner, $attempt, '12599.80'), 'paid in full at pickup', 'storefront_order');
+        $this->assertSame(0, Sale::count());
+        $this->assertSame(StorefrontOrderStatus::CONFIRMED, $order->fresh()->status);
+        $this->assertSame(0, $order->lines()->whereNotNull('claimed_attempt_id')->count());
+    }
+
+    #[Test]
+    public function confirmation_rechecks_the_storefront_product_and_creates_no_holds_when_it_is_withdrawn(): void
+    {
+        $order = $this->pendingOrder(withPhone: false);
+        $lineKey = 'lines.'.$order->lines()->value('id');
+        $listing = StorefrontListing::query()->where('product_id', $this->cableProduct->id)->sole();
+
+        $this->cableProduct->update(['is_active' => false]);
+        $this->assertError(fn () => $this->confirm($order), 'no longer published', $lineKey);
+        $this->cableProduct->update(['is_active' => true]);
+
+        $this->wholesaleTier($this->cableProduct, 40.00, 1, 10);
+        app(SetStorefrontChannel::class)($this->owner, $listing->id, StorefrontChannel::WHOLESALE, true);
+        app(SetStorefrontChannel::class)($this->owner, $listing->id, StorefrontChannel::RETAIL, false);
+        $this->assertError(fn () => $this->confirm($order), 'no longer published', $lineKey);
+
+        app(SetStorefrontChannel::class)($this->owner, $listing->id, StorefrontChannel::WHOLESALE, false);
+        app(UnlinkStorefrontProduct::class)($this->owner, $listing->id);
+        $this->assertError(fn () => $this->confirm($order), 'no longer published', $lineKey);
+
+        $this->assertSame(StorefrontOrderStatus::PENDING, $order->fresh()->status);
+        $this->assertSame([], BranchOrderHolds::heldQuantities($this->store->id, [$this->cable->id]));
+        $this->assertSame(0, (int) $order->lines()->sum('held_quantity'));
+    }
+
+    #[Test]
+    public function retail_orders_use_the_published_retail_price_through_pickup(): void
+    {
+        $this->retailPrice($this->cableProduct, 45.00);
+        $this->fillCart([$this->cableProduct->id => 2]);
+
+        Livewire::actingAs($this->buyer)->test(CheckoutComponent::class)
+            ->set('selectedShopId', $this->shop->id)
+            ->assertSet('selectedStoreId', $this->store->id)
+            ->assertSee(LocalizedMoney::format(4500).' TL');
+
+        $order = $this->submit();
+        $this->assertSame(StorefrontChannel::RETAIL, $order->channel);
+        $this->assertSame(9000, $order->totalMinor());
+
+        $attempt = $this->reviewPickup($this->confirm($order));
+        $this->assertSame(9000, $attempt->totalMinor());
+        $sale = $this->finalize($this->owner, $attempt, '90.00');
+
+        $this->assertSame(9000, Money::fromDecimal($sale->total));
+        $this->assertSame(StorefrontOrderStatus::FULFILLED, $order->fresh()->status);
+    }
+
+    #[Test]
+    public function a_wholesale_buyer_pays_the_tier_for_the_quantity_and_a_new_price_needs_a_new_proposal(): void
+    {
+        $wholesaler = User::factory()->create()->assignRole(Role::findOrCreate('admin'));
+        $listing = StorefrontListing::query()->where('product_id', $this->cableProduct->id)->sole();
+        $this->wholesaleTier($this->cableProduct, 42.00, 1, 2);
+        $this->wholesaleTier($this->cableProduct, 38.00, 3, 10);
+        $this->wholesaleTier($this->cableProduct, 30.00, 3, 10, active: false);
+        app(SetStorefrontChannel::class)($this->owner, $listing->id, StorefrontChannel::WHOLESALE, true);
+        $this->fillCart([$this->cableProduct->id => 3], $wholesaler);
+
+        $order = $this->submit(buyer: $wholesaler);
+        $this->assertSame(StorefrontChannel::WHOLESALE, $order->channel);
+        $this->assertSame(11400, $order->totalMinor());
+
+        DB::table('wholesale_products')->where('product_id', $this->cableProduct->id)->where('price', 38.00)->update(['price' => 39.00]);
+        $this->assertError(fn () => $this->confirm($order), 'Request new prices instead');
+
+        app(RequestBranchOrderPriceChange::class)($this->owner, $this->store, $order->id, []);
+        app(AcceptBranchOrderPrice::class)($wholesaler, $order->id, $order->fresh()->price_proposal_fingerprint);
+        $this->assertSame(11700, $order->fresh()->totalMinor());
+
+        $attempt = $this->reviewPickup($this->confirm($order));
+        $this->assertSame(11700, $attempt->totalMinor());
+        $this->finalize($this->owner, $attempt, '117.00');
+        $this->assertSame(StorefrontOrderStatus::FULFILLED, $order->fresh()->status);
+    }
+
+    #[Test]
+    public function an_item_without_a_price_in_the_channel_cannot_be_ordered(): void
+    {
+        $this->retailPrice($this->cableProduct, 0);
+        $this->fillCart([$this->cableProduct->id => 1]);
+
+        Livewire::actingAs($this->buyer)->test(CheckoutComponent::class)
+            ->set('selectedShopId', $this->shop->id)
+            ->assertSee('no online price')
+            ->assertDontSee('Karman Fatih');
+        $this->assertError(fn () => $this->submit(), 'no online price', 'cart');
+        $this->assertSame(0, StorefrontOrder::count());
+        $this->assertSame(1, Cart::query()->sole()->items()->count());
+
+        $this->assertSame([$this->cableProduct->id], StorefrontOrderGuard::displayOnlyProductIds([$this->cableProduct->id, $this->phoneProduct->id], $this->buyer));
+        $this->assertError(fn () => app(CartService::class)->addToCart($this->buyer->id, null, $this->cableProduct), 'through checkout', 'cart');
+    }
+
+    #[Test]
+    public function the_branch_rejects_a_pending_order_with_a_reason_the_buyer_sees(): void
+    {
+        $order = $this->pendingOrder();
+
+        $this->assertError(fn () => app(CancelBranchOrder::class)->byBranch($this->owner, $this->store, $order->id, 'No stock'), 'rejected with a reason', 'order');
+
+        Livewire::actingAs($this->owner)->test(StorefrontOrders::class, ['store' => $this->store])
+            ->call('openCancel', $order->id)
+            ->assertSet('rejecting', true)
+            ->assertSee('Reason for rejecting')
+            ->call('cancel')
+            ->assertHasErrors('reason')
+            ->set('reason', 'Device sold in store')
+            ->call('cancel')
+            ->assertHasNoErrors();
+
+        $order->refresh();
+        $this->assertSame(StorefrontOrderStatus::REJECTED, $order->status);
+        $this->assertSame($this->owner->id, $order->rejected_by);
+        $this->assertNotNull($order->rejected_at);
+        $this->assertSame('Device sold in store', $order->rejection_reason);
+        $this->assertSame(OrderStatus::CANCELED, $order->order->fresh()->status);
+        $this->assertSame(StorefrontOrderStatus::REJECTED, app(CancelBranchOrder::class)->rejectByBranch($this->owner, $this->store, $order->id, 'Again')->status);
+        $this->assertSame('Device sold in store', $order->fresh()->rejection_reason);
+        $this->assertError(fn () => $this->confirm($order), 'not awaiting confirmation', 'order');
+
+        Livewire::actingAs($this->buyer)->test(BranchOrdersComponent::class)
+            ->assertSee('Declined by the branch')
+            ->assertSee('Device sold in store');
+        Livewire::actingAs($this->owner)->test(StorefrontOrders::class, ['store' => $this->store])
+            ->set('tab', 'closed')
+            ->assertSee('Order #'.$order->order_id);
+
+        $confirmed = $this->confirm($this->pendingOrder(withPhone: false));
+        $this->assertError(fn () => app(CancelBranchOrder::class)->rejectByBranch($this->owner, $this->store, $confirmed->id, 'Late'), 'not awaiting confirmation', 'order');
+    }
+
+    private function offeredPhone(string $imeiBody, string $price): InventoryUnit
+    {
+        $unit = $this->registerDevice($this->owner, $this->store, $this->usedPhone, self::imei($imeiBody));
+        $unit->update(['selling_price' => $price]);
+        app(SetStorefrontDevice::class)($this->owner, $this->store, $unit->id, true);
+
+        return $unit;
     }
 
     #[Test]

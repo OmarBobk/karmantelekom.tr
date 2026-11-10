@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Actions\Storefront\BranchOrderHolds;
-use App\Actions\Storefront\QuoteBranchOrder;
 use App\Actions\Storefront\StorefrontOrderGuard;
+use App\Actions\Storefront\StorefrontPricing;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\Product;
@@ -44,53 +44,86 @@ class CartService
 
         $cart = $this->getOrCreateCart($userId, $sessionId);
 
-        $item = $cart->items()->where('product_id', $product->id)->first();
+        return $this->withLockedCart($cart, function () use ($cart, $product, $quantity): CartItem {
+            $item = $cart->items()->where('product_id', $product->id)->first();
 
-        if ($item) {
-            $item->quantity += $quantity;
-            $item->subtotal = $item->price * $item->quantity;
-            $item->save();
-        } else {
-            $price = $this->displayPrice($product) ?? 0;
-            $item = $cart->items()->create([
-                'product_id' => $product->id,
-                'price' => $price,
-                'quantity' => $quantity,
-                'subtotal' => $price * $quantity,
-            ]);
-        }
+            if ($item) {
+                $item->quantity += $quantity;
+                $item->subtotal = $item->price * $item->quantity;
+                $item->save();
+            } else {
+                $price = $this->displayPrice($product, $cart->user_id === null ? null : User::query()->find($cart->user_id)) ?? 0;
+                $item = $cart->items()->create([
+                    'product_id' => $product->id,
+                    'price' => $price,
+                    'quantity' => $quantity,
+                    'subtotal' => $price * $quantity,
+                ]);
+            }
 
-        return $item;
+            return $item;
+        });
     }
 
     public function updateQuantity(?int $userId, ?string $sessionId, int $productId, int $quantity): ?CartItem
     {
         $cart = $this->getOrCreateCart($userId, $sessionId);
-        $item = $cart->items()->where('product_id', $productId)->first();
 
-        if (! $item) {
-            return null;
-        }
+        return $this->withLockedCart($cart, function () use ($cart, $productId, $quantity): ?CartItem {
+            $item = $cart->items()->where('product_id', $productId)->first();
 
-        $item->quantity = $quantity;
-        $item->subtotal = $item->price * $quantity;
-        $item->save();
+            if (! $item) {
+                return null;
+            }
 
-        return $item;
+            $item->quantity = $quantity;
+            $item->subtotal = $item->price * $quantity;
+            $item->save();
+
+            return $item;
+        });
     }
 
     public function removeFromCart(?int $userId, ?string $sessionId, int $productId): bool
     {
         $cart = $this->getOrCreateCart($userId, null);
 
-        return $cart->items()->where('product_id', $productId)->delete() > 0;
+        return $this->withLockedCart($cart, fn (): bool => $cart->items()->where('product_id', $productId)->delete() > 0);
     }
 
     public function clearCart(?int $userId, ?string $sessionId): bool
     {
         $cart = $this->getOrCreateCart($userId, null);
 
-        return $cart->items()->delete() > 0;
+        return $this->withLockedCart($cart, fn (): bool => $cart->items()->delete() > 0);
+    }
+
+    /**
+     * Lock a cart row inside a transaction. Every cart change and branch-order submission takes
+     * this lock before reading the cart's items, so a submission cannot delete items added after
+     * it read the cart, and a change cannot revive items a submission consumed.
+     */
+    public static function lockCart(Cart $cart): void
+    {
+        Cart::query()->whereKey($cart->id)->lockForUpdate()->first(['id']);
+    }
+
+    /**
+     * Run a cart change with the cart locked. The lock is the transaction's first statement, so
+     * the change reads items committed by whoever held the lock before it.
+     *
+     * @template TResult
+     *
+     * @param  callable(): TResult  $change
+     * @return TResult
+     */
+    private function withLockedCart(Cart $cart, callable $change): mixed
+    {
+        return DB::transaction(function () use ($cart, $change): mixed {
+            self::lockCart($cart);
+
+            return $change();
+        });
     }
 
     public function getCartTotal(?int $userId, ?string $sessionId): float
@@ -143,6 +176,14 @@ class CartService
 
         $displayOnly = StorefrontOrderGuard::displayOnlyProductIds($guestCart->items->pluck('product_id'), User::query()->find($userId));
 
+        $this->withLockedCart($userCart, fn () => $this->mergeGuestItems($guestCart, $userCart, $displayOnly));
+    }
+
+    /**
+     * @param  list<int>  $displayOnly
+     */
+    private function mergeGuestItems(Cart $guestCart, Cart $userCart, array $displayOnly): void
+    {
         foreach ($guestCart->items as $guestItem) {
             if (in_array((int) $guestItem->product_id, $displayOnly, true)) {
                 continue;
@@ -195,103 +236,9 @@ class CartService
         try {
             Log::info('Start Syncing', ['user_id' => $user_id, 'items_count' => count($items)]);
             $cart = $this->getOrCreateCart($user_id, null);
+            $buyer = User::query()->find($user_id);
 
-            // Linked branch stock is display-only: drop it from the request and the stored cart,
-            // then send the stored cart back so the browser drops it too.
-            $displayOnly = StorefrontOrderGuard::displayOnlyProductIds([...array_column($items, 'product_id'), ...$cart->items->pluck('product_id')], User::query()->find($user_id));
-
-            if ($displayOnly !== []) {
-                $items = array_values(array_filter($items, fn (array $item): bool => ! in_array((int) $item['product_id'], $displayOnly, true)));
-                $cart->items()->whereIn('product_id', $displayOnly)->delete();
-                $cart->load('items.product');
-            }
-
-            // if the $items is empty,
-            // and the cart has items,
-            // we need to sync in the opposite direction from db to localStorage.
-            if (empty($items) && $cart->items()->exists()) {
-                Log::info('No items provided, clearing existing cart items', ['cart_id' => $cart->id]);
-
-                return $this->storedItems($cart);
-            }
-
-            DB::transaction(function () use ($cart, $items) {
-
-                $cart->items()->delete(); // Clear existing items before syncing
-
-                Log::info('Start Transaction');
-
-                foreach ($items as $item) {
-                    $productId = $item['product_id'];
-                    $quantity = $item['quantity'];
-
-                    // Use a database query instead of a collection to avoid race conditions
-                    $existingItem = $cart->items()->where('product_id', $productId)->first();
-
-                    if ($existingItem) {
-                        Log::info('Updating existing cart item', [
-                            'product_id' => $productId,
-                            'old_quantity' => $existingItem->quantity,
-                            'new_quantity' => $quantity,
-                        ]);
-
-                        $newQuantity = $quantity;
-                        $existingItem->update([
-                            'quantity' => $newQuantity,
-                            'subtotal' => $existingItem->price * $newQuantity,
-                        ]);
-                    } else {
-                        Log::info('Creating new cart item', [
-                            'product_id' => $productId,
-                            'quantity' => $quantity,
-                        ]);
-
-                        // Get product price safely
-                        $product = Product::with('prices')->find($productId);
-                        $price = $product === null ? null : $this->displayPrice($product);
-
-                        if ($price === null) {
-                            Log::warning('Product not found or has no prices', ['product_id' => $productId]);
-
-                            continue;
-                        }
-
-                        $subtotal = $price * $quantity;
-
-                        try {
-                            $cart->items()->create([
-                                'product_id' => $productId,
-                                'price' => $price,
-                                'quantity' => $quantity,
-                                'subtotal' => $subtotal,
-                            ]);
-                        } catch (QueryException $e) {
-                            // Handle another process might have created duplicate entry - item
-                            if ($e->getCode() == 23000 && str_contains($e->getMessage(), 'Duplicate entry')) {
-                                Log::info('Duplicate entry detected, updating existing item', ['product_id' => $productId]);
-
-                                // Try to update the existing item
-                                $existingItem = $cart->items()->where('product_id', $productId)->first();
-                                if ($existingItem) {
-                                    $newQuantity = $existingItem->quantity + $quantity;
-                                    $existingItem->update([
-                                        'quantity' => $newQuantity,
-                                        'subtotal' => $existingItem->price * $newQuantity,
-                                    ]);
-                                }
-                            } else {
-                                throw $e; // Re-throw if it's not a duplicate entry error
-                            }
-                        }
-                    }
-                }
-                Log::info('End Transaction');
-            });
-
-            if ($displayOnly !== []) {
-                return $this->storedItems($cart->load('items.product'));
-            }
-
+            return $this->withLockedCart($cart, fn () => $this->syncLockedCart($cart, $buyer, $items));
         } catch (Throwable $th) {
             Log::error('Error syncing cart', [
                 'user_id' => $user_id,
@@ -305,13 +252,117 @@ class CartService
     }
 
     /**
-     * The unit price the cart shows: a legacy product's storefront price, or for linked branch
-     * stock the lowest TRY price any branch offers. Checkout prices branch orders exactly.
+     * @param  array<int, array{product_id: int|string, quantity: int|string}>  $items
+     * @return list<array<string, mixed>>|null
      */
-    private function displayPrice(Product $product): mixed
+    private function syncLockedCart(Cart $cart, ?User $buyer, array $items): ?array
+    {
+        $cart->load('items.product');
+
+        // Linked branch stock that cannot be ordered here is dropped from the request and the
+        // stored cart, then the stored cart is sent back so the browser drops it too.
+        $displayOnly = StorefrontOrderGuard::displayOnlyProductIds([...array_column($items, 'product_id'), ...$cart->items->pluck('product_id')], $buyer);
+
+        if ($displayOnly !== []) {
+            $items = array_values(array_filter($items, fn (array $item): bool => ! in_array((int) $item['product_id'], $displayOnly, true)));
+            $cart->items()->whereIn('product_id', $displayOnly)->delete();
+            $cart->load('items.product');
+        }
+
+        // if the $items is empty,
+        // and the cart has items,
+        // we need to sync in the opposite direction from db to localStorage.
+        if (empty($items) && $cart->items()->exists()) {
+            Log::info('No items provided, clearing existing cart items', ['cart_id' => $cart->id]);
+
+            return $this->storedItems($cart);
+        }
+
+        DB::transaction(function () use ($cart, $items, $buyer) {
+
+            $cart->items()->delete(); // Clear existing items before syncing
+
+            Log::info('Start Transaction');
+
+            foreach ($items as $item) {
+                $productId = $item['product_id'];
+                $quantity = $item['quantity'];
+
+                // Use a database query instead of a collection to avoid race conditions
+                $existingItem = $cart->items()->where('product_id', $productId)->first();
+
+                if ($existingItem) {
+                    Log::info('Updating existing cart item', [
+                        'product_id' => $productId,
+                        'old_quantity' => $existingItem->quantity,
+                        'new_quantity' => $quantity,
+                    ]);
+
+                    $newQuantity = $quantity;
+                    $existingItem->update([
+                        'quantity' => $newQuantity,
+                        'subtotal' => $existingItem->price * $newQuantity,
+                    ]);
+                } else {
+                    Log::info('Creating new cart item', [
+                        'product_id' => $productId,
+                        'quantity' => $quantity,
+                    ]);
+
+                    // Get product price safely
+                    $product = Product::with('prices')->find($productId);
+                    $price = $product === null ? null : $this->displayPrice($product, $buyer);
+
+                    if ($price === null) {
+                        Log::warning('Product not found or has no prices', ['product_id' => $productId]);
+
+                        continue;
+                    }
+
+                    $subtotal = $price * $quantity;
+
+                    try {
+                        $cart->items()->create([
+                            'product_id' => $productId,
+                            'price' => $price,
+                            'quantity' => $quantity,
+                            'subtotal' => $subtotal,
+                        ]);
+                    } catch (QueryException $e) {
+                        // Handle another process might have created duplicate entry - item
+                        if ($e->getCode() == 23000 && str_contains($e->getMessage(), 'Duplicate entry')) {
+                            Log::info('Duplicate entry detected, updating existing item', ['product_id' => $productId]);
+
+                            // Try to update the existing item
+                            $existingItem = $cart->items()->where('product_id', $productId)->first();
+                            if ($existingItem) {
+                                $newQuantity = $existingItem->quantity + $quantity;
+                                $existingItem->update([
+                                    'quantity' => $newQuantity,
+                                    'subtotal' => $existingItem->price * $newQuantity,
+                                ]);
+                            }
+                        } else {
+                            throw $e; // Re-throw if it's not a duplicate entry error
+                        }
+                    }
+                }
+            }
+            Log::info('End Transaction');
+        });
+
+        return $displayOnly !== [] ? $this->storedItems($cart->load('items.product')) : null;
+    }
+
+    /**
+     * The unit price the cart shows: a legacy product's storefront price, or for linked branch
+     * stock the "from" price in the buyer's channel. Checkout prices branch orders exactly.
+     */
+    private function displayPrice(Product $product, ?User $buyer): mixed
     {
         if (BranchOrderHolds::enabled() && StorefrontListing::query()->where('product_id', $product->id)->exists()) {
-            $minor = QuoteBranchOrder::fromPriceMinor($product->id);
+            $channel = StorefrontPricing::orderChannel($buyer, [$product->id]);
+            $minor = $channel === null ? null : StorefrontPricing::fromPriceMinor($product->id, $channel);
 
             return $minor === null ? null : Money::toDecimal($minor);
         }

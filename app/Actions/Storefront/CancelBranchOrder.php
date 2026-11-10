@@ -16,12 +16,13 @@ use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 /**
- * Cancel a storefront order and release its holds.
+ * End a storefront order before pickup.
  *
- * The buyer may cancel while the order is pending. The fulfilling branch, or the owner through
- * it, may cancel a pending or confirmed order with a reason. A counter checkout that started
- * payment for the order keeps its holds: cancellation is refused until that payment is resolved
- * through the counter's recovery flow. Cancelling a cancelled order changes nothing.
+ * The buyer may cancel while the order is pending. The selected branch, or the owner through it,
+ * rejects a pending order with a reason the buyer sees, and cancels a confirmed order with a
+ * reason, releasing its holds. A counter checkout that started payment for the order keeps its
+ * holds: cancellation is refused until that payment is resolved through the counter's recovery
+ * flow. Repeating a cancellation or rejection changes nothing.
  */
 final class CancelBranchOrder
 {
@@ -44,13 +45,62 @@ final class CancelBranchOrder
         Gate::forUser($actor)->authorize('manageStorefrontOrders', $store);
 
         $order = StorefrontOrder::query()->where('store_id', $store->id)->findOrFail($storefrontOrderId);
+
+        return $this->cancel($actor, $order->id, self::reason($reason), buyer: false);
+    }
+
+    /**
+     * The selected branch declines a pending order. Nothing is held yet, so nothing is released.
+     *
+     * @throws AuthorizationException
+     * @throws ValidationException
+     */
+    public function rejectByBranch(User $actor, Store $store, int $storefrontOrderId, ?string $reason): StorefrontOrder
+    {
+        Gate::forUser($actor)->authorize('manageStorefrontOrders', $store);
+
+        $order = StorefrontOrder::query()->where('store_id', $store->id)->findOrFail($storefrontOrderId);
+        $reason = self::reason($reason);
+
+        return DB::transaction(function () use ($actor, $store, $order, $reason): StorefrontOrder {
+            $order = StorefrontOrder::query()->whereKey($order->id)->lockForUpdate()->firstOrFail();
+
+            if ($order->status === StorefrontOrderStatus::REJECTED) {
+                return $order;
+            }
+
+            if (! $order->isPending()) {
+                throw ValidationException::withMessages(['order' => __('storefront.orders.errors.not_pending', ['status' => $order->displayStatus()->label()])]);
+            }
+
+            $order->update([
+                'status' => StorefrontOrderStatus::REJECTED,
+                'rejected_by' => $actor->id,
+                'rejected_at' => now(),
+                'rejection_reason' => $reason,
+                'price_proposal_fingerprint' => null,
+                'price_change_requested_at' => null,
+            ]);
+            $order->order()->update(['status' => StorefrontOrderStatus::REJECTED->orderStatus()]);
+
+            BranchOrderHolds::audit($order, $actor, 'storefront_order_rejected', "rejected by {$store->code}", ['reason' => $reason]);
+
+            return $order;
+        });
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    private static function reason(?string $reason): string
+    {
         $reason = Str::trim((string) $reason);
 
         if ($reason === '' || mb_strlen($reason) > StorefrontOrder::MAX_NOTE_LENGTH) {
             throw ValidationException::withMessages(['reason' => __('storefront.orders.errors.reason_required', ['max' => StorefrontOrder::MAX_NOTE_LENGTH])]);
         }
 
-        return $this->cancel($actor, $order->id, $reason, buyer: false);
+        return $reason;
     }
 
     /**
@@ -65,7 +115,11 @@ final class CancelBranchOrder
                 return $order;
             }
 
-            $allowed = $buyer ? $order->isPending() : ($order->isPending() || $order->isConfirmed());
+            if (! $buyer && $order->isPending()) {
+                throw ValidationException::withMessages(['order' => __('storefront.orders.errors.use_reject')]);
+            }
+
+            $allowed = $buyer ? $order->isPending() : $order->isConfirmed();
 
             if (! $allowed) {
                 $key = $buyer ? 'main.branch_orders.errors.cancel_not_allowed' : 'storefront.orders.errors.not_cancellable';
@@ -86,6 +140,7 @@ final class CancelBranchOrder
                 'cancelled_by' => $actor->id,
                 'cancelled_at' => now(),
                 'cancellation_reason' => $reason,
+                'price_proposal_fingerprint' => null,
                 'price_change_requested_at' => null,
             ]);
             $order->order()->update(['status' => StorefrontOrderStatus::CANCELLED->orderStatus()]);
