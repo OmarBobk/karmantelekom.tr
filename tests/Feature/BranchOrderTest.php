@@ -23,8 +23,10 @@ use App\Enums\OrderStatus;
 use App\Enums\StorefrontChannel;
 use App\Enums\StorefrontOrderStatus;
 use App\Enums\UnitStatus;
+use App\Events\OrderCreated;
 use App\Livewire\Backend\Orders\OrdersManager;
 use App\Livewire\Frontend\BranchOrdersComponent;
+use App\Livewire\Frontend\Cart\CartComponent;
 use App\Livewire\Frontend\CheckoutComponent;
 use App\Livewire\Pos\PosCounter;
 use App\Livewire\Pos\StorefrontOrders;
@@ -49,6 +51,7 @@ use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Event;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Livewire;
@@ -402,6 +405,61 @@ class BranchOrderTest extends TestCase
 
         $confirmed = $this->confirm($this->pendingOrder(withPhone: false));
         $this->assertError(fn () => app(CancelBranchOrder::class)->rejectByBranch($this->owner, $this->store, $confirmed->id, 'Late'), 'not awaiting confirmation', 'order');
+    }
+
+    #[Test]
+    public function an_item_added_after_submission_survives_checkout_completion(): void
+    {
+        $cart = $this->fillCart([$this->cableProduct->id => 1]);
+        Event::listen(OrderCreated::class, fn () => app(CartService::class)->addToCart($this->buyer->id, null, $this->phoneProduct));
+
+        Livewire::actingAs($this->buyer)->test(CheckoutComponent::class)
+            ->set('selectedShopId', $this->shop->id)
+            ->call('placeOrder')
+            ->assertHasNoErrors()
+            ->assertDispatched('checkout', fn (string $name, array $params): bool => array_column($params['items'], 'product_id') === [$this->phoneProduct->id]
+                && $params['revision'] === CartService::revision($cart))
+            ->assertNotDispatched('clear-cart');
+
+        $this->assertSame([$this->cableProduct->id], StorefrontOrder::query()->sole()->lines()->pluck('product_id')->all());
+        $this->assertSame([$this->phoneProduct->id => 1], $cart->items()->pluck('quantity', 'product_id')->map(fn ($quantity): int => (int) $quantity)->all());
+    }
+
+    #[Test]
+    public function a_stale_tab_sync_is_refused_and_an_add_after_refreshing_works(): void
+    {
+        $cart = $this->fillCart([$this->cableProduct->id => 1]);
+        $staleRevision = CartService::revision($cart);
+        $this->submit();
+        app(CartService::class)->addToCart($this->buyer->id, null, $this->phoneProduct);
+        $current = CartService::revision($cart);
+
+        Livewire::actingAs($this->buyer)->test(CartComponent::class)
+            ->call('handleSyncCart', [['product_id' => $this->cableProduct->id, 'quantity' => 2]], $staleRevision)
+            ->assertDispatched('cart-items-from-server', fn (string $name, array $params): bool => array_column($params['items'], 'product_id') === [$this->phoneProduct->id] && $params['revision'] === $current)
+            ->assertDispatched('notify');
+        $this->assertSame([$this->phoneProduct->id => 1], $this->cartContents($cart));
+
+        Livewire::actingAs($this->buyer)->test(CartComponent::class)
+            ->call('handleSyncCart', [['product_id' => $this->cableProduct->id, 'quantity' => 1]], null);
+        $this->assertSame([$this->phoneProduct->id => 1], $this->cartContents($cart));
+
+        Livewire::actingAs($this->buyer)->test(CartComponent::class)
+            ->call('handleSyncCart', [['product_id' => $this->phoneProduct->id, 'quantity' => 1], ['product_id' => $this->cableProduct->id, 'quantity' => 1]], $current)
+            ->assertDispatched('cart-items-from-server', fn (string $name, array $params): bool => $params['items'] === null && $params['revision'] === CartService::revision($cart))
+            ->assertNotDispatched('notify');
+        $this->assertSame([$this->cableProduct->id => 1, $this->phoneProduct->id => 1], $this->cartContents($cart));
+
+        Livewire::actingAs($this->buyer)->test(CartComponent::class)->call('handleClearCart', $staleRevision);
+        $this->assertSame([], $this->cartContents($cart));
+    }
+
+    /**
+     * @return array<int, int> Quantity by product id.
+     */
+    private function cartContents(Cart $cart): array
+    {
+        return $cart->items()->orderBy('product_id')->pluck('quantity', 'product_id')->map(fn ($quantity): int => (int) $quantity)->all();
     }
 
     private function offeredPhone(string $imeiBody, string $price): InventoryUnit

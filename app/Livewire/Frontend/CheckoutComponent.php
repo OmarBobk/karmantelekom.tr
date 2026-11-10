@@ -213,7 +213,9 @@ class CheckoutComponent extends Component
         }
 
         $this->reset(['selectedShopId', 'selectedStoreId', 'orderNotes']);
-        $this->dispatch('checkout');
+        // Submission already removed the ordered items; the browser loads what is left, such as
+        // items added meanwhile, instead of asking the server to clear the cart again.
+        $this->dispatch('checkout', ...Cart::browserCart((int) Auth::id()));
         session()->flash('success', __('main.branch_orders.submitted'));
         $this->redirect(route('storefront.orders'));
     }

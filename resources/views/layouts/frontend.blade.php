@@ -41,6 +41,8 @@
                 document.addEventListener('alpine:init', () => {
                     Alpine.store('cart', {
                         items: Alpine.$persist([]).as('cart_items'),
+                        // The stored cart contents this tab last loaded; the server refuses a full sync from a stale tab.
+                        revision: Alpine.$persist(null).as('cart_revision'),
                         itemsCount: 0,
                         subtotal: 0,
                         syncTimeout: null,
@@ -53,14 +55,19 @@
                                 this.syncWithServer();
                             });
 
-                            // Listen for the checkout event from CheckoutComponent to clear the cart.
-                            window.addEventListener('checkout', () => {
-                                this.clear();
+                            // After checkout: a branch order sends the stored cart it left behind, which
+                            // replaces this tab's cart; the legacy checkout still clears it.
+                            window.addEventListener('checkout', (event) => {
+                                if (event.detail?.revision) {
+                                    this.loadItemsFromServer(event.detail.items, event.detail.revision);
+                                } else {
+                                    this.clear();
+                                }
                             });
 
-                            // Listen for cart items from server
+                            // The server's revision after a change, with the stored items when this tab must reload them.
                             window.addEventListener('cart-items-from-server', (event) => {
-                                this.loadItemsFromServer(event.detail[0]);
+                                this.loadItemsFromServer(event.detail.items, event.detail.revision);
                             });
 
                             // Initial sync with server after a short delay to ensure Livewire is loaded
@@ -69,10 +76,13 @@
                             }, 500);
                         },
 
-                        loadItemsFromServer(items) {
-                            console.log('Loading items from server:', items);
-                            this.items = items;
-                            this.updateTotals();
+                        loadItemsFromServer(items, revision) {
+                            this.revision = revision ?? this.revision;
+
+                            if (Array.isArray(items)) {
+                                this.items = items;
+                                this.updateTotals();
+                            }
                         },
 
                         updateTotals() {
@@ -130,7 +140,7 @@
                             console.log('remove item', productId);
 
                             let id = productId
-                            window.Livewire.dispatch('remove-item', {id});
+                            window.Livewire.dispatch('remove-item', {id, revision: this.revision});
                         },
 
                         clear() {
@@ -139,7 +149,7 @@
 
                             // this.syncWithServer();
 
-                            window.Livewire.dispatch('clear-cart')
+                            window.Livewire.dispatch('clear-cart', {revision: this.revision})
                         },
 
                         scheduleSync() {
@@ -163,7 +173,7 @@
                                     quantity: item.quantity
                                 }));
 
-                                await window.Livewire.dispatch('sync-cart', { items })
+                                await window.Livewire.dispatch('sync-cart', { items, revision: this.revision })
                             } catch (error) {
                                 console.error('Error syncing cart:', error);
                             }
