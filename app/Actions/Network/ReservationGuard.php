@@ -5,9 +5,11 @@ declare(strict_types=1);
 namespace App\Actions\Network;
 
 use App\Actions\Inventory\InventoryLedger;
+use App\Actions\Storefront\BranchOrderHolds;
 use App\Enums\ReservationStatus;
 use App\Enums\UnitStatus;
 use App\Models\CheckoutAttempt;
+use App\Models\InventoryBalance;
 use App\Models\InventoryUnit;
 use App\Models\NetworkReservation;
 use App\Models\Sale;
@@ -57,24 +59,33 @@ final class ReservationGuard
     }
 
     /**
-     * Before a terminal payment or cash intake starts, lock the attempt's devices and recheck
-     * them: each must still be in the checkout's branch, on the reviewed product, available, and
-     * at the reviewed revision, and none may be reserved for or claimed by another checkout. A
-     * linked reservation is then claimed for this checkout. Call inside the transaction, right
-     * after the attempt lock, on every start; a repeated start keeps the existing claim.
+     * Before a terminal payment or cash intake starts, lock the attempt's stock and recheck it:
+     * each device must still be in the checkout's branch, on the reviewed product, available, and
+     * at the reviewed revision, and none may be reserved for or claimed by another checkout; no
+     * device or quantity may be held for a storefront order other than the one it collects. A
+     * linked reservation or storefront order is then claimed for this checkout. Call inside the
+     * transaction, right after the attempt lock, on every start; a repeated start keeps the claim.
+     *
+     * Lock order: the linked storefront order, product definitions, the branch's quantity
+     * balances, devices, reservations, then storefront order holds.
      *
      * @throws ValidationException
      */
     public function lockForPaymentStart(CheckoutAttempt $lockedAttempt, User $actor): void
     {
-        $unitLines = collect($lockedAttempt->lines)->whereNotNull('unit_id');
+        $lines = collect($lockedAttempt->lines);
+        $unitLines = $lines->whereNotNull('unit_id');
         $unitIds = $lockedAttempt->unitIds();
+        $storefrontOrder = BranchOrderHolds::lockLinkedOrder($lockedAttempt);
 
-        if ($unitIds === [] && $lockedAttempt->network_reservation_id === null) {
-            return;
-        }
-
-        $this->inventoryLedger->lockDefinitions($unitLines->pluck('definition_id')->all());
+        $this->inventoryLedger->lockDefinitions($lines->pluck('definition_id')->map(fn ($id): int => (int) $id)->all());
+        $balances = InventoryBalance::query()
+            ->where('store_id', $lockedAttempt->store_id)
+            ->whereIn('product_definition_id', $lines->whereNull('unit_id')->pluck('definition_id')->map(fn ($id): int => (int) $id)->unique()->sort()->values()->all())
+            ->orderBy('product_definition_id')
+            ->lockForUpdate()
+            ->get()
+            ->keyBy('product_definition_id');
         $units = InventoryUnit::query()->whereKey($unitIds)->orderBy('id')->lockForUpdate()->get()->keyBy('id');
         $changed = [];
 
@@ -100,6 +111,12 @@ final class ReservationGuard
             $linked->update(['claimed_attempt_id' => $lockedAttempt->id, 'claimed_at' => now()]);
 
             ReservationLocks::audit($linked, $actor, $lockedAttempt->store_id, 'reservation_claimed', "payment started by checkout {$lockedAttempt->key}", ['checkout_attempt_id' => $lockedAttempt->id]);
+        }
+
+        BranchOrderHolds::assertSellable($lockedAttempt, $storefrontOrder, $balances);
+
+        if ($storefrontOrder !== null) {
+            BranchOrderHolds::claim($storefrontOrder, $lockedAttempt, $actor);
         }
     }
 
@@ -153,6 +170,8 @@ final class ReservationGuard
      */
     public static function releaseClaim(CheckoutAttempt $lockedAttempt, User $actor): void
     {
+        BranchOrderHolds::releaseClaim($lockedAttempt, $actor);
+
         $claimed = NetworkReservation::query()->where('claimed_attempt_id', $lockedAttempt->id)->lockForUpdate()->get();
 
         foreach ($claimed as $reservation) {

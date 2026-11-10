@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Network;
 
+use App\Actions\Storefront\BranchOrderHolds;
 use App\Enums\ReservationStatus;
 use App\Models\InventoryUnit;
 use App\Models\NetworkListing;
@@ -23,7 +24,8 @@ final class ApproveReservation
      *
      * Under the device locks the request is checked again: the listing is still the revision the
      * requester saw, the branch still holds the device and it is still sellable, no other
-     * reservation is active, and no checkout holding the device has started payment. The hold
+     * reservation is active, no storefront order holds it, and no checkout holding the device
+     * has started payment. The hold
      * starts now and lasts the branch's configured reservation time. Approving an approved
      * request returns it without writes.
      *
@@ -66,6 +68,10 @@ final class ApproveReservation
 
             if ($open->contains(fn (NetworkReservation $other): bool => $other->id !== $reservation->id && $other->blocksSale())) {
                 throw ValidationException::withMessages(['reservation' => __('network.reservation.errors.already_reserved')]);
+            }
+
+            if (BranchOrderHolds::unitHolds([$unit->id], lock: true)->isNotEmpty()) {
+                throw ValidationException::withMessages(['reservation' => __('storefront.orders.errors.device_held')]);
             }
 
             ReservationLocks::closeExpired($open);

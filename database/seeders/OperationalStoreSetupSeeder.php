@@ -57,7 +57,14 @@ class OperationalStoreSetupSeeder extends Seeder
         self::MANAGE_RESERVATIONS_PERMISSION,
         self::ALLOCATE_STOREFRONT_STOCK_PERMISSION,
         self::PUBLISH_STOREFRONT_PERMISSION,
+        self::MANAGE_STOREFRONT_ORDERS_PERMISSION,
     ];
+
+    /**
+     * Confirming, repricing, and cancelling storefront orders a branch fulfills. Held by the owner
+     * role; may also be granted directly to an employee assigned to the branch.
+     */
+    public const MANAGE_STOREFRONT_ORDERS_PERMISSION = 'manage_storefront_orders';
 
     /**
      * Making a branch's stock eligible for the storefront: an online quantity or exact devices. Owner only.

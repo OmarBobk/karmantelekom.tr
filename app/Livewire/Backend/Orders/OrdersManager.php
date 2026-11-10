@@ -2,12 +2,11 @@
 
 namespace App\Livewire\Backend\Orders;
 
-use App\Models\Order;
 use App\Enums\OrderStatus;
-use App\Models\Shop;
+use App\Models\Order;
 use App\Models\User;
-use App\Services\NotificationRecipientsService;
 use App\Services\OrderService;
+use Carbon\Carbon;
 use Illuminate\Pagination\LengthAwarePaginator;
 use LaravelDaily\Invoices\Classes\Buyer;
 use LaravelDaily\Invoices\Classes\InvoiceItem;
@@ -24,17 +23,29 @@ class OrdersManager extends Component
     use WithPagination;
 
     public array $selectedOrders = [];
+
     public bool $selectAll = false;
+
     public string $bulkAction = '';
+
     public bool $showBulkActionModal = false;
+
     public string $statusFilter = '';
+
     public string $salespersonFilter = '';
+
     public string $search = '';
+
     public ?Order $selectedOrder = null;
+
     public bool $showOrderDetailsModal = false;
+
     public string $fromDate = '';
+
     public string $toDate = '';
+
     public string $sortBy = 'id';
+
     public string $sortDirection = 'asc';
 
     protected array $queryString = [
@@ -89,12 +100,12 @@ class OrdersManager extends Component
                     $search = $this->search;
                     $query->where(function ($q) use ($search) {
                         $q->where('id', $search)
-                            ->orWhereHas('shop', fn($q2) => $q2->where('name', 'like', "%$search%"))
-                            ->orWhereHas('customer', fn($q3) => $q3->where('name', 'like', "%$search%")); // Changed from 'salesperson' to 'customer'
+                            ->orWhereHas('shop', fn ($q2) => $q2->where('name', 'like', "%$search%"))
+                            ->orWhereHas('customer', fn ($q3) => $q3->where('name', 'like', "%$search%")); // Changed from 'salesperson' to 'customer'
                     });
                 })
                 ->whereHas('shop', function ($query) {
-                    if (!auth()->user()->hasRole('admin')) {
+                    if (! auth()->user()->hasRole('admin')) {
                         $query->where('user_id', auth()->id());
                     }
                 })
@@ -107,23 +118,23 @@ class OrdersManager extends Component
                     });
                 })
                 ->when($this->fromDate, function ($query) {
-                    $query->whereDate('created_at', '>=', \Carbon\Carbon::parse($this->fromDate)->toDateString());
+                    $query->whereDate('created_at', '>=', Carbon::parse($this->fromDate)->toDateString());
                 })
                 ->when($this->toDate, function ($query) {
-                    $query->whereDate('created_at', '<=', \Carbon\Carbon::parse($this->toDate)->toDateString());
+                    $query->whereDate('created_at', '<=', Carbon::parse($this->toDate)->toDateString());
                 });
 
             // Apply sorting
             switch ($this->sortBy) {
                 case 'shop':
                     $query->join('shops', 'orders.shop_id', '=', 'shops.id')
-                          ->orderBy('shops.name', $this->sortDirection)
-                          ->select('orders.*');
+                        ->orderBy('shops.name', $this->sortDirection)
+                        ->select('orders.*');
                     break;
                 case 'salesperson':
                     $query->join('users', 'orders.user_id', '=', 'users.id')
-                          ->orderBy('users.name', $this->sortDirection)
-                          ->select('orders.*');
+                        ->orderBy('users.name', $this->sortDirection)
+                        ->select('orders.*');
                     break;
                 case 'total':
                     $query->orderBy('total_price', $this->sortDirection);
@@ -143,8 +154,9 @@ class OrdersManager extends Component
         } catch (Throwable $e) {
             $this->dispatch('notify', [
                 'type' => 'error',
-                'message' => $e->getMessage()
+                'message' => $e->getMessage(),
             ]);
+
             return Order::query()->whereRaw('0=1')->paginate(10);
         }
     }
@@ -191,16 +203,16 @@ class OrdersManager extends Component
     public function performBulkAction(): void
     {
         if ($this->bulkAction === 'delete') {
-            Order::whereIn('id', $this->selectedOrders)->delete();
+            Order::whereIn('id', $this->selectedOrders)->whereDoesntHave('storefrontOrder')->delete();
             $this->dispatch('notify', [
                 'type' => 'success',
-                'message' => 'Selected orders deleted successfully.'
+                'message' => 'Selected orders deleted successfully.',
             ]);
         } elseif ($this->bulkAction === 'export') {
             // Implement export logic here
             $this->dispatch('notify', [
                 'type' => 'success',
-                'message' => 'Export initiated for selected orders.'
+                'message' => 'Export initiated for selected orders.',
             ]);
         }
 
@@ -229,22 +241,33 @@ class OrdersManager extends Component
     {
         try {
             // Validate the new status
-            if (!in_array($newStatus, OrderStatus::values())) {
+            if (! in_array($newStatus, OrderStatus::values())) {
                 $this->dispatch('notify', [
                     'type' => 'error',
-                    'message' => 'Invalid order status provided.'
+                    'message' => 'Invalid order status provided.',
                 ]);
+
                 return;
             }
 
             $order = Order::findOrFail($orderId);
 
             // Check if user has permission to update this order
-            if (!auth()->user()->can('update', $order)) {
+            if (! auth()->user()->can('update', $order)) {
                 $this->dispatch('notify', [
                     'type' => 'error',
-                    'message' => 'You do not have permission to update this order.'
+                    'message' => 'You do not have permission to update this order.',
                 ]);
+
+                return;
+            }
+
+            if ($order->storefrontOrder()->exists()) {
+                $this->dispatch('notify', [
+                    'type' => 'error',
+                    'message' => __('storefront.orders.errors.status_through_branch'),
+                ]);
+
                 return;
             }
 
@@ -259,7 +282,7 @@ class OrdersManager extends Component
             ]);
 
             // Dispatch OrderUpdated event
-//            \App\Events\OrderUpdated::dispatch($order, $originalData, auth()->id());
+            //            \App\Events\OrderUpdated::dispatch($order, $originalData, auth()->id());
 
             // Refresh selectedOrder if it's currently being viewed
             if ($this->selectedOrder && $this->selectedOrder->id === $order->id) {
@@ -268,13 +291,13 @@ class OrdersManager extends Component
 
             $this->dispatch('notify', [
                 'type' => 'success',
-                'message' => "Order #{$order->id} status updated from " . ucfirst($oldStatus) . " to " . ucfirst($newStatus)
+                'message' => "Order #{$order->id} status updated from ".ucfirst($oldStatus).' to '.ucfirst($newStatus),
             ]);
 
         } catch (Throwable $e) {
             $this->dispatch('notify', [
                 'type' => 'error',
-                'message' => 'Failed to update order status: ' . $e->getMessage()
+                'message' => 'Failed to update order status: '.$e->getMessage(),
             ]);
         }
     }
@@ -295,7 +318,7 @@ class OrdersManager extends Component
                 'serial' => $order->id,
                 'date' => $order->updated_at->format('d M Y'),
                 'invoice_records' => $order->items,
-                'total' => $order->total_price
+                'total' => $order->total_price,
             ]);
 
             $invoice = Invoice::make()
@@ -303,13 +326,12 @@ class OrdersManager extends Component
                 ->buyer($customer)
                 ->discountByPercent(10)
                 ->taxRate(18)
-                ->addItem((new InvoiceItem())->pricePerUnit(2));
-
+                ->addItem((new InvoiceItem)->pricePerUnit(2));
 
             $html = view('vendor.invoices.templates.indirimgo', compact('invoice'))->render();
 
             return response()->stream(function () use ($html) {
-                print Browsershot::html($html)
+                echo Browsershot::html($html)
                     ->format('A4')
                     ->noSandbox()
                     ->waitUntilNetworkIdle()
@@ -324,7 +346,7 @@ class OrdersManager extends Component
         } catch (Throwable $e) {
             $this->dispatch('notify', [
                 'type' => 'error',
-                'message' => 'Failed to export order: ' . $e->getMessage()
+                'message' => 'Failed to export order: '.$e->getMessage(),
             ]);
 
             dd($e->getMessage());

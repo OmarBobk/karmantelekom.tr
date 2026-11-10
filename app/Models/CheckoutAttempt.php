@@ -26,6 +26,7 @@ use Illuminate\Support\Carbon;
  * @property int $user_id
  * @property int|null $customer_id
  * @property int|null $network_reservation_id The Store Network reservation this checkout fulfills.
+ * @property int|null $storefront_order_id The confirmed storefront order this checkout collects at pickup.
  * @property CheckoutAttemptStatus $status
  * @property int $revision
  * @property Currency $currency
@@ -60,7 +61,7 @@ class CheckoutAttempt extends Model
      * @var list<string>
      */
     protected $fillable = [
-        'key', 'store_id', 'user_id', 'customer_id', 'network_reservation_id', 'status', 'revision', 'currency', 'lines',
+        'key', 'store_id', 'user_id', 'customer_id', 'network_reservation_id', 'storefront_order_id', 'status', 'revision', 'currency', 'lines',
         'subtotal', 'discount_total', 'total', 'credit_amount', 'credit_authorized_by', 'payload_hash', 'frozen_at',
         'terminal_payment_key', 'terminal_payment_request_key', 'terminal_payment_cleared_key',
         'terminal_payment_terminal_id', 'terminal_payment_amount', 'terminal_payment_started_by',
@@ -121,6 +122,14 @@ class CheckoutAttempt extends Model
     public function networkReservation(): BelongsTo
     {
         return $this->belongsTo(NetworkReservation::class);
+    }
+
+    /**
+     * @return BelongsTo<StorefrontOrder, $this>
+     */
+    public function storefrontOrder(): BelongsTo
+    {
+        return $this->belongsTo(StorefrontOrder::class);
     }
 
     /**

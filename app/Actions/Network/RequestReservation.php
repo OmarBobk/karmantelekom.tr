@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Actions\Network;
 
+use App\Actions\Storefront\BranchOrderHolds;
 use App\Enums\ReservationStatus;
 use App\Models\InventoryUnit;
 use App\Models\NetworkListing;
@@ -52,7 +53,8 @@ final class RequestReservation
                 throw ValidationException::withMessages(['listing' => __('network.reservation.errors.own_device')]);
             }
 
-            if (ListingEligibility::problem($definition, $unit) !== null || $open->contains(fn (NetworkReservation $reservation): bool => $reservation->blocksSale())) {
+            if (ListingEligibility::problem($definition, $unit) !== null || $open->contains(fn (NetworkReservation $reservation): bool => $reservation->blocksSale())
+                || BranchOrderHolds::unitHolds([$unit->id], lock: true)->isNotEmpty()) {
                 throw ValidationException::withMessages(['listing' => __('network.reservation.errors.unavailable')]);
             }
 

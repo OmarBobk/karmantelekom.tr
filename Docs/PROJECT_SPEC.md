@@ -1005,9 +1005,20 @@ Each event records the acting user, the branch acting, the owning and requesting
 - The fulfilling branch confirms only after the server rechecks the online allocation and physical availability. Confirming the order and creating the stock hold are atomic and retry-safe. The hold must prevent a conflicting POS sale or Store Network reservation for the same stock.
 - Activate online ordering for linked branch stock after confirming the reservation works across retail, wholesale, Store Network, and POS. Keep existing storefront records and order history throughout the transition.
 
+Omar approved these rules on 2026-11-09.
+
+- **Who may order.** The first release accepts orders only from signed-in users who can already order for a shop they are authorized to use. The server checks both shop access and the listing's publication channel for that user.
+- **Branch and cart.** The buyer chooses one branch that can fulfill the entire cart. A cart that mixes legacy products with branch stock is refused with a clear message, and its contents are kept. Branch orders use the existing checkout. WhatsApp "Order now" stays on the legacy path.
+- **Submission.** The server computes and stores prices. Submission creates a pending order without a stock hold and is safe to retry.
+- **Confirmation.** Only the selected branch can confirm, through an authorized operator. Confirmation atomically rechecks publication, allocation, stock, and device eligibility, then creates the holds. The branch chooses the exact eligible device at confirmation. The order is confirmed at the submitted price. A different price needs the buyer's explicit acceptance before confirmation. Branch order status changes go through guarded actions, so the legacy order status editor cannot bypass holds.
+- **Stock protection.** Holds use the existing inventory lock order and apply in storefront availability, POS, and Store Network. If an online confirmation wins, a competing POS attempt for the same quantity or device is refused before cash intake or terminal start. If POS payment started first, confirmation respects that claim. Finalization rechecks.
+- **Pickup and payment.** Payment happens at pickup, through a POS sale linked to the confirmed order. Completing the sale fulfills the order and consumes its holds atomically. The pickup window is set by the branch and starts at confirmation.
+- **Cancellation and expiry.** The buyer may cancel while the order is pending. After confirmation, the branch or the owner may cancel with a reason. Cancellation or expiry releases the hold once no payment is unresolved. A started payment stays protected through the existing recovery flow.
+- **Shortages.** A physical count is recorded even when it falls below the held quantity. Affected orders are flagged for review, and pickup and payment start are blocked until the shortage is resolved.
+
 ### 14A.3 Release Order
 
-Deliver this after Store Network. Start with the publisher workflow and verified legacy links. Before accepting online orders against branch stock, agree how to choose the fulfilling branch when several qualify and how payments, cancellations, and hold releases work.
+Deliver this after Store Network. Start with the publisher workflow and verified legacy links. Online orders against branch stock ship behind the `STOREFRONT_BRANCH_ORDERS` flag, which defaults to off. Omar approves the rollout before it is switched on.
 
 ---
 

@@ -65,6 +65,9 @@
                         @can('requestReservations', $posStore)
                             <a href="{{ route('pos.reservations', $posStore) }}" @class(['inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-medium', 'bg-blue-50 text-blue-700' => request()->routeIs('pos.reservations'), 'text-gray-700 hover:bg-gray-100' => ! request()->routeIs('pos.reservations')]) @if (request()->routeIs('pos.reservations')) aria-current="page" @endif>{{ __('network.reservations.nav') }}</a>
                         @endcan
+                        @if (\App\Actions\Storefront\BranchOrderHolds::enabled())
+                            <a href="{{ route('pos.storefront-orders', $posStore) }}" @class(['inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-medium', 'bg-blue-50 text-blue-700' => request()->routeIs('pos.storefront-orders'), 'text-gray-700 hover:bg-gray-100' => ! request()->routeIs('pos.storefront-orders')]) @if (request()->routeIs('pos.storefront-orders')) aria-current="page" @endif>{{ __('storefront.orders.nav') }}</a>
+                        @endif
                         @can('receiveCustomerPayments', $posStore)
                             <a href="{{ route('pos.customers', $posStore) }}" @class(['inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-medium', 'bg-blue-50 text-blue-700' => request()->routeIs('pos.customers*'), 'text-gray-700 hover:bg-gray-100' => ! request()->routeIs('pos.customers*')]) @if (request()->routeIs('pos.customers*')) aria-current="page" @endif>{{ __('pos.nav.customers') }}</a>
                         @endcan

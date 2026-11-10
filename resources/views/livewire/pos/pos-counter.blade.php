@@ -171,10 +171,22 @@
                     </div>
                 @endif
 
+                @if ($storefrontOrderId !== null)
+                    <div class="flex flex-wrap items-center justify-between gap-2 border-b border-emerald-100 bg-emerald-50 px-4 py-2 text-sm text-emerald-900" data-testid="storefront-order-link">
+                        <p>{{ __('storefront.orders.counter_link', ['number' => $storefrontOrderNumber ?? $storefrontOrderId]) }}</p>
+                        @if ($cartEditable)
+                            <button type="button" wire:click="unlinkStorefrontOrder" wire:confirm="{{ __('storefront.orders.unlink_confirm') }}" class="inline-flex min-h-11 items-center rounded-lg px-3 font-semibold text-emerald-800 hover:bg-emerald-100">{{ __('storefront.orders.unlink') }}</button>
+                        @endif
+                    </div>
+                @endif
+
                 @error('cart')
                     <p class="px-4 pt-3 text-sm text-red-700" role="alert">{{ $message }}</p>
                 @enderror
                 @error('reservation')
+                    <p class="px-4 pt-3 text-sm text-red-700" role="alert">{{ $message }}</p>
+                @enderror
+                @error('storefront_order')
                     <p class="px-4 pt-3 text-sm text-red-700" role="alert">{{ $message }}</p>
                 @enderror
 

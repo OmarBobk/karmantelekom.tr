@@ -124,7 +124,9 @@ class StartTerminalPayment
     }
 
     /**
-     * Refuse to freeze a cart whose list prices or discount limits changed since review.
+     * Refuse to freeze a cart whose list prices or discount limits changed since review. A
+     * checkout collecting a storefront order charges the order's agreed prices, which the payment
+     * start lock checks instead.
      *
      * Once a card or cash payment start is saved the total is final, so this is the last point
      * where a stricter limit or a new price can send the cashier back to review instead of paying.
@@ -147,7 +149,9 @@ class StartTerminalPayment
             $listPrice = (int) $line['list_unit_price'];
             $unitPrice = (int) $line['unit_price'];
 
-            if ($definition === null || SellingPrice::listPriceMinor($definition, $unit) !== $listPrice) {
+            $agreedPrice = $attempt->storefront_order_id !== null;
+
+            if ($definition === null || (! $agreedPrice && SellingPrice::listPriceMinor($definition, $unit) !== $listPrice)) {
                 $errors["lines.{$line['key']}.price"] = __('pos.errors.price_changed', ['name' => $line['name']]);
             } elseif ($unitPrice < $listPrice && $authority->refusal($listPrice, $unitPrice, $unit) !== null) {
                 $errors["lines.{$line['key']}.adjusted_price"] = __('pos.errors.discount_changed', ['name' => $line['name']]);

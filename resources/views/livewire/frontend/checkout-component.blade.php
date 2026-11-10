@@ -312,6 +312,38 @@
                     </div>
                 </div>
 
+                @if ($cartKind === \App\Actions\Storefront\QuoteBranchOrder::MIXED)
+                    <div class="rounded-2xl border border-amber-200 bg-amber-50 p-6 text-amber-900" role="alert" data-testid="mixed-cart">
+                        <p class="font-semibold">{{ __('main.branch_orders.mixed_title') }}</p>
+                        <p class="mt-1 text-sm">{{ __('main.branch_orders.errors.mixed_cart') }}</p>
+                    </div>
+                @elseif ($cartKind === \App\Actions\Storefront\QuoteBranchOrder::BRANCH)
+                    <fieldset class="bg-white rounded-2xl shadow-xs border border-gray-200/50 overflow-hidden" data-testid="pickup-branches">
+                        <legend class="sr-only">{{ __('main.branch_orders.pickup_title') }}</legend>
+                        <div class="px-6 py-4 bg-linear-to-r from-gray-50 to-gray-100/50 border-b border-gray-200/50">
+                            <h2 class="text-lg font-semibold text-gray-900">{{ __('main.branch_orders.pickup_title') }}</h2>
+                            <p class="text-sm text-gray-600">{{ __('main.branch_orders.pickup_help') }}</p>
+                        </div>
+                        <div class="space-y-3 p-6">
+                            @forelse ($branches as $branch)
+                                <label wire:key="branch-{{ $branch['store_id'] }}" class="flex min-h-11 cursor-pointer items-center justify-between gap-4 rounded-xl border-2 p-4 has-checked:border-indigo-500 has-checked:bg-indigo-50 border-gray-200">
+                                    <span class="flex items-center gap-3">
+                                        <input type="radio" wire:model.live="selectedStoreId" value="{{ $branch['store_id'] }}" class="h-4 w-4 text-indigo-600 focus:ring-indigo-500">
+                                        <span class="font-medium text-gray-900">{{ $branch['name'] }} <span class="text-gray-500">({{ $branch['code'] }})</span></span>
+                                    </span>
+                                    <bdi dir="ltr" class="font-semibold tabular-nums text-gray-900">{{ \App\Services\Purchasing\LocalizedMoney::format($branch['total_minor']) }} TL</bdi>
+                                </label>
+                            @empty
+                                <p class="rounded-xl bg-gray-50 p-4 text-sm text-gray-700" data-testid="no-branch">{{ __('main.branch_orders.no_branch') }}</p>
+                            @endforelse
+                            <p class="text-sm text-gray-600">{{ __('main.branch_orders.payment_note') }}</p>
+                            @error('selectedStoreId')
+                                <p class="text-sm text-red-600" role="alert">{{ $message }}</p>
+                            @enderror
+                        </div>
+                    </fieldset>
+                @endif
+
                 <!-- Order Notes Card -->
                 <div class="bg-white rounded-2xl shadow-xs border border-gray-200/50 overflow-hidden">
                     <div class="px-6 py-4 bg-linear-to-r from-gray-50 to-gray-100/50 border-b border-gray-200/50">
@@ -451,7 +483,11 @@
                                 <div class="border-t border-gray-200 pt-3">
                                     <div class="flex justify-between text-lg font-bold text-gray-900">
                                         <span>Total</span>
-                                        <span>{{ number_format($cartTotal, 2) }} TL</span>
+                                        @if ($selectedBranch !== null)
+                                            <span data-testid="branch-total">{{ \App\Services\Purchasing\LocalizedMoney::format($selectedBranch['total_minor']) }} TL</span>
+                                        @else
+                                            <span>{{ number_format($cartTotal, 2) }} TL</span>
+                                        @endif
                                     </div>
                                 </div>
                             </div>

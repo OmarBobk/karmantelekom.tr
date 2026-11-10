@@ -7,6 +7,7 @@ namespace App\Providers;
 use App\Models\NetworkReservation;
 use App\Models\PurchaseReceiptLine;
 use App\Models\SaleLine;
+use App\Models\StorefrontOrder;
 use App\Models\User;
 use App\Services\CurrencyService;
 use App\Services\NotificationRecipientsService;
@@ -43,6 +44,7 @@ class AppServiceProvider extends ServiceProvider
             PurchaseReceiptLine::MORPH_ALIAS => PurchaseReceiptLine::class,
             SaleLine::MORPH_ALIAS => SaleLine::class,
             NetworkReservation::MORPH_ALIAS => NetworkReservation::class,
+            StorefrontOrder::MORPH_ALIAS => StorefrontOrder::class,
         ]);
         //        if (Str::startsWith(request()->uri()->host(), 'sub.') && !Auth::check()) {
         //            abort(Response::redirectTo(config('app.url') . '/404'));

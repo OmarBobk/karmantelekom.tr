@@ -4,10 +4,15 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Actions\Storefront\BranchOrderHolds;
+use App\Actions\Storefront\QuoteBranchOrder;
 use App\Actions\Storefront\StorefrontOrderGuard;
 use App\Models\Cart;
 use App\Models\CartItem;
 use App\Models\Product;
+use App\Models\StorefrontListing;
+use App\Models\User;
+use App\Services\Purchasing\Money;
 use Illuminate\Database\QueryException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -35,7 +40,7 @@ class CartService
      */
     public function addToCart(?int $userId, ?string $sessionId, Product $product, int $quantity = 1): CartItem
     {
-        StorefrontOrderGuard::assertOrderable([$product->id]);
+        StorefrontOrderGuard::assertOrderable([$product->id], 'cart', $userId === null ? null : User::query()->find($userId));
 
         $cart = $this->getOrCreateCart($userId, $sessionId);
 
@@ -46,11 +51,12 @@ class CartService
             $item->subtotal = $item->price * $item->quantity;
             $item->save();
         } else {
+            $price = $this->displayPrice($product) ?? 0;
             $item = $cart->items()->create([
                 'product_id' => $product->id,
-                'price' => $product->prices->first()->base_price,
+                'price' => $price,
                 'quantity' => $quantity,
-                'subtotal' => $product->prices->first()->base_price * $quantity,
+                'subtotal' => $price * $quantity,
             ]);
         }
 
@@ -135,7 +141,7 @@ class CartService
             'user_cart_id' => $userCart->id,
         ]);
 
-        $displayOnly = StorefrontOrderGuard::displayOnlyProductIds($guestCart->items->pluck('product_id'));
+        $displayOnly = StorefrontOrderGuard::displayOnlyProductIds($guestCart->items->pluck('product_id'), User::query()->find($userId));
 
         foreach ($guestCart->items as $guestItem) {
             if (in_array((int) $guestItem->product_id, $displayOnly, true)) {
@@ -192,7 +198,7 @@ class CartService
 
             // Linked branch stock is display-only: drop it from the request and the stored cart,
             // then send the stored cart back so the browser drops it too.
-            $displayOnly = StorefrontOrderGuard::displayOnlyProductIds([...array_column($items, 'product_id'), ...$cart->items->pluck('product_id')]);
+            $displayOnly = StorefrontOrderGuard::displayOnlyProductIds([...array_column($items, 'product_id'), ...$cart->items->pluck('product_id')], User::query()->find($user_id));
 
             if ($displayOnly !== []) {
                 $items = array_values(array_filter($items, fn (array $item): bool => ! in_array((int) $item['product_id'], $displayOnly, true)));
@@ -242,13 +248,14 @@ class CartService
 
                         // Get product price safely
                         $product = Product::with('prices')->find($productId);
-                        if (! $product || $product->prices->isEmpty()) {
+                        $price = $product === null ? null : $this->displayPrice($product);
+
+                        if ($price === null) {
                             Log::warning('Product not found or has no prices', ['product_id' => $productId]);
 
                             continue;
                         }
 
-                        $price = $product->prices->first()->base_price ?? 0;
                         $subtotal = $price * $quantity;
 
                         try {
@@ -295,6 +302,21 @@ class CartService
             // Re-throw the exception so the calling code can handle it
             throw $th;
         }
+    }
+
+    /**
+     * The unit price the cart shows: a legacy product's storefront price, or for linked branch
+     * stock the lowest TRY price any branch offers. Checkout prices branch orders exactly.
+     */
+    private function displayPrice(Product $product): mixed
+    {
+        if (BranchOrderHolds::enabled() && StorefrontListing::query()->where('product_id', $product->id)->exists()) {
+            $minor = QuoteBranchOrder::fromPriceMinor($product->id);
+
+            return $minor === null ? null : Money::toDecimal($minor);
+        }
+
+        return $product->prices->first()?->base_price;
     }
 
     /**

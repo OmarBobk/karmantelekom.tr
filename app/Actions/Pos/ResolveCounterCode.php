@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Actions\Pos;
 
 use App\Actions\Inventory\FindUnitsByIdentifier;
+use App\Actions\Storefront\BranchOrderHolds;
 use App\Enums\CatalogIdentifierType;
 use App\Enums\TrackingMode;
 use App\Enums\UnitStatus;
@@ -173,7 +174,8 @@ final class ResolveCounterCode
     private function definitionMatch(Store $store, ProductDefinition $definition, string $match): array
     {
         $stock = $definition->tracking_mode === TrackingMode::QUANTITY
-            ? (int) ($store->inventoryBalances()->where('product_definition_id', $definition->id)->value('quantity') ?? 0)
+            ? max(0, (int) ($store->inventoryBalances()->where('product_definition_id', $definition->id)->value('quantity') ?? 0)
+                - (BranchOrderHolds::heldQuantities($store->id, [$definition->id])[$definition->id] ?? 0))
             : null;
 
         return [
