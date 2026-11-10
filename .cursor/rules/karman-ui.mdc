@@ -7,30 +7,15 @@ alwaysApply: false
 # Design the task before styling the screen
 
 - Identify the operator, current branch, primary action, frequency, and device from the request and nearby workflow. Read only relevant product constraints.
-- Base decisions on usability, existing identity, and evidence appropriate to the task. DESIGN.md may provide context when relevant. Choose improvements using design judgment.
-- Reuse established good patterns. For a genuinely new workflow or major redesign, use karman-ux-benchmark to answer one concrete design question, then karman-ui-design for the chosen direction. Load only the relevant skill.
+- Base decisions on usability, existing identity, and evidence appropriate to the task. Consult `DESIGN.md` when current project guidance calls for it and the file exists. Use design judgment within the existing identity.
+- Reuse established patterns. For a new workflow or major redesign, use karman-ux-benchmark when a concrete design question needs evidence and karman-ui-design when it helps implement the chosen direction.
 - A local field or visual fix normally needs the existing component and applicable framework docs. Reuse a previously established benchmark decision.
 - Choose one direction, implement it, and briefly explain the meaningful tradeoff. Resolve ordinary font, spacing, hierarchy, and interaction choices autonomously within the task.
 
 ## Review the touched journey
 
-| Area | Check before handoff |
-| --- | --- |
-| Hierarchy | Clear primary action, readable density, related information together, current branch and record visible. |
-| Fields | Suitable input type, formatting, labels, sensible defaults, validation timing, recoverable values. |
-| Feedback | Targeted loading, accurate success/failure, understandable disabled states, stale results handled. |
-| Lists | Distinguish no data from no matches, useful filter reset, bounded results, stable sorting and pagination. |
-| Keyboard | Tab order, Enter behavior, visible focus, dialog focus return, scanner speed when relevant. |
-| Arabic/English | Joined Arabic letters, long labels, logical spacing, isolated identifiers and amounts, translated errors. |
-| Responsive | Main task usable at the intended desktop/tablet width, appropriate touch targets, controlled overflow. |
-| Recovery | Preserve work, explain the next safe action, distinguish pending from completed, respect frozen payments. |
-| Accessibility | Semantics, labels, error association, contrast, keyboard operation, readable status text. |
-
-Apply the rows relevant to the change during implementation and self-review. A small fix does not require a whole-site audit.
+Use [the collaboration agreement’s affected-flow checklist](../../Docs/COLLABORATION_WORKFLOW.md#6-ui-quality-in-the-affected-flow). For operational screens, make the current branch and record visible and keep the primary action easy to scan. For lists, distinguish no data from no matches and offer a useful filter reset with stable sorting.
 
 ## Finish with evidence appropriate to risk
 
-- The verification policy in 000-core.mdc governs ownership and scope.
-- Omar performs routine rendered UI and print walkthroughs. Supply up to three concrete checks.
-- Invoke karman-ui-review for a requested visual review or a browser-specific defect. Select only the viewport, role, and boundary needed to establish that behavior.
-- Describe unperformed browser checks as pending. A screenshot or successful render alone does not establish the action's behavior.
+Follow the [verification scope and ownership](../../Docs/COLLABORATION_WORKFLOW.md#4-proportionate-verification-and-cost). Use karman-ui-review for an applicable visual review and limit it to the relevant route, viewport, role, and boundary.

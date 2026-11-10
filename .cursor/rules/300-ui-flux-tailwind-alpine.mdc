@@ -8,7 +8,7 @@ alwaysApply: false
 
 - Reuse a suitable Blade component before repeating markup. Improve a shared component when the same defect affects its actual callers, checking those callers for compatibility.
 - Use installed Tailwind APIs, CSS-first configuration where present, and existing semantic tokens. Keep class lists readable.
-- Flux usage requires an installed package and a verified component API. Use free components within the available license. At the reviewed 53ea705 lockfile, livewire/flux is absent, despite old rules mentioning it.
+- Flux usage requires an installed package and a verified component API. Use free components within the available license.
 - Prefer native controls and existing accessible components. Add focused Alpine behavior for interactions that need it.
 - Use logical spacing/alignment, readable Arabic typography, visible focus, and sufficient contrast. Keep labels attached to inputs and errors associated with their fields.
 - For dialogs, preserve focus entry, keyboard navigation, Escape behavior where appropriate, and return focus.

@@ -1173,17 +1173,7 @@ Decided in §11.6: multiple employees work under one owner-opened session, and e
 
 ### 18.5 General Rule for Unresolved Decisions
 
-Before implementing a workflow affected by an unresolved decision, Cursor must:
-
-1. Identify the missing decision.
-2. Explain why it affects the implementation.
-3. Present the relevant options and their consequences.
-4. Request the owner's approval.
-5. Document the approved decision before completing the affected workflow.
-
-Cursor may continue implementing unrelated work that does not depend on the unresolved decision.
-
-Cursor must not invent financial formulas, reservation policies, permissions, or transaction semantics merely to make a feature appear complete.
+Omar approves business rules before the affected work is implemented. Follow [the collaboration agreement](COLLABORATION_WORKFLOW.md#1-responsibilities-and-decisions) to group open decisions, and record approved outcomes in the relevant project file. Continue independent work when it can proceed within approved rules.
 
 ---
 

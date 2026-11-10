@@ -10,5 +10,4 @@ alwaysApply: false
 - Read the relevant match and implement. Repeat research only for a new uncertainty.
 - Use schema, route, recent log, and error tools for a concrete question. Favor read-only inspection.
 - If a needed tool is unavailable, use installed source or official documentation for the verified version. Report a material gap once and continue the independent work.
-- The reviewed lockfile has Laravel 13, Livewire 4, PHPUnit 12, and Boost 2. These are a snapshot, so verify relevant installed versions after dependency changes.
 - Preserve customized execution policies when regenerating Boost guidance. Review generated diffs for stale versions and conflicting test instructions.

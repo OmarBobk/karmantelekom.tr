@@ -4,26 +4,25 @@
 
 This document defines the implementation sequence for the Karman Telekom Systems Management Platform.
 
-It translates the requirements in `docs/PROJECT_SPEC.md` into manageable development phases, deliverables, dependencies, verification steps, and acceptance criteria.
+It translates the requirements in `Docs/PROJECT_SPEC.md` into manageable development phases, deliverables, dependencies, verification steps, and acceptance criteria.
 
 The purpose is not to implement every feature as quickly as possible. The purpose is to build a reliable system incrementally, with particular attention to financial integrity, inventory accuracy, store isolation, and maintainability.
 
 ## 2. Relationship to Other Documents
 
-- `docs/PROJECT_SPEC.md` defines what the application must do and the business rules it must respect.
-- `docs/IMPLEMENTATION_PLAN.md` defines the order of implementation and the conditions for completing each phase.
-- `docs/legacy-repository-feature-inventory.md` records the features and implementation risks discovered in the legacy repository.
+- `Docs/PROJECT_SPEC.md` defines what the application must do and the business rules it must respect.
+- `Docs/IMPLEMENTATION_PLAN.md` defines the order of implementation and the conditions for completing each phase.
+- `Docs/legacy-repository-feature-inventory.md` records the features and implementation risks discovered in the legacy repository.
+- [COLLABORATION_WORKFLOW.md](COLLABORATION_WORKFLOW.md) governs planning, execution, verification, and handoff.
 - Additional business-rule documents may be introduced when a workflow becomes too detailed for the main specification.
 
 If implementation reveals a conflict or ambiguity in the specification, stop and document it. Do not silently invent a business rule.
 
 ## 3. Implementation Principles
 
-### 3.1 Build in small, verifiable increments
+### 3.1 Build in verifiable increments
 
-Each task must have a clearly defined scope, relevant tests, and measurable acceptance criteria.
-
-Do not ask an AI coding agent to implement an entire phase in one operation.
+Use the [collaboration agreement](COLLABORATION_WORKFLOW.md#3-batch-size-and-autonomy) to scope each reviewable delivery batch.
 
 ### 3.2 Protect financial and inventory integrity
 
@@ -79,7 +78,7 @@ Understand the existing KarmanTelekom project and establish a reliable starting 
 6. Review the legacy `systems_management` repository as a reference.
 7. Confirm the development, testing, and deployment environments.
 8. Review the current `PROJECT_SPEC.md` and remove duplicate or conflicting requirements.
-9. Create or update `docs/legacy-repository-feature-inventory.md`.
+9. Create or update `Docs/legacy-repository-feature-inventory.md`.
 10. Record unresolved business decisions without blocking unrelated foundation work.
 11. Establish a baseline test suite and code-quality checks.
 
@@ -1227,7 +1226,7 @@ Before merging a financial or inventory feature, verify that its operations are 
 
 ### Regression Gate
 
-Run the relevant existing tests after each change. Run the broader suite at appropriate integration milestones.
+Select and rerun checks according to the [verification policy](COLLABORATION_WORKFLOW.md#4-proportionate-verification-and-cost).
 
 ### Documentation Gate
 
@@ -1249,28 +1248,7 @@ A completed UI without verified business behavior does not satisfy this gate.
 
 ## 15. Cursor Execution Protocol
 
-Cursor must work in small, reviewable tasks.
-
-For each task:
-
-1. Read the relevant sections of `PROJECT_SPEC.md` and this plan.
-2. Inspect the current implementation before proposing changes.
-3. Identify the exact scope and dependencies.
-4. Explain the proposed design and potential risks.
-5. List the tests that will be added or updated.
-6. Implement only the agreed task.
-7. Run the relevant automated tests and quality checks.
-8. Review the resulting changes for regressions and authorization gaps.
-9. Report modified files, test results, remaining risks, and unresolved decisions.
-10. Stop and request approval when a business rule is unclear.
-
-Cursor must not implement multiple unrelated phases in a single task.
-
-Cursor must not report tests as passing unless they were actually executed successfully.
-
-Cursor must not silently change database structures, delete existing functionality, or make financial assumptions outside the approved scope.
-
-When a task reveals a missing requirement, document the issue and request a decision before implementing behavior that could affect financial records or inventory.
+Use [the collaboration agreement](COLLABORATION_WORKFLOW.md) for the work cycle, responsibilities, verification, and handoff. Use this plan for phase scope, acceptance criteria, and progress.
 
 ---
 

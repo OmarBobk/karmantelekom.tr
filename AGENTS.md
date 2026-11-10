@@ -1,3 +1,7 @@
+# Project instructions
+
+Read the [collaboration agreement](Docs/COLLABORATION_WORKFLOW.md) and the relevant specification and plan sections before starting or resuming work. Read only the [scoped Cursor rules](.cursor/rules) that apply to the task. The framework conventions below supplement the agreement.
+
 <laravel-boost-guidelines>
 === foundation rules ===
 
@@ -5,21 +9,13 @@
 
 ## Foundational Context
 
-This application is a Laravel application running on PHP 8.4. Always use the APIs that match the installed major version of each package — do not assume a version.
-
-Before relying on a package's API, confirm its installed version:
-- PHP packages: run `composer show --direct` to list direct dependencies with versions, or `composer show <vendor/package>` for a single package.
-- JS packages: check `package.json` for the installed versions.
+Use version-matched Laravel and PHP APIs. Verify relevant versions and package availability as described in the collaboration agreement.
 
 ## Conventions
 
 - You must follow all existing code conventions used in this application. When creating or editing a file, check sibling files for the correct structure, approach, and naming.
 - Use descriptive names for variables and methods. For example, `isRegisteredForDiscounts`, not `discount()`.
 - Check for existing components to reuse before writing a new one.
-
-## Verification Scripts
-
-- Do not create verification scripts or tinker when tests cover that functionality and prove they work. Unit and feature tests are more important.
 
 ## Application Structure & Architecture
 
@@ -38,10 +34,6 @@ Before relying on a package's API, confirm its installed version:
 
 # Laravel Boost
 
-## Project Rules
-
-- This project contains committed, area-grouped rules in `.ai/rules` when that directory exists, including path-scoped framework guidelines under `.ai/rules/boost`. Before you enter plan mode or create/edit any file, you MUST first: open @.ai/rules/index.md (it maps file globs to rule files), read every rule file whose globs cover the path(s) in scope, and run `grep -rin 'keyword' .ai/rules` to catch what a path match alone misses. Do not write code until you have read and are following every matching rule. If `.ai/rules` does not exist, continue without it.
-
 ## Artisan
 
 - Run Artisan commands directly via the command line (e.g., `php artisan route:list`). Use `php artisan list` to discover available commands and `php artisan [command] --help` to check parameters.
@@ -50,7 +42,7 @@ Before relying on a package's API, confirm its installed version:
 
 ## Tinker
 
-- Execute PHP in app context for debugging and testing code. Do not create models without user approval, prefer tests with factories instead. Prefer existing Artisan commands over custom tinker code.
+- Execute PHP in app context for debugging and testing code. Use factories on an isolated test database when test records are needed. Prefer existing Artisan commands over custom tinker code.
 - Always use single quotes to prevent shell expansion: `php artisan tinker --execute 'Your::code();'`
   - Double quotes for PHP strings inside: `php artisan tinker --execute 'User::where("active", true)->count();'`
 
@@ -71,16 +63,6 @@ Before relying on a package's API, confirm its installed version:
 
 - Laravel can be deployed using [Laravel Cloud](https://cloud.laravel.com/), which is the fastest way to deploy and scale production Laravel applications.
 
-=== tests rules ===
-
-# Test Enforcement
-
-- Add or update tests for behavior and logic changes when a test provides meaningful regression coverage.
-- Pure copy, styling, and layout-only changes do not require new or updated tests.
-- When test coverage applies, run the affected tests and ensure they pass.
-- Test the changed behavior and its important failure modes, but do not add tests beyond them.
-- Read the `testing-best-practices` skill before writing tests.
-
 === laravel/core rules ===
 
 # Do Things the Laravel Way
@@ -91,7 +73,7 @@ Before relying on a package's API, confirm its installed version:
 
 ### Model Creation
 
-- When creating new models, create useful factories and seeders for them too. Ask the user if they need any other things, using `php artisan make:model --help` to check the available options.
+- When creating new models, add factories or seeders needed by the agreed workflow. Check the available options with `php artisan make:model --help`.
 
 ## APIs & Eloquent Resources
 
@@ -128,12 +110,11 @@ Before relying on a package's API, confirm its installed version:
 
 - This project uses PHPUnit. Create tests with `php artisan make:test --phpunit {name}`.
 - Do not include the test suite directory in `{name}`. Use `SomeFeatureTest`, not `Feature/SomeFeatureTest`.
-- Read the `testing-best-practices` skill for guidance on coverage, naming, structure, dependency isolation, and review.
+- When available and relevant, read the `testing-best-practices` skill for guidance on coverage, naming, structure, dependency isolation, and review.
 
 ## Running Tests
 
-- Run the narrowest set of tests that covers the change. Pass a file path or `--filter=testName` to `php artisan test --compact`.
-- Rerun a test after each change to it.
+- For focused checks selected under the collaboration agreement, pass a file path or `--filter=testName` to `php artisan test --compact`.
 - Run `vendor/bin/phpunit` to call the test runner directly. It accepts the same file path and `--filter=testName` arguments.
 
 </laravel-boost-guidelines>

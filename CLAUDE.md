@@ -1,3 +1,3 @@
 # Project instructions
 
-Read AGENTS.md and .cursor/rules/000-core.mdc once per task. Then read only the scoped .cursor/rules files relevant to the changed paths. Those files hold the shared project policy.
+Start with [AGENTS.md](AGENTS.md) and the [collaboration agreement](Docs/COLLABORATION_WORKFLOW.md). Read only the scoped Cursor rules relevant to the task.
