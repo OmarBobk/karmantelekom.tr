@@ -20,6 +20,7 @@ use App\Livewire\Backend\Purchases\PurchaseShow;
 use App\Livewire\Backend\Purchases\PurchasesIndex;
 use App\Livewire\Backend\Purchases\ReceivePurchaseForm;
 use App\Livewire\Backend\Purchases\SupplierAccountPage;
+use App\Livewire\Backend\Reports\OperationsDashboard;
 use App\Livewire\Backend\Settings\SettingsComponent;
 use App\Livewire\Backend\Shops\ShopComponent;
 use App\Livewire\Backend\Shops\ShopProfileComponent;
@@ -61,8 +62,15 @@ Route::get('stores/{store}', StoreDetail::class)
     ->middleware('can:view,store')
     ->name('stores.show');
 
-// Operational catalog, suppliers, and store inventory (owner-only this milestone).
+// Operations dashboard, catalog, suppliers, and store inventory (owner-only).
 Route::prefix('operations')->group(function () {
+    Route::get('dashboard', OperationsDashboard::class)
+        ->middleware('can:viewOperationsDashboard,'.Store::class)
+        ->name('operations.dashboard');
+    Route::get('dashboard/{store}', OperationsDashboard::class)
+        ->middleware(['can:viewOperationsDashboard,'.Store::class, 'can:viewAllSales,store'])
+        ->whereNumber('store')
+        ->name('operations.dashboard.store');
     Route::get('catalog', DefinitionsIndex::class)
         ->middleware('can:viewAny,'.ProductDefinition::class)
         ->name('catalog.definitions');

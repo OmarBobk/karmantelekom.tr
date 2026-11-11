@@ -7,9 +7,10 @@ namespace App\Livewire\Pos;
 use App\Livewire\Pos\Concerns\UsesPosLocale;
 use App\Models\Sale;
 use App\Models\Store;
-use Carbon\CarbonImmutable;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Contracts\View\View;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Pagination\LengthAwarePaginator as EmptyPaginator;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Url;
@@ -19,6 +20,9 @@ use Livewire\WithPagination;
 /**
  * Completed sales in one store: employees see their own, the owner sees all.
  * Search matches the sale number, a sold device identifier, a product, or a card reference.
+ *
+ * The period is an inclusive range of Istanbul dates (from/to). The legacy single-day
+ * ?date= link applies only when neither from nor to is given; a single bound means that day.
  */
 class SalesHistory extends Component
 {
@@ -32,43 +36,103 @@ class SalesHistory extends Component
     public string $search = '';
 
     #[Url(except: '')]
+    public string $from = '';
+
+    #[Url(except: '')]
+    public string $to = '';
+
+    #[Url(except: '')]
     public string $date = '';
 
     public function mount(Store $store): void
     {
         $this->storeId = $store->id;
         $this->authorizeHistory();
+        $this->normalizeRange();
+    }
+
+    public function updated(string $property): void
+    {
+        if (in_array($property, ['search', 'from', 'to', 'date'], true)) {
+            $this->resetPage();
+        }
     }
 
     public function applyFilters(): void
     {
         $this->search = mb_substr(Str::trim($this->search), 0, 80);
-        $this->date = preg_match('/^\d{4}-\d{2}-\d{2}$/', $this->date) === 1 ? $this->date : '';
+        $this->normalizeRange();
         $this->resetPage();
     }
 
     public function clearFilters(): void
     {
-        $this->reset('search', 'date');
+        $this->reset('search', 'from', 'to', 'date');
         $this->resetPage();
     }
 
     public function render(): View
     {
         $store = $this->authorizeHistory();
+        $seesAll = auth()->user()->can('viewAllSales', $store);
+        [$from, $to] = $this->range();
+        $rangeError = $from === '' ? null : Sale::localRangeError($from, $to);
+
+        if ($rangeError !== null) {
+            $sales = new EmptyPaginator([], 0, 25);
+            $summary = null;
+        } else {
+            $filtered = $this->filteredSales($store, $from, $to);
+            $summary = $seesAll ? Sale::recordedSummary($filtered->clone()) : null;
+            $sales = $this->page($filtered);
+        }
 
         return view('livewire.pos.sales-history', [
             'store' => $store,
-            'sales' => $this->sales($store),
-            'seesAll' => auth()->user()->can('viewAllSales', $store),
+            'sales' => $sales,
+            'summary' => $summary,
+            'rangeError' => $rangeError,
+            'seesAll' => $seesAll,
+            'isFiltering' => Str::trim($this->search) !== '' || $from !== '',
             ...$this->localeViewData(),
         ])->layout('layouts.pos', ['posStore' => $store])->title(__('pos.history.title'));
     }
 
     /**
-     * @return LengthAwarePaginator<int, Sale>
+     * The effective Istanbul date bounds, or two blanks when the history is unfiltered by date.
+     *
+     * @return array{0: string, 1: string}
      */
-    private function sales(Store $store): LengthAwarePaginator
+    private function range(): array
+    {
+        $from = Str::trim($this->from);
+        $to = Str::trim($this->to);
+
+        if ($from === '' && $to === '') {
+            $legacyDate = Str::trim($this->date);
+
+            return [$legacyDate, $legacyDate];
+        }
+
+        return [$from === '' ? $to : $from, $to === '' ? $from : $to];
+    }
+
+    /**
+     * Rewrite a legacy ?date= or a single bound into explicit from/to.
+     */
+    private function normalizeRange(): void
+    {
+        [$this->from, $this->to] = $this->range();
+        $this->date = '';
+    }
+
+    /**
+     * Sales visible to the user in this store that match the search and period. The summary
+     * and the page are both read from this query.
+     *
+     * @return Builder<Sale>
+     */
+    private function filteredSales(Store $store, string $from, string $to): Builder
     {
         $term = Str::trim($this->search);
         $like = '%'.addcslashes($term, '%_\\').'%';
@@ -84,10 +148,16 @@ class SalesHistory extends Component
                     ->orWhere('sku', $term)
                     ->orWhere('barcode', $term))
                 ->orWhereHas('payments', fn ($payments) => $payments->where('terminal_reference', $term))))
-            ->when($this->date !== '', function ($query): void {
-                $day = CarbonImmutable::createFromFormat('Y-m-d', $this->date, Sale::DISPLAY_TIMEZONE)->startOfDay();
-                $query->whereBetween('completed_at', [$day->utc(), $day->endOfDay()->utc()]);
-            })
+            ->when($from !== '', fn ($query) => $query->completedOnLocalDays(Sale::localDate($from), Sale::localDate($to)));
+    }
+
+    /**
+     * @param  Builder<Sale>  $filtered
+     * @return LengthAwarePaginator<int, Sale>
+     */
+    private function page(Builder $filtered): LengthAwarePaginator
+    {
+        return $filtered
             ->with(['cashier:id,name', 'customer:id,name,phone_normalized', 'payments:id,sale_id,method,amount', 'debt:id,sale_id,original_amount'])
             ->withCount('lines')
             ->latest('completed_at')

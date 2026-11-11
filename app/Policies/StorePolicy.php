@@ -126,6 +126,15 @@ class StorePolicy
     }
 
     /**
+     * Determine whether the user can open the operations dashboard (owner only). Each branch on it
+     * still needs viewAllSales for its sales figures and viewInventory for its stock.
+     */
+    public function viewOperationsDashboard(User $user): bool
+    {
+        return $this->ownerHas($user, 'use_pos');
+    }
+
+    /**
      * Determine whether the user can change a line price at checkout (owner only, with a reason).
      */
     public function adjustSalePrices(User $user, Store $store): bool
