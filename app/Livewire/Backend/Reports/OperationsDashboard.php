@@ -10,7 +10,7 @@ use App\Models\Sale;
 use App\Models\Store;
 use App\Models\User;
 use App\Services\Purchasing\Money;
-use Carbon\CarbonImmutable;
+use App\Services\Reporting\LocalDateRange;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Str;
@@ -62,7 +62,7 @@ class OperationsDashboard extends Component
 
     public function showToday(): void
     {
-        $this->from = $this->to = CarbonImmutable::now(Sale::DISPLAY_TIMEZONE)->toDateString();
+        $this->from = $this->to = LocalDateRange::today();
     }
 
     #[Layout('layouts.backend')]
@@ -72,9 +72,9 @@ class OperationsDashboard extends Component
 
         $user = auth()->user();
         $stores = $this->stores($user);
-        $rangeError = Sale::localRangeError($this->from, $this->to);
+        $rangeError = LocalDateRange::error($this->from, $this->to);
         $totals = $rangeError === null
-            ? Sale::recordedTotalsByStore($stores->modelKeys(), Sale::localDate($this->from), Sale::localDate($this->to))
+            ? Sale::recordedTotalsByStore($stores->modelKeys(), LocalDateRange::date($this->from), LocalDateRange::date($this->to))
             : [];
 
         $rows = $stores->map(fn (Store $store): array => [
@@ -90,6 +90,7 @@ class OperationsDashboard extends Component
             'ownerCount' => $rows->sum('count'),
             'ownerTotalMinor' => Money::sumUncapped($rows->pluck('total_minor')),
             'inventory' => $this->inventory($stores->filter(fn (Store $store): bool => $user->can('viewInventory', $store))),
+            'canViewFinance' => $user->can('viewFinanceOverview', Store::class),
             ...$this->localeViewData(),
         ])->title($this->storeId === null
             ? __('reports.title')

@@ -19,14 +19,15 @@ use App\Models\CashPayout;
 use App\Models\Expense;
 use App\Models\ExpenseSubmission;
 use App\Models\OperationalSupplier;
-use App\Models\Sale;
 use App\Models\Store;
 use App\Services\Purchasing\LocalizedMoney;
+use App\Services\Reporting\LocalDateRange;
 use Illuminate\Contracts\View\View;
-use Illuminate\Support\Carbon;
+use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Locked;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -105,12 +106,37 @@ class ExpensesPage extends Component
 
     public string $releaseNote = '';
 
+    /** History filter by business date; one bound alone shows that day. */
+    #[Url(as: 'from', except: '')]
+    public string $historyFrom = '';
+
+    #[Url(as: 'to', except: '')]
+    public string $historyTo = '';
+
+    #[Url(as: 'category', except: '')]
+    public string $historyCategory = '';
+
     public function mount(Store $store): void
     {
         $this->storeId = $store->id;
         $this->requestKey = (string) Str::uuid();
         $this->expenseDate = self::today();
         $this->snapshotSession($this->authorizeExpenses());
+        $this->normalizeHistoryFilters();
+    }
+
+    public function updated(string $property): void
+    {
+        if (in_array($property, ['historyFrom', 'historyTo', 'historyCategory'], true)) {
+            $this->normalizeHistoryFilters();
+            $this->resetPage();
+        }
+    }
+
+    public function clearHistoryFilters(): void
+    {
+        $this->reset('historyFrom', 'historyTo', 'historyCategory');
+        $this->resetPage();
     }
 
     public function refreshSession(): void
@@ -281,6 +307,11 @@ class ExpensesPage extends Component
     {
         $store = $this->authorizeExpenses();
         $session = CashboxSession::openFor($store);
+        $historyError = $this->historyError();
+        $history = Expense::query()
+            ->where('store_id', $store->id)
+            ->when($this->historyFrom !== '', fn ($query) => $query->onBusinessDays($this->historyFrom, $this->historyTo))
+            ->when($this->historyCategory !== '', fn ($query) => $query->where('category', $this->historyCategory));
 
         return view('livewire.pos.expenses-page', [
             'store' => $store,
@@ -298,12 +329,16 @@ class ExpensesPage extends Component
                 ->oldest('started_at')
                 ->oldest('id')
                 ->get(),
-            'expenses' => Expense::query()
-                ->where('store_id', $store->id)
-                ->with(['recorder:id,name', 'supplier:id,name', 'unit:id,product_definition_id', 'unit.productDefinition:id,name', 'unit.identifiers'])
-                ->latest('expense_date')
-                ->latest('id')
-                ->paginate(25),
+            'historyError' => $historyError,
+            'historyFiltered' => $this->historyFrom !== '' || $this->historyCategory !== '',
+            'historySummary' => $historyError === null ? Expense::summary($history->clone()) : null,
+            'expenses' => $historyError === null
+                ? $history
+                    ->with(['recorder:id,name', 'supplier:id,name', 'unit:id,product_definition_id', 'unit.productDefinition:id,name', 'unit.identifiers'])
+                    ->latest('expense_date')
+                    ->latest('id')
+                    ->paginate(25)
+                : new LengthAwarePaginator([], 0, 25),
             'categories' => ExpenseCategory::cases(),
             'methods' => ExpenseMethod::cases(),
             'resolutions' => CashPayoutResolution::cases(),
@@ -334,7 +369,32 @@ class ExpensesPage extends Component
 
     private static function today(): string
     {
-        return Carbon::now(Sale::DISPLAY_TIMEZONE)->toDateString();
+        return LocalDateRange::today();
+    }
+
+    private function normalizeHistoryFilters(): void
+    {
+        $this->historyFrom = Str::trim($this->historyFrom);
+        $this->historyTo = Str::trim($this->historyTo);
+        $this->historyCategory = Str::trim($this->historyCategory);
+
+        if ($this->historyFrom === '') {
+            $this->historyFrom = $this->historyTo;
+        } elseif ($this->historyTo === '') {
+            $this->historyTo = $this->historyFrom;
+        }
+    }
+
+    /**
+     * Why the history filter cannot be applied ('invalid_date', 'reversed', 'invalid_category'), or null.
+     */
+    private function historyError(): ?string
+    {
+        if ($this->historyFrom !== '' && ($error = LocalDateRange::error($this->historyFrom, $this->historyTo)) !== null) {
+            return $error;
+        }
+
+        return $this->historyCategory === '' || ExpenseCategory::tryFrom($this->historyCategory) !== null ? null : 'invalid_category';
     }
 
     private function authorizeExpenses(): Store

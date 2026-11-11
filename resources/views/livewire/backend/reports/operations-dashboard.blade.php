@@ -2,17 +2,22 @@
     use App\Services\Purchasing\LocalizedMoney;
 @endphp
 <div dir="{{ $textDirection }}" lang="{{ $locale }}" class="mx-auto max-w-6xl space-y-6 text-start">
-    <div>
-        @if ($branch)
-            <a href="{{ route('subdomain.operations.dashboard', ['from' => $from, 'to' => $to]) }}" class="text-sm font-medium text-blue-600 hover:underline">{{ __('reports.all_branches') }}</a>
-            <h1 class="mt-1 flex flex-wrap items-center gap-2 text-2xl font-bold text-gray-900">
-                {{ $branch->name }}
-                <span dir="ltr" class="rounded-md bg-gray-100 px-2 py-0.5 font-mono text-sm text-gray-700">{{ $branch->code }}</span>
-            </h1>
-            <p class="mt-1 text-sm text-gray-500">{{ __('reports.branch_subtitle') }}</p>
-        @else
-            <h1 class="text-2xl font-bold text-gray-900">{{ __('reports.title') }}</h1>
-            <p class="mt-1 text-sm text-gray-500">{{ __('reports.subtitle') }}</p>
+    <div class="flex flex-wrap items-start justify-between gap-3">
+        <div>
+            @if ($branch)
+                <a href="{{ route('subdomain.operations.dashboard', ['from' => $from, 'to' => $to]) }}" class="text-sm font-medium text-blue-600 hover:underline">{{ __('reports.all_branches') }}</a>
+                <h1 class="mt-1 flex flex-wrap items-center gap-2 text-2xl font-bold text-gray-900">
+                    {{ $branch->name }}
+                    <span dir="ltr" class="rounded-md bg-gray-100 px-2 py-0.5 font-mono text-sm text-gray-700">{{ $branch->code }}</span>
+                </h1>
+                <p class="mt-1 text-sm text-gray-500">{{ __('reports.branch_subtitle') }}</p>
+            @else
+                <h1 class="text-2xl font-bold text-gray-900">{{ __('reports.title') }}</h1>
+                <p class="mt-1 text-sm text-gray-500">{{ __('reports.subtitle') }}</p>
+            @endif
+        </div>
+        @if ($canViewFinance)
+            <a href="{{ route('subdomain.operations.finance', ['from' => $from, 'to' => $to]) }}" class="inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-medium text-blue-700 ring-1 ring-blue-200 hover:bg-blue-50">{{ __('reports.open_finance') }}</a>
         @endif
     </div>
 

@@ -60,8 +60,42 @@
 
             <section aria-labelledby="expenses-history-title" class="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-200">
                 <h2 id="expenses-history-title" class="border-b border-gray-100 px-4 py-3 text-base font-semibold text-gray-900">{{ __('pos.expenses.history_title') }}</h2>
-                @if ($expenses->isEmpty())
-                    <p class="px-4 py-6 text-center text-sm text-gray-600">{{ __('pos.expenses.no_history') }}</p>
+                <fieldset class="border-b border-gray-100 px-4 py-3">
+                    <legend class="sr-only">{{ __('pos.expenses.filter.legend') }}</legend>
+                    <div class="flex flex-wrap items-end gap-3">
+                        <div>
+                            <label for="expenses-history-from" class="block text-xs font-medium text-gray-700">{{ __('pos.expenses.filter.from') }}</label>
+                            <input id="expenses-history-from" type="date" dir="ltr" wire:model.live="historyFrom" @if ($historyError && $historyError !== 'invalid_category') aria-invalid="true" aria-describedby="expenses-history-error" @endif class="{{ $inputClass }} mt-1">
+                        </div>
+                        <div>
+                            <label for="expenses-history-to" class="block text-xs font-medium text-gray-700">{{ __('pos.expenses.filter.to') }}</label>
+                            <input id="expenses-history-to" type="date" dir="ltr" wire:model.live="historyTo" @if ($historyError && $historyError !== 'invalid_category') aria-invalid="true" aria-describedby="expenses-history-error" @endif class="{{ $inputClass }} mt-1">
+                        </div>
+                        <div>
+                            <label for="expenses-history-category" class="block text-xs font-medium text-gray-700">{{ __('pos.expenses.filter.category') }}</label>
+                            <select id="expenses-history-category" wire:model.live="historyCategory" @if ($historyError === 'invalid_category') aria-invalid="true" aria-describedby="expenses-history-error" @endif class="{{ $inputClass }} mt-1">
+                                <option value="">{{ __('pos.expenses.filter.all_categories') }}</option>
+                                @foreach ($categories as $option)
+                                    <option value="{{ $option->value }}">{{ $option->label() }}</option>
+                                @endforeach
+                            </select>
+                        </div>
+                        @if ($historyFiltered)
+                            <button type="button" wire:click="clearHistoryFilters" class="inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-medium text-blue-700 hover:bg-blue-50">{{ __('pos.expenses.filter.clear') }}</button>
+                        @endif
+                        <span wire:loading wire:target="historyFrom,historyTo,historyCategory,clearHistoryFilters" class="text-sm text-gray-500" role="status">{{ __('pos.expenses.filter.loading') }}</span>
+                    </div>
+                    <p class="mt-2 text-xs text-gray-600">{{ __('pos.expenses.filter.date_note') }}</p>
+                    @if ($historyError)
+                        <p id="expenses-history-error" role="alert" class="mt-2 text-sm font-medium text-red-700">{{ __('pos.expenses.filter.'.$historyError) }}</p>
+                    @elseif ($historySummary)
+                        <p class="mt-2 text-sm text-gray-800" role="status">{!! __('pos.expenses.filter.summary', ['count' => '<bdi dir="ltr">'.$historySummary['count'].'</bdi>', 'total' => '<bdi dir="ltr" class="font-semibold tabular-nums">'.e(LocalizedMoney::format($historySummary['total_minor'])).' TRY</bdi>']) !!}</p>
+                    @endif
+                </fieldset>
+                @if ($historyError)
+                    <p class="px-4 py-6 text-center text-sm text-gray-600">{{ __('pos.expenses.filter.unavailable') }}</p>
+                @elseif ($expenses->isEmpty())
+                    <p class="px-4 py-6 text-center text-sm text-gray-600">{{ $historyFiltered ? __('pos.expenses.filter.no_match') : __('pos.expenses.no_history') }}</p>
                 @else
                     <div class="overflow-x-auto">
                         <table class="w-full text-sm">

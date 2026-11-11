@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Enums\Currency;
 use App\Services\Purchasing\Money;
+use App\Services\Reporting\LocalDateRange;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
@@ -78,46 +79,15 @@ class Sale extends Model
     }
 
     /**
-     * A real Istanbul calendar date in Y-m-d form, or null ("2026-02-30" and "2026-2-3" are refused).
-     */
-    public static function localDate(string $value): ?CarbonImmutable
-    {
-        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) !== 1) {
-            return null;
-        }
-
-        $date = CarbonImmutable::createFromFormat('!Y-m-d', $value, self::DISPLAY_TIMEZONE);
-
-        return $date !== null && $date->format('Y-m-d') === $value ? $date : null;
-    }
-
-    /**
-     * Why an Istanbul date range is unusable ('invalid_date' or 'reversed'), or null when it is valid.
-     */
-    public static function localRangeError(string $from, string $to): ?string
-    {
-        $start = self::localDate($from);
-        $end = self::localDate($to);
-
-        if ($start === null || $end === null) {
-            return 'invalid_date';
-        }
-
-        return $start->greaterThan($end) ? 'reversed' : null;
-    }
-
-    /**
-     * Sales completed on the given Istanbul calendar days, inclusive: from the start of $from up to,
-     * but excluding, the start of the day after $to, both converted to UTC.
+     * Sales completed on the given Istanbul calendar days, inclusive (see LocalDateRange::utcBounds).
      *
      * @param  Builder<Sale>  $query
      */
     public function scopeCompletedOnLocalDays(Builder $query, CarbonImmutable $from, CarbonImmutable $to): void
     {
-        $start = $from->setTimezone(self::DISPLAY_TIMEZONE)->startOfDay();
-        $end = $to->setTimezone(self::DISPLAY_TIMEZONE)->startOfDay()->addDay();
+        [$start, $end] = LocalDateRange::utcBounds($from, $to);
 
-        $query->where('completed_at', '>=', $start->utc())->where('completed_at', '<', $end->utc());
+        $query->where('completed_at', '>=', $start)->where('completed_at', '<', $end);
     }
 
     /**

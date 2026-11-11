@@ -721,6 +721,12 @@ The owner moves their own TRY cash into or out of the drawer from the branch Cas
 - Movements are listed oldest first and paginated, each with its time, direction, signed amount, recorder, and source (sale, customer payment, expense, supplier payment, or owner transfer reason).
 - Corrections of posted movements and approval of discrepancies are not available here; they stay pending until their rules are approved (§18.2).
 
+### 11.9 Discrepancies in Period Reports (decided by Omar 2026-11-11, Phase 8 batch 2)
+
+- A period report assigns a closed session to the Istanbul calendar date of its `closed_at`. A session opened on one day and closed on the next counts only on the closing day.
+- Period discrepancy totals include only each session's stored `closing_difference`, split into overage (positive differences), shortage (negative differences, shown as positive amounts), and net (overage minus shortage).
+- The stored `opening_difference` is not part of the period totals. It is shown separately for each session in the report's session list and on the session page (§11.8).
+
 ---
 
 ## 12. Expense Management
@@ -1053,6 +1059,14 @@ It should provide access to important operational and financial indicators, incl
 Authorized employees must be able to access the operational information required for their store and role.
 
 Store-specific views must not disclose restricted information from the other store.
+
+### 15.2A Finance Overview (decided 2026-11-11, Phase 8 batch 2)
+
+- The owner finance overview has four sections, each shown only for the branches where the owner holds that section's existing permission: expenses (`manage_expenses`), cashbox (`manage_cashbox`), customer debts (`receive_customer_payments`), and supplier balances (`manage_purchases` or `pay_suppliers`, for every accessible branch). The page opens when at least one section is visible.
+- Expenses are reported by the business date entered on each expense (inclusive Istanbul dates), not by when cash left the drawer. Only confirmed expenses count; pending and released cash payouts are not expenses.
+- Closed-session discrepancies follow §11.9. Live cashbox figures are the Cashbox page's own figures; pending deposits and cash intakes do not raise expected or available cash.
+- Supplier balances come from the supplier ledger, reversals included, per currency, cross-checked against open posted invoices. Pending supplier cash payouts are reported separately and do not reduce a balance.
+- Customer debt is original debt less allocations, and the debtor count is the number of customers with a positive balance. Pending cash payments are reported as waiting and do not reduce the debt.
 
 ### 15.3 Reporting Integrity
 

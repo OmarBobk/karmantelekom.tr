@@ -20,6 +20,7 @@ use App\Livewire\Backend\Purchases\PurchaseShow;
 use App\Livewire\Backend\Purchases\PurchasesIndex;
 use App\Livewire\Backend\Purchases\ReceivePurchaseForm;
 use App\Livewire\Backend\Purchases\SupplierAccountPage;
+use App\Livewire\Backend\Reports\FinanceOverview;
 use App\Livewire\Backend\Reports\OperationsDashboard;
 use App\Livewire\Backend\Settings\SettingsComponent;
 use App\Livewire\Backend\Shops\ShopComponent;
@@ -71,6 +72,9 @@ Route::prefix('operations')->group(function () {
         ->middleware(['can:viewOperationsDashboard,'.Store::class, 'can:viewAllSales,store'])
         ->whereNumber('store')
         ->name('operations.dashboard.store');
+    Route::get('finance', FinanceOverview::class)
+        ->middleware('can:viewFinanceOverview,'.Store::class)
+        ->name('operations.finance');
     Route::get('catalog', DefinitionsIndex::class)
         ->middleware('can:viewAny,'.ProductDefinition::class)
         ->name('catalog.definitions');

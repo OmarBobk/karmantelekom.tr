@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace App\Services\Customers;
 
+use App\Enums\CashIntakeSource;
+use App\Models\CashIntake;
 use App\Models\Customer;
 use App\Models\CustomerDebt;
 use App\Models\CustomerPaymentAllocation;
 use App\Models\Store;
+use App\Services\Purchasing\Money;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Facades\DB;
@@ -66,6 +69,61 @@ class CustomerAccount
     public function settled(Store $store): Builder
     {
         return $this->accounts($store)->having('due_amount', '=', 0);
+    }
+
+    /**
+     * Outstanding customer debt and the number of customers owing per store. Allocations are
+     * summed per debt before the join, so a debt with several allocations is counted once.
+     *
+     * @param  list<int>  $storeIds
+     * @return array<int, array{due: int, debtors: int}>
+     */
+    public function balancesByStore(array $storeIds): array
+    {
+        if ($storeIds === []) {
+            return [];
+        }
+
+        $paidPerDebt = CustomerPaymentAllocation::query()
+            ->toBase()
+            ->select('customer_debt_id', DB::raw('sum(amount) as paid'))
+            ->groupBy('customer_debt_id');
+
+        $duePerCustomer = CustomerDebt::query()
+            ->toBase()
+            ->leftJoinSub($paidPerDebt, 'paid', 'paid.customer_debt_id', '=', 'customer_debts.id')
+            ->whereIn('customer_debts.store_id', $storeIds)
+            ->groupBy('customer_debts.store_id', 'customer_debts.customer_id')
+            ->select('customer_debts.store_id', DB::raw('sum(customer_debts.original_amount - coalesce(paid.paid, 0)) as due'));
+
+        return DB::query()
+            ->fromSub($duePerCustomer, 'accounts')
+            ->groupBy('store_id')
+            ->select('store_id', DB::raw('sum(case when due > 0 then due else 0 end) as due'), DB::raw('sum(case when due > 0 then 1 else 0 end) as debtors'))
+            ->get()
+            ->mapWithKeys(fn (object $row): array => [(int) $row->store_id => ['due' => Money::fromDecimal((string) $row->due), 'debtors' => (int) $row->debtors]])
+            ->all();
+    }
+
+    /**
+     * Customer payments taken in cash and waiting at the cashbox, per store. They are reserved
+     * against debts but are not allocated, so they do not reduce the balance yet.
+     *
+     * @param  list<int>  $storeIds
+     * @return array<int, array{count: int, amount: int}>
+     */
+    public function pendingCashPayments(array $storeIds): array
+    {
+        return CashIntake::query()
+            ->whereIn('store_id', $storeIds)
+            ->where('source_type', CashIntakeSource::CUSTOMER_PAYMENT)
+            ->pending()
+            ->toBase()
+            ->selectRaw('store_id, count(*) as intakes, sum(amount) as reserved')
+            ->groupBy('store_id')
+            ->get()
+            ->mapWithKeys(fn (object $row): array => [(int) $row->store_id => ['count' => (int) $row->intakes, 'amount' => Money::fromDecimal((string) $row->reserved)]])
+            ->all();
     }
 
     /**

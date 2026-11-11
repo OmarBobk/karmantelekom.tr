@@ -8,6 +8,7 @@ use App\Enums\Currency;
 use App\Enums\ExpenseCategory;
 use App\Enums\ExpenseMethod;
 use App\Services\Purchasing\Money;
+use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Support\Carbon;
@@ -74,6 +75,59 @@ class Expense extends Model
     public function amountMinor(): int
     {
         return Money::fromDecimal($this->amount);
+    }
+
+    /**
+     * Expenses whose business date falls on the Istanbul dates $from through $to, inclusive. The
+     * business date is the one recorded on the expense, not when it was entered or paid out.
+     *
+     * @param  Builder<Expense>  $query
+     */
+    public function scopeOnBusinessDays(Builder $query, string $from, string $to): void
+    {
+        $query->whereBetween('expense_date', [$from, $to]);
+    }
+
+    /**
+     * Count and total of the expenses in the query, aggregated in SQL.
+     *
+     * @param  Builder<Expense>  $query
+     * @return array{count: int, total_minor: int}
+     */
+    public static function summary(Builder $query): array
+    {
+        $row = $query->toBase()->reorder()->selectRaw('count(*) as expense_count, coalesce(sum(amount), 0) as expense_total')->first();
+
+        return ['count' => (int) $row->expense_count, 'total_minor' => Money::fromDecimal((string) $row->expense_total)];
+    }
+
+    /**
+     * Total per store and category for the business dates, aggregated in SQL. Only confirmed
+     * expenses exist as rows; pending and released cash payouts are not expenses.
+     *
+     * @param  list<int>  $storeIds
+     * @return array<int, array<string, int>> minor units by store id, then category value
+     */
+    public static function totalsByStoreAndCategory(array $storeIds, string $from, string $to): array
+    {
+        if ($storeIds === []) {
+            return [];
+        }
+
+        $totals = [];
+
+        self::query()
+            ->whereIn('store_id', $storeIds)
+            ->onBusinessDays($from, $to)
+            ->toBase()
+            ->selectRaw('store_id, category, sum(amount) as category_total')
+            ->groupBy('store_id', 'category')
+            ->get()
+            ->each(function (object $row) use (&$totals): void {
+                $totals[(int) $row->store_id][(string) $row->category] = Money::fromDecimal((string) $row->category_total);
+            });
+
+        return $totals;
     }
 
     /**
