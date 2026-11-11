@@ -22,6 +22,9 @@ final class Money
 
     public const MAX_LINES = 200;
 
+    /** Whole digits fromDecimal accepts, so sums of many stored amounts still fit a 64-bit integer in minor units. */
+    private const MAX_DECIMAL_WHOLE_DIGITS = 16;
+
     private const ARABIC_DIGITS = ['٠', '١', '٢', '٣', '٤', '٥', '٦', '٧', '٨', '٩', '۰', '۱', '۲', '۳', '۴', '۵', '۶', '۷', '۸', '۹'];
 
     private const LATIN_DIGITS = ['0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9'];
@@ -125,6 +128,33 @@ final class Money
     }
 
     /**
+     * Exact sum of non-negative report figures that may exceed MAX_TOTAL_AMOUNT, refusing only
+     * integer overflow. Not for amounts that are written back to a DECIMAL(15,2) column.
+     *
+     * @param  iterable<int>  $amounts
+     *
+     * @throws InvalidAmountException
+     */
+    public static function sumUncapped(iterable $amounts): int
+    {
+        $total = 0;
+
+        foreach ($amounts as $amount) {
+            if ($amount < 0) {
+                throw new InvalidAmountException(InvalidAmountException::FORMAT);
+            }
+
+            if ($amount > PHP_INT_MAX - $total) {
+                throw new InvalidAmountException(InvalidAmountException::TOO_LARGE);
+            }
+
+            $total += $amount;
+        }
+
+        return $total;
+    }
+
+    /**
      * Read a DECIMAL column value ("8175.00", "-50.00") into minor units.
      */
     public static function fromDecimal(string|int|null $stored): int
@@ -139,6 +169,10 @@ final class Money
 
         if (preg_match('/^(-?)(\d+)(?:\.(\d{1,2}))?$/', trim($stored), $matches) !== 1) {
             throw new InvalidAmountException(InvalidAmountException::FORMAT);
+        }
+
+        if (strlen(ltrim($matches[2], '0')) > self::MAX_DECIMAL_WHOLE_DIGITS) {
+            throw new InvalidAmountException(InvalidAmountException::TOO_LARGE);
         }
 
         $minor = (int) $matches[2] * 100 + (int) str_pad($matches[3] ?? '', 2, '0');

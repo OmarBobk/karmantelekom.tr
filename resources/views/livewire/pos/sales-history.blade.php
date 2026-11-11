@@ -16,18 +16,34 @@
             <input id="pos-history-search" type="search" wire:model="search" maxlength="80" autocomplete="off" placeholder="{{ __('pos.history.search_placeholder') }}" class="mt-1 block min-h-11 w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
         </div>
         <div>
-            <label for="pos-history-date" class="block text-sm font-medium text-gray-800">{{ __('pos.history.date') }}</label>
-            <input id="pos-history-date" type="date" wire:model="date" dir="ltr" class="mt-1 block min-h-11 rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+            <label for="pos-history-from" class="block text-sm font-medium text-gray-800">{{ __('pos.history.from') }}</label>
+            <input id="pos-history-from" type="date" wire:model="from" dir="ltr" @if ($rangeError) aria-invalid="true" aria-describedby="pos-history-range-error" @endif class="mt-1 block min-h-11 rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
         </div>
-        <button type="submit" class="inline-flex min-h-11 items-center rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-700">{{ __('pos.history.apply') }}</button>
-        @if ($search !== '' || $date !== '')
+        <div>
+            <label for="pos-history-to" class="block text-sm font-medium text-gray-800">{{ __('pos.history.to') }}</label>
+            <input id="pos-history-to" type="date" wire:model="to" dir="ltr" @if ($rangeError) aria-invalid="true" aria-describedby="pos-history-range-error" @endif class="mt-1 block min-h-11 rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
+        </div>
+        <button type="submit" wire:loading.attr="disabled" class="inline-flex min-h-11 items-center rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60">{{ __('pos.history.apply') }}</button>
+        @if ($isFiltering || $rangeError)
             <button type="button" wire:click="clearFilters" class="inline-flex min-h-11 items-center rounded-lg px-4 text-sm font-semibold text-gray-700 ring-1 ring-gray-300 hover:bg-gray-50">{{ __('pos.history.clear') }}</button>
+        @endif
+        @if ($rangeError)
+            <p id="pos-history-range-error" role="alert" class="basis-full text-sm font-medium text-red-700">{{ __('pos.history.range_'.$rangeError) }}</p>
         @endif
     </form>
 
+    @if ($summary)
+        <p class="rounded-xl bg-white px-4 py-3 text-sm text-gray-700 shadow-sm ring-1 ring-gray-200" role="status">
+            {{ $isFiltering ? __('pos.history.summary_filtered') : __('pos.history.summary_all') }}
+            <span class="font-semibold text-gray-900">{{ __('pos.history.summary_count') }} <span dir="ltr" class="tabular-nums">{{ $summary['count'] }}</span></span>
+            ·
+            <span class="font-semibold text-gray-900">{{ __('pos.history.summary_total') }} <span dir="ltr" class="tabular-nums">{{ LocalizedMoney::format($summary['total_minor']) }} TRY</span></span>
+        </p>
+    @endif
+
     <div class="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-200" wire:loading.class="opacity-60">
         @if ($sales->isEmpty())
-            <p class="px-4 py-8 text-center text-sm text-gray-600">{{ __('pos.history.empty') }}</p>
+            <p class="px-4 py-8 text-center text-sm text-gray-600">{{ $rangeError ? __('pos.history.range_unavailable') : __('pos.history.empty') }}</p>
         @else
             <ul class="divide-y divide-gray-100">
                 @foreach ($sales as $sale)

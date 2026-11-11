@@ -6,6 +6,7 @@ namespace App\Models;
 
 use App\Enums\Currency;
 use App\Services\Purchasing\Money;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -74,6 +75,89 @@ class Sale extends Model
     public static function formatNumber(Store $store, int $sequence): string
     {
         return sprintf('%s-%06d', $store->code, $sequence);
+    }
+
+    /**
+     * A real Istanbul calendar date in Y-m-d form, or null ("2026-02-30" and "2026-2-3" are refused).
+     */
+    public static function localDate(string $value): ?CarbonImmutable
+    {
+        if (preg_match('/^\d{4}-\d{2}-\d{2}$/', $value) !== 1) {
+            return null;
+        }
+
+        $date = CarbonImmutable::createFromFormat('!Y-m-d', $value, self::DISPLAY_TIMEZONE);
+
+        return $date !== null && $date->format('Y-m-d') === $value ? $date : null;
+    }
+
+    /**
+     * Why an Istanbul date range is unusable ('invalid_date' or 'reversed'), or null when it is valid.
+     */
+    public static function localRangeError(string $from, string $to): ?string
+    {
+        $start = self::localDate($from);
+        $end = self::localDate($to);
+
+        if ($start === null || $end === null) {
+            return 'invalid_date';
+        }
+
+        return $start->greaterThan($end) ? 'reversed' : null;
+    }
+
+    /**
+     * Sales completed on the given Istanbul calendar days, inclusive: from the start of $from up to,
+     * but excluding, the start of the day after $to, both converted to UTC.
+     *
+     * @param  Builder<Sale>  $query
+     */
+    public function scopeCompletedOnLocalDays(Builder $query, CarbonImmutable $from, CarbonImmutable $to): void
+    {
+        $start = $from->setTimezone(self::DISPLAY_TIMEZONE)->startOfDay();
+        $end = $to->setTimezone(self::DISPLAY_TIMEZONE)->startOfDay()->addDay();
+
+        $query->where('completed_at', '>=', $start->utc())->where('completed_at', '<', $end->utc());
+    }
+
+    /**
+     * Count and recorded total of the sales in the query, aggregated in SQL.
+     *
+     * @param  Builder<Sale>  $query
+     * @return array{count: int, total_minor: int}
+     */
+    public static function recordedSummary(Builder $query): array
+    {
+        $row = $query->toBase()->reorder()->selectRaw('count(*) as sale_count, coalesce(sum(total), 0) as recorded_total')->first();
+
+        return ['count' => (int) $row->sale_count, 'total_minor' => Money::fromDecimal((string) $row->recorded_total)];
+    }
+
+    /**
+     * Count and recorded total per store for the Istanbul days, aggregated in SQL. Stores
+     * without sales are absent; callers supply zeros.
+     *
+     * @param  list<int>  $storeIds
+     * @return array<int, array{count: int, total_minor: int}>
+     */
+    public static function recordedTotalsByStore(array $storeIds, CarbonImmutable $from, CarbonImmutable $to): array
+    {
+        if ($storeIds === []) {
+            return [];
+        }
+
+        return self::query()
+            ->whereIn('store_id', $storeIds)
+            ->completedOnLocalDays($from, $to)
+            ->toBase()
+            ->selectRaw('store_id, count(*) as sale_count, sum(total) as recorded_total')
+            ->groupBy('store_id')
+            ->get()
+            ->mapWithKeys(fn (object $row): array => [(int) $row->store_id => [
+                'count' => (int) $row->sale_count,
+                'total_minor' => Money::fromDecimal((string) $row->recorded_total),
+            ]])
+            ->all();
     }
 
     /**

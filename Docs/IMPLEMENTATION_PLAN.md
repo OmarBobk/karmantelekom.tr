@@ -1231,6 +1231,59 @@ Inventory purchases, device costs, operating expenses, refunds, and payments mus
 - Financial totals can be traced back to their source records.
 - Tests verify calculations and access permissions.
 
+### Status
+
+**Batch 1: operations dashboard, sales by branch and date, current inventory** (branch `phase-8-dashboard-sales`; review, merge, and rollout pending):
+
+- **Screens.** `/operations/dashboard` shows every branch the owner can see all sales in. `/operations/dashboard/{store}` shows one branch. Both live in the owner backend and use one Livewire component (`OperationsDashboard`).
+- **Access.** No new permission. The page needs `StorePolicy::viewOperationsDashboard` (the `admin` role with `use_pos`).
+  - A branch appears, or opens, only when `viewAllSales` allows it.
+  - Its inventory card appears only when `viewInventory` allows it, independently of sales.
+  - Every render reauthorizes, and the branch ID is locked.
+  - Employees and salespeople are refused.
+  - Employees keep their own-sales history unchanged, without a summary.
+- **Recorded sales.**
+  - **Source.** Completed `Sale` records only, labeled "recorded sales". A credit sale counts at its full recorded total. Payments, debt collections, and cashbox movements are not included.
+  - **Branch rows.** Counts and `sum(total)` come from SQL, grouped by store, and are converted exactly to kuruş. Branches without sales show zero.
+  - **Owner total.** The sum of the displayed branch rows, computed with `Money::sumUncapped`. It is exact beyond the per-operation cap and refuses integer overflow. `Money::fromDecimal` now refuses values with more than 16 whole digits.
+- **Dates.** One rule, `Sale::scopeCompletedOnLocalDays`, is used by both the dashboard and the sales history. It covers inclusive Istanbul calendar dates, converted to UTC, with an exclusive start of the next day as the upper bound.
+  - The dashboard defaults to today in Istanbul.
+  - Invalid dates and reversed ranges show an error, and no figures are queried.
+- **Sales history.**
+  - **Filters.** `/pos/{store}/sales` now takes `from`/`to`. It still defaults to every date and keeps its search.
+  - **Legacy links.** An old `?date=` link applies only when neither `from` nor `to` is given. A single bound means that one day.
+  - **Summary.** The owner sees a count and recorded total read from the same authorized, filtered query as the list, including the search.
+  - **Paging.** Changing a filter returns to page 1.
+  - **Tracing.** Each dashboard branch row links to this history with the same range.
+- **Inventory.** "Current inventory" shows quantity on hand and available devices, using the same definitions as the inventory picker, with a link to each branch's inventory. It is labeled as current stock and is not affected by the date range.
+- **Verification.** `OperationsDashboardTest` covers:
+  - reconciliation with known amounts, Istanbul edges at 00:00:00 and 23:59:59, credit sales, and an empty branch;
+  - dashboard and history agreement, including search;
+  - a total above `Money::MAX_TOTAL_AMOUNT`;
+  - legacy `?date=` links and precedence;
+  - invalid ranges and pagination reset;
+  - authorization, the locked branch, and separate inventory permission.
+
+  The existing POS history, access, credit, customer, counter, inventory UI, and money tests pass.
+
+**Remaining Phase 8 work:**
+
+- Sales profit and the other cost views (after the costing rules are approved).
+- Low-stock information.
+- Outstanding customer debts and supplier balances.
+- Expenses.
+- Cashbox balances and discrepancies.
+- Used-device cost, repair, and profit reports.
+- Store Network activity.
+- Exports.
+- An audit review screen.
+
+**Open decisions:**
+
+- **Low-stock threshold.** No approved threshold exists, so batch 1 shows no low-stock alert (see the deferred decisions register).
+- **Employee dashboards.** Whether employees get a dashboard, such as their own sales today. Batch 1 is owner-only.
+- **Daily operating reports.** Batch 1 is a first slice of "exact reports required for daily operations", not the final set.
+
 ---
 
 ## 13. Phase 9 — Production Readiness and Rollout
@@ -1331,7 +1384,9 @@ The following decisions do not need to block foundation work, but must be resolv
 | Cross-store sale attribution and financial settlement | Store Network sale completion |
 | Employee incentives for cross-store referrals | Any commission or incentive feature |
 | Online fulfillment branch selection, payment timing, cancellation and hold release | Online order activation against branch stock |
-| Exact reports required for daily operations | Dashboard and reporting phase |
+| Exact reports required for daily operations | Dashboard and reporting phase; Phase 8 batch 1 delivers recorded sales by branch and date plus current stock as a first slice |
+| Low-stock threshold (per product, per branch, or out-of-stock only) and who sets it | Low-stock information on dashboards |
+| Whether employees get a dashboard (for example their own sales today) | Any employee-facing dashboard |
 
 Each decision must have an owner-approved outcome or an explicitly documented deferral before its affected workflow is considered complete.
 
