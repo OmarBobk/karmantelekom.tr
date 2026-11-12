@@ -155,6 +155,29 @@ final class Money
     }
 
     /**
+     * Exact sum of signed report figures (ledger balances), refusing integer overflow in either
+     * direction. Not for amounts that are written back to a DECIMAL(15,2) column.
+     *
+     * @param  iterable<int>  $amounts
+     *
+     * @throws InvalidAmountException
+     */
+    public static function sumSigned(iterable $amounts): int
+    {
+        $total = 0;
+
+        foreach ($amounts as $amount) {
+            if (($amount > 0 && $total > PHP_INT_MAX - $amount) || ($amount < 0 && $total < PHP_INT_MIN - $amount)) {
+                throw new InvalidAmountException(InvalidAmountException::TOO_LARGE);
+            }
+
+            $total += $amount;
+        }
+
+        return $total;
+    }
+
+    /**
      * Read a DECIMAL column value ("8175.00", "-50.00") into minor units.
      */
     public static function fromDecimal(string|int|null $stored): int

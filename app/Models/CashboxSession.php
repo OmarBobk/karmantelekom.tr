@@ -9,6 +9,8 @@ use App\Enums\CashboxTransferKind;
 use App\Enums\CashIntakeStatus;
 use App\Enums\CashMovementDirection;
 use App\Services\Purchasing\Money;
+use App\Services\Reporting\LocalDateRange;
+use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -131,6 +133,50 @@ class CashboxSession extends Model
     public function scopeClosed(Builder $query): void
     {
         $query->where('status', CashboxSessionStatus::CLOSED);
+    }
+
+    /**
+     * Closed sessions whose close falls on the Istanbul dates $from through $to (see LocalDateRange::utcBounds).
+     *
+     * @param  Builder<CashboxSession>  $query
+     */
+    public function scopeClosedOnLocalDays(Builder $query, CarbonImmutable $from, CarbonImmutable $to): void
+    {
+        [$start, $end] = LocalDateRange::utcBounds($from, $to);
+
+        $query->closed()->where('closed_at', '>=', $start)->where('closed_at', '<', $end);
+    }
+
+    /**
+     * Stored closing differences of sessions closed on the Istanbul days, per store, aggregated in
+     * SQL: overages and shortages are summed apart as positive amounts, so the net is exact.
+     * Opening differences are not included.
+     *
+     * @param  list<int>  $storeIds
+     * @return array<int, array{sessions: int, with_difference: int, overage: int, shortage: int}>
+     */
+    public static function closingDifferencesByStore(array $storeIds, CarbonImmutable $from, CarbonImmutable $to): array
+    {
+        if ($storeIds === []) {
+            return [];
+        }
+
+        return self::query()
+            ->whereIn('store_id', $storeIds)
+            ->closedOnLocalDays($from, $to)
+            ->toBase()
+            ->selectRaw('store_id, count(*) as sessions, sum(case when closing_difference <> 0 then 1 else 0 end) as with_difference')
+            ->selectRaw('coalesce(sum(case when closing_difference > 0 then closing_difference else 0 end), 0) as overage')
+            ->selectRaw('coalesce(sum(case when closing_difference < 0 then -closing_difference else 0 end), 0) as shortage')
+            ->groupBy('store_id')
+            ->get()
+            ->mapWithKeys(fn (object $row): array => [(int) $row->store_id => [
+                'sessions' => (int) $row->sessions,
+                'with_difference' => (int) $row->with_difference,
+                'overage' => Money::fromDecimal((string) $row->overage),
+                'shortage' => Money::fromDecimal((string) $row->shortage),
+            ]])
+            ->all();
     }
 
     public function isOpen(): bool

@@ -7,6 +7,7 @@ namespace App\Livewire\Pos;
 use App\Livewire\Pos\Concerns\UsesPosLocale;
 use App\Models\Sale;
 use App\Models\Store;
+use App\Services\Reporting\LocalDateRange;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
@@ -76,7 +77,7 @@ class SalesHistory extends Component
         $store = $this->authorizeHistory();
         $seesAll = auth()->user()->can('viewAllSales', $store);
         [$from, $to] = $this->range();
-        $rangeError = $from === '' ? null : Sale::localRangeError($from, $to);
+        $rangeError = $from === '' ? null : LocalDateRange::error($from, $to);
 
         if ($rangeError !== null) {
             $sales = new EmptyPaginator([], 0, 25);
@@ -148,7 +149,7 @@ class SalesHistory extends Component
                     ->orWhere('sku', $term)
                     ->orWhere('barcode', $term))
                 ->orWhereHas('payments', fn ($payments) => $payments->where('terminal_reference', $term))))
-            ->when($from !== '', fn ($query) => $query->completedOnLocalDays(Sale::localDate($from), Sale::localDate($to)));
+            ->when($from !== '', fn ($query) => $query->completedOnLocalDays(LocalDateRange::date($from), LocalDateRange::date($to)));
     }
 
     /**

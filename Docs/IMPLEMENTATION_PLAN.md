@@ -1233,7 +1233,7 @@ Inventory purchases, device costs, operating expenses, refunds, and payments mus
 
 ### Status
 
-**Batch 1: operations dashboard, sales by branch and date, current inventory** (branch `phase-8-dashboard-sales`; review, merge, and rollout pending):
+**Batch 1: operations dashboard, sales by branch and date, current inventory** (merged through PR #31 as squash `d953118`; Omar accepted the walkthrough; application deployment status is not verified):
 
 - **Screens.** `/operations/dashboard` shows every branch the owner can see all sales in. `/operations/dashboard/{store}` shows one branch. Both live in the owner backend and use one Livewire component (`OperationsDashboard`).
 - **Access.** No new permission. The page needs `StorePolicy::viewOperationsDashboard` (the `admin` role with `use_pos`).
@@ -1266,13 +1266,34 @@ Inventory purchases, device costs, operating expenses, refunds, and payments mus
 
   The existing POS history, access, credit, customer, counter, inventory UI, and money tests pass.
 
+**Batch 2: owner finance overview** (branch `phase-8-finance-overview`; review, merge, and rollout pending):
+
+- **Screen.** `/operations/finance` (`FinanceOverview`) has four sections: expenses, cashbox, supplier balances, and customer debts. It links to and from the operations dashboard, carrying the period.
+- **Access.** No new permission. `StorePolicy::viewFinanceOverview` opens the page when at least one section is visible. `OperationalSupplierPolicy::viewAccounts` (`manage_purchases` or `pay_suppliers`, now also behind `viewAccount`) lets a supplier-only owner without `use_pos` in.
+  - Each section is computed only for branches passing its own gate: `manageExpenses`, `manageCashbox`, `receiveCustomerPayments`, or supplier account access for every accessible branch.
+  - Sections that are not allowed are never queried or passed to the view. The page keeps no section data in component state, and every render reauthorizes.
+- **Dates.** `App\Services\Reporting\LocalDateRange` now holds the batch 1 Istanbul rules (strict dates, range errors, today, UTC bounds) for sales, session closes, and the expense history. `Sale::localDate` and `Sale::localRangeError` were replaced by it.
+  - Expenses filter `expense_date` on inclusive business dates. Session closes use UTC bounds of the Istanbul days.
+  - An invalid range shows an error and suppresses period figures; current sections stay visible and are labeled "Current".
+- **Expenses.** `Expense::totalsByStoreAndCategory` aggregates confirmed expenses in SQL. Pending and released payouts are not expenses. Each branch links to `/pos/{store}/expenses` with the same range.
+  - The expense history gains from/to/category filters (a single bound means that day), a count-and-total summary from the same filtered query, and a page reset when a filter changes. Recording, pending payouts, and pagination are unchanged.
+- **Cashbox.** Live figures per branch come from `CashboxSession::expectedMinor` and `availableForPayoutMinor`, so they match the Cashbox page. Pending expense payouts, supplier payouts, withdrawals, deposits, and intakes are listed with counts and amounts. The three states (untracked, tracked without an open session, open) are shown.
+  - Discrepancies follow spec §11.9: `CashboxSession::closingDifferencesByStore` sums stored closing differences into overage and shortage in SQL; net is overage minus shortage. The paginated session list shows the opening difference separately, marked as outside the totals, and links to each stored snapshot.
+- **Suppliers.** `SupplierAccount` now has one ledger and open-invoice aggregate shared by the account page and the report (`balances`, `allBalances`). `supplierBalances` lists non-zero supplier and currency balances, paginated, with the invoice cross-check per row. `pendingCashPayouts` reports pending supplier cash separately. TRY and USD are never added together; `Money::sumSigned` adds signed ledger figures with an overflow guard.
+- **Customer debts.** `CustomerAccount::balancesByStore` subtracts allocations summed per debt before the join, so a debt with several allocations counts once. The debtor count is customers with a positive balance. Pending cash payments are listed as waiting.
+- **Verification.** `FinanceOverviewTest` covers:
+  - known expense totals, agreement with the filtered expense history, and the exclusion of pending and released payouts;
+  - stored overage, shortage, and net, opening differences kept apart, and Istanbul close-date edges;
+  - live expected and available cash with every kind of pending operation;
+  - supplier TRY/USD separation, a reversed payment, a reversed invoice, and the cross-check mismatch;
+  - one debt with two allocations and a pending cash intake;
+  - per-section permissions, supplier-only entry, refusal for employees and salespeople, and a cross-branch session drill-down;
+  - totals above the operation cap and signed overflow.
+
 **Remaining Phase 8 work:**
 
 - Sales profit and the other cost views (after the costing rules are approved).
 - Low-stock information.
-- Outstanding customer debts and supplier balances.
-- Expenses.
-- Cashbox balances and discrepancies.
 - Used-device cost, repair, and profit reports.
 - Store Network activity.
 - Exports.
@@ -1282,7 +1303,7 @@ Inventory purchases, device costs, operating expenses, refunds, and payments mus
 
 - **Low-stock threshold.** No approved threshold exists, so batch 1 shows no low-stock alert (see the deferred decisions register).
 - **Employee dashboards.** Whether employees get a dashboard, such as their own sales today. Batch 1 is owner-only.
-- **Daily operating reports.** Batch 1 is a first slice of "exact reports required for daily operations", not the final set.
+- **Daily operating reports.** Batches 1 and 2 are slices of "exact reports required for daily operations", not the final set.
 
 ---
 

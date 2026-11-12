@@ -9,6 +9,7 @@ use App\Enums\PurchaseStatus;
 use App\Models\OperationalSupplier;
 use App\Models\Purchase;
 use App\Models\Store;
+use App\Models\SupplierCashPayout;
 use App\Models\SupplierLedgerEntry;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
@@ -38,10 +39,87 @@ class SupplierAccount
      */
     public function balances(OperationalSupplier $supplier, array $storeIds): array
     {
-        $result = [];
+        return $this->aggregate($supplier, $storeIds);
+    }
+
+    /**
+     * The same balances across every supplier: what the stores owe suppliers, per currency.
+     *
+     * @param  list<int>  $storeIds
+     * @return array<string, array{balance: int, open_invoices: int, stores: array<int, array{balance: int, open_invoices: int}>}>
+     */
+    public function allBalances(array $storeIds): array
+    {
+        return $this->aggregate(null, $storeIds);
+    }
+
+    /**
+     * Suppliers with a non-zero ledger balance in the stores, one row per supplier and currency,
+     * with the open-invoice total for the same supplier, currency, and stores.
+     *
+     * @param  list<int>  $storeIds
+     * @return LengthAwarePaginator<int, object{operational_supplier_id: int, name: string, currency: string, balance: string, open_invoices: string}>
+     */
+    public function supplierBalances(array $storeIds, int $perPage = 25, string $pageName = 'page'): LengthAwarePaginator
+    {
+        $openInvoices = Purchase::query()
+            ->selectRaw('coalesce(sum(total - paid_total), 0)')
+            ->whereColumn('purchases.operational_supplier_id', 'balances.operational_supplier_id')
+            ->whereColumn('purchases.currency', 'balances.currency')
+            ->whereIn('purchases.store_id', $storeIds)
+            ->where('purchases.status', PurchaseStatus::POSTED);
+
+        $balances = SupplierLedgerEntry::query()
+            ->whereIn('store_id', $storeIds)
+            ->groupBy('operational_supplier_id', 'currency')
+            ->havingRaw('sum(amount) <> 0')
+            ->select('operational_supplier_id', 'currency', DB::raw('sum(amount) as balance'))
+            ->toBase();
+
+        return DB::query()
+            ->fromSub($balances, 'balances')
+            ->join('operational_suppliers', 'operational_suppliers.id', '=', 'balances.operational_supplier_id')
+            ->select('balances.operational_supplier_id', 'operational_suppliers.name', 'balances.currency', 'balances.balance')
+            ->selectSub($openInvoices->toBase(), 'open_invoices')
+            ->orderBy('operational_suppliers.name')
+            ->orderBy('balances.operational_supplier_id')
+            ->orderBy('balances.currency')
+            ->paginate($perPage, pageName: $pageName);
+    }
+
+    /**
+     * TRY cash reserved by pending supplier cash payouts per store. Nothing is paid until a
+     * payout is confirmed, so these never reduce a balance.
+     *
+     * @param  list<int>  $storeIds
+     * @return array<int, array{count: int, amount: int}>
+     */
+    public function pendingCashPayouts(array $storeIds): array
+    {
+        return SupplierCashPayout::query()
+            ->whereIn('store_id', $storeIds)
+            ->pending()
+            ->toBase()
+            ->selectRaw('store_id, count(*) as payouts, sum(amount) as reserved')
+            ->groupBy('store_id')
+            ->get()
+            ->mapWithKeys(fn (object $row): array => [(int) $row->store_id => ['count' => (int) $row->payouts, 'amount' => Money::fromDecimal((string) $row->reserved)]])
+            ->all();
+    }
+
+    /**
+     * Ledger balance (append-only entries, reversals included) and open-invoice total per currency
+     * and store, for one supplier or all of them.
+     *
+     * @param  list<int>  $storeIds
+     * @return array<string, array{balance: int, open_invoices: int, stores: array<int, array{balance: int, open_invoices: int}>}>
+     */
+    private function aggregate(?OperationalSupplier $supplier, array $storeIds): array
+    {
+        $stores = [];
 
         $ledger = SupplierLedgerEntry::query()
-            ->where('operational_supplier_id', $supplier->id)
+            ->when($supplier, fn ($query) => $query->where('operational_supplier_id', $supplier->id))
             ->whereIn('store_id', $storeIds)
             ->groupBy('currency', 'store_id')
             ->select('currency', 'store_id', DB::raw('sum(amount) as balance'))
@@ -49,13 +127,11 @@ class SupplierAccount
             ->get();
 
         foreach ($ledger as $row) {
-            $minor = Money::fromDecimal((string) $row->balance);
-            $result[$row->currency]['balance'] = ($result[$row->currency]['balance'] ?? 0) + $minor;
-            $result[$row->currency]['stores'][(int) $row->store_id]['balance'] = $minor;
+            $stores[$row->currency][(int) $row->store_id]['balance'] = Money::fromDecimal((string) $row->balance);
         }
 
         $open = Purchase::query()
-            ->where('operational_supplier_id', $supplier->id)
+            ->when($supplier, fn ($query) => $query->where('operational_supplier_id', $supplier->id))
             ->whereIn('store_id', $storeIds)
             ->where('status', PurchaseStatus::POSTED)
             ->groupBy('currency', 'store_id')
@@ -64,20 +140,20 @@ class SupplierAccount
             ->get();
 
         foreach ($open as $row) {
-            $minor = Money::fromDecimal((string) $row->outstanding);
-            $result[$row->currency]['open_invoices'] = ($result[$row->currency]['open_invoices'] ?? 0) + $minor;
-            $result[$row->currency]['stores'][(int) $row->store_id]['open_invoices'] = $minor;
+            $stores[$row->currency][(int) $row->store_id]['open_invoices'] = Money::fromDecimal((string) $row->outstanding);
         }
 
-        foreach ($result as $currency => $totals) {
-            $result[$currency]['balance'] ??= 0;
-            $result[$currency]['open_invoices'] ??= 0;
+        $result = [];
 
-            foreach ($totals['stores'] ?? [] as $storeId => $store) {
-                $result[$currency]['stores'][$storeId] = ['balance' => $store['balance'] ?? 0, 'open_invoices' => $store['open_invoices'] ?? 0];
-            }
+        foreach ($stores as $currency => $byStore) {
+            $byStore = array_map(fn (array $store): array => ['balance' => $store['balance'] ?? 0, 'open_invoices' => $store['open_invoices'] ?? 0], $byStore);
+            ksort($byStore);
 
-            $result[$currency]['stores'] ??= [];
+            $result[$currency] = [
+                'balance' => Money::sumSigned(array_column($byStore, 'balance')),
+                'open_invoices' => Money::sumSigned(array_column($byStore, 'open_invoices')),
+                'stores' => $byStore,
+            ];
         }
 
         ksort($result);

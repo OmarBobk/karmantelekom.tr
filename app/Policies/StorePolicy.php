@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Policies;
 
+use App\Models\OperationalSupplier;
 use App\Models\Store;
 use App\Models\User;
 use App\Policies\Concerns\RequiresOwnerPermission;
@@ -132,6 +133,21 @@ class StorePolicy
     public function viewOperationsDashboard(User $user): bool
     {
         return $this->ownerHas($user, 'use_pos');
+    }
+
+    /**
+     * Determine whether the user can open the finance overview (owner only): at least one of its
+     * sections must be visible. Each section is still checked on its own, per branch.
+     */
+    public function viewFinanceOverview(User $user): bool
+    {
+        if ($user->can('viewAccounts', OperationalSupplier::class)) {
+            return true;
+        }
+
+        return Store::query()->accessibleTo($user)->get()->contains(fn (Store $store): bool => $this->manageExpenses($user, $store)
+            || $this->manageCashbox($user, $store)
+            || $this->receiveCustomerPayments($user, $store));
     }
 
     /**

@@ -32,6 +32,14 @@ class OperationalSupplierPolicy
      */
     public function viewAccount(User $user, OperationalSupplier $operationalSupplier): bool
     {
+        return $this->viewAccounts($user);
+    }
+
+    /**
+     * View supplier balances across suppliers, limited to stores the user can access.
+     */
+    public function viewAccounts(User $user): bool
+    {
         return $this->ownerHas($user, 'manage_purchases') || $this->ownerHas($user, 'pay_suppliers');
     }
 
