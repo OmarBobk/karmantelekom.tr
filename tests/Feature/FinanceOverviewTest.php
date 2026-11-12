@@ -101,6 +101,35 @@ class FinanceOverviewTest extends TestCase
     }
 
     #[Test]
+    public function each_branch_category_amount_links_to_the_expense_history_filtered_to_that_category(): void
+    {
+        $this->recordScenario();
+        $this->travelTo(CarbonImmutable::parse('2026-11-10 12:00:00', 'UTC'));
+        $this->expense($this->store, null, 'card', 'marketing', '75', '2026-11-10', 'Flyers');
+        $this->travelBack();
+
+        $report = $this->report();
+        $kt01 = collect($report->viewData('expenses')['rows'])->firstWhere('store.code', 'KT01');
+        $this->assertEquals([['supplies' => 20_000, 'marketing' => 7_500], 27_500], [$kt01['categories'], $kt01['total']]);
+
+        $report
+            ->assertSee(route('pos.expenses', [$this->store, ...self::DAY, 'category' => 'supplies']))
+            ->assertSee(route('pos.expenses', [$this->store, ...self::DAY, 'category' => 'marketing']))
+            ->assertSee(route('pos.expenses', [$this->store, ...self::DAY]))
+            ->assertDontSee(route('pos.expenses', [$this->second, ...self::DAY, 'category' => 'supplies']))
+            ->assertSee('View the Supplies expenses of KT01 for this period');
+
+        foreach (['supplies' => 20_000, 'marketing' => 7_500] as $category => $figure) {
+            $history = Livewire::actingAs($this->owner)
+                ->withQueryParams([...self::DAY, 'category' => $category])
+                ->test(ExpensesPage::class, ['store' => $this->store]);
+
+            $this->assertSame(['count' => 1, 'total_minor' => $figure], $history->viewData('historySummary'));
+            $this->assertSame($kt01['categories'][$category], $history->viewData('historySummary')['total_minor']);
+        }
+    }
+
+    #[Test]
     public function closed_session_differences_use_stored_closing_differences_on_istanbul_close_dates_only(): void
     {
         $sessions = $this->recordScenario();

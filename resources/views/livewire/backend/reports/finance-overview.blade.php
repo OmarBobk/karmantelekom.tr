@@ -80,7 +80,13 @@
                                 <tr wire:key="finance-expenses-{{ $row['store']->id }}">
                                     <th scope="row" class="px-4 py-3 text-start font-medium text-gray-900">{{ $row['store']->name }} <span dir="ltr" class="ms-1 font-mono text-xs text-gray-500">{{ $row['store']->code }}</span></th>
                                     @foreach ($expenses['categories'] as $category)
-                                        <td dir="ltr" class="{{ $money }}">{{ LocalizedMoney::format($row['categories'][$category->value] ?? 0) }}</td>
+                                        <td dir="ltr" class="{{ $money }}">
+                                            @isset($row['categories'][$category->value])
+                                                <a href="{{ route('pos.expenses', [$row['store'], 'from' => $from, 'to' => $to, 'category' => $category->value]) }}" aria-label="{{ __('reports.finance.expenses.category_label', ['category' => $category->label(), 'branch' => $row['store']->code]) }}" class="{{ $link }} -me-3">{{ LocalizedMoney::format($row['categories'][$category->value]) }}</a>
+                                            @else
+                                                {{ LocalizedMoney::format(0) }}
+                                            @endisset
+                                        </td>
                                     @endforeach
                                     <td class="{{ $money }} font-semibold"><span dir="ltr">{{ LocalizedMoney::format($row['total']) }} TRY</span></td>
                                     <td class="px-4 py-3 text-end">

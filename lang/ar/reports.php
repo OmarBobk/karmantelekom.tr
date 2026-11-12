@@ -63,6 +63,7 @@ return [
             'empty' => 'لا توجد مصاريف في هذه الفترة.',
             'view' => 'عرض المصاريف',
             'view_label' => 'عرض مصاريف :branch لهذه الفترة',
+            'category_label' => 'عرض مصاريف فئة :category في :branch لهذه الفترة',
         ],
 
         'cashbox' => [

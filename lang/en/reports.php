@@ -63,6 +63,7 @@ return [
             'empty' => 'No expenses in this period.',
             'view' => 'View expenses',
             'view_label' => 'View the expenses of :branch for this period',
+            'category_label' => 'View the :category expenses of :branch for this period',
         ],
 
         'cashbox' => [
