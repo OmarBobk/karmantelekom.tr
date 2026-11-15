@@ -82,6 +82,10 @@ return [
         'sale' => 'البيع',
         'rejection_reason' => 'سبب الرفض:',
         'cancellation_reason' => 'سبب الإلغاء:',
+        'filtered_state' => 'عرض الحجوزات في الحالة: :state',
+        'filtered_event' => 'عرض الحجوزات لحدث الفترة: :event',
+        'filter_error' => 'تصفية التقرير غير صالحة. امسحها لعرض القائمة كاملة.',
+        'clear_filters' => 'مسح التصفية',
     ],
 
     'reservation' => [

@@ -6,6 +6,8 @@ namespace App\Models;
 
 use App\Actions\Storefront\BranchOrderHolds;
 use App\Enums\ReservationStatus;
+use App\Services\Reporting\LocalDateRange;
+use Carbon\CarbonImmutable;
 use Carbon\CarbonInterface;
 use Database\Factories\NetworkReservationFactory;
 use Illuminate\Database\Eloquent\Builder as EloquentBuilder;
@@ -14,6 +16,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Query\Builder as QueryBuilder;
 use Illuminate\Support\Carbon;
+use InvalidArgumentException;
 
 /**
  * One branch's request to hold another branch's shared device, and its fulfillment.
@@ -62,6 +65,17 @@ class NetworkReservation extends Model
     public const MORPH_ALIAS = 'network_reservation';
 
     public const MAX_NOTE_LENGTH = 500;
+
+    /** Displayed states from displayState(), including final stored statuses. */
+    public const DISPLAY_STATES = [
+        'pending', 'approved', 'payment_started', 'in_transit', 'received',
+        'rejected', 'cancelled', 'expired', 'fulfilled',
+    ];
+
+    /** Period activity figures keyed by the timestamp that defines them. */
+    public const PERIOD_EVENTS = [
+        'requested', 'approved', 'rejected', 'dispatched', 'received', 'cancelled', 'expired', 'fulfilled',
+    ];
 
     protected $fillable = [
         'network_listing_id', 'listing_revision', 'inventory_unit_id', 'product_definition_id',
@@ -163,6 +177,8 @@ class NetworkReservation extends Model
 
     /**
      * Status as an operator sees it, with read-time expiry and transit applied.
+     *
+     * Precedence: transit, payment claim, active approved/received, expiry, then the stored status.
      */
     public function displayState(?CarbonInterface $at = null): string
     {
@@ -179,6 +195,90 @@ class NetworkReservation extends Model
         }
 
         return $this->status->value;
+    }
+
+    /**
+     * Rows whose displayState($at) equals $state. Keep in lockstep with displayState().
+     *
+     * @param  EloquentBuilder<NetworkReservation>  $query
+     * @return EloquentBuilder<NetworkReservation>
+     */
+    public function scopeInDisplayState(EloquentBuilder $query, string $state, ?CarbonInterface $at = null): EloquentBuilder
+    {
+        if (! in_array($state, self::DISPLAY_STATES, true)) {
+            throw new InvalidArgumentException("Unknown reservation display state [{$state}].");
+        }
+
+        $at ??= now();
+        $approved = ReservationStatus::APPROVED->value;
+
+        return match ($state) {
+            'pending' => $query->where('status', ReservationStatus::PENDING),
+            'rejected' => $query->where('status', ReservationStatus::REJECTED),
+            'cancelled' => $query->where('status', ReservationStatus::CANCELLED),
+            'fulfilled' => $query->where('status', ReservationStatus::FULFILLED),
+            'in_transit' => $query->where('status', $approved)->whereNotNull('dispatched_at')->whereNull('received_at'),
+            'payment_started' => $query->where('status', $approved)
+                ->whereNotNull('claimed_attempt_id')
+                ->where(fn (EloquentBuilder $row) => $row->whereNull('dispatched_at')->orWhereNotNull('received_at')),
+            'approved' => $query->where('status', $approved)
+                ->whereNull('claimed_attempt_id')
+                ->whereNull('dispatched_at')
+                ->where(fn (EloquentBuilder $row) => $row->whereNull('expires_at')->orWhere('expires_at', '>', $at)),
+            'received' => $query->where('status', $approved)
+                ->whereNull('claimed_attempt_id')
+                ->whereNotNull('received_at')
+                ->where(fn (EloquentBuilder $row) => $row->whereNull('expires_at')->orWhere('expires_at', '>', $at)),
+            'expired' => $query->where(fn (EloquentBuilder $row) => $row
+                ->where('status', ReservationStatus::EXPIRED)
+                ->orWhere(fn (EloquentBuilder $lapsed) => $lapsed
+                    ->where('status', $approved)
+                    ->whereNull('claimed_attempt_id')
+                    ->whereNotNull('expires_at')
+                    ->where('expires_at', '<=', $at)
+                    ->where(fn (EloquentBuilder $held) => $held->whereNull('dispatched_at')->orWhereNotNull('received_at')))),
+        };
+    }
+
+    /**
+     * Period activity for one event, using that event's timestamp within the Istanbul day bounds.
+     * Expiry uses expires_at and the current eligibility rules; a later claim release can change a past period.
+     *
+     * @param  EloquentBuilder<NetworkReservation>  $query
+     * @return EloquentBuilder<NetworkReservation>
+     */
+    public function scopeForPeriodEvent(
+        EloquentBuilder $query,
+        string $event,
+        CarbonImmutable $from,
+        CarbonImmutable $to,
+        ?CarbonInterface $asOf = null,
+    ): EloquentBuilder {
+        if (! in_array($event, self::PERIOD_EVENTS, true)) {
+            throw new InvalidArgumentException("Unknown reservation period event [{$event}].");
+        }
+
+        [$start, $end] = LocalDateRange::utcBounds($from, $to);
+        $asOf ??= now();
+        $approved = ReservationStatus::APPROVED->value;
+
+        return match ($event) {
+            'requested' => $query->where('requested_at', '>=', $start)->where('requested_at', '<', $end),
+            'approved' => $query->where('decided_at', '>=', $start)->where('decided_at', '<', $end)->whereNotNull('expires_at'),
+            'rejected' => $query->where('decided_at', '>=', $start)->where('decided_at', '<', $end)->where('status', ReservationStatus::REJECTED),
+            'dispatched' => $query->where('dispatched_at', '>=', $start)->where('dispatched_at', '<', $end),
+            'received' => $query->where('received_at', '>=', $start)->where('received_at', '<', $end),
+            'cancelled' => $query->where('cancelled_at', '>=', $start)->where('cancelled_at', '<', $end),
+            'fulfilled' => $query->where('fulfilled_at', '>=', $start)->where('fulfilled_at', '<', $end),
+            'expired' => $query->where('expires_at', '>=', $start)->where('expires_at', '<', $end)
+                ->where('expires_at', '<=', $asOf)
+                ->where(fn (EloquentBuilder $row) => $row
+                    ->where('status', ReservationStatus::EXPIRED)
+                    ->orWhere(fn (EloquentBuilder $lapsed) => $lapsed
+                        ->where('status', $approved)
+                        ->whereNull('claimed_attempt_id')
+                        ->where(fn (EloquentBuilder $held) => $held->whereNull('dispatched_at')->orWhereNotNull('received_at')))),
+        };
     }
 
     /**

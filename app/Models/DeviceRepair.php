@@ -102,6 +102,14 @@ class DeviceRepair extends Model
     }
 
     /**
+     * @return BelongsTo<Store, $this>
+     */
+    public function store(): BelongsTo
+    {
+        return $this->belongsTo(Store::class);
+    }
+
+    /**
      * @return HasMany<DeviceCostEntry, $this>
      */
     public function costEntries(): HasMany

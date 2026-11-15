@@ -18,9 +18,17 @@
             <h1 class="text-2xl font-bold text-gray-900">{{ __('reports.finance.title') }}</h1>
             <p class="mt-1 text-sm text-gray-500">{{ __('reports.finance.subtitle') }}</p>
         </div>
-        @if ($canViewDashboard)
-            <a href="{{ route('subdomain.operations.dashboard', ['from' => $from, 'to' => $to]) }}" class="{{ $link }} ring-1 ring-blue-200">{{ __('reports.finance.open_dashboard') }}</a>
-        @endif
+        <div class="flex flex-wrap gap-2">
+            @if ($canViewDashboard)
+                <a href="{{ route('subdomain.operations.dashboard', ['from' => $from, 'to' => $to]) }}" class="{{ $link }} ring-1 ring-blue-200">{{ __('reports.finance.open_dashboard') }}</a>
+            @endif
+            @if ($canViewReview)
+                <a href="{{ route('subdomain.operations.review', ['from' => $from, 'to' => $to]) }}" class="{{ $link }} ring-1 ring-blue-200">{{ __('reports.review.navigation') }}</a>
+            @endif
+            @if ($canViewAudit)
+                <a href="{{ route('subdomain.operations.audit', ['from' => $from, 'to' => $to]) }}" class="{{ $link }} ring-1 ring-blue-200">{{ __('reports.audit.navigation') }}</a>
+            @endif
+        </div>
     </div>
 
     @if ($expenses || $cashbox)

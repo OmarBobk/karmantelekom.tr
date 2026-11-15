@@ -87,6 +87,8 @@ class FinanceOverview extends Component
             'suppliers' => $user->can('viewAccounts', OperationalSupplier::class) ? $this->suppliers($stores) : null,
             'debts' => $this->debts($this->storesWhere($stores, $user, 'receiveCustomerPayments')),
             'canViewDashboard' => $user->can('viewOperationsDashboard', Store::class),
+            'canViewReview' => $user->can('viewOperationalReview', Store::class),
+            'canViewAudit' => $user->can('viewAuditLog', Store::class),
             ...$this->localeViewData(),
         ])->title(__('reports.finance.title'));
     }

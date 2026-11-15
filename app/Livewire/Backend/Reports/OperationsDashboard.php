@@ -91,6 +91,8 @@ class OperationsDashboard extends Component
             'ownerTotalMinor' => Money::sumUncapped($rows->pluck('total_minor')),
             'inventory' => $this->inventory($stores->filter(fn (Store $store): bool => $user->can('viewInventory', $store))),
             'canViewFinance' => $user->can('viewFinanceOverview', Store::class),
+            'canViewReview' => $user->can('viewOperationalReview', Store::class),
+            'canViewAudit' => $user->can('viewAuditLog', Store::class),
             ...$this->localeViewData(),
         ])->title($this->storeId === null
             ? __('reports.title')

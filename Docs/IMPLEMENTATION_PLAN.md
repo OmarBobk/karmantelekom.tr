@@ -1266,7 +1266,7 @@ Inventory purchases, device costs, operating expenses, refunds, and payments mus
 
   The existing POS history, access, credit, customer, counter, inventory UI, and money tests pass.
 
-**Batch 2: owner finance overview** (branch `phase-8-finance-overview`; review, merge, and rollout pending):
+**Batch 2: owner finance overview** (merged through PR #32 as squash `4092951`; Omar accepted the walkthrough; application deployment and migration application status are not verified):
 
 - **Screen.** `/operations/finance` (`FinanceOverview`) has four sections: expenses, cashbox, supplier balances, and customer debts. It links to and from the operations dashboard, carrying the period.
 - **Access.** No new permission. `StorePolicy::viewFinanceOverview` opens the page when at least one section is visible. `OperationalSupplierPolicy::viewAccounts` (`manage_purchases` or `pay_suppliers`, now also behind `viewAccount`) lets a supplier-only owner without `use_pos` in.
@@ -1290,20 +1290,41 @@ Inventory purchases, device costs, operating expenses, refunds, and payments mus
   - per-section permissions, supplier-only entry, refusal for employees and salespeople, and a cross-branch session drill-down;
   - totals above the operation cap and signed overflow.
 
+**Batch 3: operational review and recorded operational events** (branch `phase-8-operational-review`; review, manual acceptance, merge, and deployment pending):
+
+- **Scope.** One PR: `/operations/review` (owner operational review), `/operations/audit` (recorded operational events), and the minimal filters/navigation needed for authorized drill-down. No migration, new permission, dependency, write-path change, expiry logging, profit calculation, low-stock feature, or CSV export.
+- **Approved decisions.**
+  - **C1.** Recorded device costs for `manageDeviceCosts` holders, per currency, with unknown counts. Labeled "Recorded costs" — not valuation, cost basis, or profit.
+  - **A1.** Reuse existing per-area permissions plus an explicit owner-only page guard.
+  - **A2.** Audit rows show curated localized summaries and authorized source links only. No financial amounts, terminal/void references, discount limits, minimum prices, free-text notes, or raw description/properties.
+  - **N1.** Reservation-linked sales: counts and authorized sale links only; no branch revenue attribution.
+  - **Expiry.** Period and current expiry use `expires_at` with the eligibility rules below. Figures are calculated from current records and may change for a past period after a payment claim is resolved.
+- **Screen — review.** `OperationalReview` reuses FinanceOverview's date UX (`LocalDateRange`, Istanbul today default, invalid ranges suppress period queries while current figures stay labeled). Reauthorizes every render. Computed section data is view-only. Entry requires at least one authorized section (`manageReservations` or `viewInventory` on an accessible branch).
+  - **Store Network.** Incoming by `owning_store_id`, outgoing by `requesting_store_id`; owner totals from incoming only. `cancelled_store_id` is a performer detail, not a grouping key. Shared scopes `inDisplayState` / `forPeriodEvent` power the report and reservation-list filters. One `as of` instant per request. `displayState()` API and write paths unchanged. Period transition counts are not mutually exclusive. Counts drill down to authorized filtered lists; fulfilled reservations offer authorized sale links.
+  - **Devices and repairs.** Reading follows `viewInventory`. Current unit counts by branch for available, inspection, in_repair, review, in_transit (transit stays on the sending branch). Open and period-closed repairs use distinct paginators. Cost queries run only for `manageDeviceCosts` branches; TRY/USD stay separate; unknown stays unknown; acquisition and additional costs stay distinguishable; reversed entries are excluded.
+- **Screen — audit.** Title "Recorded operational events". Owner-only (`viewAuditLog`) plus per-event area/branch gates inside the query before pagination. Explicit `OperationalAuditCatalog` allowlist — no wildcard permission fallback. Branch events need valid store attribution; only recognized global events use a global/any-authorized-branch gate. Missing or malformed `store_id` never broadens access. Legacy `/activities` is unchanged and remains a separate scope.
+  - Filters: Istanbul `created_at` range, branch, area, event, actor; 25 rows newest by id; filter changes reset paging; choices never expose unauthorized options.
+  - Display: Istanbul time, actor or recognized system actor, branch or explicitly global, area, curated summary, authorized source link. Checkout attempts without a source page stay plain text. Partial-log copy links to authoritative history screens elsewhere.
+- **Drill-down and navigation.** `NetworkReservations` gains URL `state` / `event` / from-to filters via the shared scopes. `ProductInventory` exposes `units` in the URL. `StoreInventory` adds a validated units status filter carried into product links. Authorized nav links connect dashboard, finance, review, and audit, carrying the date range where relevant.
+- **Verification.** `OperationalReviewTest` and `AuditLogTest` cover display-state/scope agreement (precedence and expiry edges), period timestamps and Istanbul bounds, unstored expiry and released claims, incoming/outgoing attribution and cancellation performers, report-to-list agreement, inventory filter/count agreement, repair/device costs (currencies, unknowns, reversals, no-cost repairs), cost permission gates, owner-only entry and section gates, audit allowlist/attribution/sensitive-payload exclusion/filters/pagination/actor-vs-system. Related reservation, finance, and dashboard tests were rerun after final edits.
+- **Material limitations (no migration in this batch).**
+  - On MySQL without `explicit_defaults_for_timestamp`, `network_reservations.requested_at` is the first non-null timestamp column and receives `ON UPDATE CURRENT_TIMESTAMP`. Later row updates rewrite `requested_at`, so period "requested" counts can disagree with the true request moment until a forward migration removes that auto-update. Tests restore freeze-time `requested_at` after mutations when asserting that figure.
+  - Audit list query: allowlisted `log_name` plus a large OR of `(log_name, event, JSON properties.store_id)` predicates, ordered by `id` desc. A representative `EXPLAIN` on the application activity table used the PRIMARY key with `Using where` (tiny row count in that database). No supporting index was added under this scope; pagination alone does not establish performance once the activity log grows.
+
 **Remaining Phase 8 work:**
 
-- Sales profit and the other cost views (after the costing rules are approved).
-- Low-stock information.
-- Used-device cost, repair, and profit reports.
-- Store Network activity.
-- Exports.
-- An audit review screen.
+- Sales profit and approved costing / valuation rules.
+- Low-stock threshold and alerts.
+- Broader used-device profit reporting beyond recorded costs.
+- CSV / export capabilities.
+- Forward migration to stop MySQL rewriting `network_reservations.requested_at` on update (see batch 3 limitation).
 
 **Open decisions:**
 
-- **Low-stock threshold.** No approved threshold exists, so batch 1 shows no low-stock alert (see the deferred decisions register).
-- **Employee dashboards.** Whether employees get a dashboard, such as their own sales today. Batch 1 is owner-only.
-- **Daily operating reports.** Batches 1 and 2 are slices of "exact reports required for daily operations", not the final set.
+- **Low-stock threshold.** No approved threshold exists, so batches 1–3 show no low-stock alert (see the deferred decisions register).
+- **Employee dashboards.** Whether employees get a dashboard, such as their own sales today. Batches 1–3 are owner-only for these overview screens.
+- **Daily operating reports.** Batches 1–3 are slices of "exact reports required for daily operations", not the final set.
+- **Profit / cost basis / CSV.** Deferred; recorded costs in batch 3 are not valuation or profit.
 
 ---
 

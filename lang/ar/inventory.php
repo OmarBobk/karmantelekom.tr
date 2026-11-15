@@ -133,6 +133,16 @@ return [
         'empty_body' => 'ابحث عن منتج أعلاه وسجّل رصيده الافتتاحي.',
         'no_matches_title' => 'لا توجد منتجات مطابقة',
         'no_matches_body' => 'جرّب كلمة بحث أخرى.',
+        'units_filter' => 'عرض المنتجات ذات أجهزة في الحالة: :status',
+        'clear_units_filter' => 'مسح تصفية الحالة',
+        'units_filters' => [
+            'available' => 'متاح',
+            'in_service' => 'قيد الخدمة',
+            'review' => 'قيد المراجعة',
+            'in_transit' => 'في الطريق',
+            'removed' => 'مُزال',
+            'sold' => 'مباع',
+        ],
     ],
 
     'product' => [

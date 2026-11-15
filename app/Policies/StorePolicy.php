@@ -8,6 +8,7 @@ use App\Models\OperationalSupplier;
 use App\Models\Store;
 use App\Models\User;
 use App\Policies\Concerns\RequiresOwnerPermission;
+use App\Services\Reporting\OperationalAuditCatalog;
 use Illuminate\Auth\Access\HandlesAuthorization;
 
 class StorePolicy
@@ -148,6 +149,26 @@ class StorePolicy
         return Store::query()->accessibleTo($user)->get()->contains(fn (Store $store): bool => $this->manageExpenses($user, $store)
             || $this->manageCashbox($user, $store)
             || $this->receiveCustomerPayments($user, $store));
+    }
+
+    /**
+     * Determine whether the user can open the operational review (owner only): Store Network or
+     * devices and repairs for at least one accessible branch. Each section is still gated alone.
+     */
+    public function viewOperationalReview(User $user): bool
+    {
+        return Store::query()->accessibleTo($user)->get()->contains(
+            fn (Store $store): bool => $this->manageReservations($user, $store) || $this->viewInventory($user, $store)
+        );
+    }
+
+    /**
+     * Determine whether the user can open the recorded operational events page (owner only).
+     * Area and branch gates still apply inside the query.
+     */
+    public function viewAuditLog(User $user): bool
+    {
+        return $user->hasRole('admin') && OperationalAuditCatalog::userCanAccessAny($user);
     }
 
     /**

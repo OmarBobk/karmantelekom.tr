@@ -82,6 +82,10 @@ return [
         'sale' => 'Sale',
         'rejection_reason' => 'Rejection reason:',
         'cancellation_reason' => 'Cancellation reason:',
+        'filtered_state' => 'Showing reservations in state: :state',
+        'filtered_event' => 'Showing reservations for period event: :event',
+        'filter_error' => 'The report filters are invalid. Clear them to see the full list.',
+        'clear_filters' => 'Clear filters',
     ],
 
     'reservation' => [

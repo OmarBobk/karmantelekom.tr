@@ -36,6 +36,21 @@
         <p role="alert" class="rounded-lg bg-red-50 px-4 py-3 text-sm font-medium text-red-800 ring-1 ring-red-200">{{ $message }}</p>
     @enderror
 
+    @if ($hasReportFilters)
+        <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-blue-50 px-4 py-3 text-sm text-blue-950 ring-1 ring-blue-200">
+            <p>
+                @if ($filterError)
+                    {{ __('network.reservations.filter_error') }}
+                @elseif ($state !== '')
+                    {{ __('network.reservations.filtered_state', ['state' => __('network.reservation_states.'.$state)]) }}
+                @else
+                    {{ __('network.reservations.filtered_event', ['event' => __('reports.review.network.events.'.$event)]) }}
+                @endif
+            </p>
+            <button type="button" wire:click="clearReportFilters" class="inline-flex min-h-11 items-center rounded-lg px-3 font-medium text-blue-800 hover:bg-blue-100">{{ __('network.reservations.clear_filters') }}</button>
+        </div>
+    @endif
+
     <div class="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-200" wire:loading.class="opacity-60" data-testid="network-reservations">
         @if ($reservations->isEmpty())
             <p class="px-4 py-8 text-center text-sm text-gray-600">{{ $incoming ? __('network.reservations.empty_incoming') : __('network.reservations.empty_outgoing') }}</p>
@@ -76,7 +91,16 @@
                                 <div><dt class="inline">{{ __('network.reservations.received_at') }}</dt> <dd class="inline">{{ $reservation->received_at->format('d.m.Y H:i') }}</dd></div>
                             @endif
                             @if ($reservation->sale)
-                                <div><dt class="inline">{{ __('network.reservations.sale') }}</dt> <dd class="inline"><bdi dir="ltr" class="font-mono">{{ $reservation->sale->number }}</bdi></dd></div>
+                                <div>
+                                    <dt class="inline">{{ __('network.reservations.sale') }}</dt>
+                                    <dd class="inline">
+                                        @can('view', $reservation->sale)
+                                            <a href="{{ route('pos.sales.show', [$reservation->sale->store_id, $reservation->sale]) }}" class="font-mono text-blue-700 hover:underline" dir="ltr">{{ $reservation->sale->number }}</a>
+                                        @else
+                                            <bdi dir="ltr" class="font-mono">{{ $reservation->sale->number }}</bdi>
+                                        @endcan
+                                    </dd>
+                                </div>
                             @endif
                             @if ($reservation->decision_note)
                                 <div><dt class="inline">{{ __('network.reservations.rejection_reason') }}</dt> <dd class="inline" dir="auto">{{ $reservation->decision_note }}</dd></div>

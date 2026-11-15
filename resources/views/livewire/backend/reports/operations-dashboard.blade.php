@@ -16,9 +16,17 @@
                 <p class="mt-1 text-sm text-gray-500">{{ __('reports.subtitle') }}</p>
             @endif
         </div>
-        @if ($canViewFinance)
-            <a href="{{ route('subdomain.operations.finance', ['from' => $from, 'to' => $to]) }}" class="inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-medium text-blue-700 ring-1 ring-blue-200 hover:bg-blue-50">{{ __('reports.open_finance') }}</a>
-        @endif
+        <div class="flex flex-wrap gap-2">
+            @if ($canViewFinance)
+                <a href="{{ route('subdomain.operations.finance', ['from' => $from, 'to' => $to]) }}" class="inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-medium text-blue-700 ring-1 ring-blue-200 hover:bg-blue-50">{{ __('reports.open_finance') }}</a>
+            @endif
+            @if ($canViewReview)
+                <a href="{{ route('subdomain.operations.review', ['from' => $from, 'to' => $to]) }}" class="inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-medium text-blue-700 ring-1 ring-blue-200 hover:bg-blue-50">{{ __('reports.review.navigation') }}</a>
+            @endif
+            @if ($canViewAudit)
+                <a href="{{ route('subdomain.operations.audit', ['from' => $from, 'to' => $to]) }}" class="inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-medium text-blue-700 ring-1 ring-blue-200 hover:bg-blue-50">{{ __('reports.audit.navigation') }}</a>
+            @endif
+        </div>
     </div>
 
     @if ($rows->isEmpty())

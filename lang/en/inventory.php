@@ -133,6 +133,16 @@ return [
         'empty_body' => 'Find a product above and record its opening balance.',
         'no_matches_title' => 'No matching products',
         'no_matches_body' => 'Try another search term.',
+        'units_filter' => 'Showing products with devices in status: :status',
+        'clear_units_filter' => 'Clear status filter',
+        'units_filters' => [
+            'available' => 'Available',
+            'in_service' => 'In service',
+            'review' => 'In review',
+            'in_transit' => 'In transit',
+            'removed' => 'Removed',
+            'sold' => 'Sold',
+        ],
     ],
 
     'product' => [
