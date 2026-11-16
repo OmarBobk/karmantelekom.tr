@@ -1311,11 +1311,15 @@ Inventory purchases, device costs, operating expenses, refunds, and payments mus
 - **Verification.** `RequestedAtImmutabilityTest`, `OperationalReviewTest`, and `AuditLogTest` cover the review findings (immutable request time across lifecycle and direct SQL updates; exact inspection/repair filter agreement; current lapsed vs stored EXPIRED; repair links after transfer; actor morph/privacy). Related reservation and inventory UI tests were rerun after the fixes. Migration verified on the isolated testing database (existing schema and fresh RefreshDatabase).
 - **Remaining audit query note.** Allowlisted `log_name` plus a large OR of `(log_name, event, JSON properties.store_id)` predicates, ordered by `id` desc. A representative `EXPLAIN` used the PRIMARY key with `Using where` on a tiny table; no supporting index in this batch.
 
-**Deployment of the `requested_at` migration (Omar; not run by Agent against the application database):**
+**Deployment of the `requested_at` migration (Omar; not run by Agent against the application database). Review, Omar’s manual acceptance, merge, and application deployment remain pending:**
 
-1. **Preflight.** Confirm MariaDB/MySQL version and `SELECT @@explicit_defaults_for_timestamp`. Capture `SHOW FULL COLUMNS FROM network_reservations WHERE Field='requested_at'` (expect `Extra` containing `on update current_timestamp()` before the fix). Backup or snapshot as usual.
-2. **Migrate.** On the application host, after deploying this commit: `php artisan migrate --no-interaction` (runs only pending migrations; this one is a single `ALTER ... MODIFY`).
-3. **Post-check.** Re-run the `SHOW FULL COLUMNS` — `Extra` must be empty and `Default` `current_timestamp()`. Spot-check: update a non-time column on a reservation and confirm `requested_at` is unchanged. Do not `migrate:rollback` this migration; rollback is intentionally refused.
+1. **Preflight.** Confirm MariaDB/MySQL version and `SELECT @@explicit_defaults_for_timestamp`. Capture `SHOW FULL COLUMNS FROM network_reservations WHERE Field='requested_at'` (expect `Extra` containing `on update current_timestamp()` before the fix). Inspect pending migrations and this migration’s status first (`php artisan migrate:status`). Backup or snapshot as usual.
+2. **Preview only** (no writes):  
+   `php artisan migrate --pretend --path=database/migrations/2026_11_16_113328_remove_on_update_from_network_reservations_requested_at.php`
+3. **Apply only this migration** after backup, code deployment, and review:  
+   `php artisan migrate --force --path=database/migrations/2026_11_16_113328_remove_on_update_from_network_reservations_requested_at.php`
+4. **Post-check (read-only on the application database).** Confirm migration status again. Re-run `SHOW FULL COLUMNS FROM network_reservations WHERE Field='requested_at'` — `Extra` must be empty and `Default` `current_timestamp()`. Do not update application reservation rows as a spot-check; prove ON UPDATE removal on isolated test data (`RequestedAtImmutabilityTest` / testing database). Do not `migrate:rollback` this migration; rollback is intentionally refused.
+5. **Historical dates.** This migration prevents future `requested_at` drift. It does not repair already-drifted rows; safe historical recovery remains unresolved (see above).
 
 **Remaining Phase 8 work:**
 
