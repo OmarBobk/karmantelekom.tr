@@ -137,6 +137,8 @@ return [
         'clear_units_filter' => 'مسح تصفية الحالة',
         'units_filters' => [
             'available' => 'متاح',
+            'inspection' => 'بانتظار الفحص',
+            'in_repair' => 'قيد الإصلاح',
             'in_service' => 'قيد الخدمة',
             'review' => 'قيد المراجعة',
             'in_transit' => 'في الطريق',
@@ -192,6 +194,8 @@ return [
         'filter' => 'تصفية الوحدات حسب الحالة',
         'filters' => [
             'available' => 'المتاحة',
+            'inspection' => 'بانتظار الفحص',
+            'in_repair' => 'قيد الإصلاح',
             'in_service' => 'الفحص والصيانة',
             'review' => 'بانتظار المراجعة',
             'in_transit' => 'قيد النقل',

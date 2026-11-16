@@ -159,7 +159,7 @@ return [
                 'payment_started' => 'بدأ الدفع',
                 'in_transit' => 'في الطريق',
                 'received' => 'مستلم ومحجوز',
-                'expired' => 'منتهٍ',
+                'lapsed' => 'منتهٍ',
             ],
             'events' => [
                 'requested' => 'طُلب',

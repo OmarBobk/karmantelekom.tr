@@ -137,6 +137,8 @@ return [
         'clear_units_filter' => 'Clear status filter',
         'units_filters' => [
             'available' => 'Available',
+            'inspection' => 'Awaiting inspection',
+            'in_repair' => 'In repair',
             'in_service' => 'In service',
             'review' => 'In review',
             'in_transit' => 'In transit',
@@ -192,6 +194,8 @@ return [
         'filter' => 'Filter units by status',
         'filters' => [
             'available' => 'Available',
+            'inspection' => 'Awaiting inspection',
+            'in_repair' => 'In repair',
             'in_service' => 'Inspection & repair',
             'review' => 'Awaiting review',
             'in_transit' => 'In transit',

@@ -40,7 +40,7 @@ class StoreInventory extends Component
     public string $catalogSearch = '';
 
     /** @var list<string> */
-    private const UNIT_FILTERS = ['available', 'in_service', 'review', 'in_transit', 'removed', 'sold'];
+    private const UNIT_FILTERS = ['available', 'inspection', 'in_repair', 'in_service', 'review', 'in_transit', 'removed', 'sold'];
 
     public function mount(Store $store): void
     {
@@ -147,6 +147,8 @@ class StoreInventory extends Component
     {
         return match ($this->units) {
             'available' => [UnitStatus::AVAILABLE],
+            'inspection' => [UnitStatus::INSPECTION],
+            'in_repair' => [UnitStatus::IN_REPAIR],
             'in_service' => [UnitStatus::INSPECTION, UnitStatus::IN_REPAIR],
             'review' => [UnitStatus::REVIEW],
             'in_transit' => [UnitStatus::IN_TRANSIT],

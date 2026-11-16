@@ -17,6 +17,7 @@ use Database\Seeders\OperationalStoreSetupSeeder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\Test;
+use Spatie\Activitylog\Models\Activity;
 use Tests\Support\InteractsWithPos;
 use Tests\TestCase;
 
@@ -185,5 +186,61 @@ class AuditLogTest extends TestCase
         $this->assertNull(OperationalAuditCatalog::definition('store_network', 'unknown_event'));
         $this->assertNotNull(OperationalAuditCatalog::definition('storefront', 'listing_published'));
         $this->assertNotNull(OperationalAuditCatalog::definition('store_network', 'listing_published'));
+    }
+
+    #[Test]
+    public function actor_display_and_filter_privacy_respect_authorized_user_morphs(): void
+    {
+        $listing = app(PublishUnitListing::class)($this->owner, $this->store, $this->phone->id, NetworkListing::UNLISTED_REVISION);
+        app(RequestReservation::class)($this->otherCashier, $this->other, $listing->id, $listing->revision, null);
+
+        activity('storefront')
+            ->event('storefront_order_expired')
+            ->withProperties(['store_id' => $this->store->id, 'order_id' => 9, 'status' => 'expired'])
+            ->log('System expiry');
+
+        $deleted = User::factory()->create(['name' => 'Deleted Actor Visible Name']);
+        activity('store_network')
+            ->causedBy($deleted)
+            ->event('reservation_hold_changed')
+            ->withProperties(['store_id' => $this->store->id, 'from' => 30, 'to' => 60])
+            ->log('Hold by deleted user');
+        $deletedId = $deleted->id;
+        $deleted->delete();
+
+        $outsider = User::factory()->create(['name' => 'Secret Outsider Never Shown']);
+        activity('shop_created')->causedBy($outsider)->log('Unauthorized legacy');
+
+        $page = Livewire::actingAs($this->owner)->withQueryParams(['from' => '2026-11-12', 'to' => '2026-11-12'])->test(AuditLog::class);
+        $rows = collect($page->viewData('rows')->items());
+
+        $real = $rows->first(fn (array $row): bool => $row['summary'] === 'Reservation requested');
+        $this->assertSame($this->otherCashier->name, $real['actor']);
+        $this->assertFalse($real['actor_is_system']);
+
+        $system = $rows->first(fn (array $row): bool => $row['summary'] === 'Storefront order pickup window ended');
+        $this->assertSame('System', $system['actor']);
+        $this->assertTrue($system['actor_is_system']);
+
+        $missing = $rows->first(fn (array $row): bool => $row['summary'] === 'Reservation hold duration changed');
+        $this->assertSame(__('reports.audit.no_actor'), $missing['actor']);
+
+        $activity = Activity::query()->where('event', 'reservation_requested')->latest('id')->first();
+        $this->assertSame((new User)->getMorphClass(), $activity->causer_type);
+
+        $actors = $page->viewData('actors');
+        $this->assertTrue($actors->contains(fn (User $user): bool => $user->is($this->otherCashier)));
+        $this->assertFalse($actors->contains(fn (User $user): bool => $user->id === $outsider->id));
+        $page->assertDontSee('Secret Outsider Never Shown');
+        $page->assertDontSee('Deleted Actor Visible Name');
+
+        $page->set('actorId', (string) $outsider->id)
+            ->assertViewHas('filterError', 'invalid_actor')
+            ->assertDontSee('Secret Outsider Never Shown');
+        $this->assertFalse(
+            collect($page->viewData('actors'))->contains(fn (User $user): bool => $user->is($outsider))
+        );
+        $this->assertNull($page->viewData('rows'));
+        unset($deletedId);
     }
 }

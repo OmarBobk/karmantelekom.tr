@@ -61,6 +61,7 @@ return [
         'rejected' => 'Rejected',
         'cancelled' => 'Cancelled',
         'expired' => 'Expired',
+        'lapsed' => 'Lapsed (not yet closed)',
         'fulfilled' => 'Sold',
     ],
 

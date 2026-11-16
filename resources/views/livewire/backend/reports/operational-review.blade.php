@@ -9,7 +9,15 @@
     $link = 'inline-flex min-h-11 items-center rounded-lg px-2 text-sm font-medium text-blue-700 hover:bg-blue-50';
     $period = '<bdi dir="ltr">'.e($from).'</bdi>';
     $periodTo = '<bdi dir="ltr">'.e($to).'</bdi>';
-    $currentStates = ['pending', 'approved', 'payment_started', 'in_transit', 'received', 'expired'];
+    $currentStates = ['pending', 'approved', 'payment_started', 'in_transit', 'received', NetworkReservation::CURRENTLY_LAPSED];
+    $unitFilterFor = fn (string $status): string => match ($status) {
+        UnitStatus::AVAILABLE->value => 'available',
+        UnitStatus::INSPECTION->value => 'inspection',
+        UnitStatus::IN_REPAIR->value => 'in_repair',
+        UnitStatus::REVIEW->value => 'review',
+        UnitStatus::IN_TRANSIT->value => 'in_transit',
+        default => 'available',
+    };
     $periodEvents = NetworkReservation::PERIOD_EVENTS;
     $statusKeys = [
         UnitStatus::AVAILABLE->value,
@@ -190,7 +198,7 @@
                                     <th scope="row" class="px-3 py-3 text-start font-medium text-gray-900">{{ $row['store']->name }} <span dir="ltr" class="ms-1 font-mono text-xs text-gray-500">{{ $row['store']->code }}</span></th>
                                     @foreach ($statusKeys as $status)
                                         <td class="px-3 py-3 text-end tabular-nums">
-                                            <a href="{{ route('subdomain.inventory.store', [$row['store'], 'units' => $status === UnitStatus::AVAILABLE->value ? 'available' : ($status === UnitStatus::REVIEW->value ? 'review' : ($status === UnitStatus::IN_TRANSIT->value ? 'in_transit' : 'in_service'))]) }}" class="{{ $link }}">{{ $row['counts'][$status] }}</a>
+                                            <a href="{{ route('subdomain.inventory.store', [$row['store'], 'units' => $unitFilterFor($status)]) }}" class="{{ $link }}">{{ $row['counts'][$status] }}</a>
                                         </td>
                                     @endforeach
                                 </tr>
@@ -221,7 +229,11 @@
                             <li wire:key="open-repair-{{ $repair->id }}" class="px-4 py-3 text-sm">
                                 <div class="flex flex-wrap items-start justify-between gap-2">
                                     <div>
-                                        <a href="{{ route('subdomain.inventory.unit', [$repair->store, $repair->unit]) }}" class="font-medium text-blue-700 hover:underline">{{ $repair->unit->productDefinition->name }}</a>
+                                        @if ($item['device_url'])
+                                            <a href="{{ $item['device_url'] }}" class="font-medium text-blue-700 hover:underline">{{ $repair->unit->productDefinition->name }}</a>
+                                        @else
+                                            <span class="font-medium text-gray-900">{{ $repair->unit?->productDefinition?->name ?? '—' }}</span>
+                                        @endif
                                         <p class="text-gray-600">{{ $repair->store->code }} · {{ $repair->repairer_type->label() }}@if ($repair->repairer_name) · {{ $repair->repairer_name }}@endif</p>
                                         <p class="text-xs text-gray-500">{{ __('reports.review.devices.started_by', ['name' => $repair->starter?->name ?? '—', 'time' => Sale::displayTime($repair->started_at)]) }} · {{ __('reports.review.devices.age_hours', ['hours' => $item['age_hours']]) }}</p>
                                     </div>
@@ -278,7 +290,11 @@
                                 <li wire:key="closed-repair-{{ $repair->id }}" class="px-4 py-3 text-sm">
                                     <div class="flex flex-wrap items-start justify-between gap-2">
                                         <div>
-                                            <a href="{{ route('subdomain.inventory.unit', [$repair->store, $repair->unit]) }}" class="font-medium text-blue-700 hover:underline">{{ $repair->unit->productDefinition->name }}</a>
+                                            @if ($item['device_url'])
+                                                <a href="{{ $item['device_url'] }}" class="font-medium text-blue-700 hover:underline">{{ $repair->unit->productDefinition->name }}</a>
+                                            @else
+                                                <span class="font-medium text-gray-900">{{ $repair->unit?->productDefinition?->name ?? '—' }}</span>
+                                            @endif
                                             <p class="text-gray-600">{{ $repair->store->code }} · {{ $repair->status->label() }} · {{ Sale::displayTime($repair->closed_at) }}</p>
                                         </div>
                                         @if ($item['costs'] !== null)

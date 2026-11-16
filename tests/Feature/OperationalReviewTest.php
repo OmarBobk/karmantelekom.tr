@@ -26,6 +26,7 @@ use App\Models\Store;
 use App\Models\User;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Gate;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\Test;
@@ -95,7 +96,6 @@ class OperationalReviewTest extends TestCase
         $day = ['from' => '2026-11-12', 'to' => '2026-11-12'];
         $listing = app(PublishUnitListing::class)($this->owner, $this->store, $this->phone->id, NetworkListing::UNLISTED_REVISION);
         $reservation = app(RequestReservation::class)($this->otherCashier, $this->other, $listing->id, $listing->revision, null);
-        $requestedAt = $reservation->requested_at;
         app(ApproveReservation::class)($this->owner, $this->store, $reservation->id);
 
         $secondPhone = $this->registerDevice($this->owner, $this->store, $this->usedPhone, self::imei('35693803564406'));
@@ -110,10 +110,6 @@ class OperationalReviewTest extends TestCase
         $cancelled = app(RequestReservation::class)($this->otherCashier, $this->other, $thirdListing->id, $thirdListing->revision, null);
         app(ApproveReservation::class)($this->owner, $this->store, $cancelled->id);
         app(CancelReservation::class)($this->otherCashier, $this->other, $cancelled->id, 'Customer left');
-
-        // MySQL auto ON UPDATE on the first timestamp column rewrites requested_at on later
-        // row updates; restore the freeze-time values so period "requested" can be asserted.
-        NetworkReservation::query()->update(['requested_at' => $requestedAt]);
 
         $report = Livewire::actingAs($this->owner)->withQueryParams($day)->test(OperationalReview::class);
         $network = $report->viewData('network');
@@ -158,7 +154,7 @@ class OperationalReviewTest extends TestCase
         $report = Livewire::actingAs($this->owner)->withQueryParams(['from' => '2026-11-12', 'to' => '2026-11-12'])->test(OperationalReview::class);
         $incoming = collect($report->viewData('network')['incoming'])->first(fn (array $row): bool => $row['store']->is($this->store));
         $this->assertSame(1, $incoming['period']['expired']);
-        $this->assertSame(1, $incoming['current']['expired']);
+        $this->assertSame(1, $incoming['current'][NetworkReservation::CURRENTLY_LAPSED]);
 
         $attempt = $this->review($this->owner, $this->cableLine());
         $reservation->forceFill(['claimed_attempt_id' => $attempt->id, 'claimed_at' => now()])->save();
@@ -171,6 +167,55 @@ class OperationalReviewTest extends TestCase
         $report = Livewire::actingAs($this->owner)->withQueryParams(['from' => '2026-11-12', 'to' => '2026-11-12'])->test(OperationalReview::class);
         $incoming = collect($report->viewData('network')['incoming'])->first(fn (array $row): bool => $row['store']->is($this->store));
         $this->assertSame(1, $incoming['period']['expired']);
+        $this->assertSame(1, $incoming['current'][NetworkReservation::CURRENTLY_LAPSED]);
+    }
+
+    #[Test]
+    public function current_lapsed_excludes_stored_expired_while_period_expiry_still_counts_both(): void
+    {
+        $listing = app(PublishUnitListing::class)($this->owner, $this->store, $this->phone->id, NetworkListing::UNLISTED_REVISION);
+        $lapsed = app(RequestReservation::class)($this->otherCashier, $this->other, $listing->id, $listing->revision, null);
+        app(ApproveReservation::class)($this->owner, $this->store, $lapsed->id);
+        $edge = CarbonImmutable::parse('2026-11-12 01:00:00', 'Europe/Istanbul')->utc();
+        $lapsed->forceFill([
+            'expires_at' => $edge,
+            'claimed_attempt_id' => null,
+            'dispatched_at' => null,
+            'received_at' => null,
+            'status' => ReservationStatus::APPROVED,
+        ])->save();
+
+        $closedPhone = $this->registerDevice($this->owner, $this->store, $this->usedPhone, self::imei('35693803564463'));
+        $closedPhone->update(['selling_price' => '7000.00']);
+        $closedListing = app(PublishUnitListing::class)($this->owner, $this->store, $closedPhone->id, NetworkListing::UNLISTED_REVISION);
+        $storedExpired = app(RequestReservation::class)($this->otherCashier, $this->other, $closedListing->id, $closedListing->revision, null);
+        app(ApproveReservation::class)($this->owner, $this->store, $storedExpired->id);
+        $storedExpired->forceFill([
+            'expires_at' => $edge,
+            'expired_at' => $edge,
+            'claimed_attempt_id' => null,
+            'dispatched_at' => null,
+            'received_at' => null,
+            'status' => ReservationStatus::EXPIRED,
+            'active_unit_id' => null,
+        ])->save();
+
+        $this->travelTo(CarbonImmutable::parse('2026-11-12 12:00:00', 'Europe/Istanbul'));
+        $this->assertTrue(NetworkReservation::query()->currentlyLapsed()->whereKey($lapsed)->exists());
+        $this->assertFalse(NetworkReservation::query()->currentlyLapsed()->whereKey($storedExpired)->exists());
+        $this->assertTrue(NetworkReservation::query()->inDisplayState('expired')->whereKey($storedExpired)->exists());
+
+        $report = Livewire::actingAs($this->owner)->withQueryParams(['from' => '2026-11-12', 'to' => '2026-11-12'])->test(OperationalReview::class);
+        $incoming = collect($report->viewData('network')['incoming'])->first(fn (array $row): bool => $row['store']->is($this->store));
+        $this->assertSame(1, $incoming['current'][NetworkReservation::CURRENTLY_LAPSED]);
+        $this->assertSame(2, $incoming['period']['expired']);
+
+        $list = Livewire::actingAs($this->owner)->withQueryParams([
+            'tab' => 'incoming',
+            'state' => NetworkReservation::CURRENTLY_LAPSED,
+        ])->test(NetworkReservations::class, ['store' => $this->store]);
+        $this->assertSame(1, $list->viewData('reservations')->total());
+        $this->assertTrue($list->viewData('reservations')->contains(fn (NetworkReservation $row): bool => $row->is($lapsed)));
     }
 
     #[Test]
@@ -231,28 +276,90 @@ class OperationalReviewTest extends TestCase
     }
 
     #[Test]
-    public function inventory_status_counts_agree_with_filtered_lists(): void
+    public function inventory_status_counts_agree_with_exact_inspection_and_repair_filters(): void
     {
-        $inRepair = $this->deviceNeedingRepair($this->owner, $this->store, $this->usedPhone, self::imei('35693803564455'));
+        $awaitingInspection = $this->deviceNeedingRepair($this->owner, $this->store, $this->usedPhone, self::imei('35693803564455'));
+        $this->assertSame(UnitStatus::INSPECTION, $awaitingInspection->fresh()->status);
+
+        $inRepair = $this->deviceNeedingRepair($this->owner, $this->store, $this->usedPhone, self::imei('35693803564471'));
         $this->startDeviceRepair($this->owner, $inRepair);
+        $this->assertSame(UnitStatus::IN_REPAIR, $inRepair->fresh()->status);
 
         $report = Livewire::actingAs($this->owner)->test(OperationalReview::class);
         $status = collect($report->viewData('devices')['status_rows'])->first(fn (array $row): bool => $row['store']->is($this->store));
-        $inServiceOnReport = $status['counts'][UnitStatus::INSPECTION->value] + $status['counts'][UnitStatus::IN_REPAIR->value];
-        $this->assertGreaterThanOrEqual(1, $inServiceOnReport);
+        $inspectionCount = $status['counts'][UnitStatus::INSPECTION->value];
+        $repairCount = $status['counts'][UnitStatus::IN_REPAIR->value];
+        $this->assertGreaterThanOrEqual(1, $inspectionCount);
+        $this->assertGreaterThanOrEqual(1, $repairCount);
 
-        $storeList = Livewire::actingAs($this->owner)->withQueryParams(['units' => 'in_service'])->test(StoreInventory::class, ['store' => $this->store]);
-        $this->assertTrue(
-            collect($storeList->viewData('products')->items())->contains(
-                fn ($product): bool => (int) $product->id === (int) $this->usedPhone->id
-            )
-        );
-
-        $productList = Livewire::actingAs($this->owner)->withQueryParams(['units' => 'in_service'])->test(ProductInventory::class, [
+        $inspectionProducts = Livewire::actingAs($this->owner)->withQueryParams(['units' => 'inspection'])->test(StoreInventory::class, ['store' => $this->store]);
+        $this->assertTrue(collect($inspectionProducts->viewData('products')->items())->contains(
+            fn ($product): bool => (int) $product->id === (int) $this->usedPhone->id
+        ));
+        $inspectionUnits = Livewire::actingAs($this->owner)->withQueryParams(['units' => 'inspection'])->test(ProductInventory::class, [
             'store' => $this->store,
             'productDefinition' => $this->usedPhone,
         ]);
-        $this->assertSame($inServiceOnReport, $productList->viewData('units')->total());
+        $this->assertSame($inspectionCount, $inspectionUnits->viewData('units')->total());
+
+        $repairProducts = Livewire::actingAs($this->owner)->withQueryParams(['units' => 'in_repair'])->test(StoreInventory::class, ['store' => $this->store]);
+        $this->assertTrue(collect($repairProducts->viewData('products')->items())->contains(
+            fn ($product): bool => (int) $product->id === (int) $this->usedPhone->id
+        ));
+        $repairUnits = Livewire::actingAs($this->owner)->withQueryParams(['units' => 'in_repair'])->test(ProductInventory::class, [
+            'store' => $this->store,
+            'productDefinition' => $this->usedPhone,
+        ]);
+        $this->assertSame($repairCount, $repairUnits->viewData('units')->total());
+        $this->assertTrue(
+            $inspectionUnits->viewData('units')->contains(fn ($unit): bool => $unit->is($awaitingInspection))
+        );
+        $this->assertTrue(
+            $repairUnits->viewData('units')->contains(fn ($unit): bool => $unit->is($inRepair))
+        );
+        $this->assertFalse(
+            $inspectionUnits->viewData('units')->contains(fn ($unit): bool => $unit->is($inRepair))
+        );
+        $this->assertFalse(
+            $repairUnits->viewData('units')->contains(fn ($unit): bool => $unit->is($awaitingInspection))
+        );
+    }
+
+    #[Test]
+    public function closed_repair_device_link_follows_current_branch_and_hides_unauthorized_targets(): void
+    {
+        $unit = $this->deviceNeedingRepair($this->owner, $this->store, $this->usedPhone, self::imei('35693803564489'));
+        $this->startDeviceRepair($this->owner, $unit);
+        $this->closeDeviceRepair($this->owner, $unit);
+        $repair = $unit->fresh()->repairs()->latest('id')->first();
+        $this->assertSame($this->store->id, $repair->store_id);
+
+        $unit->forceFill(['store_id' => $this->other->id])->save();
+
+        $report = Livewire::actingAs($this->owner)->withQueryParams(['from' => '2026-11-12', 'to' => '2026-11-12'])->test(OperationalReview::class);
+        $item = collect($report->viewData('devices')['closed_repairs']->items())
+            ->first(fn (array $row): bool => $row['repair']->is($repair));
+        $this->assertNotNull($item);
+        $this->assertSame($this->store->id, $item['repair']->store_id);
+        $this->assertSame(
+            route('subdomain.inventory.unit', [$this->other, $unit]),
+            $item['device_url']
+        );
+
+        // Owners can access every store; deny only the destination inventory gate for this assertion.
+        Gate::before(function ($user, string $ability, array $arguments) {
+            if ($ability === 'viewInventory' && ($arguments[0] ?? null)?->is($this->other)) {
+                return false;
+            }
+
+            return null;
+        });
+
+        $denied = Livewire::actingAs($this->owner->fresh())->withQueryParams(['from' => '2026-11-12', 'to' => '2026-11-12'])->test(OperationalReview::class);
+        $deniedItem = collect($denied->viewData('devices')['closed_repairs']->items())
+            ->first(fn (array $row): bool => $row['repair']->is($repair));
+        $this->assertNull($deniedItem['device_url']);
+        $denied->assertDontSee(route('subdomain.inventory.unit', [$this->other, $unit]), false);
     }
 
     #[Test]

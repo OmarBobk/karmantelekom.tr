@@ -61,6 +61,7 @@ return [
         'rejected' => 'مرفوض',
         'cancelled' => 'ملغى',
         'expired' => 'منتهي',
+        'lapsed' => 'منتهٍ (لم يُغلق بعد)',
         'fulfilled' => 'مُباع',
     ],
 

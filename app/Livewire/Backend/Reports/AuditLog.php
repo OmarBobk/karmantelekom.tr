@@ -117,14 +117,20 @@ class AuditLog extends Component
 
         if ($rangeError === null && $filterError === null) {
             $query = OperationalAuditCatalog::restrictQuery(Activity::query(), $user);
-            $this->applyAuthorizedFilters($query, $visibleStores, $eventChoices);
+            $this->applyContextFilters($query, $visibleStores, $eventChoices);
             $actors = $this->authorizedActors(clone $query);
-            $rows = $query
-                ->with(['causer:id,name'])
-                ->select(['id', 'log_name', 'event', 'subject_type', 'subject_id', 'causer_id', 'properties', 'created_at'])
-                ->orderByDesc('id')
-                ->paginate(OperationalAuditCatalog::PER_PAGE)
-                ->through(fn (Activity $activity): array => OperationalAuditCatalog::present($activity, $user, $storesById));
+
+            if ($this->actorId !== '' && ! $actors->contains(fn (User $actor): bool => $actor->id === (int) $this->actorId)) {
+                $filterError = 'invalid_actor';
+            } else {
+                $this->applyActorFilter($query);
+                $rows = $query
+                    ->with(['causer:id,name'])
+                    ->select(['id', 'log_name', 'event', 'subject_type', 'subject_id', 'causer_type', 'causer_id', 'properties', 'created_at'])
+                    ->orderByDesc('id')
+                    ->paginate(OperationalAuditCatalog::PER_PAGE)
+                    ->through(fn (Activity $activity): array => OperationalAuditCatalog::present($activity, $user, $storesById));
+            }
         }
 
         return view('livewire.backend.reports.audit-log', [
@@ -184,11 +190,14 @@ class AuditLog extends Component
     }
 
     /**
+     * Date, branch, area, and event filters — never the actor filter. Actor options are derived
+     * from this authorized set before the selected actor is applied.
+     *
      * @param  Builder<Activity>  $query
      * @param  Collection<int, Store>  $visibleStores
      * @param  list<array{log: string, event: string, summary: string}>  $eventChoices
      */
-    private function applyAuthorizedFilters($query, $visibleStores, array $eventChoices): void
+    private function applyContextFilters($query, $visibleStores, array $eventChoices): void
     {
         [$start, $end] = LocalDateRange::utcBounds(LocalDateRange::date($this->from), LocalDateRange::date($this->to));
         $query->where('created_at', '>=', $start)->where('created_at', '<', $end);
@@ -211,14 +220,23 @@ class AuditLog extends Component
                 $query->where('log_name', $match['log'])->where('event', $match['event']);
             }
         }
-
-        if ($this->actorId !== '') {
-            $query->where('causer_id', (int) $this->actorId);
-        }
     }
 
     /**
-     * Actors that appear in the already-authorized filtered set, excluding the actor filter itself.
+     * @param  Builder<Activity>  $query
+     */
+    private function applyActorFilter($query): void
+    {
+        if ($this->actorId === '') {
+            return;
+        }
+
+        $query->where('causer_type', (new User)->getMorphClass())
+            ->where('causer_id', (int) $this->actorId);
+    }
+
+    /**
+     * User actors that appear in the authorized rows matching the other active filters.
      *
      * @param  Builder<Activity>  $query
      * @return Collection<int, User>
@@ -227,13 +245,14 @@ class AuditLog extends Component
     {
         $actorIds = (clone $query)
             ->reorder()
+            ->where('causer_type', (new User)->getMorphClass())
             ->whereNotNull('causer_id')
             ->distinct()
             ->limit(200)
             ->pluck('causer_id');
 
-        if ($this->actorId !== '' && ctype_digit($this->actorId)) {
-            $actorIds = $actorIds->push((int) $this->actorId)->unique();
+        if ($actorIds->isEmpty()) {
+            return collect();
         }
 
         return User::query()->whereKey($actorIds)->orderBy('name')->get(['id', 'name']);

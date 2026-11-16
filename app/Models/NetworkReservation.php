@@ -77,6 +77,12 @@ class NetworkReservation extends Model
         'requested', 'approved', 'rejected', 'dispatched', 'received', 'cancelled', 'expired', 'fulfilled',
     ];
 
+    /**
+     * Current operational-review metric for approved holds that have lapsed and are not yet closed.
+     * Distinct from display state "expired", which also includes stored final EXPIRED rows.
+     */
+    public const CURRENTLY_LAPSED = 'lapsed';
+
     protected $fillable = [
         'network_listing_id', 'listing_revision', 'inventory_unit_id', 'product_definition_id',
         'owning_store_id', 'requesting_store_id', 'status', 'active_unit_id',
@@ -231,13 +237,27 @@ class NetworkReservation extends Model
                 ->where(fn (EloquentBuilder $row) => $row->whereNull('expires_at')->orWhere('expires_at', '>', $at)),
             'expired' => $query->where(fn (EloquentBuilder $row) => $row
                 ->where('status', ReservationStatus::EXPIRED)
-                ->orWhere(fn (EloquentBuilder $lapsed) => $lapsed
-                    ->where('status', $approved)
-                    ->whereNull('claimed_attempt_id')
-                    ->whereNotNull('expires_at')
-                    ->where('expires_at', '<=', $at)
-                    ->where(fn (EloquentBuilder $held) => $held->whereNull('dispatched_at')->orWhereNotNull('received_at')))),
+                ->orWhere(fn (EloquentBuilder $lapsed) => $lapsed->currentlyLapsed($at))),
         };
+    }
+
+    /**
+     * Approved reservations whose hold has lapsed and are not yet closed as EXPIRED.
+     * Shared by the operational-review current metric and its reservation-list drill-down.
+     * Excludes mid-transit rows and open payment claims (same precedence as displayState).
+     *
+     * @param  EloquentBuilder<NetworkReservation>  $query
+     * @return EloquentBuilder<NetworkReservation>
+     */
+    public function scopeCurrentlyLapsed(EloquentBuilder $query, ?CarbonInterface $at = null): EloquentBuilder
+    {
+        $at ??= now();
+
+        return $query->where('status', ReservationStatus::APPROVED)
+            ->whereNull('claimed_attempt_id')
+            ->whereNotNull('expires_at')
+            ->where('expires_at', '<=', $at)
+            ->where(fn (EloquentBuilder $held) => $held->whereNull('dispatched_at')->orWhereNotNull('received_at'));
     }
 
     /**

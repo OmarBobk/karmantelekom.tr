@@ -47,7 +47,7 @@ class OperationalReview extends Component
         'payment_started',
         'in_transit',
         'received',
-        'expired',
+        NetworkReservation::CURRENTLY_LAPSED,
     ];
 
     /** @var list<UnitStatus> */
@@ -191,7 +191,11 @@ class OperationalReview extends Component
 
         foreach (self::CURRENT_STATES as $state) {
             $rows = NetworkReservation::query()
-                ->inDisplayState($state, $asOf)
+                ->when(
+                    $state === NetworkReservation::CURRENTLY_LAPSED,
+                    fn ($query) => $query->currentlyLapsed($asOf),
+                    fn ($query) => $query->inDisplayState($state, $asOf),
+                )
                 ->whereIn($branchColumn, $storeIds)
                 ->toBase()
                 ->selectRaw("{$branchColumn} as store_id, count(*) as aggregate")
@@ -363,6 +367,7 @@ class OperationalReview extends Component
     {
         $costIds = array_flip($costStoreIds);
 
+        $user = auth()->user();
         $page = DeviceRepair::query()
             ->whereIn('store_id', $storeIds)
             ->where('status', RepairStatus::OPEN)
@@ -370,6 +375,7 @@ class OperationalReview extends Component
                 'store:id,code,name',
                 'starter:id,name',
                 'unit:id,store_id,product_definition_id,status',
+                'unit.store:id,code,name',
                 'unit.productDefinition:id,name,model',
                 'unit.identifiers',
             ])
@@ -383,10 +389,11 @@ class OperationalReview extends Component
                 ->modelKeys()
         );
 
-        return $page->through(function (DeviceRepair $repair) use ($costIds, $asOf, $summaries): array {
+        return $page->through(function (DeviceRepair $repair) use ($costIds, $asOf, $summaries, $user): array {
             return [
                 'repair' => $repair,
                 'age_hours' => $repair->started_at->diffInHours($asOf),
+                'device_url' => $this->deviceUrl($repair, $user),
                 'costs' => isset($costIds[$repair->store_id])
                     ? ($summaries[$repair->id] ?? $this->emptyRepairCostSummary())
                     : null,
@@ -437,6 +444,7 @@ class OperationalReview extends Component
         [$start, $end] = LocalDateRange::utcBounds($from, $to);
         $costIds = array_flip($costStoreIds);
 
+        $user = auth()->user();
         $page = DeviceRepair::query()
             ->whereIn('store_id', $storeIds)
             ->whereIn('status', [RepairStatus::COMPLETED, RepairStatus::CANCELLED])
@@ -447,6 +455,7 @@ class OperationalReview extends Component
                 'starter:id,name',
                 'closer:id,name',
                 'unit:id,store_id,product_definition_id,status',
+                'unit.store:id,code,name',
                 'unit.productDefinition:id,name,model',
                 'unit.identifiers',
             ])
@@ -462,10 +471,27 @@ class OperationalReview extends Component
 
         return $page->through(fn (DeviceRepair $repair): array => [
             'repair' => $repair,
+            'device_url' => $this->deviceUrl($repair, $user),
             'costs' => isset($costIds[$repair->store_id])
                 ? ($summaries[$repair->id] ?? $this->emptyRepairCostSummary())
                 : null,
         ]);
+    }
+
+    /**
+     * Link to the device at its current location when the viewer may open that branch's inventory.
+     * Repair history stays attributed to the repair branch; a missing or unauthorized device is plain text.
+     */
+    private function deviceUrl(DeviceRepair $repair, User $user): ?string
+    {
+        $unit = $repair->unit;
+        $currentStore = $unit?->store;
+
+        if ($unit === null || $currentStore === null || ! $user->can('viewInventory', $currentStore)) {
+            return null;
+        }
+
+        return route('subdomain.inventory.unit', [$currentStore, $unit]);
     }
 
     /**

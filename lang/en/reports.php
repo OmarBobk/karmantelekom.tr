@@ -159,7 +159,7 @@ return [
                 'payment_started' => 'Payment started',
                 'in_transit' => 'In transit',
                 'received' => 'Received & held',
-                'expired' => 'Lapsed',
+                'lapsed' => 'Lapsed',
             ],
             'events' => [
                 'requested' => 'Requested',

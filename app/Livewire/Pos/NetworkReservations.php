@@ -171,7 +171,11 @@ class NetworkReservations extends Component
 
         $reservations = NetworkReservation::query()
             ->where($incoming ? 'owning_store_id' : 'requesting_store_id', $store->id)
-            ->when($filterError === null && $this->state !== '', fn ($query) => $query->inDisplayState($this->state, $asOf))
+            ->when($filterError === null && $this->state !== '', function ($query) use ($asOf) {
+                return $this->state === NetworkReservation::CURRENTLY_LAPSED
+                    ? $query->currentlyLapsed($asOf)
+                    : $query->inDisplayState($this->state, $asOf);
+            })
             ->when($filterError === null && $this->event !== '', function ($query) use ($asOf) {
                 $from = LocalDateRange::date($this->from);
                 $to = LocalDateRange::date($this->to);
@@ -205,7 +209,9 @@ class NetworkReservations extends Component
 
     private function filterError(): ?string
     {
-        if ($this->state !== '' && ! in_array($this->state, NetworkReservation::DISPLAY_STATES, true)) {
+        $allowedStates = [...NetworkReservation::DISPLAY_STATES, NetworkReservation::CURRENTLY_LAPSED];
+
+        if ($this->state !== '' && ! in_array($this->state, $allowedStates, true)) {
             return 'invalid_state';
         }
 

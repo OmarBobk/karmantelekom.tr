@@ -497,6 +497,8 @@ class ProductInventory extends Component
     private function unitStatusesForFilter(): array
     {
         return match ($this->unitStatusFilter) {
+            'inspection' => [UnitStatus::INSPECTION],
+            'in_repair' => [UnitStatus::IN_REPAIR],
             'in_service' => [UnitStatus::INSPECTION, UnitStatus::IN_REPAIR],
             'review' => [UnitStatus::REVIEW],
             'in_transit' => [UnitStatus::IN_TRANSIT],
@@ -508,7 +510,7 @@ class ProductInventory extends Component
 
     private function normalizedUnitStatusFilter(string $value): string
     {
-        return in_array($value, ['available', 'in_service', 'review', 'in_transit', 'removed', 'sold', 'all'], true)
+        return in_array($value, ['available', 'inspection', 'in_repair', 'in_service', 'review', 'in_transit', 'removed', 'sold', 'all'], true)
             ? $value
             : 'available';
     }
