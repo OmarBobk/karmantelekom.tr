@@ -14,7 +14,9 @@ use App\Enums\ReservationStatus;
 use App\Livewire\Pos\Concerns\UsesPosLocale;
 use App\Models\NetworkReservation;
 use App\Models\Store;
+use App\Services\Reporting\LocalDateRange;
 use Illuminate\Contracts\View\View;
+use Illuminate\Support\Str;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Url;
 use Livewire\Component;
@@ -38,6 +40,18 @@ class NetworkReservations extends Component
     #[Url(except: 'incoming')]
     public string $tab = 'incoming';
 
+    #[Url(except: '')]
+    public string $state = '';
+
+    #[Url(except: '')]
+    public string $event = '';
+
+    #[Url(except: '')]
+    public string $from = '';
+
+    #[Url(except: '')]
+    public string $to = '';
+
     /** Reservation awaiting a reason before it is rejected or cancelled. */
     #[Locked]
     public ?int $reasonFor = null;
@@ -54,6 +68,10 @@ class NetworkReservations extends Component
         $this->storeId = $store->id;
         $this->authorizePage();
         $this->tab = in_array($this->tab, ['incoming', 'outgoing'], true) ? $this->tab : 'incoming';
+        $this->state = Str::trim($this->state);
+        $this->event = Str::trim($this->event);
+        $this->from = Str::trim($this->from);
+        $this->to = Str::trim($this->to);
         $this->holdMinutes = $store->reservation_minutes === null ? '' : (string) $store->reservation_minutes;
     }
 
@@ -61,6 +79,27 @@ class NetworkReservations extends Component
     {
         $this->tab = in_array($this->tab, ['incoming', 'outgoing'], true) ? $this->tab : 'incoming';
         $this->closeReason();
+        $this->resetPage();
+    }
+
+    public function updatedState(): void
+    {
+        $this->state = Str::trim($this->state);
+        $this->resetPage();
+    }
+
+    public function updatedEvent(): void
+    {
+        $this->event = Str::trim($this->event);
+        $this->resetPage();
+    }
+
+    public function clearReportFilters(): void
+    {
+        $this->state = '';
+        $this->event = '';
+        $this->from = '';
+        $this->to = '';
         $this->resetPage();
     }
 
@@ -127,16 +166,30 @@ class NetworkReservations extends Component
     {
         $store = $this->authorizePage();
         $incoming = $this->tab === 'incoming';
+        $asOf = now();
+        $filterError = $this->filterError();
 
         $reservations = NetworkReservation::query()
             ->where($incoming ? 'owning_store_id' : 'requesting_store_id', $store->id)
+            ->when($filterError === null && $this->state !== '', function ($query) use ($asOf) {
+                return $this->state === NetworkReservation::CURRENTLY_LAPSED
+                    ? $query->currentlyLapsed($asOf)
+                    : $query->inDisplayState($this->state, $asOf);
+            })
+            ->when($filterError === null && $this->event !== '', function ($query) use ($asOf) {
+                $from = LocalDateRange::date($this->from);
+                $to = LocalDateRange::date($this->to);
+
+                return $query->forPeriodEvent($this->event, $from, $to, $asOf);
+            })
+            ->when($filterError !== null && ($this->state !== '' || $this->event !== ''), fn ($query) => $query->whereRaw('0 = 1'))
             ->with([
                 'productDefinition:id,name,model',
                 'unit:id,store_id,condition,status',
                 'owningStore:id,name,code',
                 'requestingStore:id,name,code',
                 'requester:id,name',
-                'sale:id,number',
+                'sale:id,store_id,user_id,number',
             ])
             ->orderByRaw('case when status in (?, ?) then 0 else 1 end', [ReservationStatus::PENDING->value, ReservationStatus::APPROVED->value])
             ->orderByDesc('requested_at')
@@ -147,9 +200,30 @@ class NetworkReservations extends Component
             'store' => $store,
             'incoming' => $incoming,
             'reservations' => $reservations,
+            'filterError' => $filterError,
+            'hasReportFilters' => $this->state !== '' || $this->event !== '',
             'canManage' => auth()->user()->can('manageReservations', $store),
             ...$this->localeViewData(),
         ])->layout('layouts.pos', ['posStore' => $store])->title(__('network.reservations.title'));
+    }
+
+    private function filterError(): ?string
+    {
+        $allowedStates = [...NetworkReservation::DISPLAY_STATES, NetworkReservation::CURRENTLY_LAPSED];
+
+        if ($this->state !== '' && ! in_array($this->state, $allowedStates, true)) {
+            return 'invalid_state';
+        }
+
+        if ($this->event !== '') {
+            if (! in_array($this->event, NetworkReservation::PERIOD_EVENTS, true)) {
+                return 'invalid_event';
+            }
+
+            return LocalDateRange::error($this->from, $this->to);
+        }
+
+        return null;
     }
 
     private function done(string $message): void

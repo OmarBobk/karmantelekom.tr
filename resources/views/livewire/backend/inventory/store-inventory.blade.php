@@ -79,13 +79,20 @@
             </div>
         </div>
 
+        @if ($unitsFilter !== '')
+            <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-blue-50 px-4 py-3 text-sm text-blue-950 ring-1 ring-blue-200">
+                <p>{{ __('inventory.store.units_filter', ['status' => __('inventory.store.units_filters.'.$unitsFilter)]) }}</p>
+                <button type="button" wire:click="clearUnitsFilter" class="inline-flex min-h-11 items-center rounded-lg px-3 font-medium text-blue-800 hover:bg-blue-100">{{ __('inventory.store.clear_units_filter') }}</button>
+            </div>
+        @endif
+
         @if ($products->isEmpty())
             <div class="rounded-xl border-2 border-dashed border-gray-300 bg-white px-6 py-12 text-center">
                 <h3 class="text-base font-semibold text-gray-900">{{ $isFiltering ? __('inventory.store.no_matches_title') : __('inventory.store.empty_title') }}</h3>
                 <p class="mt-1 text-sm text-gray-500">{{ $isFiltering ? __('inventory.store.no_matches_body') : __('inventory.store.empty_body') }}</p>
             </div>
         @else
-            <div class="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-200" wire:loading.class="opacity-60" wire:target="search,gotoPage,nextPage,previousPage">
+            <div class="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-200" wire:loading.class="opacity-60" wire:target="search,units,gotoPage,nextPage,previousPage">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
@@ -99,7 +106,7 @@
                             @php($onHand = $product->tracking_mode->tracksIndividualItems() ? $product->available_units_count : (int) $product->store_quantity)
                             <tr wire:key="stock-row-{{ $product->id }}" class="relative hover:bg-gray-50">
                                 <td class="px-4 py-3">
-                                    <a href="{{ route('subdomain.inventory.product', [$store, $product]) }}" class="font-medium text-gray-900 after:absolute after:inset-0 hover:text-blue-700">{{ $product->name }}</a>
+                                    <a href="{{ route('subdomain.inventory.product', array_filter([$store, $product, 'units' => $unitsFilter ?: null])) }}" class="font-medium text-gray-900 after:absolute after:inset-0 hover:text-blue-700">{{ $product->name }}</a>
                                     <p class="text-xs text-gray-500">
                                         @if ($product->model)<bdi>{{ $product->model }}</bdi>@endif
                                         @if ($product->brand) <span class="text-gray-300">·</span> <bdi>{{ $product->brand->name }}</bdi>@endif

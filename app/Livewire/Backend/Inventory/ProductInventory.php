@@ -34,6 +34,7 @@ use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Facades\Gate;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Locked;
+use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -78,6 +79,7 @@ class ProductInventory extends Component
 
     public string $unitNote = '';
 
+    #[Url(as: 'units', except: 'available')]
     public string $unitStatusFilter = 'available';
 
     public string $reconcileCode = '';
@@ -126,6 +128,7 @@ class ProductInventory extends Component
 
         $this->store = $store;
         $this->definition = $productDefinition;
+        $this->unitStatusFilter = $this->normalizedUnitStatusFilter($this->unitStatusFilter);
         $this->unitCondition = UnitCondition::allowedFor($productDefinition->tracking_mode)[0]->value ?? '';
         $this->foundCondition = $this->unitCondition;
         $this->storefrontQuantity = (string) $this->storefrontAllocation();
@@ -157,6 +160,7 @@ class ProductInventory extends Component
 
     public function updatedUnitStatusFilter(): void
     {
+        $this->unitStatusFilter = $this->normalizedUnitStatusFilter($this->unitStatusFilter);
         $this->resetPage('units');
     }
 
@@ -493,6 +497,8 @@ class ProductInventory extends Component
     private function unitStatusesForFilter(): array
     {
         return match ($this->unitStatusFilter) {
+            'inspection' => [UnitStatus::INSPECTION],
+            'in_repair' => [UnitStatus::IN_REPAIR],
             'in_service' => [UnitStatus::INSPECTION, UnitStatus::IN_REPAIR],
             'review' => [UnitStatus::REVIEW],
             'in_transit' => [UnitStatus::IN_TRANSIT],
@@ -500,6 +506,13 @@ class ProductInventory extends Component
             'sold' => [UnitStatus::SOLD],
             default => [UnitStatus::AVAILABLE],
         };
+    }
+
+    private function normalizedUnitStatusFilter(string $value): string
+    {
+        return in_array($value, ['available', 'inspection', 'in_repair', 'in_service', 'review', 'in_transit', 'removed', 'sold', 'all'], true)
+            ? $value
+            : 'available';
     }
 
     /**

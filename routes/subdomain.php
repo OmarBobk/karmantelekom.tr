@@ -20,7 +20,9 @@ use App\Livewire\Backend\Purchases\PurchaseShow;
 use App\Livewire\Backend\Purchases\PurchasesIndex;
 use App\Livewire\Backend\Purchases\ReceivePurchaseForm;
 use App\Livewire\Backend\Purchases\SupplierAccountPage;
+use App\Livewire\Backend\Reports\AuditLog;
 use App\Livewire\Backend\Reports\FinanceOverview;
+use App\Livewire\Backend\Reports\OperationalReview;
 use App\Livewire\Backend\Reports\OperationsDashboard;
 use App\Livewire\Backend\Settings\SettingsComponent;
 use App\Livewire\Backend\Shops\ShopComponent;
@@ -75,6 +77,12 @@ Route::prefix('operations')->group(function () {
     Route::get('finance', FinanceOverview::class)
         ->middleware('can:viewFinanceOverview,'.Store::class)
         ->name('operations.finance');
+    Route::get('review', OperationalReview::class)
+        ->middleware('can:viewOperationalReview,'.Store::class)
+        ->name('operations.review');
+    Route::get('audit', AuditLog::class)
+        ->middleware('can:viewAuditLog,'.Store::class)
+        ->name('operations.audit');
     Route::get('catalog', DefinitionsIndex::class)
         ->middleware('can:viewAny,'.ProductDefinition::class)
         ->name('catalog.definitions');

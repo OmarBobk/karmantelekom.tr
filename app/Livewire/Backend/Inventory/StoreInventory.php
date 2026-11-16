@@ -34,17 +34,36 @@ class StoreInventory extends Component
     #[Url(except: '')]
     public string $search = '';
 
+    #[Url(except: '')]
+    public string $units = '';
+
     public string $catalogSearch = '';
+
+    /** @var list<string> */
+    private const UNIT_FILTERS = ['available', 'inspection', 'in_repair', 'in_service', 'review', 'in_transit', 'removed', 'sold'];
 
     public function mount(Store $store): void
     {
         $this->authorize('viewInventory', $store);
 
         $this->store = $store;
+        $this->units = in_array($this->units, self::UNIT_FILTERS, true) ? $this->units : '';
     }
 
     public function updatedSearch(): void
     {
+        $this->resetPage();
+    }
+
+    public function updatedUnits(): void
+    {
+        $this->units = in_array($this->units, self::UNIT_FILTERS, true) ? $this->units : '';
+        $this->resetPage();
+    }
+
+    public function clearUnitsFilter(): void
+    {
+        $this->units = '';
         $this->resetPage();
     }
 
@@ -87,10 +106,16 @@ class StoreInventory extends Component
 
         $storeId = $this->store->id;
 
+        $unitStatuses = $this->unitStatusesForFilter();
+
         $products = ProductDefinition::query()
             ->where(fn (Builder $stocked) => $stocked
                 ->whereHas('balances', fn (Builder $balances) => $balances->where('store_id', $storeId))
                 ->orWhereHas('units', fn (Builder $units) => $units->where('store_id', $storeId)))
+            ->when($unitStatuses !== null, fn (Builder $query) => $query->whereHas(
+                'units',
+                fn (Builder $units) => $units->where('store_id', $storeId)->whereIn('status', $unitStatuses)
+            ))
             ->search($this->search)
             ->addSelect(['store_quantity' => InventoryBalance::query()
                 ->select('quantity')
@@ -107,10 +132,29 @@ class StoreInventory extends Component
         return view('livewire.backend.inventory.store-inventory', [
             'products' => $products,
             'catalogMatches' => $this->catalogMatches(),
-            'isFiltering' => trim($this->search) !== '',
+            'isFiltering' => trim($this->search) !== '' || $this->units !== '',
+            'unitsFilter' => $this->units,
             'setupOpen' => $this->store->refresh()->inventorySetupIsOpen(),
             'canAdjust' => Gate::allows('adjustInventory', $this->store),
             ...$this->localeViewData(),
         ])->title($this->store->code.' — '.__('inventory.title'));
+    }
+
+    /**
+     * @return list<UnitStatus>|null
+     */
+    private function unitStatusesForFilter(): ?array
+    {
+        return match ($this->units) {
+            'available' => [UnitStatus::AVAILABLE],
+            'inspection' => [UnitStatus::INSPECTION],
+            'in_repair' => [UnitStatus::IN_REPAIR],
+            'in_service' => [UnitStatus::INSPECTION, UnitStatus::IN_REPAIR],
+            'review' => [UnitStatus::REVIEW],
+            'in_transit' => [UnitStatus::IN_TRANSIT],
+            'removed' => [UnitStatus::REMOVED],
+            'sold' => [UnitStatus::SOLD],
+            default => null,
+        };
     }
 }

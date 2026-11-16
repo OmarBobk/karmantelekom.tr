@@ -1068,6 +1068,23 @@ Store-specific views must not disclose restricted information from the other sto
 - Supplier balances come from the supplier ledger, reversals included, per currency, cross-checked against open posted invoices. Pending supplier cash payouts are reported separately and do not reduce a balance.
 - Customer debt is original debt less allocations, and the debtor count is the number of customers with a positive balance. Pending cash payments are reported as waiting and do not reduce the debt.
 
+### 15.2B Operational Review (decided 2026-11-15, Phase 8 batch 3)
+
+- The owner operational review covers Store Network activity and device/repair status for accessible branches. The page opens only for the owner when at least one section is authorized (`manage_reservations` or `view_inventory` on an accessible branch). Each section still uses its own gate. Invalid Istanbul date ranges suppress period figures; current figures remain visible and labeled as current.
+- Store Network incoming rows are grouped by owning branch; outgoing by requesting branch. Consolidated totals use incoming rows only so each reservation counts once. Who cancelled (`cancelled_store_id`) is shown as a detail and is not a grouping key. Reservation-linked sales appear as counts and authorized sale links only — no branch revenue attribution in this report.
+- Current reservation figures follow the same display-state precedence as the reservation list for pending, approved, payment claim, transit, and received. The current "lapsed" metric is only approved holds that have lapsed and are not yet closed; stored final `EXPIRED` rows are excluded from that current metric but remain in the general display-state "expired" list. Period figures use each event's own timestamp within inclusive Istanbul calendar days converted to UTC bounds. Period transition counts are not mutually exclusive.
+- Period expiry is calculated from `expires_at` for stored `expired` rows and for approved holds that have lapsed without an open payment claim and are not mid-transit. These figures come from current records and may change for a past period after a payment claim is later released. `requested_at` must not change after the request is recorded.
+- Individually tracked unit counts use the unit's recorded branch, including in-transit units attributed to the sending branch, and drill down to exact status filters (inspection and in repair separately). Repair history stays on the repair branch; the device link uses the unit's current location when `view_inventory` allows it there, otherwise plain text. Recorded repair and on-hand device costs appear only for branches with `manage_device_costs`, per currency, with unknown amounts counted separately. The label is "Recorded costs" — not inventory valuation, cost basis, or profit. Unknown stays unknown (never treated as zero). Acquisition costs and additional non-reversed costs stay distinguishable. Reversed cost entries are excluded.
+- Profit calculation, cost-basis / valuation rules, low-stock thresholds, and CSV export remain deferred.
+
+### 15.2C Recorded Operational Events (decided 2026-11-15, Phase 8 batch 3)
+
+- The owner "Recorded operational events" page is a partial activity-log review of explicitly allowlisted operational events. It does not invent or backfill history. Sales, payments, expenses, purchases, and inventory/device movements keep their authoritative histories on their existing screens.
+- Access is owner-only at the page, then restricted again inside the query by each event's existing area permission and valid branch attribution where required. There is no wildcard permission fallback. Missing or malformed branch attribution must not broaden access. Only explicitly recognized global event types may use a global or any-authorized-branch gate.
+- Actor filter choices come only from User causers on authorized rows that already match the other active filters. An unauthorized or unrepresented actor id must not disclose that user's name. Missing or deleted actors are labeled "No recorded actor"; only recognized system-generated events without a causer are labeled "System".
+- Rows show Istanbul time, actor (or a recognized system-generated actor), branch or explicitly global scope, area, a curated localized summary, and an authorized source link when one exists and the viewer may open it. Financial amounts, terminal/void references, discount limits, minimum prices, free-text notes, and raw description or property payloads are not shown.
+- The legacy `/activities` page remains a separate scope and is not redefined by this report.
+
 ### 15.3 Reporting Integrity
 
 Reports must derive from authoritative business records.
