@@ -1290,7 +1290,7 @@ Inventory purchases, device costs, operating expenses, refunds, and payments mus
   - per-section permissions, supplier-only entry, refusal for employees and salespeople, and a cross-branch session drill-down;
   - totals above the operation cap and signed overflow.
 
-**Batch 3: operational review and recorded operational events** (branch `phase-8-operational-review`; review, manual acceptance, merge, and application deployment pending):
+**Batch 3: operational review and recorded operational events** (merged through PR #33 as squash `834731a`; review complete; Omar accepted the walkthrough; application deployment and `requested_at` migration status are not verified):
 
 - **Scope.** One PR: `/operations/review` (owner operational review), `/operations/audit` (recorded operational events), and the minimal filters/navigation needed for authorized drill-down. No new permission, dependency, expiry logging, profit calculation, low-stock feature, or CSV export. A narrowly scoped forward migration for `network_reservations.requested_at` was approved after review (Omar); it does not authorize application-database migration during Agent work — Omar deploys it.
 - **Approved decisions.**
@@ -1311,7 +1311,7 @@ Inventory purchases, device costs, operating expenses, refunds, and payments mus
 - **Verification.** `RequestedAtImmutabilityTest`, `OperationalReviewTest`, and `AuditLogTest` cover the review findings (immutable request time across lifecycle and direct SQL updates; exact inspection/repair filter agreement; current lapsed vs stored EXPIRED; repair links after transfer; actor morph/privacy). Related reservation and inventory UI tests were rerun after the fixes. Migration verified on the isolated testing database (existing schema and fresh RefreshDatabase).
 - **Remaining audit query note.** Allowlisted `log_name` plus a large OR of `(log_name, event, JSON properties.store_id)` predicates, ordered by `id` desc. A representative `EXPLAIN` used the PRIMARY key with `Using where` on a tiny table; no supporting index in this batch.
 
-**Deployment of the `requested_at` migration (Omar; not run by Agent against the application database). Review, Omar’s manual acceptance, merge, and application deployment remain pending:**
+**Deployment of the `requested_at` migration (Omar; not run by Agent against the application database). Review, Omar’s manual acceptance, and merge are complete; application deployment and migration application remain unverified:**
 
 1. **Preflight.** Confirm MariaDB/MySQL version and `SELECT @@explicit_defaults_for_timestamp`. Capture `SHOW FULL COLUMNS FROM network_reservations WHERE Field='requested_at'` (expect `Extra` containing `on update current_timestamp()` before the fix). Inspect pending migrations and this migration’s status first (`php artisan migrate:status`). Backup or snapshot as usual.
 2. **Preview only** (no writes):  
@@ -1321,20 +1321,33 @@ Inventory purchases, device costs, operating expenses, refunds, and payments mus
 4. **Post-check (read-only on the application database).** Confirm migration status again. Re-run `SHOW FULL COLUMNS FROM network_reservations WHERE Field='requested_at'` — `Extra` must be empty and `Default` `current_timestamp()`. Do not update application reservation rows as a spot-check; prove ON UPDATE removal on isolated test data (`RequestedAtImmutabilityTest` / testing database). Do not `migrate:rollback` this migration; rollback is intentionally refused.
 5. **Historical dates.** This migration prevents future `requested_at` drift. It does not repair already-drifted rows; safe historical recovery remains unresolved (see above).
 
+**Batch 4: out-of-stock visibility and CSV exports** (branch `phase-8-stockouts-exports`; review, manual acceptance, merge, and application deployment pending):
+
+- **Scope.** One PR: owner out-of-stock counts on the operations dashboard with inventory drill-down (`stock=out`), and CSV downloads on sales history, expense history, customer balances, and supplier balances. No migration, threshold settings, new permission, dependency, export job, notification, purchase automation, costing, or profit implementation.
+- **Approved decisions.**
+  - **L1.** Out-of-stock only (not “low stock”). Pre-zero thresholds remain deferred and are not completed by this batch.
+  - **L2.** Active definitions previously stocked at the branch (authoritative `inventory_movements` for that store and definition). Quantity: physical on-hand `quantity = 0`. New serialized: no `AVAILABLE` units at that branch. Exclude used devices and never-stocked products. Holds do not make physically present stock out of stock.
+  - **E1.** Export the four reports above using each screen’s full authorized filtered result, not the current page.
+  - **E2.** UTF-8 BOM, comma delimiter, plain exact decimals (`Money::toDecimal`), explicit currency column, localized ar/en headers.
+  - **E3.** Owner-only exports plus each report’s existing permission and branch scope, reauthorized on every download.
+- **Out of stock.** `OutOfStock` is the shared inclusion rule for dashboard counts, inventory list filter, and drill-down links. Dashboard inventory cards show the count and link to `/operations/inventory/{store}?stock=out`. Labels state physical on-hand / available-unit semantics (not sellable-after-holds).
+- **CSV.** Ordinary authenticated HTTP download endpoints (`pos.*.export`, `subdomain.operations.suppliers.export`) stream UTF-8 BOM CSV via `CsvExporter` (`fputcsv` with comma delimiter, `"` enclosure, empty escape). Screens link with ordinary `<a href>` carrying applied filters (not Livewire `wire:click` / `streamDownload`). Shared query helpers (`SalesCsv`, `ExpensesCsv`, `CustomerBalancesCsv`, `SupplierBalancesCsv`) keep screen filters and downloads aligned. Rows are read in bounded `lazy()` batches that eager-load needed relations (or join/subquery for supplier balances). Formula-like user text is neutralized by prefixing `'` while preserving the original characters; trusted money cells stay plain decimals. Concurrent changes are not snapshotted in a transaction; row order is stable on unchanged data. Excel Import Data should mark identifier columns as Text — CSV has no column types. Neutralization reduces formula risk on open; it is not a guarantee after a spreadsheet edits, saves, or reopens the file.
+- **Verification.** `OutOfStockVisibilityTest` and `ReportCsvExportTest` (HTTP endpoints, auth/permission/branch refusals, multi-batch filter parity, CSV round-trip, formula prefixes, Arabic headers, related-query batch growth), plus related dashboard, inventory, and finance tests after final edits.
+- **Profit.** Weighted Average Cost remains the approved direction for quantity products. Detailed WAC timing, snapshots, FX, tax, device cost basis, double-counting, cross-store attribution, and returns (Ask P1–P10) remain unresolved proposals — not implemented and not marked deferred past production rollout without Omar’s approval.
+
 **Remaining Phase 8 work:**
 
-- Sales profit and approved costing / valuation rules.
-- Low-stock threshold and alerts.
+- Sales profit and approved costing / valuation rules (WAC direction approved; detailed rules open).
+- Configurable low-stock thresholds (pre-zero alerts); out-of-stock visibility is delivered in batch 4.
 - Broader used-device profit reporting beyond recorded costs.
-- CSV / export capabilities.
 - Optional historical repair of already-drifted `requested_at` values (only if Omar approves a safe evidence-based procedure).
 
 **Open decisions:**
 
-- **Low-stock threshold.** No approved threshold exists, so batches 1–3 show no low-stock alert (see the deferred decisions register).
-- **Employee dashboards.** Whether employees get a dashboard, such as their own sales today. Batches 1–3 are owner-only for these overview screens.
-- **Daily operating reports.** Batches 1–3 are slices of "exact reports required for daily operations", not the final set.
-- **Profit / cost basis / CSV.** Deferred; recorded costs in batch 3 are not valuation or profit.
+- **Low-stock threshold.** Out-of-stock visibility is approved (L1/L2). Configurable per-branch/product thresholds remain open (see the deferred decisions register).
+- **Employee dashboards.** Whether employees get a dashboard, such as their own sales today. Batches 1–4 are owner-only for these overview screens.
+- **Daily operating reports.** Batches 1–4 are slices of "exact reports required for daily operations", not the final set.
+- **Profit / cost basis.** Detailed rules unresolved; recorded costs in batch 3 are not valuation or profit; batch 4 does not implement profit.
 
 ---
 
@@ -1437,7 +1450,7 @@ The following decisions do not need to block foundation work, but must be resolv
 | Employee incentives for cross-store referrals | Any commission or incentive feature |
 | Online fulfillment branch selection, payment timing, cancellation and hold release | Online order activation against branch stock |
 | Exact reports required for daily operations | Dashboard and reporting phase; Phase 8 batch 1 delivers recorded sales by branch and date plus current stock as a first slice |
-| Low-stock threshold (per product, per branch, or out-of-stock only) and who sets it | Low-stock information on dashboards |
+| Low-stock threshold (per product, per branch) and who sets it; out-of-stock-only visibility decided in Phase 8 batch 4 | Configurable low-stock alerts on dashboards |
 | Whether employees get a dashboard (for example their own sales today) | Any employee-facing dashboard |
 
 Each decision must have an owner-approved outcome or an explicitly documented deferral before its affected workflow is considered complete.

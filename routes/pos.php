@@ -2,8 +2,11 @@
 
 declare(strict_types=1);
 
+use App\Http\Controllers\Pos\CustomerBalancesCsvController;
+use App\Http\Controllers\Pos\ExpensesCsvController;
 use App\Http\Controllers\Pos\PosLocaleController;
 use App\Http\Controllers\Pos\SaleReceiptController;
+use App\Http\Controllers\Pos\SalesCsvController;
 use App\Livewire\Pos\CashboxPage;
 use App\Livewire\Pos\CashboxSessionPage;
 use App\Livewire\Pos\CustomerAccountPage;
@@ -28,6 +31,10 @@ Route::get('{store}/sales', SalesHistory::class)
     ->middleware('can:usePos,store')
     ->whereNumber('store')
     ->name('sales');
+Route::get('{store}/exports/sales.csv', SalesCsvController::class)
+    ->middleware(['can:usePos,store', 'can:viewAllSales,store'])
+    ->whereNumber('store')
+    ->name('sales.export');
 Route::get('{store}/network', NetworkListings::class)
     ->middleware('can:discoverListings,store')
     ->whereNumber('store')
@@ -44,6 +51,10 @@ Route::get('{store}/customers', CustomerAccounts::class)
     ->middleware('can:receiveCustomerPayments,store')
     ->whereNumber('store')
     ->name('customers');
+Route::get('{store}/exports/customers.csv', CustomerBalancesCsvController::class)
+    ->middleware('can:receiveCustomerPayments,store')
+    ->whereNumber('store')
+    ->name('customers.export');
 Route::get('{store}/customers/{customer}', CustomerAccountPage::class)
     ->middleware('can:receiveCustomerPayments,store')
     ->whereNumber(['store', 'customer'])
@@ -61,6 +72,10 @@ Route::get('{store}/expenses', ExpensesPage::class)
     ->middleware('can:manageExpenses,store')
     ->whereNumber('store')
     ->name('expenses');
+Route::get('{store}/exports/expenses.csv', ExpensesCsvController::class)
+    ->middleware('can:manageExpenses,store')
+    ->whereNumber('store')
+    ->name('expenses.export');
 Route::get('{store}/sales/{sale}', SaleReceiptController::class)
     ->middleware(['can:usePos,store', 'can:view,sale'])
     ->whereNumber(['store', 'sale'])

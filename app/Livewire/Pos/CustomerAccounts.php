@@ -7,6 +7,7 @@ namespace App\Livewire\Pos;
 use App\Livewire\Pos\Concerns\UsesPosLocale;
 use App\Models\Store;
 use App\Services\Customers\CustomerAccount;
+use App\Services\Reporting\CustomerBalancesCsv;
 use Illuminate\Contracts\View\View;
 use Illuminate\Support\Str;
 use Livewire\Attributes\Locked;
@@ -60,17 +61,14 @@ class CustomerAccounts extends Component
     public function render(CustomerAccount $account): View
     {
         $store = $this->authorizeAccounts();
-        $term = Str::squish($this->search);
         $settled = $this->balance === 'settled';
 
         return view('livewire.pos.customer-accounts', [
             'store' => $store,
             'settled' => $settled,
-            'debtors' => ($settled ? $account->settled($store) : $account->debtors($store))
-                ->when($term !== '', fn ($query) => $query->where('customers.name', 'like', '%'.addcslashes($term, '%_\\').'%'))
-                ->orderBy('customers.name')
-                ->orderBy('customers.id')
+            'debtors' => CustomerBalancesCsv::query($account, $store, $this->search, $this->balance)
                 ->paginate(25),
+            'canExport' => true,
             ...$this->localeViewData(),
         ])->layout('layouts.pos', ['posStore' => $store])->title(__('pos.customer_accounts.title'));
     }

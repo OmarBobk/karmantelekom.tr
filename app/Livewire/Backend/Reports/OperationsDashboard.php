@@ -11,6 +11,7 @@ use App\Models\Store;
 use App\Models\User;
 use App\Services\Purchasing\Money;
 use App\Services\Reporting\LocalDateRange;
+use App\Services\Reporting\OutOfStock;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Support\Str;
@@ -122,7 +123,8 @@ class OperationsDashboard extends Component
     }
 
     /**
-     * Current quantity on hand and available devices, with the inventory screen's definitions.
+     * Current quantity on hand, available devices, and out-of-stock product counts, using the
+     * inventory screen's physical-stock definitions (not sellable-after-holds).
      *
      * @param  Collection<int, Store>  $stores
      * @return Collection<int, Store>
@@ -133,11 +135,17 @@ class OperationsDashboard extends Component
             return new Collection;
         }
 
+        $storeIds = $stores->modelKeys();
+        $outOfStock = OutOfStock::countsByStore($storeIds);
+
         return Store::query()
-            ->whereKey($stores->modelKeys())
+            ->whereKey($storeIds)
             ->withSum('inventoryBalances as quantity_on_hand', 'quantity')
             ->withCount(['units as available_units_count' => fn ($units) => $units->where('status', UnitStatus::AVAILABLE)])
             ->orderBy('code')
-            ->get();
+            ->get()
+            ->each(function (Store $store) use ($outOfStock): void {
+                $store->setAttribute('out_of_stock_count', $outOfStock[$store->id] ?? 0);
+            });
     }
 }

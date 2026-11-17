@@ -253,9 +253,17 @@
 
     @if ($suppliers)
         <section aria-labelledby="finance-suppliers-title" class="{{ $card }}">
-            <div class="border-b border-gray-100 px-4 py-3">
-                <h2 id="finance-suppliers-title" class="text-base font-semibold text-gray-900">{{ __('reports.finance.suppliers.title') }} <span class="ms-1 rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">{{ __('reports.finance.current') }}</span></h2>
-                <p class="mt-1 text-xs text-gray-500">{{ __('reports.finance.suppliers.note') }}</p>
+            <div class="flex flex-wrap items-start justify-between gap-3 border-b border-gray-100 px-4 py-3">
+                <div>
+                    <h2 id="finance-suppliers-title" class="text-base font-semibold text-gray-900">{{ __('reports.finance.suppliers.title') }} <span class="ms-1 rounded-md bg-gray-100 px-2 py-0.5 text-xs font-medium text-gray-700">{{ __('reports.finance.current') }}</span></h2>
+                    <p class="mt-1 text-xs text-gray-500">{{ __('reports.finance.suppliers.note') }}</p>
+                </div>
+                @if ($canExportSuppliers)
+                    <div class="max-w-md text-end">
+                        <a href="{{ route('subdomain.operations.suppliers.export') }}" class="inline-flex min-h-11 items-center rounded-lg px-4 text-sm font-semibold text-blue-700 ring-1 ring-blue-200 hover:bg-blue-50">{{ __('reports.export.download') }}</a>
+                        <p class="mt-1 text-xs text-gray-500">{{ __('reports.export.help') }}</p>
+                    </div>
+                @endif
             </div>
             @if ($suppliers['totals'] === [] && $suppliers['pending'] === [])
                 <p class="px-4 py-8 text-center text-sm text-gray-600">{{ __('reports.finance.suppliers.empty') }}</p>

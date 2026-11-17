@@ -79,6 +79,16 @@
             </div>
         </div>
 
+        @if ($stockFilter === 'out')
+            <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-950 ring-1 ring-amber-200">
+                <div>
+                    <p class="font-medium">{{ __('inventory.store.out_of_stock_filter') }}</p>
+                    <p class="mt-0.5 text-xs text-amber-900/80">{{ __('inventory.store.out_of_stock_help') }}</p>
+                </div>
+                <button type="button" wire:click="clearStockFilter" class="inline-flex min-h-11 items-center rounded-lg px-3 font-medium text-amber-900 hover:bg-amber-100">{{ __('inventory.store.clear_out_of_stock_filter') }}</button>
+            </div>
+        @endif
+
         @if ($unitsFilter !== '')
             <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-blue-50 px-4 py-3 text-sm text-blue-950 ring-1 ring-blue-200">
                 <p>{{ __('inventory.store.units_filter', ['status' => __('inventory.store.units_filters.'.$unitsFilter)]) }}</p>

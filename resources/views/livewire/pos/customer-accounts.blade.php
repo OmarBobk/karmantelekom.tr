@@ -3,9 +3,17 @@
     use App\Services\Purchasing\Money;
 @endphp
 <section dir="{{ $textDirection }}" lang="{{ $locale }}" aria-labelledby="customer-accounts-title" class="space-y-4 text-start">
-    <div>
-        <h1 id="customer-accounts-title" class="text-xl font-semibold text-gray-900">{{ __('pos.customer_accounts.title') }}</h1>
-        <p class="text-sm text-gray-600">{{ $settled ? __('pos.customer_accounts.help_settled') : __('pos.customer_accounts.help') }}</p>
+    <div class="flex flex-wrap items-end justify-between gap-3">
+        <div>
+            <h1 id="customer-accounts-title" class="text-xl font-semibold text-gray-900">{{ __('pos.customer_accounts.title') }}</h1>
+            <p class="text-sm text-gray-600">{{ $settled ? __('pos.customer_accounts.help_settled') : __('pos.customer_accounts.help') }}</p>
+        </div>
+        @if ($canExport)
+            <div class="max-w-md text-end">
+                <a href="{{ route('pos.customers.export', [$store, 'q' => $search, 'balance' => $settled ? 'settled' : 'open']) }}" class="inline-flex min-h-11 items-center rounded-lg px-4 text-sm font-semibold text-blue-700 ring-1 ring-blue-200 hover:bg-blue-50">{{ __('reports.export.download') }}</a>
+                <p class="mt-1 text-xs text-gray-500">{{ __('reports.export.help') }}</p>
+            </div>
+        @endif
     </div>
 
     <div role="group" aria-label="{{ __('pos.customer_accounts.balance_filter') }}" class="inline-flex rounded-lg bg-white p-1 shadow-sm ring-1 ring-gray-200">

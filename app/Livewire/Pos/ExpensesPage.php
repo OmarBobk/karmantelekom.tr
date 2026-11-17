@@ -21,6 +21,7 @@ use App\Models\ExpenseSubmission;
 use App\Models\OperationalSupplier;
 use App\Models\Store;
 use App\Services\Purchasing\LocalizedMoney;
+use App\Services\Reporting\ExpensesCsv;
 use App\Services\Reporting\LocalDateRange;
 use Illuminate\Contracts\View\View;
 use Illuminate\Pagination\LengthAwarePaginator;
@@ -308,10 +309,7 @@ class ExpensesPage extends Component
         $store = $this->authorizeExpenses();
         $session = CashboxSession::openFor($store);
         $historyError = $this->historyError();
-        $history = Expense::query()
-            ->where('store_id', $store->id)
-            ->when($this->historyFrom !== '', fn ($query) => $query->onBusinessDays($this->historyFrom, $this->historyTo))
-            ->when($this->historyCategory !== '', fn ($query) => $query->where('category', $this->historyCategory));
+        $history = ExpensesCsv::query($store, $this->historyFrom, $this->historyTo, $this->historyCategory);
 
         return view('livewire.pos.expenses-page', [
             'store' => $store,
@@ -339,6 +337,7 @@ class ExpensesPage extends Component
                     ->latest('id')
                     ->paginate(25)
                 : new LengthAwarePaginator([], 0, 25),
+            'canExportHistory' => $historyError === null,
             'categories' => ExpenseCategory::cases(),
             'methods' => ExpenseMethod::cases(),
             'resolutions' => CashPayoutResolution::cases(),

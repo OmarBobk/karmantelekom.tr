@@ -10,6 +10,7 @@ use App\Livewire\Backend\Concerns\UsesOperationalLocale;
 use App\Models\InventoryBalance;
 use App\Models\ProductDefinition;
 use App\Models\Store;
+use App\Services\Reporting\OutOfStock;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
@@ -37,6 +38,10 @@ class StoreInventory extends Component
     #[Url(except: '')]
     public string $units = '';
 
+    /** Out-of-stock products previously stocked here; empty string means no stock filter. */
+    #[Url(except: '')]
+    public string $stock = '';
+
     public string $catalogSearch = '';
 
     /** @var list<string> */
@@ -48,6 +53,7 @@ class StoreInventory extends Component
 
         $this->store = $store;
         $this->units = in_array($this->units, self::UNIT_FILTERS, true) ? $this->units : '';
+        $this->stock = $this->stock === OutOfStock::FILTER ? OutOfStock::FILTER : '';
     }
 
     public function updatedSearch(): void
@@ -61,9 +67,21 @@ class StoreInventory extends Component
         $this->resetPage();
     }
 
+    public function updatedStock(): void
+    {
+        $this->stock = $this->stock === OutOfStock::FILTER ? OutOfStock::FILTER : '';
+        $this->resetPage();
+    }
+
     public function clearUnitsFilter(): void
     {
         $this->units = '';
+        $this->resetPage();
+    }
+
+    public function clearStockFilter(): void
+    {
+        $this->stock = '';
         $this->resetPage();
     }
 
@@ -105,13 +123,13 @@ class StoreInventory extends Component
         $this->authorize('viewInventory', $this->store);
 
         $storeId = $this->store->id;
-
+        $outOfStock = $this->stock === OutOfStock::FILTER;
         $unitStatuses = $this->unitStatusesForFilter();
 
-        $products = ProductDefinition::query()
+        $products = ($outOfStock ? OutOfStock::definitions($this->store) : ProductDefinition::query()
             ->where(fn (Builder $stocked) => $stocked
                 ->whereHas('balances', fn (Builder $balances) => $balances->where('store_id', $storeId))
-                ->orWhereHas('units', fn (Builder $units) => $units->where('store_id', $storeId)))
+                ->orWhereHas('units', fn (Builder $units) => $units->where('store_id', $storeId))))
             ->when($unitStatuses !== null, fn (Builder $query) => $query->whereHas(
                 'units',
                 fn (Builder $units) => $units->where('store_id', $storeId)->whereIn('status', $unitStatuses)
@@ -127,13 +145,15 @@ class StoreInventory extends Component
                 ->where('status', UnitStatus::AVAILABLE)])
             ->with(['brand:id,name', 'category:id,name'])
             ->orderBy('name')
+            ->orderBy('id')
             ->paginate(25);
 
         return view('livewire.backend.inventory.store-inventory', [
             'products' => $products,
             'catalogMatches' => $this->catalogMatches(),
-            'isFiltering' => trim($this->search) !== '' || $this->units !== '',
+            'isFiltering' => trim($this->search) !== '' || $this->units !== '' || $outOfStock,
             'unitsFilter' => $this->units,
+            'stockFilter' => $this->stock,
             'setupOpen' => $this->store->refresh()->inventorySetupIsOpen(),
             'canAdjust' => Gate::allows('adjustInventory', $this->store),
             ...$this->localeViewData(),

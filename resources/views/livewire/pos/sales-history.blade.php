@@ -8,6 +8,12 @@
             <h1 id="pos-history-title" class="text-xl font-semibold text-gray-900">{{ __('pos.history.title') }}</h1>
             <p class="text-sm text-gray-600">{{ $seesAll ? __('pos.history.scope_all') : __('pos.history.scope_own') }}</p>
         </div>
+        @if ($canExport)
+            <div class="max-w-md text-end">
+                <a href="{{ route('pos.sales.export', [$store, 'from' => $from, 'to' => $to, 'q' => $search]) }}" class="inline-flex min-h-11 items-center rounded-lg px-4 text-sm font-semibold text-blue-700 ring-1 ring-blue-200 hover:bg-blue-50">{{ __('reports.export.download') }}</a>
+                <p class="mt-1 text-xs text-gray-500">{{ __('reports.export.help') }}</p>
+            </div>
+        @endif
     </div>
 
     <form wire:submit="applyFilters" role="search" class="flex flex-wrap items-end gap-3 rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-200">

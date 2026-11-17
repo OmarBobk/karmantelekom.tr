@@ -79,13 +79,15 @@ class FinanceOverview extends Component
         $user = auth()->user();
         $stores = Store::query()->accessibleTo($user)->orderBy('code')->get();
         $rangeError = LocalDateRange::error($this->from, $this->to);
+        $canExportSuppliers = $user->can('viewAccounts', OperationalSupplier::class);
 
         return view('livewire.backend.reports.finance-overview', [
             'rangeError' => $rangeError,
             'expenses' => $this->expenses($this->storesWhere($stores, $user, 'manageExpenses'), $rangeError),
             'cashbox' => $this->cashbox($this->storesWhere($stores, $user, 'manageCashbox'), $rangeError),
-            'suppliers' => $user->can('viewAccounts', OperationalSupplier::class) ? $this->suppliers($stores) : null,
+            'suppliers' => $canExportSuppliers ? $this->suppliers($stores) : null,
             'debts' => $this->debts($this->storesWhere($stores, $user, 'receiveCustomerPayments')),
+            'canExportSuppliers' => $canExportSuppliers,
             'canViewDashboard' => $user->can('viewOperationsDashboard', Store::class),
             'canViewReview' => $user->can('viewOperationalReview', Store::class),
             'canViewAudit' => $user->can('viewAuditLog', Store::class),

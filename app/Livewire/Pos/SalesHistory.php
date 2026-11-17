@@ -8,6 +8,7 @@ use App\Livewire\Pos\Concerns\UsesPosLocale;
 use App\Models\Sale;
 use App\Models\Store;
 use App\Services\Reporting\LocalDateRange;
+use App\Services\Reporting\SalesCsv;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
@@ -83,7 +84,7 @@ class SalesHistory extends Component
             $sales = new EmptyPaginator([], 0, 25);
             $summary = null;
         } else {
-            $filtered = $this->filteredSales($store, $from, $to);
+            $filtered = SalesCsv::query(auth()->user(), $store, $this->search, $from, $to);
             $summary = $seesAll ? Sale::recordedSummary($filtered->clone()) : null;
             $sales = $this->page($filtered);
         }
@@ -94,14 +95,13 @@ class SalesHistory extends Component
             'summary' => $summary,
             'rangeError' => $rangeError,
             'seesAll' => $seesAll,
+            'canExport' => $seesAll && $rangeError === null,
             'isFiltering' => Str::trim($this->search) !== '' || $from !== '',
             ...$this->localeViewData(),
         ])->layout('layouts.pos', ['posStore' => $store])->title(__('pos.history.title'));
     }
 
     /**
-     * The effective Istanbul date bounds, or two blanks when the history is unfiltered by date.
-     *
      * @return array{0: string, 1: string}
      */
     private function range(): array
@@ -118,38 +118,10 @@ class SalesHistory extends Component
         return [$from === '' ? $to : $from, $to === '' ? $from : $to];
     }
 
-    /**
-     * Rewrite a legacy ?date= or a single bound into explicit from/to.
-     */
     private function normalizeRange(): void
     {
         [$this->from, $this->to] = $this->range();
         $this->date = '';
-    }
-
-    /**
-     * Sales visible to the user in this store that match the search and period. The summary
-     * and the page are both read from this query.
-     *
-     * @return Builder<Sale>
-     */
-    private function filteredSales(Store $store, string $from, string $to): Builder
-    {
-        $term = Str::trim($this->search);
-        $like = '%'.addcslashes($term, '%_\\').'%';
-
-        return Sale::query()
-            ->visibleTo(auth()->user(), $store)
-            ->when($term !== '', fn ($query) => $query->where(fn ($inner) => $inner
-                ->where('number', 'like', $like)
-                ->orWhereHas('lines', fn ($lines) => $lines
-                    ->where('unit_identifier', $term)
-                    ->orWhereHas('unit.identifiers', fn ($identifiers) => $identifiers->where('value', mb_strtoupper($term)))
-                    ->orWhere('product_name', 'like', $like)
-                    ->orWhere('sku', $term)
-                    ->orWhere('barcode', $term))
-                ->orWhereHas('payments', fn ($payments) => $payments->where('terminal_reference', $term))))
-            ->when($from !== '', fn ($query) => $query->completedOnLocalDays(LocalDateRange::date($from), LocalDateRange::date($to)));
     }
 
     /**
