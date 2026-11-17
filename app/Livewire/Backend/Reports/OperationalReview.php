@@ -8,6 +8,7 @@ use App\Enums\RepairStatus;
 use App\Enums\TrackingMode;
 use App\Enums\UnitStatus;
 use App\Livewire\Backend\Concerns\UsesOperationalLocale;
+use App\Livewire\Backend\Reports\Concerns\UsesReportDateRange;
 use App\Models\DeviceCostEntry;
 use App\Models\DeviceRepair;
 use App\Models\InventoryUnit;
@@ -22,9 +23,7 @@ use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
-use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -36,6 +35,7 @@ use Livewire\WithPagination;
 class OperationalReview extends Component
 {
     use UsesOperationalLocale;
+    use UsesReportDateRange;
     use WithPagination;
 
     public const PER_PAGE = 25;
@@ -59,35 +59,14 @@ class OperationalReview extends Component
         UnitStatus::IN_TRANSIT,
     ];
 
-    #[Url(except: '')]
-    public string $from = '';
-
-    #[Url(except: '')]
-    public string $to = '';
-
     public function mount(): void
     {
         $this->authorize('viewOperationalReview', Store::class);
-
-        $this->from = Str::trim($this->from);
-        $this->to = Str::trim($this->to);
-
-        if ($this->from === '' && $this->to === '') {
-            $this->showToday();
-        }
+        $this->bootReportDateRange();
     }
 
-    public function applyRange(): void
+    protected function afterRangeChanged(): void
     {
-        $this->from = Str::trim($this->from);
-        $this->to = Str::trim($this->to);
-        $this->resetPage('openRepairs');
-        $this->resetPage('closedRepairs');
-    }
-
-    public function showToday(): void
-    {
-        $this->from = $this->to = LocalDateRange::today();
         $this->resetPage('openRepairs');
         $this->resetPage('closedRepairs');
     }

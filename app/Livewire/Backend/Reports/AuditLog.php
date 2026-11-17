@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Livewire\Backend\Reports;
 
 use App\Livewire\Backend\Concerns\UsesOperationalLocale;
+use App\Livewire\Backend\Reports\Concerns\UsesReportDateRange;
 use App\Models\Store;
 use App\Models\User;
 use App\Services\Reporting\LocalDateRange;
@@ -26,13 +27,8 @@ use Spatie\Activitylog\Models\Activity;
 class AuditLog extends Component
 {
     use UsesOperationalLocale;
+    use UsesReportDateRange;
     use WithPagination;
-
-    #[Url(except: '')]
-    public string $from = '';
-
-    #[Url(except: '')]
-    public string $to = '';
 
     #[Url(except: '')]
     public string $storeId = '';
@@ -50,16 +46,11 @@ class AuditLog extends Component
     {
         $this->authorize('viewAuditLog', Store::class);
 
-        $this->from = Str::trim($this->from);
-        $this->to = Str::trim($this->to);
         $this->storeId = Str::trim($this->storeId);
         $this->area = Str::trim($this->area);
         $this->event = Str::trim($this->event);
         $this->actorId = Str::trim($this->actorId);
-
-        if ($this->from === '' && $this->to === '') {
-            $this->showToday();
-        }
+        $this->bootReportDateRange();
     }
 
     public function applyFilters(): void
@@ -73,9 +64,13 @@ class AuditLog extends Component
         $this->resetPage();
     }
 
-    public function showToday(): void
+    public function applyRange(): void
     {
-        $this->from = $this->to = LocalDateRange::today();
+        $this->applyFilters();
+    }
+
+    protected function afterRangeChanged(): void
+    {
         $this->resetPage();
     }
 

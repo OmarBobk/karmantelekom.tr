@@ -1,0 +1,280 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Services\Reporting;
+
+use App\Enums\SalePaymentMethod;
+use App\Models\CustomerDebt;
+use App\Models\Sale;
+use App\Models\SalePayment;
+use App\Services\Purchasing\Money;
+use Carbon\CarbonImmutable;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
+
+/**
+ * Owner dashboard figures for completed POS sales: totals, previous equal period, tender
+ * composition, and chart buckets. Cash payment amounts are the posted net cash due, not
+ * cash tendered. Later debt collections are not sales and are never included.
+ *
+ * Chart series aggregate in SQL using Europe/Istanbul as the fixed UTC+03:00 offset
+ * (no DST since 2016), so named timezone tables are not required.
+ */
+final class RecordedSalesReport
+{
+    public const TENDER_CASH = 'cash';
+
+    public const TENDER_CARD = 'card';
+
+    public const TENDER_CREDIT = 'credit';
+
+    /** @var list<string> */
+    public const TENDERS = [self::TENDER_CASH, self::TENDER_CARD, self::TENDER_CREDIT];
+
+    /**
+     * Fixed Istanbul offset for SQL CONVERT_TZ. Europe/Istanbul has been UTC+03:00 year-round
+     * since DST ended in 2016; named zone tables are not assumed to be loaded.
+     */
+    private const ISTANBUL_UTC_OFFSET = '+03:00';
+
+    /**
+     * Count and recorded total per store for the Istanbul days.
+     *
+     * @param  list<int>  $storeIds
+     * @return array<int, array{count: int, total_minor: int}>
+     */
+    public static function totalsByStore(array $storeIds, CarbonImmutable $from, CarbonImmutable $to): array
+    {
+        return Sale::recordedTotalsByStore($storeIds, $from, $to);
+    }
+
+    /**
+     * Cash, card, and original-credit parts of the same completed sales, per store.
+     * Cash + card + original credit equals the recorded sale total for each store.
+     *
+     * @param  list<int>  $storeIds
+     * @return array<int, array{cash: int, card: int, credit: int, total: int, count: int}>
+     */
+    public static function compositionByStore(array $storeIds, CarbonImmutable $from, CarbonImmutable $to): array
+    {
+        if ($storeIds === []) {
+            return [];
+        }
+
+        [$start, $end] = LocalDateRange::utcBounds($from, $to);
+        $empty = array_fill_keys($storeIds, ['cash' => 0, 'card' => 0, 'credit' => 0, 'total' => 0, 'count' => 0]);
+
+        $totals = Sale::recordedTotalsByStore($storeIds, $from, $to);
+
+        foreach ($totals as $storeId => $row) {
+            $empty[$storeId]['total'] = $row['total_minor'];
+            $empty[$storeId]['count'] = $row['count'];
+        }
+
+        $payments = SalePayment::query()
+            ->whereIn('store_id', $storeIds)
+            ->whereHas('sale', fn ($sale) => $sale->whereIn('store_id', $storeIds)->where('completed_at', '>=', $start)->where('completed_at', '<', $end))
+            ->toBase()
+            ->selectRaw('store_id, method, coalesce(sum(amount), 0) as paid')
+            ->groupBy('store_id', 'method')
+            ->get();
+
+        foreach ($payments as $row) {
+            $storeId = (int) $row->store_id;
+            $amount = Money::fromDecimal((string) $row->paid);
+
+            if ($row->method === SalePaymentMethod::CASH->value) {
+                $empty[$storeId]['cash'] = $amount;
+            } elseif ($row->method === SalePaymentMethod::CARD->value) {
+                $empty[$storeId]['card'] = $amount;
+            }
+        }
+
+        $credits = CustomerDebt::query()
+            ->whereIn('store_id', $storeIds)
+            ->whereHas('sale', fn ($sale) => $sale->whereIn('store_id', $storeIds)->where('completed_at', '>=', $start)->where('completed_at', '<', $end))
+            ->toBase()
+            ->selectRaw('store_id, coalesce(sum(original_amount), 0) as credit')
+            ->groupBy('store_id')
+            ->get();
+
+        foreach ($credits as $row) {
+            $empty[(int) $row->store_id]['credit'] = Money::fromDecimal((string) $row->credit);
+        }
+
+        return $empty;
+    }
+
+    /**
+     * Owner or branch rollup of composition rows.
+     *
+     * @param  array<int, array{cash: int, card: int, credit: int, total: int, count: int}>  $byStore
+     * @return array{cash: int, card: int, credit: int, total: int, count: int}
+     */
+    public static function sumComposition(array $byStore): array
+    {
+        return [
+            'cash' => Money::sumUncapped(array_column($byStore, 'cash')),
+            'card' => Money::sumUncapped(array_column($byStore, 'card')),
+            'credit' => Money::sumUncapped(array_column($byStore, 'credit')),
+            'total' => Money::sumUncapped(array_column($byStore, 'total')),
+            'count' => array_sum(array_column($byStore, 'count')),
+        ];
+    }
+
+    /**
+     * Time buckets for the selected range, filled with zero when a bucket has no sales.
+     * Totals are aggregated in SQL into hour or day keys, then folded into week/month buckets.
+     *
+     * @param  list<int>  $storeIds
+     * @return array{granularity: string, buckets: list<array{key: string, label: string, count: int, total_minor: int, start: string, end_date: string, start_at: string, end_at: string, uses_interval: bool}>}
+     */
+    public static function series(array $storeIds, CarbonImmutable $from, CarbonImmutable $to): array
+    {
+        $granularity = LocalDateRange::chartGranularity($from, $to);
+        $buckets = LocalDateRange::buckets($from, $to, $granularity);
+        $usesInterval = $granularity === LocalDateRange::GRANULARITY_HOUR;
+        $filled = [];
+
+        foreach ($buckets as $bucket) {
+            $filled[$bucket['key']] = [
+                'key' => $bucket['key'],
+                'label' => $bucket['label'],
+                'count' => 0,
+                'total_minor' => 0,
+                'start' => $bucket['start']->setTimezone(Sale::DISPLAY_TIMEZONE)->toDateString(),
+                'end_date' => $bucket['end']->setTimezone(Sale::DISPLAY_TIMEZONE)->subSecond()->toDateString(),
+                'start_at' => LocalDateRange::formatUtcInstant($bucket['start']),
+                'end_at' => LocalDateRange::formatUtcInstant($bucket['end']),
+                'uses_interval' => $usesInterval,
+            ];
+        }
+
+        if ($storeIds === [] || $buckets === []) {
+            return ['granularity' => $granularity, 'buckets' => array_values($filled)];
+        }
+
+        [$start, $end] = LocalDateRange::utcBounds($from, $to);
+        $aggregateFormat = $granularity === LocalDateRange::GRANULARITY_HOUR
+            ? '%Y-%m-%d %H:00'
+            : '%Y-%m-%d';
+        $localExpr = self::istanbulLocalSql($aggregateFormat);
+
+        $rows = Sale::query()
+            ->whereIn('store_id', $storeIds)
+            ->where('completed_at', '>=', $start)
+            ->where('completed_at', '<', $end)
+            ->toBase()
+            ->selectRaw("{$localExpr} as bucket_key, count(*) as sale_count, coalesce(sum(total), 0) as recorded_total")
+            ->groupBy(DB::raw($localExpr))
+            ->get();
+
+        foreach ($rows as $row) {
+            $key = self::mapAggregateKey((string) $row->bucket_key, $granularity, $from);
+
+            if (! isset($filled[$key])) {
+                continue;
+            }
+
+            $filled[$key]['count'] += (int) $row->sale_count;
+            $filled[$key]['total_minor'] = Money::sumUncapped([
+                $filled[$key]['total_minor'],
+                Money::fromDecimal((string) $row->recorded_total),
+            ]);
+        }
+
+        return ['granularity' => $granularity, 'buckets' => array_values($filled)];
+    }
+
+    /**
+     * Matching tender amount for the filtered sales query (cash/card payment sum or original credit).
+     *
+     * @param  Builder<Sale>  $filtered
+     * @return array{count: int, total_minor: int, match_minor: int, tender: string}
+     */
+    public static function tenderSummary(Builder $filtered, string $tender): array
+    {
+        $summary = Sale::recordedSummary($filtered->clone());
+        $saleIds = $filtered->clone()->toBase()->select('sales.id');
+
+        $match = match ($tender) {
+            self::TENDER_CASH, self::TENDER_CARD => Money::fromDecimal((string) (SalePayment::query()
+                ->whereIn('sale_id', $saleIds)
+                ->where('method', $tender === self::TENDER_CASH ? SalePaymentMethod::CASH : SalePaymentMethod::CARD)
+                ->toBase()
+                ->selectRaw('coalesce(sum(amount), 0) as paid')
+                ->value('paid') ?? '0')),
+            self::TENDER_CREDIT => Money::fromDecimal((string) (CustomerDebt::query()
+                ->whereIn('sale_id', $saleIds)
+                ->toBase()
+                ->selectRaw('coalesce(sum(original_amount), 0) as credit')
+                ->value('credit') ?? '0')),
+            default => 0,
+        };
+
+        return [
+            'count' => $summary['count'],
+            'total_minor' => $summary['total_minor'],
+            'match_minor' => $match,
+            'tender' => $tender,
+        ];
+    }
+
+    public static function isTender(string $value): bool
+    {
+        return in_array($value, self::TENDERS, true);
+    }
+
+    /**
+     * Query parameters that open authorized sales history for one chart/table bucket.
+     *
+     * @param  array{start: string, end_date: string, start_at: string, end_at: string, uses_interval: bool}  $bucket
+     * @return array{from: string, to: string, from_at?: string, to_at?: string}
+     */
+    public static function bucketHistoryParams(array $bucket): array
+    {
+        $params = [
+            'from' => $bucket['start'],
+            'to' => $bucket['end_date'],
+        ];
+
+        if ($bucket['uses_interval']) {
+            $params['from_at'] = $bucket['start_at'];
+            $params['to_at'] = $bucket['end_at'];
+        }
+
+        return $params;
+    }
+
+    private static function istanbulLocalSql(string $format): string
+    {
+        $offset = self::ISTANBUL_UTC_OFFSET;
+
+        return "DATE_FORMAT(CONVERT_TZ(completed_at, '+00:00', '{$offset}'), '{$format}')";
+    }
+
+    private static function mapAggregateKey(string $aggregateKey, string $granularity, CarbonImmutable $rangeFrom): string
+    {
+        return match ($granularity) {
+            LocalDateRange::GRANULARITY_HOUR, LocalDateRange::GRANULARITY_DAY => $aggregateKey,
+            LocalDateRange::GRANULARITY_WEEK => self::weekBucketStart(
+                CarbonImmutable::createFromFormat('!Y-m-d', $aggregateKey, Sale::DISPLAY_TIMEZONE)
+                    ?? CarbonImmutable::parse($aggregateKey, Sale::DISPLAY_TIMEZONE),
+                $rangeFrom,
+            )->toDateString(),
+            LocalDateRange::GRANULARITY_MONTH => substr($aggregateKey, 0, 7),
+            default => $aggregateKey,
+        };
+    }
+
+    private static function weekBucketStart(CarbonImmutable $local, CarbonImmutable $rangeFrom): CarbonImmutable
+    {
+        $from = $rangeFrom->setTimezone(Sale::DISPLAY_TIMEZONE)->startOfDay();
+        $day = $local->setTimezone(Sale::DISPLAY_TIMEZONE)->startOfDay();
+        // Carbon 3 returns a float day count; cast before intdiv under strict_types.
+        $offset = (int) $from->diffInDays($day);
+
+        return $from->addDays(intdiv($offset, 7) * 7);
+    }
+}

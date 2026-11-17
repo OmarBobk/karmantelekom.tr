@@ -6,18 +6,19 @@ namespace App\Livewire\Backend\Reports;
 
 use App\Enums\UnitStatus;
 use App\Livewire\Backend\Concerns\UsesOperationalLocale;
-use App\Models\Sale;
+use App\Livewire\Backend\Reports\Concerns\UsesReportDateRange;
 use App\Models\Store;
 use App\Models\User;
+use App\Services\Purchasing\LocalizedMoney;
 use App\Services\Purchasing\Money;
 use App\Services\Reporting\LocalDateRange;
+use App\Services\Reporting\NeedsAttention;
 use App\Services\Reporting\OutOfStock;
+use App\Services\Reporting\RecordedSalesReport;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
-use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Locked;
-use Livewire\Attributes\Url;
 use Livewire\Component;
 
 /**
@@ -28,15 +29,10 @@ use Livewire\Component;
 class OperationsDashboard extends Component
 {
     use UsesOperationalLocale;
+    use UsesReportDateRange;
 
     #[Locked]
     public ?int $storeId = null;
-
-    #[Url(except: '')]
-    public string $from = '';
-
-    #[Url(except: '')]
-    public string $to = '';
 
     public function mount(?Store $store = null): void
     {
@@ -47,23 +43,7 @@ class OperationsDashboard extends Component
             $this->storeId = $store->id;
         }
 
-        $this->from = Str::trim($this->from);
-        $this->to = Str::trim($this->to);
-
-        if ($this->from === '' && $this->to === '') {
-            $this->showToday();
-        }
-    }
-
-    public function applyRange(): void
-    {
-        $this->from = Str::trim($this->from);
-        $this->to = Str::trim($this->to);
-    }
-
-    public function showToday(): void
-    {
-        $this->from = $this->to = LocalDateRange::today();
+        $this->bootReportDateRange();
     }
 
     #[Layout('layouts.backend')]
@@ -74,22 +54,91 @@ class OperationsDashboard extends Component
         $user = auth()->user();
         $stores = $this->stores($user);
         $rangeError = LocalDateRange::error($this->from, $this->to);
-        $totals = $rangeError === null
-            ? Sale::recordedTotalsByStore($stores->modelKeys(), LocalDateRange::date($this->from), LocalDateRange::date($this->to))
-            : [];
+        $from = $rangeError === null ? LocalDateRange::date($this->from) : null;
+        $to = $rangeError === null ? LocalDateRange::date($this->to) : null;
 
-        $rows = $stores->map(fn (Store $store): array => [
-            'store' => $store,
-            'count' => $totals[$store->id]['count'] ?? 0,
-            'total_minor' => $totals[$store->id]['total_minor'] ?? 0,
-        ]);
+        $totals = $from !== null ? RecordedSalesReport::totalsByStore($stores->modelKeys(), $from, $to) : [];
+        $previousTotals = [];
+        $previousFrom = null;
+        $previousTo = null;
+        $composition = [];
+        $series = null;
+        $incomplete = false;
+
+        if ($from !== null) {
+            [$previousFrom, $previousTo] = LocalDateRange::previousEqual($from, $to);
+            $previousTotals = RecordedSalesReport::totalsByStore($stores->modelKeys(), $previousFrom, $previousTo);
+            $composition = RecordedSalesReport::compositionByStore($stores->modelKeys(), $from, $to);
+            $series = RecordedSalesReport::series($stores->modelKeys(), $from, $to);
+            $incomplete = LocalDateRange::includesToday($from, $to);
+        }
+
+        $rows = $stores->map(function (Store $store) use ($totals, $previousTotals, $composition): array {
+            $current = $totals[$store->id] ?? ['count' => 0, 'total_minor' => 0];
+            $previous = $previousTotals[$store->id] ?? ['count' => 0, 'total_minor' => 0];
+            $parts = $composition[$store->id] ?? ['cash' => 0, 'card' => 0, 'credit' => 0, 'total' => 0, 'count' => 0];
+
+            return [
+                'store' => $store,
+                'count' => $current['count'],
+                'total_minor' => $current['total_minor'],
+                'previous_count' => $previous['count'],
+                'previous_total_minor' => $previous['total_minor'],
+                'count_delta' => $current['count'] - $previous['count'],
+                'total_delta' => $current['total_minor'] - $previous['total_minor'],
+                'cash' => $parts['cash'],
+                'card' => $parts['card'],
+                'credit' => $parts['credit'],
+            ];
+        });
+
+        $ownerCount = $rows->sum('count');
+        $ownerTotalMinor = Money::sumUncapped($rows->pluck('total_minor'));
+        $ownerPreviousCount = $rows->sum('previous_count');
+        $ownerPreviousTotalMinor = Money::sumUncapped($rows->pluck('previous_total_minor'));
+        $ownerComposition = RecordedSalesReport::sumComposition(
+            $rows->mapWithKeys(fn (array $row): array => [$row['store']->id => [
+                'cash' => $row['cash'],
+                'card' => $row['card'],
+                'credit' => $row['credit'],
+                'total' => $row['total_minor'],
+                'count' => $row['count'],
+            ]])->all()
+        );
+
+        $chartPayload = $rangeError === null ? $this->chartPayload($rows, $series, $from, $to) : null;
+        // Remount wire:ignore charts when authorized totals change inside the same from/to.
+        $chartVersion = $chartPayload === null
+            ? 'none'
+            : substr(hash('xxh128', json_encode([
+                $ownerCount,
+                $ownerTotalMinor,
+                $chartPayload['time']['totals'],
+                $chartPayload['time']['formatted'],
+                $chartPayload['time']['links'],
+                $chartPayload['branches']['totals'],
+                $chartPayload['branches']['formatted'],
+                $chartPayload['branches']['links'],
+            ], JSON_THROW_ON_ERROR)), 0, 16);
 
         return view('livewire.backend.reports.operations-dashboard', [
             'branch' => $this->storeId === null ? null : $stores->first(),
             'rows' => $rows,
             'rangeError' => $rangeError,
-            'ownerCount' => $rows->sum('count'),
-            'ownerTotalMinor' => Money::sumUncapped($rows->pluck('total_minor')),
+            'previousFrom' => $previousFrom?->toDateString(),
+            'previousTo' => $previousTo?->toDateString(),
+            'incomplete' => $incomplete,
+            'ownerCount' => $ownerCount,
+            'ownerTotalMinor' => $ownerTotalMinor,
+            'ownerPreviousCount' => $ownerPreviousCount,
+            'ownerPreviousTotalMinor' => $ownerPreviousTotalMinor,
+            'ownerCountDelta' => $ownerCount - $ownerPreviousCount,
+            'ownerTotalDelta' => $ownerTotalMinor - $ownerPreviousTotalMinor,
+            'ownerComposition' => $ownerComposition,
+            'series' => $series,
+            'chartPayload' => $chartPayload,
+            'chartVersion' => $chartVersion,
+            'attention' => NeedsAttention::for($user, $stores),
             'inventory' => $this->inventory($stores->filter(fn (Store $store): bool => $user->can('viewInventory', $store))),
             'canViewFinance' => $user->can('viewFinanceOverview', Store::class),
             'canViewReview' => $user->can('viewOperationalReview', Store::class),
@@ -101,8 +150,6 @@ class OperationsDashboard extends Component
     }
 
     /**
-     * The branch shown, or every accessible branch where the user may see all sales.
-     *
      * @return Collection<int, Store>
      */
     private function stores(User $user): Collection
@@ -123,9 +170,6 @@ class OperationsDashboard extends Component
     }
 
     /**
-     * Current quantity on hand, available devices, and out-of-stock product counts, using the
-     * inventory screen's physical-stock definitions (not sellable-after-holds).
-     *
      * @param  Collection<int, Store>  $stores
      * @return Collection<int, Store>
      */
@@ -147,5 +191,72 @@ class OperationsDashboard extends Component
             ->each(function (Store $store) use ($outOfStock): void {
                 $store->setAttribute('out_of_stock_count', $outOfStock[$store->id] ?? 0);
             });
+    }
+
+    /**
+     * Authorized chart series only — no hidden storefront or profit datasets.
+     *
+     * @param  \Illuminate\Support\Collection<int, array<string, mixed>>  $rows
+     * @param  array{granularity: string, buckets: list<array<string, mixed>>}|null  $series
+     * @return array{time: array<string, mixed>, branches: array<string, mixed>}
+     */
+    private function chartPayload($rows, ?array $series, $from, $to): array
+    {
+        $branchLabels = $rows->map(fn (array $row): string => $row['store']->code)->values()->all();
+        $branchTotals = $rows->map(fn (array $row): float => round($row['total_minor'] / 100, 2))->values()->all();
+        $branchLinks = $rows->map(fn (array $row): string => route('pos.sales', [
+            $row['store'],
+            'from' => $this->from,
+            'to' => $this->to,
+        ]))->values()->all();
+
+        $timeLabels = [];
+        $timeTotals = [];
+        $timeLinks = [];
+        $branchStore = $this->storeId === null ? null : $rows->first()['store'];
+
+        foreach ($series['buckets'] ?? [] as $bucket) {
+            $timeLabels[] = $bucket['label'];
+            $timeTotals[] = round($bucket['total_minor'] / 100, 2);
+            $params = RecordedSalesReport::bucketHistoryParams($bucket);
+
+            if ($branchStore !== null) {
+                $timeLinks[] = route('pos.sales', [$branchStore, ...$params]);
+            } elseif ($bucket['uses_interval']) {
+                // Consolidated hourly buckets keep the interval on per-branch table links only.
+                $timeLinks[] = '';
+            } else {
+                $timeLinks[] = route('subdomain.operations.dashboard', [
+                    'from' => $params['from'],
+                    'to' => $params['to'],
+                ]);
+            }
+        }
+
+        return [
+            'locale' => $this->localeViewData()['locale'],
+            'direction' => $this->localeViewData()['textDirection'],
+            'currency' => 'TRY',
+            'recordedLabel' => __('reports.sales.total'),
+            'notProfit' => __('reports.sales.chart_not_profit'),
+            'granularity' => $series['granularity'] ?? LocalDateRange::GRANULARITY_DAY,
+            'granularityLabel' => __('reports.sales.granularity.'.($series['granularity'] ?? LocalDateRange::GRANULARITY_DAY)),
+            'singleDay' => $from !== null && $from->equalTo($to),
+            'time' => [
+                'labels' => $timeLabels,
+                'totals' => $timeTotals,
+                'links' => $timeLinks,
+                'formatted' => array_map(
+                    fn (array $bucket): string => LocalizedMoney::format($bucket['total_minor']).' TRY',
+                    $series['buckets'] ?? []
+                ),
+            ],
+            'branches' => [
+                'labels' => $branchLabels,
+                'totals' => $branchTotals,
+                'links' => $branchLinks,
+                'formatted' => $rows->map(fn (array $row): string => LocalizedMoney::format($row['total_minor']).' TRY')->values()->all(),
+            ],
+        ];
     }
 }

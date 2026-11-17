@@ -1321,7 +1321,7 @@ Inventory purchases, device costs, operating expenses, refunds, and payments mus
 4. **Post-check (read-only on the application database).** Confirm migration status again. Re-run `SHOW FULL COLUMNS FROM network_reservations WHERE Field='requested_at'` — `Extra` must be empty and `Default` `current_timestamp()`. Do not update application reservation rows as a spot-check; prove ON UPDATE removal on isolated test data (`RequestedAtImmutabilityTest` / testing database). Do not `migrate:rollback` this migration; rollback is intentionally refused.
 5. **Historical dates.** This migration prevents future `requested_at` drift. It does not repair already-drifted rows; safe historical recovery remains unresolved (see above).
 
-**Batch 4: out-of-stock visibility and CSV exports** (branch `phase-8-stockouts-exports`; review, manual acceptance, merge, and application deployment pending):
+**Batch 4: out-of-stock visibility and CSV exports** (merged through PR #34 as squash `bbc62e8`; review and Omar’s walkthrough acceptance were recorded for that PR; application deployment status is not verified):
 
 - **Scope.** One PR: owner out-of-stock counts on the operations dashboard with inventory drill-down (`stock=out`), and CSV downloads on sales history, expense history, customer balances, and supplier balances. No migration, threshold settings, new permission, dependency, export job, notification, purchase automation, costing, or profit implementation.
 - **Approved decisions.**
@@ -1335,19 +1335,30 @@ Inventory purchases, device costs, operating expenses, refunds, and payments mus
 - **Verification.** `OutOfStockVisibilityTest` and `ReportCsvExportTest` (HTTP endpoints, auth/permission/branch refusals, multi-batch filter parity, CSV round-trip, formula prefixes, Arabic headers, related-query batch growth), plus related dashboard, inventory, and finance tests after final edits.
 - **Profit.** Weighted Average Cost remains the approved direction for quantity products. Detailed WAC timing, snapshots, FX, tax, device cost basis, double-counting, cross-store attribution, and returns (Ask P1–P10) remain unresolved proposals — not implemented and not marked deferred past production rollout without Omar’s approval.
 
+**Batch 5: owner dashboard clarity, visual reporting, and product-quality duties** (branch `phase-8-owner-dashboard-ux`; review, Omar’s acceptance, merge, and application deployment pending):
+
+- **Scope.** One PR separate from batch 4: lead recorded-sales figures with previous equal Istanbul period comparison, Chart.js sales-over-time and branch comparison (reuse existing CDN load), cash/card/original-credit composition with sales-history tender filters and CSV parity, current Needs attention exceptions, shared date presets across dashboard/finance/review/audit, and amendments to the collaboration workflow plus UI rules for explicit product-quality responsibility. No migration, new chart package, profit/costing, configurable low-stock thresholds, overdue classifications, write actions, or broader dashboard entry permissions.
+- **Approved reporting definitions.** Spec §15.2E. Previous equal period = same number of Istanbul calendar days immediately before `from`. Incomplete marker when the selected range includes today. Net posted cash/card payments + original credit = recorded sales. Charts and composition reuse authorized completed-sale data only.
+- **Implementation notes.** `LocalDateRange` presets/`previousEqual`/`includesToday`/chart granularity/UTC interval helpers; `RecordedSalesReport` SQL-aggregated series (Istanbul UTC+03:00) and `NeedsAttention` (current exceptions outside invalid periods; destination-gated links; summarized supplier mismatches); shared `UsesReportDateRange` + `x-operations.report-date-range`; dashboard Chart.js remount via `chartVersion` fingerprint; sales-history `tender` + exact `from_at`/`to_at` interval with CSV parity; workflow Ask/Agent/Review product-quality duties.
+- **Review fixes on PR #35** (weekly `diffInDays` cast, same-range chart freshness, hourly interval drill-down, Needs attention outside invalid ranges and link gates, bounded series aggregation; visible controllable hourly interval with shared history/CSV validation and safe `utcInstant` refusal; supplier-mismatch destination authorized for account-only owners).
+- **Verification.** `OwnerDashboardUxTest` plus related `OperationsDashboardTest`, `ReportCsvExportTest`, finance/review/audit tests. Rendered Arabic RTL / English LTR checks: same-mounted dashboard chart remount after an isolated-DB sale (before 150,00 TRY / 2 sales → after 200,00 TRY / 3 sales with matching Chart.js buckets; two range changes left exactly two canvases, no open tooltips, no page JS errors) verified on disposable `dev_store_browser_pr35` via `php artisan serve :8765` (not the application database). Prior hourly-interval browser evidence on EN LTR narrow width remains from the review-fix pass.
+- **Deferred from the batch 5 Ask (not implemented):** backend-shell document direction and physical-spacing RTL for the owner chrome; inventory list last-movement context on out-of-stock/stocked rows; counter cashbox session visibility before payment; debt-age buckets beyond existing finance totals; Chart.js/CDN loading cleanup on operational routes that do not need charts.
+
 **Remaining Phase 8 work:**
 
 - Sales profit and approved costing / valuation rules (WAC direction approved; detailed rules open).
 - Configurable low-stock thresholds (pre-zero alerts); out-of-stock visibility is delivered in batch 4.
 - Broader used-device profit reporting beyond recorded costs.
 - Optional historical repair of already-drifted `requested_at` values (only if Omar approves a safe evidence-based procedure).
+- Deferred UX opportunities recorded under batch 5 (backend shell direction, inventory movement context, counter cashbox visibility, debt-age presentation, CDN cleanup).
 
 **Open decisions:**
 
 - **Low-stock threshold.** Out-of-stock visibility is approved (L1/L2). Configurable per-branch/product thresholds remain open (see the deferred decisions register).
-- **Employee dashboards.** Whether employees get a dashboard, such as their own sales today. Batches 1–4 are owner-only for these overview screens.
-- **Daily operating reports.** Batches 1–4 are slices of "exact reports required for daily operations", not the final set.
-- **Profit / cost basis.** Detailed rules unresolved; recorded costs in batch 3 are not valuation or profit; batch 4 does not implement profit.
+- **Employee dashboards.** Whether employees get a dashboard, such as their own sales today. Batches 1–5 are owner-only for these overview screens.
+- **Daily operating reports.** Batches 1–5 are slices of "exact reports required for daily operations", not the final set.
+- **Profit / cost basis.** Detailed rules unresolved; recorded costs in batch 3 are not valuation or profit; batches 4–5 do not implement profit.
+- **Backend shell direction.** Whether the storefront admin chrome follows the operational locale (Arabic RTL) or stays English LTR — deferred from batch 5.
 
 ---
 
