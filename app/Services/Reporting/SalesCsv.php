@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Reporting;
 
+use App\Enums\SalePaymentMethod;
 use App\Models\Sale;
 use App\Models\Store;
 use App\Models\User;
@@ -17,14 +18,16 @@ use Illuminate\Support\Str;
 final class SalesCsv
 {
     /**
-     * Completed sales the user may see in this store that match search and Istanbul date bounds.
+     * Completed sales the user may see in this store that match search, Istanbul date bounds,
+     * and an optional tender filter (cash, card, or original credit).
      *
      * @return Builder<Sale>
      */
-    public static function query(User $user, Store $store, string $search, string $from, string $to): Builder
+    public static function query(User $user, Store $store, string $search, string $from, string $to, string $tender = ''): Builder
     {
         $term = Str::trim($search);
         $like = '%'.addcslashes($term, '%_\\').'%';
+        $tender = Str::trim($tender);
 
         return Sale::query()
             ->visibleTo($user, $store)
@@ -37,7 +40,13 @@ final class SalesCsv
                     ->orWhere('sku', $term)
                     ->orWhere('barcode', $term))
                 ->orWhereHas('payments', fn ($payments) => $payments->where('terminal_reference', $term))))
-            ->when($from !== '', fn ($query) => $query->completedOnLocalDays(LocalDateRange::date($from), LocalDateRange::date($to)));
+            ->when($from !== '', fn ($query) => $query->completedOnLocalDays(LocalDateRange::date($from), LocalDateRange::date($to)))
+            ->when(RecordedSalesReport::isTender($tender), fn ($query) => match ($tender) {
+                RecordedSalesReport::TENDER_CASH => $query->whereHas('payments', fn ($payments) => $payments->where('method', SalePaymentMethod::CASH)),
+                RecordedSalesReport::TENDER_CARD => $query->whereHas('payments', fn ($payments) => $payments->where('method', SalePaymentMethod::CARD)),
+                RecordedSalesReport::TENDER_CREDIT => $query->whereHas('debt'),
+                default => $query,
+            });
     }
 
     /**

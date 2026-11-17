@@ -7,6 +7,7 @@ alwaysApply: false
 # Design the task before styling the screen
 
 - Identify the operator, current branch, primary action, frequency, and device from the request and nearby workflow. Read only relevant product constraints.
+- In Ask, state the operator’s question and the decision the screen must support before choosing layout. Proactively consider presentation, interaction, and reusable tools already in the stack; explain permission and data prerequisites.
 - Base decisions on usability, existing identity, and evidence appropriate to the task. Consult `DESIGN.md` when current project guidance calls for it and the file exists. Use design judgment within the existing identity.
 - Reuse established patterns. For a new workflow or major redesign, use karman-ux-benchmark when a concrete design question needs evidence and karman-ui-design when it helps implement the chosen direction.
 - A local field or visual fix normally needs the existing component and applicable framework docs. Reuse a previously established benchmark decision.
@@ -14,8 +15,8 @@ alwaysApply: false
 
 ## Review the touched journey
 
-Use [the collaboration agreement’s affected-flow checklist](../../Docs/COLLABORATION_WORKFLOW.md#6-ui-quality-in-the-affected-flow). For operational screens, make the current branch and record visible and keep the primary action easy to scan. For lists, distinguish no data from no matches and offer a useful filter reset with stable sorting.
+Use [the collaboration agreement’s affected-flow checklist](../../Docs/COLLABORATION_WORKFLOW.md#6-ui-quality-in-the-affected-flow). For operational screens, make the current branch and record visible and keep the primary action easy to scan. For lists, distinguish no data from no matches and offer a useful filter reset with stable sorting. In Review, separate “can the operator comprehend the answer and complete the task?” from calculation correctness, type, contrast, and direction.
 
 ## Finish with evidence appropriate to risk
 
-Follow the [verification scope and ownership](../../Docs/COLLABORATION_WORKFLOW.md#4-proportionate-verification-and-cost). Use karman-ui-review for an applicable visual review and limit it to the relevant route, viewport, role, and boundary.
+Follow the [verification scope and ownership](../../Docs/COLLABORATION_WORKFLOW.md#4-proportionate-verification-and-cost). Use karman-ui-review for an applicable visual review and limit it to the relevant route, viewport, role, and boundary. Meaningful interface changes need proportionate rendered evidence; PHP tests alone are not visual acceptance.

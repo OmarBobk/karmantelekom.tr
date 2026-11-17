@@ -31,7 +31,8 @@ class SalesCsvController extends Controller
         abort_if($from !== '' && LocalDateRange::error($from, $to) !== null, 422, __('reports.export.range_required'));
 
         $search = mb_substr(Str::trim((string) $request->query('q', '')), 0, 80);
-        $filtered = SalesCsv::query($request->user(), $store, $search, $from, $to);
+        $tender = Str::trim((string) $request->query('tender', ''));
+        $filtered = SalesCsv::query($request->user(), $store, $search, $from, $to, $tender);
 
         return CsvExporter::download(
             __('reports.export.sales_filename', ['store' => $store->code, 'date' => LocalDateRange::today()]),

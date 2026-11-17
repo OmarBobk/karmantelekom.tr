@@ -56,28 +56,12 @@
         </div>
     </div>
 
-    <form wire:submit="applyRange" class="rounded-xl bg-white p-4 shadow-sm ring-1 ring-gray-200">
-        <fieldset>
-            <legend class="text-sm font-semibold text-gray-900">{{ __('reports.review.range_legend') }}</legend>
-            <div class="mt-2 flex flex-wrap items-end gap-3">
-                <div>
-                    <label for="review-from" class="block text-sm font-medium text-gray-800">{{ __('reports.range.from') }}</label>
-                    <input id="review-from" type="date" wire:model="from" dir="ltr" required @if ($rangeError) aria-invalid="true" aria-describedby="review-range-error" @endif class="mt-1 block min-h-11 rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                </div>
-                <div>
-                    <label for="review-to" class="block text-sm font-medium text-gray-800">{{ __('reports.range.to') }}</label>
-                    <input id="review-to" type="date" wire:model="to" dir="ltr" required @if ($rangeError) aria-invalid="true" aria-describedby="review-range-error" @endif class="mt-1 block min-h-11 rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                </div>
-                <button type="submit" wire:loading.attr="disabled" class="inline-flex min-h-11 items-center rounded-lg bg-blue-600 px-4 text-sm font-semibold text-white hover:bg-blue-700 disabled:opacity-60">{{ __('reports.range.apply') }}</button>
-                <button type="button" wire:click="showToday" wire:loading.attr="disabled" class="inline-flex min-h-11 items-center rounded-lg px-4 text-sm font-semibold text-gray-700 ring-1 ring-gray-300 hover:bg-gray-50 disabled:opacity-60">{{ __('reports.range.today') }}</button>
-                <span wire:loading class="text-sm text-gray-500" role="status">{{ __('reports.range.loading') }}</span>
-            </div>
-            @if ($rangeError)
-                <p id="review-range-error" role="alert" class="mt-2 text-sm font-medium text-red-700">{{ __('reports.range.'.$rangeError) }}</p>
-            @endif
-            <p class="mt-2 text-xs text-gray-500">{{ __('reports.review.range_note') }}</p>
-        </fieldset>
-    </form>
+    <x-operations.report-date-range
+        id="review-range"
+        :legend="__('reports.review.range_legend')"
+        :note="__('reports.review.range_note')"
+        :range-error="$rangeError"
+    />
 
     @if (! $network && ! $devices)
         <div class="rounded-xl border-2 border-dashed border-gray-300 bg-white px-6 py-12 text-center">

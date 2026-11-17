@@ -14,3 +14,4 @@ alwaysApply: false
 - For dialogs, preserve focus entry, keyboard navigation, Escape behavior where appropriate, and return focus.
 - Use semantic HTML and text labels for statuses. Design touch targets for the operating device and respect reduced motion.
 - Apply karman-ui.mdc to the user journey and 310-money-and-fields.mdc when values or inputs are involved.
+- On operational reports, choose the clearest presentation the installed stack already supports. Prefer text and links when they answer the operator’s question; reuse an already-loaded chart capability when a useful visualization is clearer. Do not require a table to “fail” before considering a chart, and do not add a new chart package without Omar’s dependency approval.

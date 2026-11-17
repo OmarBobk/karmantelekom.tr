@@ -7,6 +7,7 @@ namespace App\Livewire\Backend\Reports;
 use App\Enums\CashboxTransferKind;
 use App\Enums\ExpenseCategory;
 use App\Livewire\Backend\Concerns\UsesOperationalLocale;
+use App\Livewire\Backend\Reports\Concerns\UsesReportDateRange;
 use App\Models\CashboxSession;
 use App\Models\Expense;
 use App\Models\OperationalSupplier;
@@ -19,9 +20,7 @@ use App\Services\Reporting\LocalDateRange;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Pagination\LengthAwarePaginator;
-use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
-use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
 
@@ -34,40 +33,21 @@ use Livewire\WithPagination;
 class FinanceOverview extends Component
 {
     use UsesOperationalLocale;
+    use UsesReportDateRange;
     use WithPagination;
 
     public const PER_PAGE = 25;
 
     private const PENDING_COLUMNS = 'count(*) as pending_count, coalesce(sum(amount), 0) as pending_amount';
 
-    #[Url(except: '')]
-    public string $from = '';
-
-    #[Url(except: '')]
-    public string $to = '';
-
     public function mount(): void
     {
         $this->authorize('viewFinanceOverview', Store::class);
-
-        $this->from = Str::trim($this->from);
-        $this->to = Str::trim($this->to);
-
-        if ($this->from === '' && $this->to === '') {
-            $this->showToday();
-        }
+        $this->bootReportDateRange();
     }
 
-    public function applyRange(): void
+    protected function afterRangeChanged(): void
     {
-        $this->from = Str::trim($this->from);
-        $this->to = Str::trim($this->to);
-        $this->resetPage('sessions');
-    }
-
-    public function showToday(): void
-    {
-        $this->from = $this->to = LocalDateRange::today();
         $this->resetPage('sessions');
     }
 

@@ -531,6 +531,11 @@ return [
         'summary_filtered' => 'Recorded sales matching these filters:',
         'summary_count' => 'Sales',
         'summary_total' => 'Recorded total',
+        'summary_match' => 'Matching :tender',
+        'summary_match_note' => 'Matching amount is the cash, card, or original-credit part — not the full sale total. A mixed sale can appear in more than one tender list.',
+        'row_match' => 'Matching :tender',
+        'tender' => 'Tender part',
+        'tender_all' => 'Any',
         'sale_reference' => 'Sale :number',
     ],
 

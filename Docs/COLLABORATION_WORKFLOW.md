@@ -15,8 +15,11 @@ This is the source of truth for how Omar, ChatGPT, and Cursor plan, implement, v
 Use **Ask → Agent → Review → Done** for new phases and features.
 
 1. **Ask.** Work read-only. Inspect the actual entry points, dependencies, and relevant tests. Propose one cohesive medium-sized batch, acceptance criteria, missing decisions, and a proportionate verification plan.
-2. **Agent.** After reviewing the Ask result and settling material decisions, ChatGPT writes the Agent prompt from those findings. Cursor implements and verifies the agreed batch.
-3. **Review.** Compare the pushed code and evidence with the acceptance criteria, then resolve the relevant findings.
+   - For a new or changed operational screen, state the operator’s question the batch answers and the decision the presentation must support. Name one adjacent question that stays out of scope.
+   - Proactively consider the best presentation, interaction, and reusable tool for that question within the existing stack and identity. Explain meaningful scope, permission, and data prerequisites. Do not wait for Omar to request charts or name packages when a visualization is the clearest answer and an already-installed capability can deliver it.
+   - Say whether the proposal changes what the operator can decide, or only how an existing answer is presented.
+2. **Agent.** After reviewing the Ask result and settling material decisions, ChatGPT writes the Agent prompt from those findings. Cursor implements and verifies the agreed batch, including the approved presentation direction, empty/loading/error states, Arabic RTL, English LTR, and the affected responsive layouts.
+3. **Review.** Compare the pushed code and evidence with the acceptance criteria, then resolve the relevant findings. Assess whether the operator can comprehend the answer and complete the task separately from calculation correctness. Require proportionate rendered evidence for meaningful interface changes; PHP tests alone are never visual acceptance. Do not impose a blanket preference for tables, and do not require tables to “fail” before considering useful charts. Keep dependency authorization and proportionate verification rules intact.
 4. **Done.** Record acceptance and the current review, merge, and deployment status as described below.
 
 A specific, evidenced defect in an existing PR can go straight to Agent. Return to planning if scope changes or a new business rule appears. When Omar asks to accelerate, group related work and remove repeated checks while keeping the required inspection and decisions.
@@ -43,6 +46,7 @@ A specific, evidenced defect in an existing PR can go straight to Agent. Return 
 - Run the project formatter on the affected files. Build assets when bundling needs verification.
 - Omar owns routine manual walkthroughs. Give one integrated scenario or at most three short checks, with route or link, role, test data or input, and expected result. Label them pending until confirmed.
 - Use focused browser automation when requested or to reproduce a defect that depends on browser behavior or network timing. Distinguish browser evidence from PHP or component tests.
+- For a meaningful interface change on an operational screen, include proportionate rendered evidence at the task’s named viewport and direction (usually Arabic RTL at 1440px, plus 1024px and 390px when the change affects shared controls or multi-width layout). Mark visual checks pending when browser tooling is unavailable; do not claim visual success from PHP tests alone.
 - Keep Cursor reports short. Include the important files, verification actually performed and its result, the commit, and material blockers or remaining checks.
 
 ## 5. Tools and framework choices
@@ -63,6 +67,7 @@ Choose the checks that apply and fix in-scope problems during implementation.
 - Check keyboard navigation, focus on dialog entry and close, touch targets, and loading, empty, error, and success states.
 - Preserve input after errors. Keep delayed search results from overriding scanner feedback. Verify that Enter submits the current value.
 - Use design judgment within the existing interface and visual identity. Consult `DESIGN.md` when the current project instructions call for it and it is available. Older guidance does not make it mandatory.
+- For an overview, the first screenful should answer the operator’s question: the lead figure, a useful comparison or the exceptions that need action, and a link to the underlying records. Label current figures and period figures distinctly. Prefer the clearest presentation that the installed stack already supports—including a chart when a table alone would obscure the movement—without inventing a new package dependency.
 
 ## 7. Behavior and data safety
 

@@ -8,6 +8,7 @@ use App\Livewire\Pos\Concerns\UsesPosLocale;
 use App\Models\Sale;
 use App\Models\Store;
 use App\Services\Reporting\LocalDateRange;
+use App\Services\Reporting\RecordedSalesReport;
 use App\Services\Reporting\SalesCsv;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
 use Illuminate\Contracts\View\View;
@@ -25,6 +26,7 @@ use Livewire\WithPagination;
  *
  * The period is an inclusive range of Istanbul dates (from/to). The legacy single-day
  * ?date= link applies only when neither from nor to is given; a single bound means that day.
+ * An optional tender filter (cash, card, credit) lists sales that include that part.
  */
 class SalesHistory extends Component
 {
@@ -46,16 +48,20 @@ class SalesHistory extends Component
     #[Url(except: '')]
     public string $date = '';
 
+    #[Url(except: '')]
+    public string $tender = '';
+
     public function mount(Store $store): void
     {
         $this->storeId = $store->id;
         $this->authorizeHistory();
         $this->normalizeRange();
+        $this->normalizeTender();
     }
 
     public function updated(string $property): void
     {
-        if (in_array($property, ['search', 'from', 'to', 'date'], true)) {
+        if (in_array($property, ['search', 'from', 'to', 'date', 'tender'], true)) {
             $this->resetPage();
         }
     }
@@ -64,12 +70,13 @@ class SalesHistory extends Component
     {
         $this->search = mb_substr(Str::trim($this->search), 0, 80);
         $this->normalizeRange();
+        $this->normalizeTender();
         $this->resetPage();
     }
 
     public function clearFilters(): void
     {
-        $this->reset('search', 'from', 'to', 'date');
+        $this->reset('search', 'from', 'to', 'date', 'tender');
         $this->resetPage();
     }
 
@@ -79,13 +86,18 @@ class SalesHistory extends Component
         $seesAll = auth()->user()->can('viewAllSales', $store);
         [$from, $to] = $this->range();
         $rangeError = $from === '' ? null : LocalDateRange::error($from, $to);
+        $tender = RecordedSalesReport::isTender($this->tender) ? $this->tender : '';
 
         if ($rangeError !== null) {
             $sales = new EmptyPaginator([], 0, 25);
             $summary = null;
         } else {
-            $filtered = SalesCsv::query(auth()->user(), $store, $this->search, $from, $to);
-            $summary = $seesAll ? Sale::recordedSummary($filtered->clone()) : null;
+            $filtered = SalesCsv::query(auth()->user(), $store, $this->search, $from, $to, $tender);
+            $summary = $seesAll
+                ? ($tender !== ''
+                    ? RecordedSalesReport::tenderSummary($filtered->clone(), $tender)
+                    : Sale::recordedSummary($filtered->clone()))
+                : null;
             $sales = $this->page($filtered);
         }
 
@@ -96,7 +108,8 @@ class SalesHistory extends Component
             'rangeError' => $rangeError,
             'seesAll' => $seesAll,
             'canExport' => $seesAll && $rangeError === null,
-            'isFiltering' => Str::trim($this->search) !== '' || $from !== '',
+            'tender' => $tender,
+            'isFiltering' => Str::trim($this->search) !== '' || $from !== '' || $tender !== '',
             ...$this->localeViewData(),
         ])->layout('layouts.pos', ['posStore' => $store])->title(__('pos.history.title'));
     }
@@ -122,6 +135,11 @@ class SalesHistory extends Component
     {
         [$this->from, $this->to] = $this->range();
         $this->date = '';
+    }
+
+    private function normalizeTender(): void
+    {
+        $this->tender = RecordedSalesReport::isTender(Str::trim($this->tender)) ? Str::trim($this->tender) : '';
     }
 
     /**
