@@ -51,17 +51,24 @@ class SalesHistory extends Component
     #[Url(except: '')]
     public string $tender = '';
 
+    #[Url(as: 'from_at', except: '')]
+    public string $fromAt = '';
+
+    #[Url(as: 'to_at', except: '')]
+    public string $toAt = '';
+
     public function mount(Store $store): void
     {
         $this->storeId = $store->id;
         $this->authorizeHistory();
         $this->normalizeRange();
+        $this->normalizeInterval();
         $this->normalizeTender();
     }
 
     public function updated(string $property): void
     {
-        if (in_array($property, ['search', 'from', 'to', 'date', 'tender'], true)) {
+        if (in_array($property, ['search', 'from', 'to', 'date', 'tender', 'fromAt', 'toAt'], true)) {
             $this->resetPage();
         }
     }
@@ -70,13 +77,14 @@ class SalesHistory extends Component
     {
         $this->search = mb_substr(Str::trim($this->search), 0, 80);
         $this->normalizeRange();
+        $this->normalizeInterval();
         $this->normalizeTender();
         $this->resetPage();
     }
 
     public function clearFilters(): void
     {
-        $this->reset('search', 'from', 'to', 'date', 'tender');
+        $this->reset('search', 'from', 'to', 'date', 'tender', 'fromAt', 'toAt');
         $this->resetPage();
     }
 
@@ -85,14 +93,18 @@ class SalesHistory extends Component
         $store = $this->authorizeHistory();
         $seesAll = auth()->user()->can('viewAllSales', $store);
         [$from, $to] = $this->range();
-        $rangeError = $from === '' ? null : LocalDateRange::error($from, $to);
+        $fromAt = Str::trim($this->fromAt);
+        $toAt = Str::trim($this->toAt);
+        $intervalPresent = $fromAt !== '' || $toAt !== '';
+        $intervalError = $intervalPresent ? LocalDateRange::intervalError($fromAt, $toAt) : null;
+        $rangeError = $intervalError ?? ($from === '' ? null : LocalDateRange::error($from, $to));
         $tender = RecordedSalesReport::isTender($this->tender) ? $this->tender : '';
 
         if ($rangeError !== null) {
             $sales = new EmptyPaginator([], 0, 25);
             $summary = null;
         } else {
-            $filtered = SalesCsv::query(auth()->user(), $store, $this->search, $from, $to, $tender);
+            $filtered = SalesCsv::query(auth()->user(), $store, $this->search, $from, $to, $tender, $fromAt, $toAt);
             $summary = $seesAll
                 ? ($tender !== ''
                     ? RecordedSalesReport::tenderSummary($filtered->clone(), $tender)
@@ -109,7 +121,9 @@ class SalesHistory extends Component
             'seesAll' => $seesAll,
             'canExport' => $seesAll && $rangeError === null,
             'tender' => $tender,
-            'isFiltering' => Str::trim($this->search) !== '' || $from !== '' || $tender !== '',
+            'fromAt' => $fromAt,
+            'toAt' => $toAt,
+            'isFiltering' => Str::trim($this->search) !== '' || $from !== '' || $tender !== '' || $intervalPresent,
             ...$this->localeViewData(),
         ])->layout('layouts.pos', ['posStore' => $store])->title(__('pos.history.title'));
     }
@@ -140,6 +154,20 @@ class SalesHistory extends Component
     private function normalizeTender(): void
     {
         $this->tender = RecordedSalesReport::isTender(Str::trim($this->tender)) ? Str::trim($this->tender) : '';
+    }
+
+    private function normalizeInterval(): void
+    {
+        $this->fromAt = Str::trim($this->fromAt);
+        $this->toAt = Str::trim($this->toAt);
+
+        if ($this->fromAt === '' && $this->toAt === '') {
+            return;
+        }
+
+        if (LocalDateRange::intervalError($this->fromAt, $this->toAt) !== null) {
+            return;
+        }
     }
 
     /**

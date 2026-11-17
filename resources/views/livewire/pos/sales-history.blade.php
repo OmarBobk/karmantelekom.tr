@@ -20,7 +20,7 @@
         </div>
         @if ($canExport)
             <div class="max-w-md text-end">
-                <a href="{{ route('pos.sales.export', [$store, 'from' => $from, 'to' => $to, 'q' => $search, 'tender' => $tender]) }}" class="inline-flex min-h-11 items-center rounded-lg px-4 text-sm font-semibold text-blue-700 ring-1 ring-blue-200 hover:bg-blue-50">{{ __('reports.export.download') }}</a>
+                <a href="{{ route('pos.sales.export', [$store, 'from' => $from, 'to' => $to, 'q' => $search, 'tender' => $tender, 'from_at' => $fromAt, 'to_at' => $toAt]) }}" class="inline-flex min-h-11 items-center rounded-lg px-4 text-sm font-semibold text-blue-700 ring-1 ring-blue-200 hover:bg-blue-50">{{ __('reports.export.download') }}</a>
                 <p class="mt-1 text-xs text-gray-500">{{ __('reports.export.help') }}</p>
             </div>
         @endif

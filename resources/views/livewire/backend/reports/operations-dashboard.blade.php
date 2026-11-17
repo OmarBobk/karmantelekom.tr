@@ -43,6 +43,28 @@
     @else
         <x-operations.report-date-range id="dashboard-range" :range-error="$rangeError" />
 
+        @if ($attention !== [])
+            <section aria-labelledby="dashboard-attention-title" class="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-amber-200">
+                <div class="border-b border-amber-100 bg-amber-50 px-4 py-3 sm:px-5">
+                    <h2 id="dashboard-attention-title" class="text-base font-semibold text-amber-950">{{ __('reports.attention.title') }}</h2>
+                    <p class="mt-1 text-sm text-amber-900/80">{{ __('reports.attention.subtitle') }}</p>
+                </div>
+                <ul class="divide-y divide-gray-100">
+                    @foreach ($attention as $item)
+                        <li wire:key="attention-{{ $item['key'] }}" class="flex flex-wrap items-start justify-between gap-3 px-4 py-3 sm:px-5">
+                            <div class="min-w-0">
+                                <p class="font-medium text-gray-900">{{ $item['label'] }}</p>
+                                <p class="mt-0.5 text-sm text-gray-600">{{ $item['detail'] }}</p>
+                            </div>
+                            @if ($item['url'])
+                                <a href="{{ $item['url'] }}" class="{{ $link }} shrink-0 ring-1 ring-amber-200">{{ __('reports.attention.open') }}</a>
+                            @endif
+                        </li>
+                    @endforeach
+                </ul>
+            </section>
+        @endif
+
         @unless ($rangeError)
             <section aria-labelledby="dashboard-lead-title" class="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-200" wire:loading.class="opacity-60">
                 <div class="border-b border-gray-100 px-4 py-3 sm:px-5">
@@ -95,26 +117,6 @@
                 </div>
             </section>
 
-            @if ($attention !== [])
-                <section aria-labelledby="dashboard-attention-title" class="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-amber-200">
-                    <div class="border-b border-amber-100 bg-amber-50 px-4 py-3 sm:px-5">
-                        <h2 id="dashboard-attention-title" class="text-base font-semibold text-amber-950">{{ __('reports.attention.title') }}</h2>
-                        <p class="mt-1 text-sm text-amber-900/80">{{ __('reports.attention.subtitle') }}</p>
-                    </div>
-                    <ul class="divide-y divide-gray-100">
-                        @foreach ($attention as $item)
-                            <li wire:key="attention-{{ $item['key'] }}" class="flex flex-wrap items-start justify-between gap-3 px-4 py-3 sm:px-5">
-                                <div class="min-w-0">
-                                    <p class="font-medium text-gray-900">{{ $item['label'] }}</p>
-                                    <p class="mt-0.5 text-sm text-gray-600">{{ $item['detail'] }}</p>
-                                </div>
-                                <a href="{{ $item['url'] }}" class="{{ $link }} shrink-0 ring-1 ring-amber-200">{{ __('reports.attention.open') }}</a>
-                            </li>
-                        @endforeach
-                    </ul>
-                </section>
-            @endif
-
             <section aria-labelledby="dashboard-charts-title" class="space-y-4">
                 <div>
                     <h2 id="dashboard-charts-title" class="text-base font-semibold text-gray-900">{{ __('reports.sales.charts_title') }}</h2>
@@ -123,7 +125,7 @@
                 </div>
 
                 <div
-                    wire:key="dashboard-charts-{{ $from }}-{{ $to }}-{{ $storeId ?? 'all' }}"
+                    wire:key="dashboard-charts-{{ $from }}-{{ $to }}-{{ $storeId ?? 'all' }}-{{ $chartVersion }}"
                     wire:ignore
                     class="grid gap-4 lg:grid-cols-2"
                     x-data="operationsDashboardCharts(@js($chartPayload))"
@@ -227,9 +229,21 @@
                             </thead>
                             <tbody class="divide-y divide-gray-100">
                                 @foreach ($series['buckets'] as $bucket)
+                                    @php($bucketParams = RecordedSalesReport::bucketHistoryParams($bucket))
                                     <tr wire:key="bucket-{{ $bucket['key'] }}">
                                         <th scope="row" class="px-4 py-2 text-start font-medium text-gray-900">
-                                            <a href="{{ $branch ? route('pos.sales', [$branch, 'from' => $bucket['start'], 'to' => $bucket['end_date']]) : route('subdomain.operations.dashboard', ['from' => $bucket['start'], 'to' => $bucket['end_date']]) }}" class="text-blue-700 hover:underline">{{ $bucket['label'] }}</a>
+                                            @if ($branch)
+                                                <a href="{{ route('pos.sales', [$branch, ...$bucketParams]) }}" class="text-blue-700 hover:underline">{{ $bucket['label'] }}</a>
+                                            @elseif ($bucket['uses_interval'])
+                                                <span>{{ $bucket['label'] }}</span>
+                                                <span class="mt-1 flex flex-wrap gap-2 text-xs font-normal">
+                                                    @foreach ($rows as $row)
+                                                        <a href="{{ route('pos.sales', [$row['store'], ...$bucketParams]) }}" class="text-blue-700 hover:underline">{{ $row['store']->code }}</a>
+                                                    @endforeach
+                                                </span>
+                                            @else
+                                                <a href="{{ route('subdomain.operations.dashboard', ['from' => $bucketParams['from'], 'to' => $bucketParams['to']]) }}" class="text-blue-700 hover:underline">{{ $bucket['label'] }}</a>
+                                            @endif
                                         </th>
                                         <td dir="ltr" class="px-4 py-2 text-end font-mono tabular-nums">{{ $bucket['count'] }}</td>
                                         <td class="px-4 py-2 text-end"><span dir="ltr" class="tabular-nums">{{ LocalizedMoney::format($bucket['total_minor']) }} TRY</span></td>
@@ -375,7 +389,7 @@ Alpine.data('operationsDashboardCharts', (payload) => ({
                     onClick: (_event, elements) => {
                         if (! elements.length) return;
                         const url = this.payload.time.links[elements[0].index];
-                        if (url) window.location.href = url;
+                        if (typeof url === 'string' && url !== '') window.location.href = url;
                     },
                 },
             });

@@ -4,15 +4,18 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Actions\Cashbox\OpenCashboxSession;
 use App\Actions\Customers\RecordCustomerPayment;
 use App\Actions\Inventory\RecordOpeningBalance;
 use App\Actions\Pos\ReviewCheckout;
+use App\Actions\Purchasing\RecordSupplierPayment;
 use App\Livewire\Backend\Reports\AuditLog;
 use App\Livewire\Backend\Reports\FinanceOverview;
 use App\Livewire\Backend\Reports\OperationalReview;
 use App\Livewire\Backend\Reports\OperationsDashboard;
 use App\Livewire\Pos\SalesHistory;
 use App\Models\Customer;
+use App\Models\OperationalSupplier;
 use App\Models\Sale;
 use App\Models\Store;
 use App\Models\User;
@@ -21,15 +24,18 @@ use App\Services\Reporting\LocalDateRange;
 use App\Services\Reporting\RecordedSalesReport;
 use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\Test;
 use Tests\Support\InteractsWithPos;
+use Tests\Support\InteractsWithPurchasing;
 use Tests\TestCase;
 
 class OwnerDashboardUxTest extends TestCase
 {
     use InteractsWithPos;
+    use InteractsWithPurchasing;
     use RefreshDatabase;
 
     private Store $second;
@@ -87,7 +93,7 @@ class OwnerDashboardUxTest extends TestCase
             $emptyPrevious->viewData('ownerPreviousTotalMinor'),
             $emptyPrevious->viewData('ownerCountDelta'),
         ]);
-        $emptyPrevious->assertDontSee('%');
+        $emptyPrevious->assertDontSee('n/a')->assertDontSee('∞')->assertSee('Previous:');
     }
 
     #[Test]
@@ -212,6 +218,16 @@ class OwnerDashboardUxTest extends TestCase
         $this->assertNotEmpty(array_filter($keys, fn (string $key): bool => str_starts_with($key, 'cashbox-')));
         $dashboard->assertSee('Needs attention');
 
+        Livewire::actingAs($this->owner)
+            ->withQueryParams(['from' => '2026-11-11', 'to' => '2026-11-10'])
+            ->test(OperationsDashboard::class)
+            ->assertViewHas('rangeError', 'reversed')
+            ->assertViewHas('chartPayload', null)
+            ->assertSee('Needs attention')
+            ->assertSee('Current inventory')
+            ->assertDontSee('Sales over time')
+            ->assertDontSee('Recorded sales overview');
+
         $this->revokeFromOwners('manage_cashbox');
         $withoutCashbox = Livewire::actingAs($this->owner->fresh())
             ->withQueryParams(['from' => '2026-11-10', 'to' => '2026-11-10'])
@@ -220,15 +236,6 @@ class OwnerDashboardUxTest extends TestCase
             collect($withoutCashbox->viewData('attention'))->pluck('key')->all(),
             fn (string $key): bool => str_starts_with($key, 'cashbox-'),
         ));
-
-        Livewire::actingAs($this->owner->fresh())
-            ->withQueryParams(['from' => '2026-11-11', 'to' => '2026-11-10'])
-            ->test(OperationsDashboard::class)
-            ->assertViewHas('rangeError', 'reversed')
-            ->assertViewHas('chartPayload', null)
-            ->assertSee('Current inventory')
-            ->assertDontSee('Sales over time')
-            ->assertDontSee('Recorded sales overview');
     }
 
     #[Test]
@@ -283,5 +290,196 @@ class OwnerDashboardUxTest extends TestCase
             ->assertDontSee('Figures are incomplete');
 
         $this->travelBack();
+    }
+
+    #[Test]
+    public function weekly_and_monthly_buckets_reconcile_with_boundaries_and_partial_final_week(): void
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-01-01 10:00:00', Sale::DISPLAY_TIMEZONE)->utc());
+        $weekStart = $this->finalize($this->firstCashier, $this->review($this->firstCashier, $this->cableLine(1)), '50');
+        $this->travelTo(CarbonImmutable::parse('2026-01-07 10:00:00', Sale::DISPLAY_TIMEZONE)->utc());
+        $weekBoundary = $this->finalize($this->firstCashier, $this->review($this->firstCashier, $this->cableLine(1)), '50');
+        $this->travelTo(CarbonImmutable::parse('2026-02-15 10:00:00', Sale::DISPLAY_TIMEZONE)->utc());
+        $partialWeek = $this->finalize($this->firstCashier, $this->review($this->firstCashier, $this->cableLine(2)), '100');
+        $this->travelTo(CarbonImmutable::parse('2026-07-20 10:00:00', Sale::DISPLAY_TIMEZONE)->utc());
+        $monthly = $this->finalize($this->firstCashier, $this->review($this->firstCashier, $this->cableLine(1)), '50');
+        $this->travelBack();
+
+        $this->assertSame(LocalDateRange::GRANULARITY_DAY, LocalDateRange::chartGranularity(
+            LocalDateRange::date('2026-01-01'),
+            LocalDateRange::date('2026-02-14'),
+        ));
+        $this->assertSame(LocalDateRange::GRANULARITY_WEEK, LocalDateRange::chartGranularity(
+            LocalDateRange::date('2026-01-01'),
+            LocalDateRange::date('2026-02-15'),
+        ));
+        $this->assertSame(LocalDateRange::GRANULARITY_MONTH, LocalDateRange::chartGranularity(
+            LocalDateRange::date('2026-01-01'),
+            LocalDateRange::date('2026-07-20'),
+        ));
+
+        $weekly = RecordedSalesReport::series(
+            [$this->store->id],
+            LocalDateRange::date('2026-01-01'),
+            LocalDateRange::date('2026-02-15'),
+        );
+        $this->assertSame(LocalDateRange::GRANULARITY_WEEK, $weekly['granularity']);
+        $this->assertSame('2026-01-01', $weekly['buckets'][0]['key']);
+        $this->assertSame('2026-01-08', $weekly['buckets'][1]['key']);
+        $this->assertSame(2, $weekly['buckets'][0]['count']);
+        $this->assertSame(
+            $weekStart->totalMinor() + $weekBoundary->totalMinor(),
+            $weekly['buckets'][0]['total_minor'],
+        );
+        $last = $weekly['buckets'][array_key_last($weekly['buckets'])];
+        $this->assertSame('2026-02-12', $last['key']);
+        $this->assertSame('2026-02-15', $last['end_date']);
+        $this->assertSame(1, $last['count']);
+        $this->assertSame($partialWeek->totalMinor(), $last['total_minor']);
+        $this->assertSame(
+            $weekStart->totalMinor() + $weekBoundary->totalMinor() + $partialWeek->totalMinor(),
+            Money::sumUncapped(array_column($weekly['buckets'], 'total_minor')),
+        );
+
+        $months = RecordedSalesReport::series(
+            [$this->store->id],
+            LocalDateRange::date('2026-01-01'),
+            LocalDateRange::date('2026-07-20'),
+        );
+        $this->assertSame(LocalDateRange::GRANULARITY_MONTH, $months['granularity']);
+        $this->assertSame('2026-01', $months['buckets'][0]['key']);
+        $this->assertSame('2026-07', $months['buckets'][array_key_last($months['buckets'])]['key']);
+        $this->assertSame(
+            $weekStart->totalMinor() + $weekBoundary->totalMinor() + $partialWeek->totalMinor() + $monthly->totalMinor(),
+            Money::sumUncapped(array_column($months['buckets'], 'total_minor')),
+        );
+    }
+
+    #[Test]
+    public function chart_version_changes_when_a_sale_is_added_inside_the_same_range(): void
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-11-10 09:00:00', 'UTC'));
+        $first = $this->finalize($this->firstCashier, $this->review($this->firstCashier, $this->cableLine(1)), '50');
+
+        $before = Livewire::actingAs($this->owner)
+            ->withQueryParams(['from' => '2026-11-10', 'to' => '2026-11-10'])
+            ->test(OperationsDashboard::class);
+        $versionBefore = $before->viewData('chartVersion');
+        $totalBefore = $before->viewData('ownerTotalMinor');
+
+        $this->travelTo(CarbonImmutable::parse('2026-11-10 11:00:00', 'UTC'));
+        $second = $this->finalize($this->firstCashier, $this->review($this->firstCashier, $this->cableLine(2)), '100');
+        $this->travelBack();
+
+        $after = Livewire::actingAs($this->owner)
+            ->withQueryParams(['from' => '2026-11-10', 'to' => '2026-11-10'])
+            ->test(OperationsDashboard::class);
+
+        $this->assertNotSame($versionBefore, $after->viewData('chartVersion'));
+        $this->assertSame($first->totalMinor() + $second->totalMinor(), $after->viewData('ownerTotalMinor'));
+        $this->assertNotSame($totalBefore, $after->viewData('ownerTotalMinor'));
+        $this->assertSame(
+            $after->viewData('ownerTotalMinor'),
+            Money::sumUncapped(array_column($after->viewData('series')['buckets'], 'total_minor')),
+        );
+
+        $after->set('from', '2026-11-11')->set('to', '2026-11-10')
+            ->assertViewHas('rangeError', 'reversed')
+            ->assertViewHas('chartPayload', null)
+            ->set('from', '2026-11-10')->set('to', '2026-11-10')
+            ->assertViewHas('rangeError', null)
+            ->assertViewHas('ownerTotalMinor', $first->totalMinor() + $second->totalMinor());
+    }
+
+    #[Test]
+    public function hourly_interval_drill_down_matches_history_and_csv(): void
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-11-10 08:15:00', Sale::DISPLAY_TIMEZONE)->utc());
+        $morning = $this->finalize($this->firstCashier, $this->review($this->firstCashier, $this->cableLine(1)), '50');
+        $this->travelTo(CarbonImmutable::parse('2026-11-10 14:45:00', Sale::DISPLAY_TIMEZONE)->utc());
+        $afternoon = $this->finalize($this->firstCashier, $this->review($this->firstCashier, $this->cableLine(2)), '100');
+        $this->travelBack();
+
+        $series = RecordedSalesReport::series(
+            [$this->store->id],
+            LocalDateRange::date('2026-11-10'),
+            LocalDateRange::date('2026-11-10'),
+        );
+        $morningBucket = collect($series['buckets'])->firstWhere('count', 1);
+        $afternoonBucket = collect($series['buckets'])->filter(fn (array $bucket): bool => $bucket['count'] === 1)->values()->get(1);
+        $this->assertNotNull($morningBucket);
+        $this->assertNotNull($afternoonBucket);
+        $this->assertTrue($morningBucket['uses_interval']);
+        $this->assertNotSame($morningBucket['start_at'], $afternoonBucket['start_at']);
+
+        $morningParams = RecordedSalesReport::bucketHistoryParams($morningBucket);
+        $history = Livewire::actingAs($this->owner)
+            ->withQueryParams($morningParams)
+            ->test(SalesHistory::class, ['store' => $this->store]);
+        $this->assertSame(1, $history->viewData('summary')['count']);
+        $this->assertSame($morning->totalMinor(), $history->viewData('summary')['total_minor']);
+        $history->assertSee($morning->number)->assertDontSee($afternoon->number);
+
+        $afternoonHistory = Livewire::actingAs($this->owner)
+            ->withQueryParams(RecordedSalesReport::bucketHistoryParams($afternoonBucket))
+            ->test(SalesHistory::class, ['store' => $this->store]);
+        $this->assertSame($afternoon->totalMinor(), $afternoonHistory->viewData('summary')['total_minor']);
+        $afternoonHistory->assertSee($afternoon->number)->assertDontSee($morning->number);
+
+        $csv = $this->actingAs($this->owner)
+            ->get(route('pos.sales.export', [$this->store, ...$morningParams]));
+        $csv->assertOk();
+        $body = $csv->streamedContent();
+        $this->assertStringContainsString($morning->number, $body);
+        $this->assertStringNotContainsString($afternoon->number, $body);
+
+        $this->actingAs($this->owner)
+            ->get(route('pos.sales.export', [$this->store, 'from_at' => 'not-a-time', 'to_at' => '2026-11-10T12:00:00Z']))
+            ->assertStatus(422);
+
+        $dashboard = Livewire::actingAs($this->owner)
+            ->withQueryParams(['from' => '2026-11-10', 'to' => '2026-11-10'])
+            ->test(OperationsDashboard::class, ['store' => $this->store]);
+        $links = $dashboard->viewData('chartPayload')['time']['links'];
+        $this->assertTrue(collect($links)->contains(
+            fn (string $url): bool => str_contains(urldecode($url), 'from_at='.$morningBucket['start_at']),
+        ));
+    }
+
+    #[Test]
+    public function supplier_payout_links_require_destination_permission_and_mismatches_are_summarized(): void
+    {
+        $supplier = OperationalSupplier::factory()->create(['name' => 'Anka Attention']);
+        $purchase = $this->postedPurchase($this->owner, $this->store, $supplier, [[$this->cable, 1, '100.00']]);
+        $session = app(OpenCashboxSession::class)($this->owner, $this->store, '500.00', null);
+        app(RecordSupplierPayment::class)(
+            $this->owner,
+            $purchase,
+            $this->paymentInput('60.00', 'PAYOUT-ATTN', ['method' => 'cash']),
+            (string) Str::uuid(),
+            $session->id,
+        );
+
+        DB::table('purchases')->where('id', $purchase->id)->update(['paid_total' => '10.00']);
+
+        $this->revokeFromOwners('manage_cashbox');
+        $dashboard = Livewire::actingAs($this->owner->fresh())
+            ->withQueryParams(['from' => '2026-11-10', 'to' => '2026-11-10'])
+            ->test(OperationsDashboard::class);
+
+        $attention = collect($dashboard->viewData('attention'));
+        $payout = $attention->firstWhere('key', 'supplier-payout-'.$this->store->id);
+        $this->assertNotNull($payout);
+        $this->assertNotNull($payout['url']);
+        $this->assertStringNotContainsString('/cashbox', $payout['url']);
+        $this->assertTrue(
+            str_contains($payout['url'], '/operations/finance') || str_contains($payout['url'], '/operations/suppliers'),
+        );
+
+        $mismatch = $attention->firstWhere('key', 'supplier-mismatches');
+        $this->assertNotNull($mismatch);
+        $this->assertNull($mismatch['store']);
+        $dashboard->assertSee('supplier ledger mismatch')->assertSee('Combined across the selected branches');
+        $dashboard->assertDontSee('Anka Attention');
     }
 }

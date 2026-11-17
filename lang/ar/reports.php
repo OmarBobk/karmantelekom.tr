@@ -74,6 +74,8 @@ return [
         'cashbox_untracked_detail' => 'لم تُفتح أي جلسة صندوق في هذا الفرع.',
         'supplier_mismatch' => 'عدم تطابق دفتر المورد: :supplier (:currency)',
         'supplier_mismatch_detail' => 'الدفتر :ledger · الفواتير المفتوحة :invoices',
+        'supplier_mismatches' => '{1} عدم تطابق واحد في دفتر الموردين|[2,*] :count حالات عدم تطابق في دفتر الموردين',
+        'supplier_mismatches_detail' => 'مجموع عبر الفروع المحددة. افتح حسابات الموردين لمعرفة أرقام الدفتر والفواتير المفتوحة بدقة.',
         'supplier_payouts' => 'دفعات نقد للموردين معلّقة في :branch',
         'customer_cash' => 'نقد عملاء معلّق في :branch',
         'pending_amount' => '{1} عنصر واحد · :amount ل.ت|[2,*] :count عناصر · :amount ل.ت',

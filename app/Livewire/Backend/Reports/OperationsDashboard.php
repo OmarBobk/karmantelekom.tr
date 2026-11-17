@@ -107,6 +107,19 @@ class OperationsDashboard extends Component
         );
 
         $chartPayload = $rangeError === null ? $this->chartPayload($rows, $series, $from, $to) : null;
+        // Remount wire:ignore charts when authorized totals change inside the same from/to.
+        $chartVersion = $chartPayload === null
+            ? 'none'
+            : substr(hash('xxh128', json_encode([
+                $ownerCount,
+                $ownerTotalMinor,
+                $chartPayload['time']['totals'],
+                $chartPayload['time']['formatted'],
+                $chartPayload['time']['links'],
+                $chartPayload['branches']['totals'],
+                $chartPayload['branches']['formatted'],
+                $chartPayload['branches']['links'],
+            ], JSON_THROW_ON_ERROR)), 0, 16);
 
         return view('livewire.backend.reports.operations-dashboard', [
             'branch' => $this->storeId === null ? null : $stores->first(),
@@ -124,6 +137,7 @@ class OperationsDashboard extends Component
             'ownerComposition' => $ownerComposition,
             'series' => $series,
             'chartPayload' => $chartPayload,
+            'chartVersion' => $chartVersion,
             'attention' => NeedsAttention::for($user, $stores),
             'inventory' => $this->inventory($stores->filter(fn (Store $store): bool => $user->can('viewInventory', $store))),
             'canViewFinance' => $user->can('viewFinanceOverview', Store::class),
@@ -199,13 +213,24 @@ class OperationsDashboard extends Component
         $timeLabels = [];
         $timeTotals = [];
         $timeLinks = [];
+        $branchStore = $this->storeId === null ? null : $rows->first()['store'];
 
         foreach ($series['buckets'] ?? [] as $bucket) {
             $timeLabels[] = $bucket['label'];
             $timeTotals[] = round($bucket['total_minor'] / 100, 2);
-            $timeLinks[] = $this->storeId === null
-                ? route('subdomain.operations.dashboard', ['from' => $bucket['start'], 'to' => $bucket['end_date']])
-                : route('pos.sales', [$rows->first()['store'], 'from' => $bucket['start'], 'to' => $bucket['end_date']]);
+            $params = RecordedSalesReport::bucketHistoryParams($bucket);
+
+            if ($branchStore !== null) {
+                $timeLinks[] = route('pos.sales', [$branchStore, ...$params]);
+            } elseif ($bucket['uses_interval']) {
+                // Consolidated hourly buckets keep the interval on per-branch table links only.
+                $timeLinks[] = '';
+            } else {
+                $timeLinks[] = route('subdomain.operations.dashboard', [
+                    'from' => $params['from'],
+                    'to' => $params['to'],
+                ]);
+            }
         }
 
         return [

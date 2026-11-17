@@ -28,11 +28,15 @@ class SalesCsvController extends Controller
         Gate::authorize('viewAllSales', $store);
 
         [$from, $to] = $this->range($request);
-        abort_if($from !== '' && LocalDateRange::error($from, $to) !== null, 422, __('reports.export.range_required'));
+        $fromAt = Str::trim((string) $request->query('from_at', ''));
+        $toAt = Str::trim((string) $request->query('to_at', ''));
+        $intervalPresent = $fromAt !== '' || $toAt !== '';
+        abort_if($intervalPresent && LocalDateRange::intervalError($fromAt, $toAt) !== null, 422, __('reports.export.range_required'));
+        abort_if(! $intervalPresent && $from !== '' && LocalDateRange::error($from, $to) !== null, 422, __('reports.export.range_required'));
 
         $search = mb_substr(Str::trim((string) $request->query('q', '')), 0, 80);
         $tender = Str::trim((string) $request->query('tender', ''));
-        $filtered = SalesCsv::query($request->user(), $store, $search, $from, $to, $tender);
+        $filtered = SalesCsv::query($request->user(), $store, $search, $from, $to, $tender, $fromAt, $toAt);
 
         return CsvExporter::download(
             __('reports.export.sales_filename', ['store' => $store->code, 'date' => LocalDateRange::today()]),

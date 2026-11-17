@@ -140,6 +140,40 @@ final class LocalDateRange
     }
 
     /**
+     * A UTC instant in Y-m-d\TH:i:s\Z form, or null.
+     */
+    public static function utcInstant(string $value): ?CarbonImmutable
+    {
+        if (preg_match('/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}Z$/', $value) !== 1) {
+            return null;
+        }
+
+        $instant = CarbonImmutable::parse($value, 'UTC')->utc();
+
+        return self::formatUtcInstant($instant) === $value ? $instant : null;
+    }
+
+    public static function formatUtcInstant(CarbonImmutable $instant): string
+    {
+        return $instant->utc()->format('Y-m-d\TH:i:s\Z');
+    }
+
+    /**
+     * Why an exclusive UTC interval is unusable, or null when it is valid.
+     */
+    public static function intervalError(string $fromAt, string $toAt): ?string
+    {
+        $start = self::utcInstant($fromAt);
+        $end = self::utcInstant($toAt);
+
+        if ($start === null || $end === null) {
+            return 'invalid_interval';
+        }
+
+        return $start->lessThan($end) ? null : 'reversed_interval';
+    }
+
+    /**
      * Contiguous Istanbul buckets covering $from through $to at the given granularity.
      *
      * @return list<array{key: string, label: string, start: CarbonImmutable, end: CarbonImmutable}>

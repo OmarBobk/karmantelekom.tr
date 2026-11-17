@@ -11,11 +11,15 @@ use App\Models\SalePayment;
 use App\Services\Purchasing\Money;
 use Carbon\CarbonImmutable;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\DB;
 
 /**
  * Owner dashboard figures for completed POS sales: totals, previous equal period, tender
  * composition, and chart buckets. Cash payment amounts are the posted net cash due, not
  * cash tendered. Later debt collections are not sales and are never included.
+ *
+ * Chart series aggregate in SQL using Europe/Istanbul as the fixed UTC+03:00 offset
+ * (no DST since 2016), so named timezone tables are not required.
  */
 final class RecordedSalesReport
 {
@@ -27,6 +31,12 @@ final class RecordedSalesReport
 
     /** @var list<string> */
     public const TENDERS = [self::TENDER_CASH, self::TENDER_CARD, self::TENDER_CREDIT];
+
+    /**
+     * Fixed Istanbul offset for SQL CONVERT_TZ. Europe/Istanbul has been UTC+03:00 year-round
+     * since DST ended in 2016; named zone tables are not assumed to be loaded.
+     */
+    private const ISTANBUL_UTC_OFFSET = '+03:00';
 
     /**
      * Count and recorded total per store for the Istanbul days.
@@ -115,14 +125,16 @@ final class RecordedSalesReport
 
     /**
      * Time buckets for the selected range, filled with zero when a bucket has no sales.
+     * Totals are aggregated in SQL into hour or day keys, then folded into week/month buckets.
      *
      * @param  list<int>  $storeIds
-     * @return array{granularity: string, buckets: list<array{key: string, label: string, count: int, total_minor: int, start: string, end_date: string}>}
+     * @return array{granularity: string, buckets: list<array{key: string, label: string, count: int, total_minor: int, start: string, end_date: string, start_at: string, end_at: string, uses_interval: bool}>}
      */
     public static function series(array $storeIds, CarbonImmutable $from, CarbonImmutable $to): array
     {
         $granularity = LocalDateRange::chartGranularity($from, $to);
         $buckets = LocalDateRange::buckets($from, $to, $granularity);
+        $usesInterval = $granularity === LocalDateRange::GRANULARITY_HOUR;
         $filled = [];
 
         foreach ($buckets as $bucket) {
@@ -133,6 +145,9 @@ final class RecordedSalesReport
                 'total_minor' => 0,
                 'start' => $bucket['start']->setTimezone(Sale::DISPLAY_TIMEZONE)->toDateString(),
                 'end_date' => $bucket['end']->setTimezone(Sale::DISPLAY_TIMEZONE)->subSecond()->toDateString(),
+                'start_at' => LocalDateRange::formatUtcInstant($bucket['start']),
+                'end_at' => LocalDateRange::formatUtcInstant($bucket['end']),
+                'uses_interval' => $usesInterval,
             ];
         }
 
@@ -141,24 +156,32 @@ final class RecordedSalesReport
         }
 
         [$start, $end] = LocalDateRange::utcBounds($from, $to);
-        $sales = Sale::query()
+        $aggregateFormat = $granularity === LocalDateRange::GRANULARITY_HOUR
+            ? '%Y-%m-%d %H:00'
+            : '%Y-%m-%d';
+        $localExpr = self::istanbulLocalSql($aggregateFormat);
+
+        $rows = Sale::query()
             ->whereIn('store_id', $storeIds)
             ->where('completed_at', '>=', $start)
             ->where('completed_at', '<', $end)
             ->toBase()
-            ->select('completed_at', 'total')
+            ->selectRaw("{$localExpr} as bucket_key, count(*) as sale_count, coalesce(sum(total), 0) as recorded_total")
+            ->groupBy(DB::raw($localExpr))
             ->get();
 
-        foreach ($sales as $sale) {
-            $completed = CarbonImmutable::parse($sale->completed_at)->utc();
-            $key = self::bucketKey($completed, $granularity, $from);
+        foreach ($rows as $row) {
+            $key = self::mapAggregateKey((string) $row->bucket_key, $granularity, $from);
 
             if (! isset($filled[$key])) {
                 continue;
             }
 
-            $filled[$key]['count']++;
-            $filled[$key]['total_minor'] = Money::sumUncapped([$filled[$key]['total_minor'], Money::fromDecimal((string) $sale->total)]);
+            $filled[$key]['count'] += (int) $row->sale_count;
+            $filled[$key]['total_minor'] = Money::sumUncapped([
+                $filled[$key]['total_minor'],
+                Money::fromDecimal((string) $row->recorded_total),
+            ]);
         }
 
         return ['granularity' => $granularity, 'buckets' => array_values($filled)];
@@ -203,24 +226,54 @@ final class RecordedSalesReport
         return in_array($value, self::TENDERS, true);
     }
 
-    private static function bucketKey(CarbonImmutable $completedUtc, string $granularity, CarbonImmutable $rangeFrom): string
+    /**
+     * Query parameters that open authorized sales history for one chart/table bucket.
+     *
+     * @param  array{start: string, end_date: string, start_at: string, end_at: string, uses_interval: bool}  $bucket
+     * @return array{from: string, to: string, from_at?: string, to_at?: string}
+     */
+    public static function bucketHistoryParams(array $bucket): array
     {
-        $local = $completedUtc->setTimezone(Sale::DISPLAY_TIMEZONE);
+        $params = [
+            'from' => $bucket['start'],
+            'to' => $bucket['end_date'],
+        ];
 
+        if ($bucket['uses_interval']) {
+            $params['from_at'] = $bucket['start_at'];
+            $params['to_at'] = $bucket['end_at'];
+        }
+
+        return $params;
+    }
+
+    private static function istanbulLocalSql(string $format): string
+    {
+        $offset = self::ISTANBUL_UTC_OFFSET;
+
+        return "DATE_FORMAT(CONVERT_TZ(completed_at, '+00:00', '{$offset}'), '{$format}')";
+    }
+
+    private static function mapAggregateKey(string $aggregateKey, string $granularity, CarbonImmutable $rangeFrom): string
+    {
         return match ($granularity) {
-            LocalDateRange::GRANULARITY_HOUR => $local->format('Y-m-d H:00'),
-            LocalDateRange::GRANULARITY_DAY => $local->toDateString(),
-            LocalDateRange::GRANULARITY_WEEK => self::weekBucketStart($local, $rangeFrom)->toDateString(),
-            LocalDateRange::GRANULARITY_MONTH => $local->format('Y-m'),
-            default => $local->toDateString(),
+            LocalDateRange::GRANULARITY_HOUR, LocalDateRange::GRANULARITY_DAY => $aggregateKey,
+            LocalDateRange::GRANULARITY_WEEK => self::weekBucketStart(
+                CarbonImmutable::createFromFormat('!Y-m-d', $aggregateKey, Sale::DISPLAY_TIMEZONE)
+                    ?? CarbonImmutable::parse($aggregateKey, Sale::DISPLAY_TIMEZONE),
+                $rangeFrom,
+            )->toDateString(),
+            LocalDateRange::GRANULARITY_MONTH => substr($aggregateKey, 0, 7),
+            default => $aggregateKey,
         };
     }
 
     private static function weekBucketStart(CarbonImmutable $local, CarbonImmutable $rangeFrom): CarbonImmutable
     {
         $from = $rangeFrom->setTimezone(Sale::DISPLAY_TIMEZONE)->startOfDay();
-        $day = $local->startOfDay();
-        $offset = $from->diffInDays($day);
+        $day = $local->setTimezone(Sale::DISPLAY_TIMEZONE)->startOfDay();
+        // Carbon 3 returns a float day count; cast before intdiv under strict_types.
+        $offset = (int) $from->diffInDays($day);
 
         return $from->addDays(intdiv($offset, 7) * 7);
     }

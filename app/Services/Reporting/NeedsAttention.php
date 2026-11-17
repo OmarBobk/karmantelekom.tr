@@ -20,13 +20,16 @@ use Illuminate\Support\Collection;
 
 /**
  * Current operational exceptions for the owner dashboard. Each item uses its own permission
- * and ignores the sales period. Zero or absent items are omitted.
+ * and ignores the sales period. Zero or absent items are omitted. Links are emitted only when
+ * the viewer may open the destination; otherwise the row stays useful plain text.
+ *
+ * @phpstan-type AttentionItem array{key: string, store: ?Store, label: string, detail: string, url: ?string}
  */
 final class NeedsAttention
 {
     /**
      * @param  Collection<int, Store>  $dashboardStores  Branches already authorized for the dashboard.
-     * @return list<array{key: string, store: Store, label: string, detail: string, url: string}>
+     * @return list<AttentionItem>
      */
     public static function for(User $user, Collection $dashboardStores): array
     {
@@ -49,7 +52,7 @@ final class NeedsAttention
     }
 
     /**
-     * @param  list<array{key: string, store: Store, label: string, detail: string, url: string}>  $items
+     * @param  list<AttentionItem>  $items
      * @param  Collection<int, Store>  $stores
      */
     private static function appendCashbox(array &$items, User $user, Collection $stores): void
@@ -79,7 +82,7 @@ final class NeedsAttention
     }
 
     /**
-     * @param  list<array{key: string, store: Store, label: string, detail: string, url: string}>  $items
+     * @param  list<AttentionItem>  $items
      * @param  Collection<int, Store>  $stores
      */
     private static function appendSupplierMismatches(array &$items, User $user, Collection $stores): void
@@ -88,33 +91,31 @@ final class NeedsAttention
             return;
         }
 
-        $accounts = app(SupplierAccount::class);
-        $rows = $accounts->supplierBalanceRows($stores->modelKeys());
-
-        foreach ($rows as $row) {
+        $count = 0;
+        foreach (app(SupplierAccount::class)->supplierBalanceRows($stores->modelKeys()) as $row) {
             $balance = Money::fromDecimal((string) $row->balance);
             $open = Money::fromDecimal((string) $row->open_invoices);
 
-            if ($balance === $open) {
-                continue;
+            if ($balance !== $open) {
+                $count++;
             }
-
-            $store = $stores->first();
-            $items[] = [
-                'key' => 'supplier-mismatch-'.$row->operational_supplier_id.'-'.$row->currency,
-                'store' => $store,
-                'label' => __('reports.attention.supplier_mismatch', ['supplier' => $row->name, 'currency' => $row->currency]),
-                'detail' => __('reports.attention.supplier_mismatch_detail', [
-                    'ledger' => LocalizedMoney::format($balance).' '.$row->currency,
-                    'invoices' => LocalizedMoney::format($open).' '.$row->currency,
-                ]),
-                'url' => route('subdomain.suppliers.account', [(int) $row->operational_supplier_id, 'currency' => $row->currency]),
-            ];
         }
+
+        if ($count === 0) {
+            return;
+        }
+
+        $items[] = [
+            'key' => 'supplier-mismatches',
+            'store' => null,
+            'label' => trans_choice('reports.attention.supplier_mismatches', $count, ['count' => $count]),
+            'detail' => __('reports.attention.supplier_mismatches_detail'),
+            'url' => route('subdomain.suppliers'),
+        ];
     }
 
     /**
-     * @param  list<array{key: string, store: Store, label: string, detail: string, url: string}>  $items
+     * @param  list<AttentionItem>  $items
      * @param  Collection<int, Store>  $stores
      * @param  Collection<int, Store>  $byId
      */
@@ -140,13 +141,30 @@ final class NeedsAttention
                     'count' => $row['count'],
                     'amount' => LocalizedMoney::format($row['amount']),
                 ]),
-                'url' => route('pos.cashbox', $store),
+                'url' => self::supplierPayoutUrl($user, $store),
             ];
         }
     }
 
+    private static function supplierPayoutUrl(User $user, Store $store): ?string
+    {
+        if ($user->can('manageCashbox', $store)) {
+            return route('pos.cashbox', $store);
+        }
+
+        if ($user->can('viewFinanceOverview', Store::class)) {
+            return route('subdomain.operations.finance');
+        }
+
+        if ($user->can('viewAccounts', OperationalSupplier::class)) {
+            return route('subdomain.suppliers');
+        }
+
+        return null;
+    }
+
     /**
-     * @param  list<array{key: string, store: Store, label: string, detail: string, url: string}>  $items
+     * @param  list<AttentionItem>  $items
      * @param  Collection<int, Store>  $stores
      * @param  Collection<int, Store>  $byId
      */
@@ -174,13 +192,13 @@ final class NeedsAttention
                     'count' => $row['count'],
                     'amount' => LocalizedMoney::format($row['amount']),
                 ]),
-                'url' => route('pos.customers', $store),
+                'url' => $user->can('receiveCustomerPayments', $store) ? route('pos.customers', $store) : null,
             ];
         }
     }
 
     /**
-     * @param  list<array{key: string, store: Store, label: string, detail: string, url: string}>  $items
+     * @param  list<AttentionItem>  $items
      * @param  Collection<int, Store>  $stores
      */
     private static function appendLapsedReservations(array &$items, User $user, Collection $stores): void
@@ -204,13 +222,15 @@ final class NeedsAttention
                 'store' => $store,
                 'label' => __('reports.attention.lapsed', ['branch' => $store->code]),
                 'detail' => trans_choice('reports.attention.lapsed_detail', $count, ['count' => $count]),
-                'url' => route('pos.reservations', [$store, 'tab' => 'incoming', 'state' => NetworkReservation::CURRENTLY_LAPSED]),
+                'url' => $user->can('manageReservations', $store)
+                    ? route('pos.reservations', [$store, 'tab' => 'incoming', 'state' => NetworkReservation::CURRENTLY_LAPSED])
+                    : null,
             ];
         }
     }
 
     /**
-     * @param  list<array{key: string, store: Store, label: string, detail: string, url: string}>  $items
+     * @param  list<AttentionItem>  $items
      * @param  Collection<int, Store>  $stores
      */
     private static function appendOldestRepair(array &$items, User $user, Collection $stores): void
@@ -236,9 +256,13 @@ final class NeedsAttention
         $store = $repair->store;
         $started = $repair->started_at;
         $hours = max(0, (int) $started->diffInHours(now()));
-        $url = $user->can('viewInventory', $store) && $repair->unit !== null
-            ? route('subdomain.inventory.unit', [$store, $repair->unit])
-            : route('subdomain.inventory.store', [$store, 'units' => 'in_repair']);
+        $url = null;
+
+        if ($user->can('viewInventory', $store)) {
+            $url = $repair->unit !== null
+                ? route('subdomain.inventory.unit', [$store, $repair->unit])
+                : route('subdomain.inventory.store', [$store, 'units' => 'in_repair']);
+        }
 
         $items[] = [
             'key' => 'repair-'.$repair->id,
@@ -256,7 +280,7 @@ final class NeedsAttention
     }
 
     /**
-     * @param  list<array{key: string, store: Store, label: string, detail: string, url: string}>  $items
+     * @param  list<AttentionItem>  $items
      * @param  Collection<int, Store>  $stores
      */
     private static function appendOutOfStock(array &$items, User $user, Collection $stores): void
@@ -281,7 +305,9 @@ final class NeedsAttention
                 'store' => $store,
                 'label' => __('reports.attention.out_of_stock', ['branch' => $store->code]),
                 'detail' => trans_choice('reports.attention.out_of_stock_detail', $count, ['count' => $count]),
-                'url' => route('subdomain.inventory.store', [$store, 'stock' => 'out']),
+                'url' => $user->can('viewInventory', $store)
+                    ? route('subdomain.inventory.store', [$store, 'stock' => 'out'])
+                    : null,
             ];
         }
     }

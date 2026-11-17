@@ -526,6 +526,8 @@ return [
         'empty' => 'No sales found.',
         'range_invalid_date' => 'Enter real dates. Leave both blank to see every date.',
         'range_reversed' => 'From must be on or before To.',
+        'range_invalid_interval' => 'The exact time interval is not valid.',
+        'range_reversed_interval' => 'The exact time interval must end after it starts.',
         'range_unavailable' => 'Fix the dates above to see the sales.',
         'summary_all' => 'All recorded sales in this branch:',
         'summary_filtered' => 'Recorded sales matching these filters:',

@@ -74,6 +74,8 @@ return [
         'cashbox_untracked_detail' => 'No cashbox session has been opened at this branch.',
         'supplier_mismatch' => 'Supplier ledger mismatch: :supplier (:currency)',
         'supplier_mismatch_detail' => 'Ledger :ledger · open invoices :invoices',
+        'supplier_mismatches' => '{1} :count supplier ledger mismatch|[2,*] :count supplier ledger mismatches',
+        'supplier_mismatches_detail' => 'Combined across the selected branches. Open supplier accounts for the exact ledger and open-invoice figures.',
         'supplier_payouts' => ':branch pending supplier cash payouts',
         'customer_cash' => ':branch pending customer cash',
         'pending_amount' => '{1} :count item · :amount TRY|[2,*] :count items · :amount TRY',
