@@ -59,7 +59,15 @@
             @endif
 
             <section aria-labelledby="expenses-history-title" class="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-200">
-                <h2 id="expenses-history-title" class="border-b border-gray-100 px-4 py-3 text-base font-semibold text-gray-900">{{ __('pos.expenses.history_title') }}</h2>
+                <div class="flex flex-wrap items-start justify-between gap-3 border-b border-gray-100 px-4 py-3">
+                    <h2 id="expenses-history-title" class="text-base font-semibold text-gray-900">{{ __('pos.expenses.history_title') }}</h2>
+                    @if ($canExportHistory)
+                        <div class="max-w-md text-end">
+                            <button type="button" wire:click="exportHistory" wire:loading.attr="disabled" class="inline-flex min-h-11 items-center rounded-lg px-4 text-sm font-semibold text-blue-700 ring-1 ring-blue-200 hover:bg-blue-50 disabled:opacity-60">{{ __('reports.export.download') }}</button>
+                            <p class="mt-1 text-xs text-gray-500">{{ __('reports.export.help') }}</p>
+                        </div>
+                    @endif
+                </div>
                 <fieldset class="border-b border-gray-100 px-4 py-3">
                     <legend class="sr-only">{{ __('pos.expenses.filter.legend') }}</legend>
                     <div class="flex flex-wrap items-end gap-3">

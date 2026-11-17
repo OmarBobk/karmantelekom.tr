@@ -133,6 +133,9 @@ return [
         'empty_body' => 'Find a product above and record its opening balance.',
         'no_matches_title' => 'No matching products',
         'no_matches_body' => 'Try another search term.',
+        'out_of_stock_filter' => 'Out of stock',
+        'out_of_stock_help' => 'Active products previously stocked here with zero on-hand quantity, or no available new serialized units. Used devices and online holds are not included.',
+        'clear_out_of_stock_filter' => 'Clear out-of-stock filter',
         'units_filter' => 'Showing products with devices in status: :status',
         'clear_units_filter' => 'Clear status filter',
         'units_filters' => [

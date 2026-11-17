@@ -15,6 +15,7 @@ use App\Models\User;
 use App\Services\Customers\CustomerAccount;
 use App\Services\Purchasing\Money;
 use App\Services\Purchasing\SupplierAccount;
+use App\Services\Reporting\CsvExporter;
 use App\Services\Reporting\LocalDateRange;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
@@ -24,6 +25,7 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
+use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Owner finance overview: period expenses and closed-session discrepancies for an Istanbul date
@@ -71,6 +73,36 @@ class FinanceOverview extends Component
         $this->resetPage('sessions');
     }
 
+    public function exportSuppliers(SupplierAccount $accounts): StreamedResponse
+    {
+        $this->authorize('viewFinanceOverview', Store::class);
+        $this->authorize('viewAccounts', OperationalSupplier::class);
+
+        $storeIds = $accounts->accessibleStoreIds(auth()->user());
+
+        $filename = __('reports.export.suppliers_filename', [
+            'date' => LocalDateRange::today(),
+        ]);
+
+        $headers = [
+            __('reports.export.suppliers.supplier'),
+            __('reports.export.suppliers.currency'),
+            __('reports.export.suppliers.balance'),
+            __('reports.export.suppliers.open_invoices'),
+        ];
+
+        return CsvExporter::download($filename, $headers, (function () use ($accounts, $storeIds) {
+            foreach ($accounts->supplierBalanceRows($storeIds) as $row) {
+                yield [
+                    CsvExporter::text($row->name),
+                    $row->currency,
+                    CsvExporter::amount(Money::toDecimal(Money::fromDecimal((string) $row->balance))),
+                    CsvExporter::amount(Money::toDecimal(Money::fromDecimal((string) $row->open_invoices))),
+                ];
+            }
+        })());
+    }
+
     #[Layout('layouts.backend')]
     public function render(): View
     {
@@ -79,13 +111,15 @@ class FinanceOverview extends Component
         $user = auth()->user();
         $stores = Store::query()->accessibleTo($user)->orderBy('code')->get();
         $rangeError = LocalDateRange::error($this->from, $this->to);
+        $canExportSuppliers = $user->can('viewAccounts', OperationalSupplier::class);
 
         return view('livewire.backend.reports.finance-overview', [
             'rangeError' => $rangeError,
             'expenses' => $this->expenses($this->storesWhere($stores, $user, 'manageExpenses'), $rangeError),
             'cashbox' => $this->cashbox($this->storesWhere($stores, $user, 'manageCashbox'), $rangeError),
-            'suppliers' => $user->can('viewAccounts', OperationalSupplier::class) ? $this->suppliers($stores) : null,
+            'suppliers' => $canExportSuppliers ? $this->suppliers($stores) : null,
             'debts' => $this->debts($this->storesWhere($stores, $user, 'receiveCustomerPayments')),
+            'canExportSuppliers' => $canExportSuppliers,
             'canViewDashboard' => $user->can('viewOperationsDashboard', Store::class),
             'canViewReview' => $user->can('viewOperationalReview', Store::class),
             'canViewAudit' => $user->can('viewAuditLog', Store::class),

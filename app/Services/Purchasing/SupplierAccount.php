@@ -13,7 +13,9 @@ use App\Models\SupplierCashPayout;
 use App\Models\SupplierLedgerEntry;
 use App\Models\User;
 use Illuminate\Contracts\Pagination\LengthAwarePaginator;
+use Illuminate\Database\Query\Builder;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\LazyCollection;
 
 /**
  * Read model for a supplier's account, limited to the stores the viewer can access.
@@ -62,6 +64,26 @@ class SupplierAccount
      */
     public function supplierBalances(array $storeIds, int $perPage = 25, string $pageName = 'page'): LengthAwarePaginator
     {
+        return $this->supplierBalancesQuery($storeIds)->paginate($perPage, pageName: $pageName);
+    }
+
+    /**
+     * Every non-zero supplier/currency balance row for the stores, in the same order as the
+     * paginated list. Pending cash payouts are not included and do not reduce these balances.
+     *
+     * @param  list<int>  $storeIds
+     * @return LazyCollection<int, object{operational_supplier_id: int|string, name: string, currency: string, balance: string, open_invoices: string}>
+     */
+    public function supplierBalanceRows(array $storeIds): LazyCollection
+    {
+        return $this->supplierBalancesQuery($storeIds)->cursor();
+    }
+
+    /**
+     * @param  list<int>  $storeIds
+     */
+    private function supplierBalancesQuery(array $storeIds): Builder
+    {
         $openInvoices = Purchase::query()
             ->selectRaw('coalesce(sum(total - paid_total), 0)')
             ->whereColumn('purchases.operational_supplier_id', 'balances.operational_supplier_id')
@@ -83,8 +105,7 @@ class SupplierAccount
             ->selectSub($openInvoices->toBase(), 'open_invoices')
             ->orderBy('operational_suppliers.name')
             ->orderBy('balances.operational_supplier_id')
-            ->orderBy('balances.currency')
-            ->paginate($perPage, pageName: $pageName);
+            ->orderBy('balances.currency');
     }
 
     /**
