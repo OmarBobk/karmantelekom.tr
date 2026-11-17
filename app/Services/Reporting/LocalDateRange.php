@@ -140,7 +140,8 @@ final class LocalDateRange
     }
 
     /**
-     * A UTC instant in Y-m-d\TH:i:s\Z form, or null.
+     * A UTC instant in Y-m-d\TH:i:s\Z form, or null. Overflowing or impossible calendar
+     * values (e.g. 2026-02-30, hour 25) are refused — never silently normalized.
      */
     public static function utcInstant(string $value): ?CarbonImmutable
     {
@@ -148,7 +149,17 @@ final class LocalDateRange
             return null;
         }
 
-        $instant = CarbonImmutable::parse($value, 'UTC')->utc();
+        try {
+            $instant = CarbonImmutable::createFromFormat('!Y-m-d\TH:i:s\Z', $value, 'UTC');
+        } catch (\Throwable) {
+            return null;
+        }
+
+        if ($instant === false) {
+            return null;
+        }
+
+        $instant = $instant->utc();
 
         return self::formatUtcInstant($instant) === $value ? $instant : null;
     }
@@ -171,6 +182,57 @@ final class LocalDateRange
         }
 
         return $start->lessThan($end) ? null : 'reversed_interval';
+    }
+
+    /**
+     * Shared sales history/CSV filter validation. An incomplete or invalid interval is never
+     * ignored in favor of all dates. When interval bounds are present they must be valid; when
+     * calendar dates are present they must also be valid (even alongside a valid interval).
+     */
+    public static function salesFilterError(string $from, string $to, string $fromAt = '', string $toAt = ''): ?string
+    {
+        $fromAt = trim($fromAt);
+        $toAt = trim($toAt);
+        $from = trim($from);
+        $to = trim($to);
+
+        if ($fromAt !== '' || $toAt !== '') {
+            $intervalError = self::intervalError($fromAt, $toAt);
+            if ($intervalError !== null) {
+                return $intervalError;
+            }
+        }
+
+        if ($from === '' && $to === '') {
+            return null;
+        }
+
+        $from = $from === '' ? $to : $from;
+        $to = $to === '' ? $from : $to;
+
+        return self::error($from, $to);
+    }
+
+    /**
+     * Istanbul display of a valid exclusive UTC interval for operators.
+     *
+     * @return array{start: string, end: string, start_at: string, end_at: string}|null
+     */
+    public static function intervalDisplay(string $fromAt, string $toAt): ?array
+    {
+        if (self::intervalError($fromAt, $toAt) !== null) {
+            return null;
+        }
+
+        $start = self::utcInstant($fromAt)->setTimezone(Sale::DISPLAY_TIMEZONE);
+        $end = self::utcInstant($toAt)->setTimezone(Sale::DISPLAY_TIMEZONE);
+
+        return [
+            'start' => $start->format('Y-m-d H:i'),
+            'end' => $end->format('Y-m-d H:i'),
+            'start_at' => $fromAt,
+            'end_at' => $toAt,
+        ];
     }
 
     /**

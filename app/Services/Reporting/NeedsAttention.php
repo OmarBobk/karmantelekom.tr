@@ -110,8 +110,25 @@ final class NeedsAttention
             'store' => null,
             'label' => trans_choice('reports.attention.supplier_mismatches', $count, ['count' => $count]),
             'detail' => __('reports.attention.supplier_mismatches_detail'),
-            'url' => route('subdomain.suppliers'),
+            'url' => self::supplierMismatchUrl($user),
         ];
+    }
+
+    /**
+     * Prefer the suppliers index when the owner may manage suppliers; otherwise the finance
+     * overview (reachable with account-only access). Never link to a forbidden destination.
+     */
+    private static function supplierMismatchUrl(User $user): ?string
+    {
+        if ($user->can('viewAny', OperationalSupplier::class)) {
+            return route('subdomain.suppliers');
+        }
+
+        if ($user->can('viewFinanceOverview', Store::class)) {
+            return route('subdomain.operations.finance');
+        }
+
+        return null;
     }
 
     /**
@@ -156,7 +173,7 @@ final class NeedsAttention
             return route('subdomain.operations.finance');
         }
 
-        if ($user->can('viewAccounts', OperationalSupplier::class)) {
+        if ($user->can('viewAny', OperationalSupplier::class)) {
             return route('subdomain.suppliers');
         }
 

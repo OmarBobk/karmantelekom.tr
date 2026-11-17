@@ -44,6 +44,8 @@ final class SalesCsv
         $toAt = Str::trim($toAt);
         $interval = self::resolvedInterval($fromAt, $toAt);
 
+        // Callers must refuse LocalDateRange::salesFilterError before querying. A valid interval
+        // is authoritative; otherwise inclusive Istanbul dates apply.
         return Sale::query()
             ->visibleTo($user, $store)
             ->when($term !== '', fn ($query) => $query->where(fn ($inner) => $inner

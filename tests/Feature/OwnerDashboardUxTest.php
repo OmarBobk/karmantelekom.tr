@@ -447,6 +447,108 @@ class OwnerDashboardUxTest extends TestCase
     }
 
     #[Test]
+    public function hourly_interval_is_visible_cleared_by_date_change_and_aligned_with_csv(): void
+    {
+        $this->travelTo(CarbonImmutable::parse('2026-11-10 08:15:00', Sale::DISPLAY_TIMEZONE)->utc());
+        $morning = $this->finalize($this->firstCashier, $this->review($this->firstCashier, $this->cableLine(1)), '50');
+        $this->travelTo(CarbonImmutable::parse('2026-11-10 14:45:00', Sale::DISPLAY_TIMEZONE)->utc());
+        $afternoon = $this->finalize($this->firstCashier, $this->review($this->firstCashier, $this->cableLine(2)), '100');
+        $this->travelTo(CarbonImmutable::parse('2026-11-11 10:00:00', Sale::DISPLAY_TIMEZONE)->utc());
+        $nextDay = $this->finalize($this->firstCashier, $this->review($this->firstCashier, $this->cableLine(1)), '50');
+        $this->travelBack();
+
+        $morningBucket = collect(RecordedSalesReport::series(
+            [$this->store->id],
+            LocalDateRange::date('2026-11-10'),
+            LocalDateRange::date('2026-11-10'),
+        )['buckets'])->firstWhere('count', '>', 0);
+        $params = RecordedSalesReport::bucketHistoryParams($morningBucket);
+
+        $history = Livewire::actingAs($this->owner)
+            ->withQueryParams($params)
+            ->test(SalesHistory::class, ['store' => $this->store]);
+
+        $interval = $history->viewData('activeInterval');
+        $this->assertNotNull($interval);
+        $history->assertSee('Exact Istanbul interval')->assertSee('end instant is exclusive');
+        $this->assertSame(1, $history->viewData('summary')['count']);
+        $history->assertSee($morning->number)->assertDontSee($afternoon->number);
+
+        $history->set('tender', 'cash')->call('applyFilters')
+            ->assertSet('fromAt', $params['from_at'])
+            ->assertSet('toAt', $params['to_at']);
+
+        $history->call('clearInterval')
+            ->assertSet('fromAt', '')
+            ->assertSet('toAt', '')
+            ->assertSet('from', '2026-11-10')
+            ->assertSet('to', '2026-11-10');
+        $this->assertNull($history->viewData('activeInterval'));
+        $this->assertSame(2, $history->viewData('summary')['count']);
+        $history->assertSee($morning->number)->assertSee($afternoon->number)->assertDontSee($nextDay->number);
+
+        $history = Livewire::actingAs($this->owner)
+            ->withQueryParams($params)
+            ->test(SalesHistory::class, ['store' => $this->store]);
+        $history->set('from', '2026-11-11')->set('to', '2026-11-11')->call('applyFilters')
+            ->assertSet('fromAt', '')
+            ->assertSet('toAt', '')
+            ->assertSee($nextDay->number)
+            ->assertDontSee($morning->number);
+
+        $this->actingAs($this->owner)
+            ->get(route('pos.sales.export', [$this->store, 'from' => 'not-a-date', 'to' => '2026-11-10', 'from_at' => $params['from_at'], 'to_at' => $params['to_at']]))
+            ->assertStatus(422);
+        Livewire::actingAs($this->owner)
+            ->withQueryParams(['from' => 'not-a-date', 'to' => '2026-11-10', 'from_at' => $params['from_at'], 'to_at' => $params['to_at']])
+            ->test(SalesHistory::class, ['store' => $this->store])
+            ->assertViewHas('rangeError', 'invalid_date')
+            ->assertViewHas('summary', null);
+    }
+
+    #[Test]
+    public function invalid_utc_instants_are_rejected_by_history_and_csv(): void
+    {
+        $this->assertNull(LocalDateRange::utcInstant('2026-02-30T10:00:00Z'));
+        $this->assertNull(LocalDateRange::utcInstant('2026-13-01T10:00:00Z'));
+        $this->assertNull(LocalDateRange::utcInstant('2026-11-10T25:00:00Z'));
+        $this->assertNull(LocalDateRange::utcInstant('2026-11-10T12:60:00Z'));
+        $this->assertNull(LocalDateRange::utcInstant('2026-11-10T12:00:60Z'));
+        $this->assertNull(LocalDateRange::utcInstant('2026-11-10 12:00:00Z'));
+        $this->assertSame('invalid_interval', LocalDateRange::salesFilterError('', '', '2026-11-10T12:00:00Z', ''));
+        $this->assertSame('reversed_interval', LocalDateRange::salesFilterError(
+            '2026-11-10',
+            '2026-11-10',
+            '2026-11-10T13:00:00Z',
+            '2026-11-10T12:00:00Z',
+        ));
+
+        Livewire::actingAs($this->owner)
+            ->withQueryParams(['from' => '2026-11-10', 'to' => '2026-11-10', 'from_at' => '2026-02-30T10:00:00Z', 'to_at' => '2026-02-30T11:00:00Z'])
+            ->test(SalesHistory::class, ['store' => $this->store])
+            ->assertViewHas('rangeError', 'invalid_interval')
+            ->assertSee('exact time interval is not valid');
+
+        $this->actingAs($this->owner)
+            ->get(route('pos.sales.export', [
+                $this->store,
+                'from' => '2026-11-10',
+                'to' => '2026-11-10',
+                'from_at' => '2026-02-30T10:00:00Z',
+                'to_at' => '2026-02-30T11:00:00Z',
+            ]))
+            ->assertStatus(422);
+
+        $this->actingAs($this->owner)
+            ->get(route('pos.sales.export', [
+                $this->store,
+                'from_at' => '2026-11-10T13:00:00Z',
+                'to_at' => '2026-11-10T12:00:00Z',
+            ]))
+            ->assertStatus(422);
+    }
+
+    #[Test]
     public function supplier_payout_links_require_destination_permission_and_mismatches_are_summarized(): void
     {
         $supplier = OperationalSupplier::factory()->create(['name' => 'Anka Attention']);
@@ -463,7 +565,9 @@ class OwnerDashboardUxTest extends TestCase
         DB::table('purchases')->where('id', $purchase->id)->update(['paid_total' => '10.00']);
 
         $this->revokeFromOwners('manage_cashbox');
-        $dashboard = Livewire::actingAs($this->owner->fresh())
+        $this->revokeFromOwners('manage_suppliers');
+        $owner = $this->owner->fresh();
+        $dashboard = Livewire::actingAs($owner)
             ->withQueryParams(['from' => '2026-11-10', 'to' => '2026-11-10'])
             ->test(OperationsDashboard::class);
 
@@ -472,13 +576,16 @@ class OwnerDashboardUxTest extends TestCase
         $this->assertNotNull($payout);
         $this->assertNotNull($payout['url']);
         $this->assertStringNotContainsString('/cashbox', $payout['url']);
-        $this->assertTrue(
-            str_contains($payout['url'], '/operations/finance') || str_contains($payout['url'], '/operations/suppliers'),
-        );
+        $this->assertStringContainsString('/operations/finance', $payout['url']);
+        $this->actingAs($owner)->get($payout['url'])->assertOk();
 
         $mismatch = $attention->firstWhere('key', 'supplier-mismatches');
         $this->assertNotNull($mismatch);
         $this->assertNull($mismatch['store']);
+        $this->assertNotNull($mismatch['url']);
+        $this->assertStringContainsString('/operations/finance', $mismatch['url']);
+        $this->assertStringNotContainsString('/operations/suppliers', parse_url($mismatch['url'], PHP_URL_PATH) ?? '');
+        $this->actingAs($owner)->get($mismatch['url'])->assertOk();
         $dashboard->assertSee('supplier ledger mismatch')->assertSee('Combined across the selected branches');
         $dashboard->assertDontSee('Anka Attention');
     }

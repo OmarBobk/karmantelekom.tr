@@ -30,9 +30,11 @@ class SalesCsvController extends Controller
         [$from, $to] = $this->range($request);
         $fromAt = Str::trim((string) $request->query('from_at', ''));
         $toAt = Str::trim((string) $request->query('to_at', ''));
-        $intervalPresent = $fromAt !== '' || $toAt !== '';
-        abort_if($intervalPresent && LocalDateRange::intervalError($fromAt, $toAt) !== null, 422, __('reports.export.range_required'));
-        abort_if(! $intervalPresent && $from !== '' && LocalDateRange::error($from, $to) !== null, 422, __('reports.export.range_required'));
+        abort_if(
+            LocalDateRange::salesFilterError($from, $to, $fromAt, $toAt) !== null,
+            422,
+            __('reports.export.range_required'),
+        );
 
         $search = mb_substr(Str::trim((string) $request->query('q', '')), 0, 80);
         $tender = Str::trim((string) $request->query('tender', ''));

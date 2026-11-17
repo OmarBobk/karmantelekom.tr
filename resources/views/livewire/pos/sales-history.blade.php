@@ -57,6 +57,16 @@
         @endif
     </form>
 
+    @if ($activeInterval)
+        <div class="flex flex-wrap items-center justify-between gap-3 rounded-xl bg-blue-50 px-4 py-3 text-sm text-blue-950 ring-1 ring-blue-200" role="status">
+            <p>
+                {{ __('pos.history.interval_active', ['start' => $activeInterval['start'], 'end' => $activeInterval['end']]) }}
+                <span class="mt-1 block text-xs text-blue-900/80">{{ __('pos.history.interval_exclusive_note') }}</span>
+            </p>
+            <button type="button" wire:click="clearInterval" class="inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-semibold text-blue-800 ring-1 ring-blue-300 hover:bg-white">{{ __('pos.history.clear_interval') }}</button>
+        </div>
+    @endif
+
     @if ($summary)
         <p class="rounded-xl bg-white px-4 py-3 text-sm text-gray-700 shadow-sm ring-1 ring-gray-200" role="status">
             {{ $isFiltering ? __('pos.history.summary_filtered') : __('pos.history.summary_all') }}
