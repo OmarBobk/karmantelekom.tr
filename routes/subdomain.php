@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\Reports\SupplierBalancesCsvController;
 use App\Livewire\Backend\ActivitiesComponent;
 use App\Livewire\Backend\Ads\AdsComponent;
 use App\Livewire\Backend\Catalog\CatalogComponent;
@@ -77,6 +78,9 @@ Route::prefix('operations')->group(function () {
     Route::get('finance', FinanceOverview::class)
         ->middleware('can:viewFinanceOverview,'.Store::class)
         ->name('operations.finance');
+    Route::get('exports/suppliers.csv', SupplierBalancesCsvController::class)
+        ->middleware(['can:viewFinanceOverview,'.Store::class, 'can:viewAccounts,'.OperationalSupplier::class])
+        ->name('operations.suppliers.export');
     Route::get('review', OperationalReview::class)
         ->middleware('can:viewOperationalReview,'.Store::class)
         ->name('operations.review');

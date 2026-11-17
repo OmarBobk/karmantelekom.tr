@@ -10,7 +10,7 @@
         </div>
         @if ($canExport)
             <div class="max-w-md text-end">
-                <button type="button" wire:click="export" wire:loading.attr="disabled" class="inline-flex min-h-11 items-center rounded-lg px-4 text-sm font-semibold text-blue-700 ring-1 ring-blue-200 hover:bg-blue-50 disabled:opacity-60">{{ __('reports.export.download') }}</button>
+                <a href="{{ route('pos.sales.export', [$store, 'from' => $from, 'to' => $to, 'q' => $search]) }}" class="inline-flex min-h-11 items-center rounded-lg px-4 text-sm font-semibold text-blue-700 ring-1 ring-blue-200 hover:bg-blue-50">{{ __('reports.export.download') }}</a>
                 <p class="mt-1 text-xs text-gray-500">{{ __('reports.export.help') }}</p>
             </div>
         @endif

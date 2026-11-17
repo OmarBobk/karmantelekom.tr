@@ -15,7 +15,6 @@ use App\Models\User;
 use App\Services\Customers\CustomerAccount;
 use App\Services\Purchasing\Money;
 use App\Services\Purchasing\SupplierAccount;
-use App\Services\Reporting\CsvExporter;
 use App\Services\Reporting\LocalDateRange;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
@@ -25,7 +24,6 @@ use Livewire\Attributes\Layout;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * Owner finance overview: period expenses and closed-session discrepancies for an Istanbul date
@@ -71,36 +69,6 @@ class FinanceOverview extends Component
     {
         $this->from = $this->to = LocalDateRange::today();
         $this->resetPage('sessions');
-    }
-
-    public function exportSuppliers(SupplierAccount $accounts): StreamedResponse
-    {
-        $this->authorize('viewFinanceOverview', Store::class);
-        $this->authorize('viewAccounts', OperationalSupplier::class);
-
-        $storeIds = $accounts->accessibleStoreIds(auth()->user());
-
-        $filename = __('reports.export.suppliers_filename', [
-            'date' => LocalDateRange::today(),
-        ]);
-
-        $headers = [
-            __('reports.export.suppliers.supplier'),
-            __('reports.export.suppliers.currency'),
-            __('reports.export.suppliers.balance'),
-            __('reports.export.suppliers.open_invoices'),
-        ];
-
-        return CsvExporter::download($filename, $headers, (function () use ($accounts, $storeIds) {
-            foreach ($accounts->supplierBalanceRows($storeIds) as $row) {
-                yield [
-                    CsvExporter::text($row->name),
-                    $row->currency,
-                    CsvExporter::amount(Money::toDecimal(Money::fromDecimal((string) $row->balance))),
-                    CsvExporter::amount(Money::toDecimal(Money::fromDecimal((string) $row->open_invoices))),
-                ];
-            }
-        })());
     }
 
     #[Layout('layouts.backend')]

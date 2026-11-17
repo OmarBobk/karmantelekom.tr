@@ -63,7 +63,7 @@
                     <h2 id="expenses-history-title" class="text-base font-semibold text-gray-900">{{ __('pos.expenses.history_title') }}</h2>
                     @if ($canExportHistory)
                         <div class="max-w-md text-end">
-                            <button type="button" wire:click="exportHistory" wire:loading.attr="disabled" class="inline-flex min-h-11 items-center rounded-lg px-4 text-sm font-semibold text-blue-700 ring-1 ring-blue-200 hover:bg-blue-50 disabled:opacity-60">{{ __('reports.export.download') }}</button>
+                            <a href="{{ route('pos.expenses.export', [$store, 'from' => $historyFrom, 'to' => $historyTo, 'category' => $historyCategory]) }}" class="inline-flex min-h-11 items-center rounded-lg px-4 text-sm font-semibold text-blue-700 ring-1 ring-blue-200 hover:bg-blue-50">{{ __('reports.export.download') }}</a>
                             <p class="mt-1 text-xs text-gray-500">{{ __('reports.export.help') }}</p>
                         </div>
                     @endif

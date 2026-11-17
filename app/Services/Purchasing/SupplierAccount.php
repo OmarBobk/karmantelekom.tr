@@ -70,13 +70,14 @@ class SupplierAccount
     /**
      * Every non-zero supplier/currency balance row for the stores, in the same order as the
      * paginated list. Pending cash payouts are not included and do not reduce these balances.
+     * Uses chunked reads so PDO does not buffer the whole result set.
      *
      * @param  list<int>  $storeIds
      * @return LazyCollection<int, object{operational_supplier_id: int|string, name: string, currency: string, balance: string, open_invoices: string}>
      */
-    public function supplierBalanceRows(array $storeIds): LazyCollection
+    public function supplierBalanceRows(array $storeIds, int $batch = 200): LazyCollection
     {
-        return $this->supplierBalancesQuery($storeIds)->cursor();
+        return $this->supplierBalancesQuery($storeIds)->lazy($batch);
     }
 
     /**

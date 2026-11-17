@@ -21,11 +21,9 @@ use App\Models\ExpenseSubmission;
 use App\Models\OperationalSupplier;
 use App\Models\Store;
 use App\Services\Purchasing\LocalizedMoney;
-use App\Services\Purchasing\Money;
-use App\Services\Reporting\CsvExporter;
+use App\Services\Reporting\ExpensesCsv;
 use App\Services\Reporting\LocalDateRange;
 use Illuminate\Contracts\View\View;
-use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Pagination\LengthAwarePaginator;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
@@ -33,7 +31,6 @@ use Livewire\Attributes\Locked;
 use Livewire\Attributes\Url;
 use Livewire\Component;
 use Livewire\WithPagination;
-use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
  * A branch's general expenses: record one, hand out cash for cash expenses, and see history.
@@ -307,60 +304,12 @@ class ExpensesPage extends Component
         $this->notify('success', __('pos.expenses.released'));
     }
 
-    public function exportHistory(): StreamedResponse
-    {
-        $store = $this->authorizeExpenses();
-        $this->normalizeHistoryFilters();
-        $historyError = $this->historyError();
-
-        abort_if($historyError !== null, 422, __('reports.export.range_required'));
-
-        $filename = __('reports.export.expenses_filename', [
-            'store' => $store->code,
-            'date' => LocalDateRange::today(),
-        ]);
-
-        $headers = [
-            __('reports.export.expenses.date'),
-            __('reports.export.expenses.category'),
-            __('reports.export.expenses.description'),
-            __('reports.export.expenses.amount'),
-            __('reports.export.expenses.currency'),
-            __('reports.export.expenses.method'),
-            __('reports.export.expenses.reference'),
-            __('reports.export.expenses.recorder'),
-            __('reports.export.expenses.supplier'),
-        ];
-
-        $query = $this->filteredHistory($store)
-            ->with(['recorder:id,name', 'supplier:id,name'])
-            ->reorder()
-            ->orderByDesc('expense_date')
-            ->orderByDesc('id');
-
-        return CsvExporter::download($filename, $headers, (function () use ($query) {
-            foreach ($query->cursor() as $expense) {
-                yield [
-                    (string) $expense->expense_date->format('Y-m-d'),
-                    CsvExporter::text($expense->category->label()),
-                    CsvExporter::text($expense->description),
-                    CsvExporter::amount(Money::toDecimal($expense->amountMinor())),
-                    $expense->currency->value,
-                    CsvExporter::text($expense->method->label()),
-                    CsvExporter::text($expense->reference),
-                    CsvExporter::text($expense->recorder?->name),
-                    CsvExporter::text($expense->supplier?->name),
-                ];
-            }
-        })());
-    }
-
     public function render(): View
     {
         $store = $this->authorizeExpenses();
         $session = CashboxSession::openFor($store);
         $historyError = $this->historyError();
-        $history = $this->filteredHistory($store);
+        $history = ExpensesCsv::query($store, $this->historyFrom, $this->historyTo, $this->historyCategory);
 
         return view('livewire.pos.expenses-page', [
             'store' => $store,
@@ -401,19 +350,6 @@ class ExpensesPage extends Component
             'today' => self::today(),
             ...$this->localeViewData(),
         ])->layout('layouts.pos', ['posStore' => $store])->title(__('pos.expenses.title', ['store' => $store->code]));
-    }
-
-    /**
-     * Confirmed expenses for this branch matching the history filters.
-     *
-     * @return Builder<Expense>
-     */
-    private function filteredHistory(Store $store): Builder
-    {
-        return Expense::query()
-            ->where('store_id', $store->id)
-            ->when($this->historyFrom !== '', fn ($query) => $query->onBusinessDays($this->historyFrom, $this->historyTo))
-            ->when($this->historyCategory !== '', fn ($query) => $query->where('category', $this->historyCategory));
     }
 
     private function snapshotSession(Store $store): void

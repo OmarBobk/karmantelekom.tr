@@ -7,12 +7,21 @@ namespace App\Services\Reporting;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 
 /**
- * UTF-8 BOM CSV downloads with comma delimiters, exact decimal money, and spreadsheet injection
- * neutralization for user-controlled text. Trusted numeric amount fields are written as plain
- * decimals. CSV has no column types — Excel Import Data should mark identifier columns as Text.
+ * UTF-8 BOM CSV downloads with comma delimiters, RFC-style quote doubling, exact decimal money,
+ * and spreadsheet injection neutralization for user-controlled text. Trusted monetary decimals are
+ * written as plain numbers. CSV has no column types — Excel Import Data should mark identifier
+ * columns as Text. Neutralization reduces formula risk on open; it is not a guarantee after a
+ * spreadsheet edits, saves, or reopens the file.
  */
 final class CsvExporter
 {
+    public const DELIMITER = ',';
+
+    public const ENCLOSURE = '"';
+
+    /** Empty escape: standard CSV doubles enclosures; no proprietary backslash escaping. */
+    public const ESCAPE = '';
+
     /**
      * @param  list<string>  $headers
      * @param  iterable<int, list<string|int|float|null>>  $rows
@@ -27,10 +36,10 @@ final class CsvExporter
             }
 
             fwrite($handle, "\xEF\xBB\xBF");
-            fputcsv($handle, $headers);
+            self::writeRow($handle, $headers);
 
             foreach ($rows as $row) {
-                fputcsv($handle, array_map(self::cell(...), $row));
+                self::writeRow($handle, array_map(self::cell(...), $row));
             }
 
             fclose($handle);
@@ -40,8 +49,8 @@ final class CsvExporter
     }
 
     /**
-     * Neutralize formula-like leading characters in user-controlled text. Leaves ordinary
-     * decimals and plain numbers unchanged when they do not start with a formula trigger.
+     * Neutralize formula-like values. Leading whitespace and C0 controls before =, +, -, or @
+     * still trigger protection; the original characters are kept after a leading apostrophe.
      */
     public static function text(?string $value): string
     {
@@ -51,10 +60,14 @@ final class CsvExporter
             return '';
         }
 
-        $trimmed = ltrim($value, " \t\0\x0B");
-        $lead = $trimmed === '' ? '' : $trimmed[0];
+        $length = strlen($value);
+        $offset = 0;
 
-        if (in_array($lead, ['=', '+', '-', '@', "\t", "\r"], true)) {
+        while ($offset < $length && self::isIgnorablePrefix($value[$offset])) {
+            $offset++;
+        }
+
+        if ($offset < $length && in_array($value[$offset], ['=', '+', '-', '@'], true)) {
             return "'".$value;
         }
 
@@ -67,6 +80,22 @@ final class CsvExporter
     public static function amount(string $decimal): string
     {
         return $decimal;
+    }
+
+    /**
+     * @param  resource  $handle
+     * @param  list<string|int|float|null>  $fields
+     */
+    public static function writeRow($handle, array $fields): void
+    {
+        fputcsv($handle, $fields, self::DELIMITER, self::ENCLOSURE, self::ESCAPE);
+    }
+
+    private static function isIgnorablePrefix(string $byte): bool
+    {
+        $code = ord($byte);
+
+        return $code <= 0x20;
     }
 
     private static function cell(string|int|float|null $value): string
