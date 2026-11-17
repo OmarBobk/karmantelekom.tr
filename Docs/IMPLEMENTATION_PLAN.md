@@ -1335,7 +1335,7 @@ Inventory purchases, device costs, operating expenses, refunds, and payments mus
 - **Verification.** `OutOfStockVisibilityTest` and `ReportCsvExportTest` (HTTP endpoints, auth/permission/branch refusals, multi-batch filter parity, CSV round-trip, formula prefixes, Arabic headers, related-query batch growth), plus related dashboard, inventory, and finance tests after final edits.
 - **Profit.** Weighted Average Cost remains the approved direction for quantity products. Detailed WAC timing, snapshots, FX, tax, device cost basis, double-counting, cross-store attribution, and returns (Ask P1–P10) remain unresolved proposals — not implemented and not marked deferred past production rollout without Omar’s approval.
 
-**Batch 5: owner dashboard clarity, visual reporting, and product-quality duties** (branch `phase-8-owner-dashboard-ux`; review, Omar’s acceptance, merge, and application deployment pending):
+**Batch 5: owner dashboard clarity, visual reporting, and product-quality duties** (merged through PR #35 as squash `6d0a51e`; review and Omar’s walkthrough acceptance were recorded for that PR; application deployment status is not verified):
 
 - **Scope.** One PR separate from batch 4: lead recorded-sales figures with previous equal Istanbul period comparison, Chart.js sales-over-time and branch comparison (reuse existing CDN load), cash/card/original-credit composition with sales-history tender filters and CSV parity, current Needs attention exceptions, shared date presets across dashboard/finance/review/audit, and amendments to the collaboration workflow plus UI rules for explicit product-quality responsibility. No migration, new chart package, profit/costing, configurable low-stock thresholds, overdue classifications, write actions, or broader dashboard entry permissions.
 - **Approved reporting definitions.** Spec §15.2E. Previous equal period = same number of Istanbul calendar days immediately before `from`. Incomplete marker when the selected range includes today. Net posted cash/card payments + original credit = recorded sales. Charts and composition reuse authorized completed-sale data only.
@@ -1344,20 +1344,32 @@ Inventory purchases, device costs, operating expenses, refunds, and payments mus
 - **Verification.** `OwnerDashboardUxTest` plus related `OperationsDashboardTest`, `ReportCsvExportTest`, finance/review/audit tests. Rendered Arabic RTL / English LTR checks: same-mounted dashboard chart remount after an isolated-DB sale (before 150,00 TRY / 2 sales → after 200,00 TRY / 3 sales with matching Chart.js buckets; two range changes left exactly two canvases, no open tooltips, no page JS errors) verified on disposable `dev_store_browser_pr35` via `php artisan serve :8765` (not the application database). Prior hourly-interval browser evidence on EN LTR narrow width remains from the review-fix pass.
 - **Deferred from the batch 5 Ask (not implemented):** backend-shell document direction and physical-spacing RTL for the owner chrome; inventory list last-movement context on out-of-stock/stocked rows; counter cashbox session visibility before payment; debt-age buckets beyond existing finance totals; Chart.js/CDN loading cleanup on operational routes that do not need charts.
 
+**Batch 6: trustworthy recorded-cost sales margin** (branch `phase-8-sales-margin-costing`; implementation complete on branch; review, Omar’s acceptance, merge, and application deployment pending):
+
+- **Scope.** One PR: quantity WAC pool state on `inventory_balances`, owner quantity-cost declarations, immutable sale-line cost snapshots + device cost facts at finalize, owner `/operations/margin` report with Chart.js coverage, product-inventory declaration UI. No KDV/FX/OpEx, no returns/settlement, no Network attribution, no backfill of historical sales, no new chart package, no change to finalize request fingerprints.
+- **Approved rules.** Spec §15.2F (Omar). Quantity: empty/known/unknown whole-pool WAC; existing nonzero→unknown, zero→empty; TRY receipt into empty/known; contamination; full depletion→empty; count/opening increases→unknown; proportional known outbound; owner total-TRY declaration for current qty (`manage_purchases`, reason, append-only, future sales only). Devices: acquisition + non-reversed additional/parts/labor; Other excluded; missing/unknown/incompatible→unknown. Sales: freeze at completion; Network wholly excluded; legacy null snapshots stay unknown; replay unchanged.
+- **Implementation notes.** `QuantityCostPool` is the sole quantity transition writer (receipt, opening, count, finalize). `DeclareQuantityCost` is cost-only (no fake movement). `DeviceSaleCost` + `sale_line_cost_facts` freeze evidence; `laterActivity` separates post-sale record/reverse. `SalesMarginReport` reconciles known/unknown/Network revenue; restricted costs omitted not labeled unknown. Forward migrations `2026_11_17_194005`–`194008`.
+- **Verification (isolated `dev_store_testing`).** `SalesMarginCostingTest`, `SalesMarginReportTest`, `QuantityCostConcurrencyTest` (receipt/count/declaration vs sale; competing sales), plus filtered PurchaseReceiving / StockCount / DeviceCost / PosCheckout regressions. Formatter: Pint dirty. Rendered AR RTL / EN LTR / responsive margin UI: **pending** (PHP tests are not visual evidence).
+- **Application-DB note.** During Agent work, `php artisan migrate` was accidentally run against the local application database `dev.store` and also applied other pending migrations present there (including storefront/`requested_at` relatives). Treat application deployment status and which migrations are live on Omar’s environments as **unverified**; do not assume production matches. Tests used only `dev_store_testing`.
+- **Deployment order (Omar; Agent must not migrate the application DB):**
+  1. Pause every writer that can change stock, device costs, or complete sales (POS, receiving, counts/openings, device cost record/reverse, Network fulfill paths, queue workers/integrations if any).
+  2. Deploy the matching code and apply **only** the four batch-6 migrations after `migrate:status` review (`2026_11_17_194005` … `194008`). Do not rely on nullable new columns while old code still writes balances without cost state. Do not silently bundle unrelated pending migrations (e.g. unresolved `requested_at`) without an explicit decision.
+  3. Restart paused processes; spot-check: empty/known/unknown on a quantity product, one known sale snapshot, margin report reconciliation, declaration stale-qty rejection.
+  4. Resume writers. On failure after snapshots exist: forward-fix; do **not** destructively roll back financial sale-line snapshots.
+
 **Remaining Phase 8 work:**
 
-- Sales profit and approved costing / valuation rules (WAC direction approved; detailed rules open).
+- Broader used-device profit / valuation beyond recorded-cost margin (batch 6 delivered recorded-cost margin only).
 - Configurable low-stock thresholds (pre-zero alerts); out-of-stock visibility is delivered in batch 4.
-- Broader used-device profit reporting beyond recorded costs.
 - Optional historical repair of already-drifted `requested_at` values (only if Omar approves a safe evidence-based procedure).
 - Deferred UX opportunities recorded under batch 5 (backend shell direction, inventory movement context, counter cashbox visibility, debt-age presentation, CDN cleanup).
 
 **Open decisions:**
 
 - **Low-stock threshold.** Out-of-stock visibility is approved (L1/L2). Configurable per-branch/product thresholds remain open (see the deferred decisions register).
-- **Employee dashboards.** Whether employees get a dashboard, such as their own sales today. Batches 1–5 are owner-only for these overview screens.
-- **Daily operating reports.** Batches 1–5 are slices of "exact reports required for daily operations", not the final set.
-- **Profit / cost basis.** Detailed rules unresolved; recorded costs in batch 3 are not valuation or profit; batches 4–5 do not implement profit.
+- **Employee dashboards.** Whether employees get a dashboard, such as their own sales today. Batches 1–6 are owner-only for these overview screens.
+- **Daily operating reports.** Batches 1–6 are slices of "exact reports required for daily operations", not the final set.
+- **Network margin attribution.** Network-linked sales remain wholly excluded until Omar approves inter-branch attribution.
 - **Backend shell direction.** Whether the storefront admin chrome follows the operational locale (Arabic RTL) or stays English LTR — deferred from batch 5.
 
 ---

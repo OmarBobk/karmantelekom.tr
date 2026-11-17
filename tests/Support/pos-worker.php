@@ -18,8 +18,12 @@ use App\Actions\Customers\RecordCustomerPayment;
 use App\Actions\Customers\SaveCounterCustomer;
 use App\Actions\Expenses\ConfirmCashPayout;
 use App\Actions\Expenses\SubmitExpense;
+use App\Actions\Inventory\DeclareQuantityCost;
+use App\Actions\Inventory\DeviceCostInput;
+use App\Actions\Inventory\RecordDeviceCost;
 use App\Actions\Inventory\RecordInspection;
 use App\Actions\Inventory\RecordStockCount;
+use App\Actions\Inventory\ReverseDeviceCost;
 use App\Actions\Pos\FinalizeCheckout;
 use App\Actions\Pos\RecordCardApproval;
 use App\Actions\Pos\StartTerminalPayment;
@@ -90,6 +94,50 @@ try {
             );
 
             return ['status' => $movement === null ? 'unchanged' : 'ok'];
+        })(),
+        'declare' => (function () use ($actor, $store, $payload): array {
+            $declaration = app(DeclareQuantityCost::class)(
+                $actor,
+                $store,
+                ProductDefinition::query()->findOrFail($payload['definition_id']),
+                $payload['expected_quantity'],
+                $payload['declared_total'],
+                $payload['reason'] ?? 'Concurrent declaration',
+                $payload['key'],
+            );
+
+            return ['status' => 'ok', 'declaration_id' => $declaration->id, 'created' => $declaration->wasRecentlyCreated];
+        })(),
+        'record_device_cost' => (function () use ($actor, $store, $payload): array {
+            $movement = app(RecordDeviceCost::class)(
+                $actor,
+                $store,
+                $payload['unit_id'],
+                DeviceCostInput::fromInput(
+                    $payload['category'],
+                    $payload['description'] ?? $payload['note'] ?? null,
+                    $payload['amount'] ?? null,
+                    $payload['currency'] ?? 'TRY',
+                    (bool) ($payload['unknown'] ?? false),
+                ),
+                null,
+                $payload['key'],
+            );
+
+            return ['status' => 'ok', 'movement_id' => $movement->id];
+        })(),
+        'reverse_device_cost' => (function () use ($actor, $store, $payload): array {
+            $movement = app(ReverseDeviceCost::class)(
+                $actor,
+                $store,
+                $payload['unit_id'],
+                $payload['entry_id'],
+                $payload['reason'] ?? 'Concurrent reverse',
+                null,
+                $payload['key'],
+            );
+
+            return ['status' => 'ok', 'movement_id' => $movement->id];
         })(),
         'customer' => (function () use ($actor, $store, $payload): array {
             $customer = app(SaveCounterCustomer::class)($actor, $store, $payload['name'], $payload['phone']);

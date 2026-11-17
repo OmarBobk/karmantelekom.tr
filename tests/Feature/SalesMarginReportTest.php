@@ -1,0 +1,321 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests\Feature;
+
+use App\Actions\Inventory\DeviceCostInput;
+use App\Actions\Inventory\RecordDeviceCost;
+use App\Actions\Inventory\RecordStockCount;
+use App\Actions\Inventory\ReverseDeviceCost;
+use App\Actions\Network\ApproveReservation;
+use App\Actions\Network\PublishUnitListing;
+use App\Actions\Network\RequestReservation;
+use App\Actions\Network\SetReservationHold;
+use App\Actions\Pos\FinalizeCheckout;
+use App\Actions\Pos\ReviewCheckout;
+use App\Actions\Purchasing\ReceivePurchase;
+use App\Enums\DeviceCostCategory;
+use App\Enums\SaleLineCostStatus;
+use App\Enums\TrackingMode;
+use App\Enums\UnitStatus;
+use App\Livewire\Backend\Reports\SalesMargin;
+use App\Models\DeviceCostEntry;
+use App\Models\NetworkListing;
+use App\Models\OperationalSupplier;
+use App\Models\ProductDefinition;
+use App\Models\Sale;
+use App\Models\Store;
+use App\Models\User;
+use App\Services\Inventory\DeviceSaleCost;
+use App\Services\Purchasing\Money;
+use App\Services\Reporting\LocalDateRange;
+use App\Services\Reporting\SalesMarginReport;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Livewire\Livewire;
+use PHPUnit\Framework\Attributes\Test;
+use Tests\Support\InteractsWithPos;
+use Tests\Support\InteractsWithPurchasing;
+use Tests\TestCase;
+
+class SalesMarginReportTest extends TestCase
+{
+    use InteractsWithPos;
+    use InteractsWithPurchasing;
+    use RefreshDatabase;
+
+    private User $cashier;
+
+    private OperationalSupplier $supplier;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        $this->setUpOperationalRoles();
+        $this->owner = $this->createOwner(['name' => 'Omar']);
+        $this->store = Store::factory()->create(['code' => 'KT01', 'name' => 'Karman Fatih']);
+        $this->cable = ProductDefinition::factory()->priced('49.90')->create([
+            'name' => 'USB-C cable',
+            'tracking_mode' => TrackingMode::QUANTITY,
+            'barcode' => '8690000000017',
+            'sku' => 'CBL-USBC-1M',
+        ]);
+        $this->usedPhone = ProductDefinition::factory()->create([
+            'name' => 'iPhone 13',
+            'model' => '128 GB',
+            'tracking_mode' => TrackingMode::USED_DEVICE,
+        ]);
+        $this->phoneImei = self::imei('35693803564380');
+        $this->phoneSecondImei = self::imei('35693803564398');
+        $this->phone = $this->registerDevice($this->owner, $this->store, $this->usedPhone, $this->phoneImei, null, $this->phoneSecondImei);
+        $this->phone->update(['selling_price' => '12500.00']);
+        $this->cashier = $this->createCashier();
+        $this->supplier = OperationalSupplier::factory()->create();
+    }
+
+    #[Test]
+    public function report_reconciles_known_unknown_and_network_revenue(): void
+    {
+        $this->receiveCable(10, '10.00');
+        $knownSale = $this->sellCable(2);
+        $this->assertSame(SaleLineCostStatus::KNOWN, $knownSale->lines()->first()->cost_status);
+
+        app(RecordStockCount::class)(
+            $this->owner,
+            $this->store,
+            $this->cable,
+            12,
+            RecordStockCount::latestMovementId($this->store, $this->cable),
+            'found',
+            (string) Str::uuid(),
+        );
+        $unknownSale = $this->sellCable(1);
+        $this->assertSame(SaleLineCostStatus::UNKNOWN, $unknownSale->lines()->first()->cost_status);
+
+        $networkSale = $this->sellNetworkPhone();
+
+        $today = LocalDateRange::date(LocalDateRange::today());
+        $report = SalesMarginReport::forStores($this->owner, [$this->store->id], $today, $today);
+
+        $this->assertSame(3, $report['recorded_sales_count']);
+        $this->assertSame(
+            $report['recorded_revenue_minor'],
+            $report['coverage']['sum'],
+        );
+        $this->assertSame(
+            Money::sumUncapped([
+                $report['known_revenue_minor'],
+                $report['unknown_revenue_minor'],
+                $report['network_revenue_minor'],
+            ]),
+            $report['recorded_revenue_minor'],
+        );
+        $this->assertSame(1, $report['network_sale_count']);
+        $this->assertSame($networkSale->totalMinor(), $report['network_revenue_minor']);
+        $this->assertTrue(collect($report['rows'])->contains(
+            fn (array $row): bool => $row['classification'] === 'network' && $row['margin_minor'] === null,
+        ));
+    }
+
+    #[Test]
+    public function mixed_sale_never_shows_whole_sale_margin(): void
+    {
+        $this->receiveCable(5, '10.00');
+        // Opening device has no acquisition receipt → unknown device cost beside known quantity cost.
+        $this->phone->update(['selling_price' => '2000.00', 'status' => UnitStatus::AVAILABLE]);
+
+        $attempt = $this->review($this->cashier, $this->cableLine(1) + $this->phoneLine($this->phone));
+        $terminal = $this->createTerminal();
+        $this->approveCard($this->cashier, $attempt, $terminal, '2000.00');
+        $sale = app(FinalizeCheckout::class)(
+            $this->cashier,
+            $this->store,
+            $attempt->key,
+            $attempt->fresh()->revision,
+            '49.90',
+            null,
+        );
+
+        $today = LocalDateRange::date(LocalDateRange::today());
+        $report = SalesMarginReport::forStores($this->owner, [$this->store->id], $today, $today);
+        $row = collect($report['rows'])->firstWhere('sale_id', $sale->id);
+
+        $this->assertSame('mixed_or_unknown', $row['classification']);
+        $this->assertNull($row['margin_minor']);
+        $this->assertGreaterThan(1, count($row['line_summaries']));
+        $this->assertTrue(collect($row['line_summaries'])->contains(fn (array $line): bool => $line['status'] === 'known'));
+        $this->assertTrue(collect($row['line_summaries'])->contains(fn (array $line): bool => $line['status'] === 'unknown'));
+    }
+
+    #[Test]
+    public function device_drilldown_distinguishes_snapshot_exclusion_and_later_reversal(): void
+    {
+        $imei = self::imei('35693803564384');
+        $purchase = $this->postedPurchase($this->owner, $this->store, $this->supplier, [[$this->usedPhone, 1, '1000.00']]);
+        $line = $purchase->lines()->sole();
+        $receipt = app(ReceivePurchase::class)($this->owner, $purchase, [
+            $line->id => [['condition' => 'b', 'imei' => $imei, 'secondary_imei' => null, 'serial' => null]],
+        ], null, (string) Str::uuid());
+        $unit = $receipt->lines()->sole()->units()->sole()->unit;
+        $unit->update(['selling_price' => '2000.00', 'status' => UnitStatus::AVAILABLE]);
+
+        $parts = app(RecordDeviceCost::class)(
+            $this->owner,
+            $this->store,
+            $unit->id,
+            DeviceCostInput::fromInput('repair_parts', 'screen', '100.00', 'TRY', false),
+            null,
+            (string) Str::uuid(),
+        );
+        app(RecordDeviceCost::class)(
+            $this->owner,
+            $this->store,
+            $unit->id,
+            DeviceCostInput::fromInput('other', 'shipping', '25.00', 'TRY', false),
+            null,
+            (string) Str::uuid(),
+        );
+
+        $sale = $this->finalizePhone($unit);
+        $saleLine = $sale->lines()->first();
+        $entryId = DeviceCostEntry::query()
+            ->where('inventory_unit_id', $unit->id)
+            ->whereNull('reversed_at')
+            ->where('category', DeviceCostCategory::REPAIR_PARTS)
+            ->value('id');
+        $this->assertNotNull($entryId);
+
+        app(ReverseDeviceCost::class)(
+            $this->owner,
+            $this->store,
+            $unit->id,
+            (int) $entryId,
+            'fix after sale',
+            null,
+            (string) Str::uuid(),
+        );
+        app(RecordDeviceCost::class)(
+            $this->owner,
+            $this->store,
+            $unit->id,
+            DeviceCostInput::fromInput('repair_labor', null, '40.00', 'TRY', false),
+            null,
+            (string) Str::uuid(),
+        );
+
+        $saleLine->setRelation('sale', $sale);
+        $activity = DeviceSaleCost::laterActivity($saleLine);
+
+        $this->assertTrue(collect($activity['snapshot'])->contains(
+            fn (array $fact): bool => $fact['inclusion'] === 'excluded' && $fact['note'] === 'other_excluded',
+        ));
+        $this->assertTrue(collect($activity['later'])->contains(
+            fn (array $change): bool => $change['kind'] === 'reversed_after_sale',
+        ));
+        $this->assertTrue(collect($activity['later'])->contains(
+            fn (array $change): bool => $change['kind'] === 'recorded_after_sale',
+        ));
+        $this->assertSame('1100.00', $saleLine->fresh()->cost_amount);
+    }
+
+    #[Test]
+    public function owner_page_loads_and_employee_is_refused(): void
+    {
+        $this->receiveCable(2, '10.00');
+        $this->sellCable(1);
+
+        Livewire::actingAs($this->owner)
+            ->test(SalesMargin::class)
+            ->assertOk()
+            ->assertSee(__('reports.margin.title'));
+
+        Livewire::actingAs($this->cashier)
+            ->test(SalesMargin::class)
+            ->assertForbidden();
+    }
+
+    #[Test]
+    public function historical_lines_without_snapshots_count_as_unknown_not_zero(): void
+    {
+        $this->receiveCable(2, '10.00');
+        $sale = $this->sellCable(1);
+        DB::table('sale_lines')->where('id', $sale->lines()->first()->id)->update([
+            'cost_status' => null,
+            'cost_currency' => null,
+            'cost_amount' => null,
+            'cost_basis' => null,
+            'cost_basis_version' => null,
+            'cost_unknown_reason' => null,
+            'cost_exclusion_reason' => null,
+            'pool_quantity_before' => null,
+            'pool_cost_total_before' => null,
+            'cost_declaration_id' => null,
+        ]);
+
+        $today = LocalDateRange::date(LocalDateRange::today());
+        $report = SalesMarginReport::forStores($this->owner, [$this->store->id], $today, $today);
+
+        $this->assertSame($sale->totalMinor(), $report['unknown_revenue_minor']);
+        $this->assertSame(0, $report['known_cost_minor']);
+        $this->assertArrayHasKey('pre_activation', $report['unknown_reasons']);
+    }
+
+    private function receiveCable(int $quantity, string $unitCost): void
+    {
+        $purchase = $this->postedPurchase(
+            $this->owner,
+            $this->store,
+            $this->supplier,
+            [[$this->cable, $quantity, $unitCost]],
+            ['supplier_invoice_number' => 'INV-'.Str::upper(Str::random(8))],
+        );
+        app(ReceivePurchase::class)($this->owner, $purchase, [], null, (string) Str::uuid());
+    }
+
+    private function sellCable(int $quantity): Sale
+    {
+        $attempt = $this->review($this->cashier, $this->cableLine($quantity));
+
+        return app(FinalizeCheckout::class)(
+            $this->cashier,
+            $this->store,
+            $attempt->key,
+            $attempt->revision,
+            Money::toDecimal($quantity * 4990),
+            null,
+        );
+    }
+
+    private function finalizePhone($unit): Sale
+    {
+        $attempt = $this->review($this->cashier, $this->phoneLine($unit));
+        $terminal = $this->createTerminal();
+        $this->approveCard($this->cashier, $attempt, $terminal, (string) $unit->selling_price);
+
+        return app(FinalizeCheckout::class)($this->cashier, $this->store, $attempt->key, $attempt->fresh()->revision, null, null);
+    }
+
+    private function sellNetworkPhone(): Sale
+    {
+        $otherStore = Store::factory()->create(['code' => 'KT02', 'name' => 'Karman Kadikoy']);
+        $otherCashier = $this->createCashier($otherStore, name: 'Kadikoy cashier');
+        app(SetReservationHold::class)($this->owner, $this->store, 60);
+        $listing = app(PublishUnitListing::class)($this->owner, $this->store, $this->phone->id, NetworkListing::UNLISTED_REVISION);
+        $reservation = app(RequestReservation::class)($otherCashier, $otherStore, $listing->id, 1);
+        app(ApproveReservation::class)($this->owner, $this->store, $reservation->id);
+
+        $attempt = app(ReviewCheckout::class)(
+            $this->cashier,
+            $this->store,
+            $this->phoneLine($this->phone),
+            reservationId: $reservation->id,
+        );
+        $terminal = $this->createTerminal();
+        $this->approveCard($this->cashier, $attempt, $terminal, '12500.00');
+
+        return app(FinalizeCheckout::class)($this->cashier, $this->store, $attempt->key, $attempt->fresh()->revision, null, null);
+    }
+}

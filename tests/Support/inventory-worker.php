@@ -11,6 +11,7 @@ declare(strict_types=1);
 
 use App\Actions\Catalog\SaveProductDefinition;
 use App\Actions\Inventory\CorrectUnitIdentifier;
+use App\Actions\Inventory\DeclareQuantityCost;
 use App\Actions\Inventory\RecordOpeningBalance;
 use App\Actions\Inventory\RecordStockCount;
 use App\Actions\Inventory\RegisterOpeningUnit;
@@ -62,6 +63,19 @@ try {
             );
 
             return $movement === null ? ['status' => 'unchanged'] : $movementResult($movement);
+        })(),
+        'declare' => (function () use ($actor, $store, $definition, $payload): array {
+            $declaration = app(DeclareQuantityCost::class)(
+                $actor,
+                $store,
+                $definition,
+                $payload['expected_quantity'],
+                $payload['declared_total'],
+                $payload['reason'] ?? 'Concurrent declaration',
+                $payload['key'],
+            );
+
+            return ['status' => 'ok', 'declaration_id' => $declaration->id, 'created' => $declaration->wasRecentlyCreated];
         })(),
         'register' => $movementResult(app(RegisterOpeningUnit::class)(
             $actor, $store, $definition, UnitCondition::B, $payload['imei'], null, null, null, $payload['key'],

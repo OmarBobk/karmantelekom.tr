@@ -101,6 +101,28 @@ class StorePolicy
     }
 
     /**
+     * Determine whether the user can manage purchase costing for this store, including declaring
+     * the recorded cost of current quantity on hand.
+     */
+    public function managePurchases(User $user, Store $store): bool
+    {
+        return $this->ownerHas($user, 'manage_purchases') && $store->isAccessibleBy($user);
+    }
+
+    /**
+     * Determine whether the user can open the recorded-cost sales margin report (owner only).
+     * Branch figures still require viewAllSales; cost amounts still need managePurchases or
+     * manageDeviceCosts per line type.
+     */
+    public function viewSalesMargin(User $user): bool
+    {
+        return Store::query()->accessibleTo($user)->get()->contains(
+            fn (Store $store): bool => $this->viewAllSales($user, $store)
+                && ($this->managePurchases($user, $store) || $this->manageDeviceCosts($user, $store))
+        );
+    }
+
+    /**
      * Determine whether the user can correct a mistyped IMEI or serial number in this store.
      */
     public function correctUnitIdentity(User $user, Store $store): bool

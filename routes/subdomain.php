@@ -25,6 +25,7 @@ use App\Livewire\Backend\Reports\AuditLog;
 use App\Livewire\Backend\Reports\FinanceOverview;
 use App\Livewire\Backend\Reports\OperationalReview;
 use App\Livewire\Backend\Reports\OperationsDashboard;
+use App\Livewire\Backend\Reports\SalesMargin;
 use App\Livewire\Backend\Settings\SettingsComponent;
 use App\Livewire\Backend\Shops\ShopComponent;
 use App\Livewire\Backend\Shops\ShopProfileComponent;
@@ -84,6 +85,9 @@ Route::prefix('operations')->group(function () {
     Route::get('review', OperationalReview::class)
         ->middleware('can:viewOperationalReview,'.Store::class)
         ->name('operations.review');
+    Route::get('margin', SalesMargin::class)
+        ->middleware('can:viewSalesMargin,'.Store::class)
+        ->name('operations.margin');
     Route::get('audit', AuditLog::class)
         ->middleware('can:viewAuditLog,'.Store::class)
         ->name('operations.audit');
