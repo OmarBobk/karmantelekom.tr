@@ -47,6 +47,7 @@ final class NeedsAttention
         self::appendLapsedReservations($items, $user, $dashboardStores);
         self::appendOldestRepair($items, $user, $dashboardStores);
         self::appendOutOfStock($items, $user, $dashboardStores);
+        self::appendLowStock($items, $user, $dashboardStores);
 
         return $items;
     }
@@ -324,6 +325,39 @@ final class NeedsAttention
                 'detail' => trans_choice('reports.attention.out_of_stock_detail', $count, ['count' => $count]),
                 'url' => $user->can('viewInventory', $store)
                     ? route('subdomain.inventory.store', [$store, 'stock' => 'out'])
+                    : null,
+            ];
+        }
+    }
+
+    /**
+     * @param  list<AttentionItem>  $items
+     * @param  Collection<int, Store>  $stores
+     */
+    private static function appendLowStock(array &$items, User $user, Collection $stores): void
+    {
+        $allowed = $stores->filter(fn (Store $store): bool => $user->can('viewInventory', $store))->values();
+
+        if ($allowed->isEmpty()) {
+            return;
+        }
+
+        $counts = LowStock::countsByStore($allowed->modelKeys());
+
+        foreach ($allowed as $store) {
+            $count = $counts[$store->id] ?? 0;
+
+            if ($count === 0) {
+                continue;
+            }
+
+            $items[] = [
+                'key' => 'low-stock-'.$store->id,
+                'store' => $store,
+                'label' => __('reports.attention.low_stock', ['branch' => $store->code]),
+                'detail' => trans_choice('reports.attention.low_stock_detail', $count, ['count' => $count]),
+                'url' => $user->can('viewInventory', $store)
+                    ? route('subdomain.inventory.store', [$store, 'stock' => 'low'])
                     : null,
             ];
         }

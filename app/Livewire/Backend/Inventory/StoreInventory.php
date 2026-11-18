@@ -8,8 +8,10 @@ use App\Actions\Inventory\CompleteInventorySetup;
 use App\Enums\UnitStatus;
 use App\Livewire\Backend\Concerns\UsesOperationalLocale;
 use App\Models\InventoryBalance;
+use App\Models\InventoryStockThreshold;
 use App\Models\ProductDefinition;
 use App\Models\Store;
+use App\Services\Reporting\LowStock;
 use App\Services\Reporting\OutOfStock;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
@@ -38,7 +40,7 @@ class StoreInventory extends Component
     #[Url(except: '')]
     public string $units = '';
 
-    /** Out-of-stock products previously stocked here; empty string means no stock filter. */
+    /** Out-of-stock or low-stock products previously stocked here; empty string means no stock filter. */
     #[Url(except: '')]
     public string $stock = '';
 
@@ -47,13 +49,16 @@ class StoreInventory extends Component
     /** @var list<string> */
     private const UNIT_FILTERS = ['available', 'inspection', 'in_repair', 'in_service', 'review', 'in_transit', 'removed', 'sold'];
 
+    /** @var list<string> */
+    private const STOCK_FILTERS = [OutOfStock::FILTER, LowStock::FILTER];
+
     public function mount(Store $store): void
     {
         $this->authorize('viewInventory', $store);
 
         $this->store = $store;
         $this->units = in_array($this->units, self::UNIT_FILTERS, true) ? $this->units : '';
-        $this->stock = $this->stock === OutOfStock::FILTER ? OutOfStock::FILTER : '';
+        $this->stock = in_array($this->stock, self::STOCK_FILTERS, true) ? $this->stock : '';
     }
 
     public function updatedSearch(): void
@@ -69,7 +74,7 @@ class StoreInventory extends Component
 
     public function updatedStock(): void
     {
-        $this->stock = $this->stock === OutOfStock::FILTER ? OutOfStock::FILTER : '';
+        $this->stock = in_array($this->stock, self::STOCK_FILTERS, true) ? $this->stock : '';
         $this->resetPage();
     }
 
@@ -124,12 +129,19 @@ class StoreInventory extends Component
 
         $storeId = $this->store->id;
         $outOfStock = $this->stock === OutOfStock::FILTER;
+        $lowStock = $this->stock === LowStock::FILTER;
         $unitStatuses = $this->unitStatusesForFilter();
 
-        $products = ($outOfStock ? OutOfStock::definitions($this->store) : ProductDefinition::query()
-            ->where(fn (Builder $stocked) => $stocked
-                ->whereHas('balances', fn (Builder $balances) => $balances->where('store_id', $storeId))
-                ->orWhereHas('units', fn (Builder $units) => $units->where('store_id', $storeId))))
+        $base = match (true) {
+            $outOfStock => OutOfStock::definitions($this->store),
+            $lowStock => LowStock::definitions($this->store),
+            default => ProductDefinition::query()
+                ->where(fn (Builder $stocked) => $stocked
+                    ->whereHas('balances', fn (Builder $balances) => $balances->where('store_id', $storeId))
+                    ->orWhereHas('units', fn (Builder $units) => $units->where('store_id', $storeId))),
+        };
+
+        $products = $base
             ->when($unitStatuses !== null, fn (Builder $query) => $query->whereHas(
                 'units',
                 fn (Builder $units) => $units->where('store_id', $storeId)->whereIn('status', $unitStatuses)
@@ -137,6 +149,11 @@ class StoreInventory extends Component
             ->search($this->search)
             ->addSelect(['store_quantity' => InventoryBalance::query()
                 ->select('quantity')
+                ->whereColumn('product_definition_id', 'product_definitions.id')
+                ->where('store_id', $storeId)
+                ->limit(1)])
+            ->addSelect(['stock_threshold' => InventoryStockThreshold::query()
+                ->select('threshold')
                 ->whereColumn('product_definition_id', 'product_definitions.id')
                 ->where('store_id', $storeId)
                 ->limit(1)])
@@ -151,7 +168,7 @@ class StoreInventory extends Component
         return view('livewire.backend.inventory.store-inventory', [
             'products' => $products,
             'catalogMatches' => $this->catalogMatches(),
-            'isFiltering' => trim($this->search) !== '' || $this->units !== '' || $outOfStock,
+            'isFiltering' => trim($this->search) !== '' || $this->units !== '' || $outOfStock || $lowStock,
             'unitsFilter' => $this->units,
             'stockFilter' => $this->stock,
             'setupOpen' => $this->store->refresh()->inventorySetupIsOpen(),

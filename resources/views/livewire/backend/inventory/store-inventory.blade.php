@@ -89,6 +89,16 @@
             </div>
         @endif
 
+        @if ($stockFilter === 'low')
+            <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-amber-50 px-4 py-3 text-sm text-amber-950 ring-1 ring-amber-200">
+                <div>
+                    <p class="font-medium">{{ __('inventory.store.low_stock_filter') }}</p>
+                    <p class="mt-0.5 text-xs text-amber-900/80">{{ __('inventory.store.low_stock_help', ['branch' => $store->code]) }}</p>
+                </div>
+                <button type="button" wire:click="clearStockFilter" class="inline-flex min-h-11 items-center rounded-lg px-3 font-medium text-amber-900 hover:bg-amber-100">{{ __('inventory.store.clear_low_stock_filter') }}</button>
+            </div>
+        @endif
+
         @if ($unitsFilter !== '')
             <div class="flex flex-wrap items-center justify-between gap-2 rounded-xl bg-blue-50 px-4 py-3 text-sm text-blue-950 ring-1 ring-blue-200">
                 <p>{{ __('inventory.store.units_filter', ['status' => __('inventory.store.units_filters.'.$unitsFilter)]) }}</p>
@@ -102,30 +112,45 @@
                 <p class="mt-1 text-sm text-gray-500">{{ $isFiltering ? __('inventory.store.no_matches_body') : __('inventory.store.empty_body') }}</p>
             </div>
         @else
-            <div class="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-200" wire:loading.class="opacity-60" wire:target="search,units,gotoPage,nextPage,previousPage">
+            <div class="overflow-hidden rounded-xl bg-white shadow-sm ring-1 ring-gray-200" wire:loading.class="opacity-60" wire:target="search,units,stock,gotoPage,nextPage,previousPage">
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
                             <th scope="col" class="px-4 py-3 text-start text-xs font-semibold text-gray-600">{{ __('inventory.fields.product') }}</th>
                             <th scope="col" class="hidden px-4 py-3 text-start text-xs font-semibold text-gray-600 md:table-cell">{{ __('catalog.fields.tracking_mode') }}</th>
-                            <th scope="col" class="px-4 py-3 text-end text-xs font-semibold text-gray-600">{{ __('inventory.fields.on_hand') }}</th>
+                            <th scope="col" class="px-4 py-3 text-end text-xs font-semibold text-gray-600">
+                                {{ $stockFilter === 'low' ? __('inventory.fields.rule_count') : __('inventory.fields.on_hand') }}
+                            </th>
+                            @if ($stockFilter === 'low')
+                                <th scope="col" class="px-4 py-3 text-end text-xs font-semibold text-gray-600">{{ __('inventory.fields.threshold') }}</th>
+                            @endif
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
                         @foreach ($products as $product)
+                            @php($usesAvailableUnits = $product->tracking_mode === \App\Enums\TrackingMode::SERIALIZED)
                             @php($onHand = $product->tracking_mode->tracksIndividualItems() ? $product->available_units_count : (int) $product->store_quantity)
                             <tr wire:key="stock-row-{{ $product->id }}" class="relative hover:bg-gray-50">
                                 <td class="px-4 py-3">
                                     <a href="{{ route('subdomain.inventory.product', array_filter([$store, $product, 'units' => $unitsFilter ?: null])) }}" class="font-medium text-gray-900 after:absolute after:inset-0 hover:text-blue-700">{{ $product->name }}</a>
                                     <p class="text-xs text-gray-500">
-                                        @if ($product->model)<bdi>{{ $product->model }}</bdi>@endif
+                                        <span dir="ltr" class="font-mono">{{ $store->code }}</span>
+                                        @if ($product->model) <span class="text-gray-300">·</span> <bdi>{{ $product->model }}</bdi>@endif
                                         @if ($product->brand) <span class="text-gray-300">·</span> <bdi>{{ $product->brand->name }}</bdi>@endif
                                     </p>
                                 </td>
                                 <td class="hidden whitespace-nowrap px-4 py-3 text-sm text-gray-600 md:table-cell">{{ $product->tracking_mode->label() }}</td>
                                 <td class="whitespace-nowrap px-4 py-3 text-end">
                                     <span dir="ltr" @class(['font-mono text-base font-semibold tabular-nums', 'text-gray-900' => $onHand > 0, 'text-gray-400' => $onHand === 0])>{{ $onHand }}</span>
+                                    @if ($stockFilter === 'low' && $usesAvailableUnits)
+                                        <p class="mt-0.5 text-xs text-gray-500">{{ __('inventory.fields.available_units') }}</p>
+                                    @endif
                                 </td>
+                                @if ($stockFilter === 'low')
+                                    <td class="whitespace-nowrap px-4 py-3 text-end">
+                                        <span dir="ltr" class="font-mono text-base font-semibold tabular-nums text-gray-900">{{ (int) $product->stock_threshold }}</span>
+                                    </td>
+                                @endif
                             </tr>
                         @endforeach
                     </tbody>

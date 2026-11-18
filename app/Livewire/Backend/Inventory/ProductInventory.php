@@ -14,9 +14,11 @@ use App\Actions\Inventory\RecordOpeningBalance;
 use App\Actions\Inventory\RecordStockCount;
 use App\Actions\Inventory\RegisterOpeningUnit;
 use App\Actions\Inventory\RemoveUnit;
+use App\Actions\Inventory\SetStockThreshold;
 use App\Actions\Storefront\SetStorefrontQuantity;
 use App\Enums\AdjustmentReason;
 use App\Enums\QuantityCostStatus;
+use App\Enums\TrackingMode;
 use App\Enums\UnitCondition;
 use App\Enums\UnitStatus;
 use App\Exceptions\Inventory\StaleUnitStateException;
@@ -24,6 +26,7 @@ use App\Livewire\Backend\Concerns\SubmitsInventoryChanges;
 use App\Livewire\Backend\Concerns\UsesOperationalLocale;
 use App\Models\InventoryBalance;
 use App\Models\InventoryMovement;
+use App\Models\InventoryStockThreshold;
 use App\Models\ProductDefinition;
 use App\Models\Purchase;
 use App\Models\PurchaseReceiptLine;
@@ -139,6 +142,9 @@ class ProductInventory extends Component
 
     public string $declareSubmissionKey = '';
 
+    /** Editable low-stock threshold for this branch and product; blank means unset. */
+    public string $stockThreshold = '';
+
     public function mount(Store $store, ProductDefinition $productDefinition): void
     {
         $this->authorize('viewInventory', $store);
@@ -150,6 +156,36 @@ class ProductInventory extends Component
         $this->foundCondition = $this->unitCondition;
         $this->storefrontQuantity = (string) $this->storefrontAllocation();
         $this->declareSubmissionKey = (string) Str::uuid();
+        $this->stockThreshold = $this->currentThresholdInput();
+    }
+
+    public function saveStockThreshold(SetStockThreshold $setStockThreshold): void
+    {
+        $this->authorize('viewInventory', $this->store);
+        $this->authorize('managePurchases', $this->store);
+
+        try {
+            $setStockThreshold(auth()->user(), $this->store, $this->definition, $this->stockThreshold);
+        } catch (ValidationException $exception) {
+            $messages = $exception->errors();
+            throw ValidationException::withMessages([
+                'stockThreshold' => $messages['threshold'] ?? $messages['stockThreshold'] ?? [__('inventory.threshold.errors.invalid')],
+            ]);
+        }
+
+        $this->stockThreshold = $this->currentThresholdInput();
+        $this->dispatch('notify', ['type' => 'success', 'message' => __('inventory.threshold.saved')]);
+    }
+
+    public function clearStockThreshold(SetStockThreshold $setStockThreshold): void
+    {
+        $this->authorize('viewInventory', $this->store);
+        $this->authorize('managePurchases', $this->store);
+
+        $setStockThreshold(auth()->user(), $this->store, $this->definition, null);
+        $this->stockThreshold = '';
+        $this->resetErrorBag('stockThreshold');
+        $this->dispatch('notify', ['type' => 'success', 'message' => __('inventory.threshold.cleared')]);
     }
 
     public function beginDeclareCost(): void
@@ -570,6 +606,11 @@ class ProductInventory extends Component
         $balance = $tracksUnits ? null : $this->quantityBalance();
         $quantity = (int) ($balance?->quantity ?? 0);
         $canDeclareCost = ! $tracksUnits && Gate::allows('managePurchases', $this->store);
+        $supportsThreshold = $definition->tracking_mode !== TrackingMode::USED_DEVICE;
+        $currentThreshold = $supportsThreshold ? $this->currentThresholdValue() : null;
+        $canManageThreshold = $supportsThreshold
+            && Gate::allows('viewInventory', $this->store)
+            && Gate::allows('managePurchases', $this->store);
 
         return view('livewire.backend.inventory.product-inventory', [
             'product' => $definition,
@@ -586,6 +627,9 @@ class ProductInventory extends Component
             'units' => $units,
             'canAdjust' => Gate::allows('adjustInventory', $this->store),
             'canDeclareCost' => $canDeclareCost,
+            'supportsThreshold' => $supportsThreshold,
+            'currentThreshold' => $currentThreshold,
+            'canManageThreshold' => $canManageThreshold,
             'canAllocateStorefront' => ! $tracksUnits && Gate::allows('allocateStorefrontStock', $this->store),
             'storefrontAllocated' => $tracksUnits ? 0 : $this->storefrontAllocation(),
             'setupOpen' => $this->store->refresh()->inventorySetupIsOpen(),
@@ -600,6 +644,23 @@ class ProductInventory extends Component
             'lastPurchase' => $canViewPurchases ? $this->lastPurchaseLine($definition) : null,
             ...$this->localeViewData(),
         ])->title($definition->name.' — '.$this->store->code);
+    }
+
+    private function currentThresholdValue(): ?int
+    {
+        $value = InventoryStockThreshold::query()
+            ->where('store_id', $this->store->id)
+            ->where('product_definition_id', $this->definition->id)
+            ->value('threshold');
+
+        return $value === null ? null : (int) $value;
+    }
+
+    private function currentThresholdInput(): string
+    {
+        $value = $this->currentThresholdValue();
+
+        return $value === null ? '' : (string) $value;
     }
 
     /**
