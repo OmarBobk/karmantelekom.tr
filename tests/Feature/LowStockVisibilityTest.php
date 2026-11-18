@@ -251,6 +251,21 @@ class LowStockVisibilityTest extends TestCase
             ->call('saveStockThreshold')
             ->assertHasErrors(['stockThreshold']);
 
+        $this->setThreshold($this->store, $this->cable, 3);
+
+        Livewire::actingAs($this->owner)
+            ->test(ProductInventory::class, ['store' => $this->store, 'productDefinition' => $this->cable])
+            ->set('stockThreshold', '4294967296')
+            ->call('saveStockThreshold')
+            ->assertHasErrors(['stockThreshold'])
+            ->assertSee(__('inventory.threshold.errors.too_large', ['max' => SetStockThreshold::MAX_THRESHOLD]));
+
+        $this->assertDatabaseHas('inventory_stock_thresholds', [
+            'store_id' => $this->store->id,
+            'product_definition_id' => $this->cable->id,
+            'threshold' => 3,
+        ]);
+
         Livewire::actingAs($this->owner)
             ->test(ProductInventory::class, ['store' => $this->store, 'productDefinition' => $this->cable])
             ->set('stockThreshold', '5')

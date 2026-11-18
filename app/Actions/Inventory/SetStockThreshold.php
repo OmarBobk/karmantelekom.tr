@@ -20,6 +20,9 @@ use Illuminate\Validation\ValidationException;
  */
 final class SetStockThreshold
 {
+    /** Matches the unsignedInteger column on inventory_stock_thresholds.threshold. */
+    public const MAX_THRESHOLD = 4_294_967_295;
+
     /**
      * @param  string|null  $threshold  Positive whole number to set, or null/blank to clear.
      *
@@ -73,12 +76,28 @@ final class SetStockThreshold
             return null;
         }
 
-        if (! preg_match('/^\d+$/', $raw) || (int) $raw < 1) {
+        if (! preg_match('/^\d+$/', $raw)) {
             throw ValidationException::withMessages([
                 'threshold' => __('inventory.threshold.errors.invalid'),
             ]);
         }
 
-        return (int) $raw;
+        // Compare as a digit string before casting so values above unsigned int never wrap.
+        $normalized = ltrim($raw, '0');
+
+        if ($normalized === '') {
+            throw ValidationException::withMessages([
+                'threshold' => __('inventory.threshold.errors.invalid'),
+            ]);
+        }
+
+        if (strlen($normalized) > 10
+            || (strlen($normalized) === 10 && strcmp($normalized, (string) self::MAX_THRESHOLD) > 0)) {
+            throw ValidationException::withMessages([
+                'threshold' => __('inventory.threshold.errors.too_large', ['max' => self::MAX_THRESHOLD]),
+            ]);
+        }
+
+        return (int) $normalized;
     }
 }

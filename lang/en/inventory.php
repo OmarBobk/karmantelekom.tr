@@ -317,6 +317,7 @@ return [
         'cleared' => 'Low-stock threshold cleared for this branch.',
         'errors' => [
             'invalid' => 'Enter a positive whole number, or clear the threshold.',
+            'too_large' => 'Enter a whole number between 1 and :max, or clear the threshold.',
             'used_device' => 'Used devices do not use low-stock thresholds.',
         ],
     ],
