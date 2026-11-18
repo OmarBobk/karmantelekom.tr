@@ -70,6 +70,9 @@ return [
         'counted_quantity' => 'Counted total',
         'product' => 'Product',
         'on_hand' => 'On hand',
+        'rule_count' => 'Current count',
+        'threshold' => 'Threshold',
+        'available_units' => 'Available units',
         'condition' => 'Condition',
         'imei' => 'IMEI',
         'secondary_imei' => 'Second IMEI (dual SIM)',
@@ -136,6 +139,9 @@ return [
         'out_of_stock_filter' => 'Out of stock',
         'out_of_stock_help' => 'Active products previously stocked here with zero on-hand quantity, or no available new serialized units. Used devices and online holds are not included.',
         'clear_out_of_stock_filter' => 'Clear out-of-stock filter',
+        'low_stock_filter' => 'Low stock',
+        'low_stock_help' => 'Active products at :branch with an explicit threshold where physical stock is still above zero and at or below that limit. Used devices and online holds are not included.',
+        'clear_low_stock_filter' => 'Clear low-stock filter',
         'units_filter' => 'Showing products with devices in status: :status',
         'clear_units_filter' => 'Clear status filter',
         'units_filters' => [
@@ -296,5 +302,23 @@ return [
             'confirm_required' => 'Confirm the current quantity before declaring its cost.',
         ],
         'saved' => 'Recorded cost declared for the current quantity.',
+    ],
+
+    'threshold' => [
+        'title' => 'Low-stock threshold',
+        'help' => 'Optional buying alert for :product at :branch only. It does not change stock or create a movement. Leave unset to hide this product from low-stock reviews.',
+        'current' => 'Current threshold',
+        'not_set' => 'Not set',
+        'field' => 'Threshold',
+        'field_help' => 'Positive whole number. Clear the field and save, or use Clear, to remove the warning.',
+        'save' => 'Save threshold',
+        'clear' => 'Clear',
+        'saved' => 'Low-stock threshold saved for this branch.',
+        'cleared' => 'Low-stock threshold cleared for this branch.',
+        'errors' => [
+            'invalid' => 'Enter a positive whole number, or clear the threshold.',
+            'too_large' => 'Enter a whole number between 1 and :max, or clear the threshold.',
+            'used_device' => 'Used devices do not use low-stock thresholds.',
+        ],
     ],
 ];

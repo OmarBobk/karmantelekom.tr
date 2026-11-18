@@ -40,6 +40,47 @@
         </div>
     @endif
 
+    @if ($supportsThreshold)
+        @php($thresholdError = $errors->first('stockThreshold'))
+        <section class="space-y-3 rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-200" aria-labelledby="threshold-title" data-testid="stock-threshold">
+            <div>
+                <h2 id="threshold-title" class="text-base font-semibold text-gray-900">{{ __('inventory.threshold.title') }}</h2>
+                <p class="text-xs text-gray-500">{{ __('inventory.threshold.help', ['branch' => $store->code, 'product' => $product->name]) }}</p>
+            </div>
+            <dl class="text-sm text-gray-700">
+                <div class="flex flex-wrap items-baseline gap-x-3 gap-y-1">
+                    <dt class="text-gray-500">{{ __('inventory.threshold.current') }}</dt>
+                    <dd dir="ltr" class="font-mono tabular-nums" data-testid="threshold-current">
+                        {{ $currentThreshold === null ? __('inventory.threshold.not_set') : $currentThreshold }}
+                    </dd>
+                </div>
+            </dl>
+            @if ($canManageThreshold)
+                <form wire:submit="saveStockThreshold" class="flex flex-col gap-3 sm:flex-row sm:items-end">
+                    <div>
+                        <label for="stock-threshold" class="block text-sm font-medium text-gray-700">{{ __('inventory.threshold.field') }}</label>
+                        <input id="stock-threshold" type="text" inputmode="numeric" dir="ltr" wire:model="stockThreshold" aria-describedby="stock-threshold-help{{ $thresholdError ? ' stock-threshold-error' : '' }}" @if ($thresholdError) aria-invalid="true" @endif class="mt-1 block min-h-11 w-28 rounded-lg border-gray-300 font-mono shadow-sm focus:border-blue-500 focus:ring-blue-500" autocomplete="off">
+                        <p id="stock-threshold-help" class="mt-1 text-xs text-gray-500">{{ __('inventory.threshold.field_help') }}</p>
+                    </div>
+                    <div class="flex flex-wrap gap-2">
+                        <button type="submit" wire:loading.attr="disabled" wire:target="saveStockThreshold,clearStockThreshold" class="min-h-11 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60">
+                            <span wire:loading.remove wire:target="saveStockThreshold">{{ __('inventory.threshold.save') }}</span>
+                            <span wire:loading wire:target="saveStockThreshold">{{ __('inventory.form.saving') }}</span>
+                        </button>
+                        @if ($currentThreshold !== null)
+                            <button type="button" wire:click="clearStockThreshold" wire:loading.attr="disabled" wire:target="saveStockThreshold,clearStockThreshold" class="min-h-11 rounded-lg px-4 py-2 text-sm font-medium text-gray-700 ring-1 ring-gray-300 hover:bg-gray-50 disabled:opacity-60">
+                                {{ __('inventory.threshold.clear') }}
+                            </button>
+                        @endif
+                    </div>
+                </form>
+                @if ($thresholdError)
+                    <p id="stock-threshold-error" class="text-sm text-red-700" role="alert">{{ $thresholdError }}</p>
+                @endif
+            @endif
+        </section>
+    @endif
+
     @if ($canAllocateStorefront || $storefrontAllocated > 0)
         @php($storefrontError = $errors->first('storefrontQuantity') ?: $errors->first('allocation'))
         <form wire:submit="saveStorefrontQuantity" class="flex flex-col gap-3 rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-200 sm:flex-row sm:items-end sm:justify-between" aria-labelledby="storefront-title" data-testid="storefront-allocation">

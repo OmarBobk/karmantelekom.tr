@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Services\Purchasing\LocalizedMoney;
 use App\Services\Purchasing\Money;
 use App\Services\Reporting\LocalDateRange;
+use App\Services\Reporting\LowStock;
 use App\Services\Reporting\NeedsAttention;
 use App\Services\Reporting\OutOfStock;
 use App\Services\Reporting\RecordedSalesReport;
@@ -181,6 +182,7 @@ class OperationsDashboard extends Component
 
         $storeIds = $stores->modelKeys();
         $outOfStock = OutOfStock::countsByStore($storeIds);
+        $lowStock = LowStock::countsByStore($storeIds);
 
         return Store::query()
             ->whereKey($storeIds)
@@ -188,8 +190,9 @@ class OperationsDashboard extends Component
             ->withCount(['units as available_units_count' => fn ($units) => $units->where('status', UnitStatus::AVAILABLE)])
             ->orderBy('code')
             ->get()
-            ->each(function (Store $store) use ($outOfStock): void {
+            ->each(function (Store $store) use ($outOfStock, $lowStock): void {
                 $store->setAttribute('out_of_stock_count', $outOfStock[$store->id] ?? 0);
+                $store->setAttribute('low_stock_count', $lowStock[$store->id] ?? 0);
             });
     }
 

@@ -264,6 +264,7 @@
                     <h2 id="dashboard-inventory-title" class="text-base font-semibold text-gray-900">{{ __('reports.inventory.title') }}</h2>
                     <p class="text-sm text-gray-600">{{ __('reports.inventory.note') }}</p>
                     <p class="mt-1 text-xs text-gray-500">{{ __('reports.inventory.out_of_stock_note') }}</p>
+                    <p class="mt-1 text-xs text-gray-500">{{ __('reports.inventory.low_stock_note') }}</p>
                 </div>
                 <ul class="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                     @foreach ($inventory as $store)
@@ -282,15 +283,20 @@
                                     <dd dir="ltr" class="text-start font-mono text-lg font-semibold tabular-nums text-gray-900">{{ $store->available_units_count }}</dd>
                                 </div>
                             </dl>
-                            <div class="mt-4 flex flex-wrap items-center justify-between gap-2 border-t border-gray-100 pt-3">
+                            <div class="mt-4 grid gap-3 border-t border-gray-100 pt-3 sm:grid-cols-2">
+                                <div>
+                                    <p class="text-xs text-gray-500">{{ __('reports.inventory.low_stock') }}</p>
+                                    <p dir="ltr" class="font-mono text-lg font-semibold tabular-nums {{ $store->low_stock_count > 0 ? 'text-amber-800' : 'text-gray-900' }}">{{ $store->low_stock_count }}</p>
+                                </div>
                                 <div>
                                     <p class="text-xs text-gray-500">{{ __('reports.inventory.out_of_stock') }}</p>
                                     <p dir="ltr" class="font-mono text-lg font-semibold tabular-nums {{ $store->out_of_stock_count > 0 ? 'text-amber-800' : 'text-gray-900' }}">{{ $store->out_of_stock_count }}</p>
                                 </div>
-                                <div class="flex flex-wrap gap-2">
-                                    <a href="{{ route('subdomain.inventory.store', $store) }}" aria-label="{{ __('reports.inventory.open_label', ['branch' => $store->code]) }}" class="{{ $link }}">{{ __('reports.inventory.open') }}</a>
-                                    <a href="{{ route('subdomain.inventory.store', [$store, 'stock' => 'out']) }}" aria-label="{{ __('reports.inventory.out_of_stock_label', ['branch' => $store->code]) }}" class="inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-medium text-amber-800 hover:bg-amber-50">{{ __('reports.inventory.view_out_of_stock') }}</a>
-                                </div>
+                            </div>
+                            <div class="mt-3 flex flex-wrap gap-2">
+                                <a href="{{ route('subdomain.inventory.store', $store) }}" aria-label="{{ __('reports.inventory.open_label', ['branch' => $store->code]) }}" class="{{ $link }}">{{ __('reports.inventory.open') }}</a>
+                                <a href="{{ route('subdomain.inventory.store', [$store, 'stock' => 'low']) }}" aria-label="{{ __('reports.inventory.low_stock_label', ['branch' => $store->code]) }}" class="inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-medium text-amber-800 hover:bg-amber-50">{{ __('reports.inventory.view_low_stock') }}</a>
+                                <a href="{{ route('subdomain.inventory.store', [$store, 'stock' => 'out']) }}" aria-label="{{ __('reports.inventory.out_of_stock_label', ['branch' => $store->code]) }}" class="inline-flex min-h-11 items-center rounded-lg px-3 text-sm font-medium text-amber-800 hover:bg-amber-50">{{ __('reports.inventory.view_out_of_stock') }}</a>
                             </div>
                         </li>
                     @endforeach
