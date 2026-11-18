@@ -29,7 +29,6 @@ use App\Models\CashIntake;
 use App\Models\CheckoutAttempt;
 use App\Models\CustomerDebt;
 use App\Models\InventoryBalance;
-use App\Models\InventoryCostDeclaration;
 use App\Models\InventoryUnit;
 use App\Models\ProductDefinition;
 use App\Models\Sale;
@@ -647,20 +646,10 @@ class FinalizeCheckout
 
         $poolTotalBefore = $status === QuantityCostStatus::KNOWN ? $balance->cost_total : null;
 
-        // Link a declaration only when it still exactly describes this known pool. A declaration
-        // from a depleted pool must not attach to a later receipt-only pool.
-        $declarationId = null;
-
-        if ($status === QuantityCostStatus::KNOWN && $balance->cost_currency === Currency::TRY->value && $poolTotalBefore !== null) {
-            $declarationId = InventoryCostDeclaration::query()
-                ->where('inventory_balance_id', $balance->id)
-                ->where('quantity', $quantityBefore)
-                ->where('resulting_cost_status', QuantityCostStatus::KNOWN->value)
-                ->where('resulting_cost_currency', Currency::TRY->value)
-                ->where('resulting_cost_total', $poolTotalBefore)
-                ->orderByDesc('id')
-                ->value('id');
-        }
+        // Continuity marker on the balance — not coincident quantity/total matching.
+        $declarationId = $status === QuantityCostStatus::KNOWN
+            ? $balance->active_cost_declaration_id
+            : null;
 
         $base = [
             'cost_basis' => 'quantity_wac',

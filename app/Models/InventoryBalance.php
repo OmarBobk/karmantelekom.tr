@@ -22,6 +22,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  * @property QuantityCostStatus $cost_status
  * @property string|null $cost_currency
  * @property string|null $cost_total
+ * @property int|null $active_cost_declaration_id
  */
 class InventoryBalance extends Model
 {
@@ -35,6 +36,7 @@ class InventoryBalance extends Model
         'cost_status',
         'cost_currency',
         'cost_total',
+        'active_cost_declaration_id',
     ];
 
     /**
@@ -71,5 +73,13 @@ class InventoryBalance extends Model
     public function productDefinition(): BelongsTo
     {
         return $this->belongsTo(ProductDefinition::class);
+    }
+
+    /**
+     * @return BelongsTo<InventoryCostDeclaration, $this>
+     */
+    public function activeCostDeclaration(): BelongsTo
+    {
+        return $this->belongsTo(InventoryCostDeclaration::class, 'active_cost_declaration_id');
     }
 }

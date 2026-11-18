@@ -55,9 +55,12 @@ class SalesMargin extends Component
 
         $user = auth()->user();
         $stores = $this->authorizedStores($user);
-        $this->assertSelectedStore($stores);
+        $branchFilterError = $this->branchFilterError($stores);
 
-        $storeIds = $this->selectedStoreIds($stores);
+        $storeIds = $branchFilterError === null
+            ? $this->selectedStoreIds($stores)
+            : [];
+
         $canQuantity = [];
         $canDevice = [];
 
@@ -73,7 +76,7 @@ class SalesMargin extends Component
         $rangeError = LocalDateRange::error($this->from, $this->to);
         $from = LocalDateRange::date($this->from);
         $to = LocalDateRange::date($this->to);
-        $valid = $rangeError === null && $from !== null && $to !== null;
+        $valid = $rangeError === null && $branchFilterError === null && $from !== null && $to !== null;
 
         $summary = $valid
             ? SalesMarginReport::summarize($user, $storeIds, $from, $to, $canQuantity, $canDevice)
@@ -104,6 +107,7 @@ class SalesMargin extends Component
         return view('livewire.backend.reports.sales-margin', [
             'stores' => $stores,
             'rangeError' => $rangeError,
+            'branchFilterError' => $branchFilterError,
             'summary' => $summary,
             'rows' => $rows,
             'chartPayload' => $chartPayload,
@@ -131,17 +135,21 @@ class SalesMargin extends Component
     }
 
     /**
+     * Reject an unauthorized/non-digit explicit branch filter — do not silently fall back to all branches.
+     *
      * @param  Collection<int, Store>  $stores
      */
-    private function assertSelectedStore(Collection $stores): void
+    private function branchFilterError(Collection $stores): ?string
     {
         if ($this->storeId === '') {
-            return;
+            return null;
         }
 
         if (! ctype_digit($this->storeId) || ! $stores->contains(fn (Store $store): bool => $store->id === (int) $this->storeId)) {
-            $this->storeId = '';
+            return 'invalid_store';
         }
+
+        return null;
     }
 
     /**

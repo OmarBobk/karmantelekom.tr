@@ -447,9 +447,13 @@ return [
         'pool_before' => 'Pool before sale: quantity :qty, recorded total :total TRY',
         'removed_cost' => 'Exact cost removed for this line',
         'declaration_evidence' => 'Matching declaration for qty :qty at :total TRY — :reason',
-        'no_matching_declaration' => 'No declaration exactly matches this pool (receipt-built or changed after declaration).',
+        'no_matching_declaration' => 'No declaration is linked to this sale (receipt-built pool or continuity cleared before sale).',
         'open_inventory' => 'Open product stock & cost',
         'open_device' => 'Open device cost record',
+        'destination_plain' => 'Source record (link unavailable): :destination',
+        'errors' => [
+            'invalid_store' => 'Choose a branch you are authorized to open for this report.',
+        ],
         'fact_snapshot' => 'At sale',
         'fact_inclusion' => [
             'included' => 'included',

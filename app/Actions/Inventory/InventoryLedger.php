@@ -163,6 +163,7 @@ class InventoryLedger
             'cost_status' => 'empty',
             'cost_currency' => null,
             'cost_total' => null,
+            'active_cost_declaration_id' => null,
             'created_at' => now(),
             'updated_at' => now(),
         ]);

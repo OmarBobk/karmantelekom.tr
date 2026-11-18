@@ -447,9 +447,13 @@ return [
         'pool_before' => 'المخزون قبل البيع: الكمية :qty، الإجمالي المسجّل :total ل.ت',
         'removed_cost' => 'التكلفة المخصومة لهذا البند',
         'declaration_evidence' => 'تصريح مطابق للكمية :qty بمبلغ :total ل.ت — :reason',
-        'no_matching_declaration' => 'لا يوجد تصريح يطابق هذا المخزون تماماً (بُني من إيصال أو تغيّر بعد التصريح).',
+        'no_matching_declaration' => 'لا يوجد تصريح مرتبط بهذا البيع (مخزون من إيصال أو انقطعت الاستمرارية قبل البيع).',
         'open_inventory' => 'فتح مخزون المنتج وتكلفته',
         'open_device' => 'فتح سجل تكلفة الجهاز',
+        'destination_plain' => 'سجل المصدر (الرابط غير متاح): :destination',
+        'errors' => [
+            'invalid_store' => 'اختر فرعًا مصرّحًا لك بفتحه لهذا التقرير.',
+        ],
         'fact_snapshot' => 'عند البيع',
         'fact_inclusion' => [
             'included' => 'مشمولة',

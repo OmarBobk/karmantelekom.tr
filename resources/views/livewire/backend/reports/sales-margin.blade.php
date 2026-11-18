@@ -43,6 +43,10 @@
 
     @if ($rangeError)
         {{-- Date errors are shown by the shared range control. --}}
+    @elseif ($branchFilterError)
+        <p class="rounded-lg bg-red-50 px-4 py-3 text-sm text-red-900 ring-1 ring-red-200" role="alert">
+            {{ __('reports.margin.errors.'.$branchFilterError) }}
+        </p>
     @elseif ($summary === null)
         <p class="text-sm text-gray-600">{{ __('reports.margin.empty_period') }}</p>
     @else
@@ -206,6 +210,8 @@
                                                                     @endif
                                                                     @if ($line['provenance']['inventory_url'])
                                                                         <li><a href="{{ $line['provenance']['inventory_url'] }}" class="text-blue-700 hover:underline">{{ __('reports.margin.open_inventory') }}</a></li>
+                                                                    @elseif ($line['provenance']['inventory_destination'] ?? null)
+                                                                        <li>{{ __('reports.margin.destination_plain', ['destination' => $line['provenance']['inventory_destination']]) }}</li>
                                                                     @endif
                                                                 </ul>
                                                             </div>
@@ -243,6 +249,8 @@
                                                                     @endforeach
                                                                     @if ($line['provenance']['unit_url'])
                                                                         <li><a href="{{ $line['provenance']['unit_url'] }}" class="text-blue-700 hover:underline">{{ __('reports.margin.open_device') }}</a></li>
+                                                                    @elseif ($line['provenance']['unit_destination'] ?? null)
+                                                                        <li>{{ __('reports.margin.destination_plain', ['destination' => $line['provenance']['unit_destination']]) }}</li>
                                                                     @endif
                                                                 </ul>
                                                             </div>

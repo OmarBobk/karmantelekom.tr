@@ -8,6 +8,7 @@ use App\Actions\Inventory\DeviceCostInput;
 use App\Actions\Inventory\RecordDeviceCost;
 use App\Actions\Inventory\RecordStockCount;
 use App\Actions\Purchasing\ReceivePurchase;
+use App\Enums\DeviceCostCategory;
 use App\Enums\QuantityCostStatus;
 use App\Enums\SaleLineCostStatus;
 use App\Enums\TrackingMode;
@@ -307,12 +308,101 @@ class QuantityCostConcurrencyTest extends TestCase
             ],
         ]);
 
-        $this->assertContains('ok', array_column($results, 'status'));
+        $this->assertSame(['ok', 'ok'], array_column($results, 'status'));
         $this->assertSame(1, Sale::query()->count());
-        $saleLine = Sale::query()->sole()->lines()->sole();
-        $this->assertContains($saleLine->cost_amount, ['1000.00', '1100.00']);
+        $saleLine = Sale::query()->sole()->lines()->sole()->load('costFacts');
         $this->assertSame(SaleLineCostStatus::KNOWN, $saleLine->cost_status);
         $this->assertSame(1, SaleLine::query()->whereNotNull('cost_status')->count());
+
+        $entry = DeviceCostEntry::query()->findOrFail($entryId);
+        $this->assertNotNull($entry->reversed_at);
+
+        $partsFact = $saleLine->costFacts->first(
+            fn ($fact): bool => (int) $fact->device_cost_entry_id === (int) $entryId
+                && $fact->inclusion === 'included',
+        );
+
+        if ($saleLine->cost_amount === '1100.00') {
+            // Finalize observed the parts entry before the reverse persisted.
+            $this->assertNotNull($partsFact);
+            $this->assertSame('100.00', $partsFact->amount);
+        } elseif ($saleLine->cost_amount === '1000.00') {
+            // Reverse cleared the parts entry before the frozen snapshot.
+            $this->assertNull($partsFact);
+        } else {
+            $this->fail('Unexpected frozen device cost amount: '.$saleLine->cost_amount);
+        }
+    }
+
+    #[Test]
+    public function device_cost_record_racing_finalize_freezes_one_serialized_outcome(): void
+    {
+        $imei = self::imei('35693803564387');
+        $purchase = $this->postedPurchase(
+            $this->owner,
+            $this->store,
+            $this->supplier,
+            [[$this->usedPhone, 1, '1000.00']],
+            ['supplier_invoice_number' => 'INV-DEV-'.Str::upper(Str::random(6))],
+        );
+        $line = $purchase->lines()->sole();
+        $receipt = app(ReceivePurchase::class)($this->owner, $purchase, [
+            $line->id => [['condition' => 'b', 'imei' => $imei, 'secondary_imei' => null, 'serial' => null]],
+        ], null, (string) Str::uuid());
+        $unit = $receipt->lines()->sole()->units()->sole()->unit;
+        $unit->update(['selling_price' => '2000.00', 'status' => UnitStatus::AVAILABLE]);
+
+        $attempt = $this->review($this->cashier, $this->phoneLine($unit));
+        $terminal = $this->createTerminal();
+        $this->approveCard($this->cashier, $attempt, $terminal, '2000.00');
+        $attempt = $attempt->fresh();
+
+        $results = $this->raceWhileLocked($this->definitionLock($this->usedPhone), [
+            [
+                'operation' => 'record_device_cost',
+                'actor_id' => $this->owner->id,
+                'store_id' => $this->store->id,
+                'unit_id' => $unit->id,
+                'category' => 'repair_parts',
+                'note' => 'race record',
+                'amount' => '100.00',
+                'currency' => 'TRY',
+                'unknown' => false,
+                'key' => (string) Str::uuid(),
+            ],
+            [
+                'operation' => 'finalize',
+                'actor_id' => $this->cashier->id,
+                'store_id' => $this->store->id,
+                'attempt_key' => $attempt->key,
+                'revision' => $attempt->revision,
+                'cash' => null,
+            ],
+        ]);
+
+        $this->assertSame(['ok', 'ok'], array_column($results, 'status'));
+        $this->assertSame(1, Sale::query()->count());
+        $saleLine = Sale::query()->sole()->lines()->sole()->load('costFacts');
+        $this->assertSame(SaleLineCostStatus::KNOWN, $saleLine->cost_status);
+
+        $partsEntry = DeviceCostEntry::query()
+            ->where('inventory_unit_id', $unit->id)
+            ->where('category', DeviceCostCategory::REPAIR_PARTS)
+            ->whereNull('reversed_at')
+            ->sole();
+        $partsFact = $saleLine->costFacts->first(
+            fn ($fact): bool => (int) $fact->device_cost_entry_id === (int) $partsEntry->id
+                && $fact->inclusion === 'included',
+        );
+
+        if ($saleLine->cost_amount === '1100.00') {
+            $this->assertNotNull($partsFact);
+        } elseif ($saleLine->cost_amount === '1000.00') {
+            // Record landed after the frozen snapshot — entry exists, not in sale facts as included.
+            $this->assertNull($partsFact);
+        } else {
+            $this->fail('Unexpected frozen device cost amount: '.$saleLine->cost_amount);
+        }
     }
 
     private function receiveCable(int $quantity, string $unitCost): void

@@ -16,6 +16,10 @@ use LogicException;
  *
  * Call only while the balance row is locked. Quantity and cost state are written together so
  * the database consistency check never sees an empty pool with stock or a known pool without cost.
+ *
+ * `active_cost_declaration_id` tracks which declaration currently explains a known pool. It is
+ * cleared when the pool empties, becomes unknown, or receives inbound stock (receipts rebuild or
+ * mix the pool). It survives proportional known depletion.
  */
 final class QuantityCostPool
 {
@@ -58,7 +62,7 @@ final class QuantityCostPool
         $priorStatus = self::status($locked);
 
         if (! $compatible) {
-            self::write($locked, $quantityAfter, QuantityCostStatus::UNKNOWN, null, null);
+            self::write($locked, $quantityAfter, QuantityCostStatus::UNKNOWN, null, null, clearActiveDeclaration: true);
 
             return;
         }
@@ -67,12 +71,20 @@ final class QuantityCostPool
             || ($priorStatus === QuantityCostStatus::KNOWN && $locked->cost_currency === Currency::TRY->value)) {
             $priorTotal = $priorStatus === QuantityCostStatus::EMPTY ? 0 : Money::fromDecimal($locked->cost_total);
             $newTotal = Money::sum([$priorTotal, $addedCostMinor]);
-            self::write($locked, $quantityAfter, QuantityCostStatus::KNOWN, Currency::TRY->value, Money::toDecimal($newTotal));
+            // Inbound stock rebuilds or mixes the pool — declaration continuity ends.
+            self::write(
+                $locked,
+                $quantityAfter,
+                QuantityCostStatus::KNOWN,
+                Currency::TRY->value,
+                Money::toDecimal($newTotal),
+                clearActiveDeclaration: true,
+            );
 
             return;
         }
 
-        self::write($locked, $quantityAfter, QuantityCostStatus::UNKNOWN, null, null);
+        self::write($locked, $quantityAfter, QuantityCostStatus::UNKNOWN, null, null, clearActiveDeclaration: true);
     }
 
     /**
@@ -99,17 +111,18 @@ final class QuantityCostPool
         $removed = $knownTry ? self::shareOutbound($totalBefore, $quantityBefore, $removedQuantity) : 0;
 
         if ($quantityAfter === 0) {
-            self::write($locked, 0, QuantityCostStatus::EMPTY, null, null);
+            self::write($locked, 0, QuantityCostStatus::EMPTY, null, null, clearActiveDeclaration: true);
 
             return $removed;
         }
 
         if (! $knownTry) {
-            self::write($locked, $quantityAfter, QuantityCostStatus::UNKNOWN, null, null);
+            self::write($locked, $quantityAfter, QuantityCostStatus::UNKNOWN, null, null, clearActiveDeclaration: true);
 
             return 0;
         }
 
+        // Partial known depletion keeps the active declaration (same pool lineage).
         self::write(
             $locked,
             $quantityAfter,
@@ -154,12 +167,12 @@ final class QuantityCostPool
         $quantity = (int) $locked->quantity;
 
         if ($quantity === 0) {
-            self::write($locked, 0, QuantityCostStatus::EMPTY, null, null);
+            self::write($locked, 0, QuantityCostStatus::EMPTY, null, null, clearActiveDeclaration: true);
 
             return;
         }
 
-        self::write($locked, $quantity, QuantityCostStatus::UNKNOWN, null, null);
+        self::write($locked, $quantity, QuantityCostStatus::UNKNOWN, null, null, clearActiveDeclaration: true);
     }
 
     /**
@@ -177,7 +190,26 @@ final class QuantityCostPool
             throw new InvalidAmountException(InvalidAmountException::FORMAT);
         }
 
-        self::write($locked, $quantity, QuantityCostStatus::KNOWN, Currency::TRY->value, Money::toDecimal($declaredTotalMinor));
+        self::write(
+            $locked,
+            $quantity,
+            QuantityCostStatus::KNOWN,
+            Currency::TRY->value,
+            Money::toDecimal($declaredTotalMinor),
+            clearActiveDeclaration: true,
+        );
+    }
+
+    /**
+     * Point the locked balance at the declaration that now explains its known pool.
+     */
+    public static function attachDeclaration(InventoryBalance $locked, int $declarationId): void
+    {
+        if (self::status($locked) !== QuantityCostStatus::KNOWN) {
+            throw new LogicException('Only a known pool can attach a cost declaration.');
+        }
+
+        $locked->forceFill(['active_cost_declaration_id' => $declarationId])->save();
     }
 
     private static function status(InventoryBalance $locked): QuantityCostStatus
@@ -193,13 +225,22 @@ final class QuantityCostPool
         QuantityCostStatus $status,
         ?string $currency,
         ?string $total,
+        bool $clearActiveDeclaration = false,
     ): void {
-        $locked->forceFill([
+        $attributes = [
             'quantity' => $quantity,
             'cost_status' => $status,
             'cost_currency' => $currency,
             'cost_total' => $total,
-        ])->save();
+        ];
+
+        if ($clearActiveDeclaration
+            || $status === QuantityCostStatus::EMPTY
+            || $status === QuantityCostStatus::UNKNOWN) {
+            $attributes['active_cost_declaration_id'] = null;
+        }
+
+        $locked->forceFill($attributes)->save();
     }
 
     /**

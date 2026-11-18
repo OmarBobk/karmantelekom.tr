@@ -62,20 +62,16 @@ final class SalesMarginReport
             return $empty;
         }
 
-        $networkSaleIds = self::networkSaleIds($storeIds, $start, $end);
-        $networkSaleCount = count($networkSaleIds);
-        $networkRevenue = $networkSaleIds === []
-            ? 0
-            : self::decimalSumToMinor(
-                Sale::query()->whereKey($networkSaleIds)->sum('total')
-            );
+        $network = self::networkSalesAggregate($storeIds, $start, $end);
+        $networkSaleCount = $network['sale_count'];
+        $networkRevenue = $network['revenue_minor'];
 
         $lineRows = DB::table('sale_lines')
             ->join('sales', 'sales.id', '=', 'sale_lines.sale_id')
             ->whereIn('sales.store_id', $storeIds)
             ->where('sales.completed_at', '>=', $start)
             ->where('sales.completed_at', '<', $end)
-            ->when($networkSaleIds !== [], fn ($q) => $q->whereNotIn('sales.id', $networkSaleIds))
+            ->whereNotExists(self::networkLineExists())
             ->groupBy('sales.store_id', 'sale_lines.cost_status', 'sale_lines.tracking_mode', 'sale_lines.cost_unknown_reason')
             ->select([
                 'sales.store_id',
@@ -129,7 +125,7 @@ final class SalesMarginReport
             ->whereIn('sales.store_id', $storeIds)
             ->where('sales.completed_at', '>=', $start)
             ->where('sales.completed_at', '<', $end)
-            ->when($networkSaleIds !== [], fn ($q) => $q->whereNotIn('sales.id', $networkSaleIds))
+            ->whereNotExists(self::networkLineExists())
             ->where('sale_lines.cost_status', SaleLineCostStatus::KNOWN->value)
             ->selectRaw('count(distinct sales.id) as aggregate')
             ->value('aggregate');
@@ -197,6 +193,8 @@ final class SalesMarginReport
                 'lines' => fn ($q) => $q->orderBy('line_number')->with([
                     'costFacts',
                     'costDeclaration:id,quantity,declared_total,reason,declared_at,resulting_cost_total',
+                    'unit:id,store_id',
+                    'unit.store:id,code,name',
                 ]),
             ])
             ->paginate(self::PER_PAGE, page: $page);
@@ -292,7 +290,7 @@ final class SalesMarginReport
                         'product_name' => $line->product_name,
                         'product_model' => $line->product_model,
                         'unit_identifier' => $line->unit_identifier,
-                        'provenance' => self::provenance($line, $isQuantity, $canSeeCost, $entriesByUnit),
+                        'provenance' => self::provenance($line, $isQuantity, $canSeeCost, $entriesByUnit, $user),
                     ];
                 } else {
                     $hasRestrictedKnown = true;
@@ -328,7 +326,7 @@ final class SalesMarginReport
                 'product_model' => $line->product_model,
                 'unit_identifier' => $line->unit_identifier,
                 'provenance' => $canSeeCost
-                    ? self::provenance($line, $isQuantity, $canSeeCost, $entriesByUnit)
+                    ? self::provenance($line, $isQuantity, $canSeeCost, $entriesByUnit, $user)
                     : null,
             ];
         }
@@ -358,6 +356,7 @@ final class SalesMarginReport
         bool $isQuantity,
         bool $canSeeCost,
         Collection $entriesByUnit,
+        User $user,
     ): ?array {
         if (! $canSeeCost) {
             return null;
@@ -365,6 +364,9 @@ final class SalesMarginReport
 
         if ($isQuantity) {
             $declaration = $line->costDeclaration;
+            $saleStore = $line->sale?->store;
+            $canOpenInventory = $saleStore !== null
+                && Gate::forUser($user)->allows('viewInventory', $saleStore);
 
             return [
                 'type' => 'quantity',
@@ -378,12 +380,15 @@ final class SalesMarginReport
                     'reason' => $declaration->reason,
                     'declared_at' => $declaration->declared_at,
                 ],
-                'inventory_url' => $line->sale?->store_id === null
-                    ? null
-                    : route('subdomain.inventory.product', [
-                        'store' => $line->sale->store_id,
+                'inventory_url' => $canOpenInventory
+                    ? route('subdomain.inventory.product', [
+                        'store' => $saleStore->id,
                         'productDefinition' => $line->product_definition_id,
-                    ]),
+                    ])
+                    : null,
+                'inventory_destination' => $saleStore === null
+                    ? null
+                    : trim($saleStore->code.' — '.($line->product_name ?? '')),
             ];
         }
 
@@ -393,16 +398,24 @@ final class SalesMarginReport
             $entriesByUnit->get($line->inventory_unit_id) ?? collect(),
         );
 
+        $unit = $line->unit;
+        $currentStore = $unit?->store;
+        $canOpenUnit = $currentStore !== null
+            && Gate::forUser($user)->allows('viewInventory', $currentStore);
+
         return [
             'type' => 'device',
             'snapshot' => $activity['snapshot'],
             'later' => $activity['later'],
-            'unit_url' => $line->inventory_unit_id === null || $line->sale?->store_id === null
+            'unit_url' => $canOpenUnit
+                ? route('subdomain.inventory.unit', [
+                    'store' => $currentStore,
+                    'unit' => $unit->id,
+                ])
+                : null,
+            'unit_destination' => $unit === null
                 ? null
-                : route('subdomain.inventory.unit', [
-                    'store' => $line->sale->store_id,
-                    'unit' => $line->inventory_unit_id,
-                ]),
+                : trim(($currentStore?->code ?? '—').' · '.($line->unit_identifier ?? (string) $unit->id)),
         ];
     }
 
@@ -432,20 +445,38 @@ final class SalesMarginReport
 
     /**
      * @param  list<int>  $storeIds
-     * @return list<int>
+     * @return array{sale_count: int, revenue_minor: int}
      */
-    private static function networkSaleIds(array $storeIds, $start, $end): array
+    private static function networkSalesAggregate(array $storeIds, $start, $end): array
     {
-        return SaleLine::query()
-            ->join('sales', 'sales.id', '=', 'sale_lines.sale_id')
-            ->whereIn('sales.store_id', $storeIds)
-            ->where('sales.completed_at', '>=', $start)
-            ->where('sales.completed_at', '<', $end)
-            ->where('sale_lines.cost_status', SaleLineCostStatus::EXCLUDED_NETWORK->value)
-            ->distinct()
-            ->pluck('sales.id')
-            ->map(fn ($id): int => (int) $id)
-            ->all();
+        $row = Sale::query()
+            ->whereIn('store_id', $storeIds)
+            ->where('completed_at', '>=', $start)
+            ->where('completed_at', '<', $end)
+            ->whereExists(self::networkLineExists())
+            ->toBase()
+            ->selectRaw('count(*) as sale_count, coalesce(sum(total), 0) as revenue_total')
+            ->first();
+
+        return [
+            'sale_count' => (int) ($row->sale_count ?? 0),
+            'revenue_minor' => self::decimalSumToMinor($row->revenue_total ?? 0),
+        ];
+    }
+
+    /**
+     * EXISTS / NOT EXISTS predicate: sale has at least one Network-excluded line.
+     *
+     * @return \Closure(\Illuminate\Database\Query\Builder): void
+     */
+    private static function networkLineExists(): \Closure
+    {
+        return function ($query): void {
+            $query->select(DB::raw(1))
+                ->from('sale_lines as network_lines')
+                ->whereColumn('network_lines.sale_id', 'sales.id')
+                ->where('network_lines.cost_status', SaleLineCostStatus::EXCLUDED_NETWORK->value);
+        };
     }
 
     private static function decimalSumToMinor(mixed $sum): int

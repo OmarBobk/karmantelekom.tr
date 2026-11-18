@@ -22,6 +22,7 @@ use App\Enums\TrackingMode;
 use App\Enums\UnitStatus;
 use App\Livewire\Backend\Reports\SalesMargin;
 use App\Models\DeviceCostEntry;
+use App\Models\InventoryBalance;
 use App\Models\NetworkListing;
 use App\Models\OperationalSupplier;
 use App\Models\ProductDefinition;
@@ -38,6 +39,8 @@ use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\Test;
+use Spatie\Permission\Models\Role;
+use Spatie\Permission\PermissionRegistrar;
 use Tests\Support\InteractsWithPos;
 use Tests\Support\InteractsWithPurchasing;
 use Tests\TestCase;
@@ -264,7 +267,7 @@ class SalesMarginReportTest extends TestCase
     }
 
     #[Test]
-    public function declaration_is_not_linked_after_pool_restarts_from_receipt(): void
+    public function coincident_redeclaration_values_do_not_reattach_after_full_depletion_and_receipt(): void
     {
         $this->receiveCable(2, '10.00');
         app(RecordStockCount::class)(
@@ -276,7 +279,7 @@ class SalesMarginReportTest extends TestCase
             'found',
             (string) Str::uuid(),
         );
-        app(DeclareQuantityCost::class)(
+        $declaration = app(DeclareQuantityCost::class)(
             $this->owner,
             $this->store,
             $this->cable,
@@ -285,16 +288,60 @@ class SalesMarginReportTest extends TestCase
             'declared pool',
             (string) Str::uuid(),
         );
-        $this->sellCable(3);
-        $this->receiveCable(2, '12.00');
-        $sale = $this->sellCable(1);
 
-        $this->assertNull($sale->lines()->first()->cost_declaration_id);
-        $this->assertSame('12.00', $sale->lines()->first()->cost_amount);
+        $firstSale = $this->sellCable(3);
+        $this->assertSame($declaration->id, $firstSale->lines()->first()->cost_declaration_id);
+
+        // Same quantity and total as the declaration, but a new receipt-built pool.
+        $this->receiveCable(3, '15.00');
+        $this->assertNull($this->cableBalance()->active_cost_declaration_id);
+
+        $secondSale = $this->sellCable(3);
+        $this->assertNull($secondSale->lines()->first()->cost_declaration_id);
+        $this->assertSame('45.00', $secondSale->lines()->first()->cost_amount);
+        $this->assertSame($declaration->id, $firstSale->lines()->first()->fresh()->cost_declaration_id);
     }
 
     #[Test]
-    public function quantity_only_permission_hides_device_costs_without_labeling_unknown(): void
+    public function partial_depletion_keeps_declaration_until_later_coincident_receipt(): void
+    {
+        $this->receiveCable(2, '10.00');
+        app(RecordStockCount::class)(
+            $this->owner,
+            $this->store,
+            $this->cable,
+            3,
+            RecordStockCount::latestMovementId($this->store, $this->cable),
+            'found',
+            (string) Str::uuid(),
+        );
+        $declaration = app(DeclareQuantityCost::class)(
+            $this->owner,
+            $this->store,
+            $this->cable,
+            3,
+            '45.00',
+            'declared pool',
+            (string) Str::uuid(),
+        );
+
+        $partial = $this->sellCable(1);
+        $this->assertSame($declaration->id, $partial->lines()->first()->cost_declaration_id);
+        $this->assertSame($declaration->id, $this->cableBalance()->active_cost_declaration_id);
+        $this->assertSame('15.00', $partial->lines()->first()->cost_amount);
+
+        $remainder = $this->sellCable(2);
+        $this->assertSame($declaration->id, $remainder->lines()->first()->cost_declaration_id);
+
+        $this->receiveCable(3, '15.00');
+        $this->assertNull($this->cableBalance()->active_cost_declaration_id);
+        $restarted = $this->sellCable(1);
+        $this->assertNull($restarted->lines()->first()->cost_declaration_id);
+        $this->assertSame('15.00', $restarted->lines()->first()->cost_amount);
+    }
+
+    #[Test]
+    public function livewire_permission_grants_gate_cost_amounts_and_source_links(): void
     {
         $this->receiveCable(2, '10.00');
         $this->sellCable(1);
@@ -309,29 +356,75 @@ class SalesMarginReportTest extends TestCase
         $unit->update(['selling_price' => '2000.00', 'status' => UnitStatus::AVAILABLE]);
         $this->finalizePhone($unit);
 
-        $today = LocalDateRange::date(LocalDateRange::today());
-        $summary = SalesMarginReport::summarize(
-            $this->owner,
-            [$this->store->id],
-            $today,
-            $today,
-            [$this->store->id => true],
-            [$this->store->id => false],
-        );
-        $rows = SalesMarginReport::paginateSales(
-            $this->owner,
-            [$this->store->id],
-            $today,
-            $today,
-            [$this->store->id => true],
-            [$this->store->id => false],
-        );
+        // Quantity-only: revoke device costs through the real permission system.
+        $this->revokeFromOwners('manage_device_costs');
+        $quantityOnly = Livewire::actingAs($this->owner->fresh())->test(SalesMargin::class);
+        $quantitySummary = $quantityOnly->viewData('summary');
+        $quantityRows = collect($quantityOnly->viewData('rows')->items());
+        $this->assertSame(1000, $quantitySummary['known_cost_minor']);
+        $this->assertGreaterThan(0, $quantitySummary['restricted_known_revenue_minor']);
+        $this->assertRestrictedDevicePayload($quantityRows, $quantityOnly->html());
 
-        $this->assertGreaterThan(0, $summary['restricted_known_revenue_minor']);
-        $this->assertSame($summary['known_revenue_minor'] - $summary['visible_known_revenue_minor'], $summary['restricted_known_revenue_minor']);
-        // Cable known cost remains visible; device acquisition amount must not appear in visible cost.
-        $this->assertSame(1000, $summary['known_cost_minor']);
-        $deviceRow = $rows->getCollection()->first(fn (array $row): bool => collect($row['line_summaries'])->contains(
+        // Device-only after restoring device costs and revoking purchases.
+        Role::findByName('admin')->givePermissionTo('manage_device_costs');
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        $this->revokeFromOwners('manage_purchases');
+        $deviceOnly = Livewire::actingAs($this->owner->fresh())->test(SalesMargin::class);
+        $deviceSummary = $deviceOnly->viewData('summary');
+        $deviceRows = collect($deviceOnly->viewData('rows')->items());
+        $this->assertSame(100_000, $deviceSummary['known_cost_minor']);
+        $this->assertGreaterThan(0, $deviceSummary['restricted_known_revenue_minor']);
+        $this->assertRestrictedQuantityPayload($deviceRows, $deviceOnly->html());
+
+        // Explicit invalid branch stays selected and is rejected — never silently replaced by all branches.
+        $deviceOnly->set('storeId', '99999')
+            ->assertViewHas('branchFilterError', 'invalid_store')
+            ->assertViewHas('summary', null)
+            ->assertSet('storeId', '99999');
+
+        // Valid branch filter scopes to that store; branch/date changes reset pagination.
+        $deviceOnly->set('storeId', (string) $this->store->id)
+            ->assertViewHas('branchFilterError', null)
+            ->assertSet('storeId', (string) $this->store->id);
+        $this->assertSame([$this->store->id], collect($deviceOnly->viewData('rows')->items())->pluck('store_id')->unique()->values()->all());
+        $deviceOnly->call('setPage', 2)
+            ->assertSet('paginators.page', 2)
+            ->set('storeId', '')
+            ->assertSet('paginators.page', 1)
+            ->call('setPage', 2)
+            ->call('showYesterday')
+            ->assertSet('paginators.page', 1);
+
+        // Costs remain visible without viewInventory; destination links become plain text.
+        Role::findByName('admin')->givePermissionTo('manage_purchases');
+        app(PermissionRegistrar::class)->forgetCachedPermissions();
+        $this->revokeFromOwners('view_inventory');
+        $noInventory = Livewire::actingAs($this->owner->fresh())->test(SalesMargin::class);
+        $noInventorySummary = $noInventory->viewData('summary');
+        $this->assertSame(101_000, $noInventorySummary['known_cost_minor']);
+        $linked = collect($noInventory->viewData('rows')->items())
+            ->flatMap(fn (array $row) => $row['line_summaries'])
+            ->first(fn (array $line): bool => ($line['provenance']['type'] ?? null) === 'quantity');
+        $this->assertNotNull($linked);
+        $this->assertNull($linked['provenance']['inventory_url']);
+        $this->assertNotNull($linked['provenance']['inventory_destination']);
+        $noInventory->assertSee(__('reports.margin.destination_plain', [
+            'destination' => $linked['provenance']['inventory_destination'],
+        ]));
+        $noInventory->assertDontSee(__('reports.margin.open_inventory'));
+
+        // Revoking both cost permissions closes the page.
+        $this->revokeFromOwners('manage_purchases');
+        $this->revokeFromOwners('manage_device_costs');
+        Livewire::actingAs($this->owner->fresh())->test(SalesMargin::class)->assertForbidden();
+    }
+
+    /**
+     * @param  Collection<int, array<string, mixed>>  $rows
+     */
+    private function assertRestrictedDevicePayload(Collection $rows, string $html): void
+    {
+        $deviceRow = $rows->first(fn (array $row): bool => collect($row['line_summaries'])->contains(
             fn (array $line): bool => ($line['unit_identifier'] ?? null) !== null
         ));
         $this->assertNotNull($deviceRow);
@@ -343,6 +436,37 @@ class SalesMarginReportTest extends TestCase
         $encoded = json_encode($deviceRow);
         $this->assertStringNotContainsString('1000.00', (string) $encoded);
         $this->assertStringNotContainsString('"cost_minor":100000', (string) $encoded);
+        $this->assertStringNotContainsString('1000.00', $html);
+        $this->assertStringNotContainsString('1.000,00', $html);
+    }
+
+    /**
+     * @param  Collection<int, array<string, mixed>>  $rows
+     */
+    private function assertRestrictedQuantityPayload(Collection $rows, string $html): void
+    {
+        $quantityRow = $rows->first(fn (array $row): bool => collect($row['line_summaries'])->contains(
+            fn (array $line): bool => ($line['unit_identifier'] ?? null) === null
+                && ($line['product_name'] ?? null) === 'USB-C cable'
+        ));
+        $this->assertNotNull($quantityRow);
+        $this->assertTrue(collect($quantityRow['line_summaries'])->contains(
+            fn (array $line): bool => $line['status'] === 'restricted'
+                && $line['cost_minor'] === null
+                && ($line['provenance'] ?? null) === null
+        ));
+        $encoded = json_encode($quantityRow);
+        $this->assertStringNotContainsString('"cost_minor":1000', (string) $encoded);
+        $this->assertStringNotContainsString('10.00', (string) $encoded);
+        $this->assertStringNotContainsString('10.00', $html);
+    }
+
+    private function cableBalance(): InventoryBalance
+    {
+        return InventoryBalance::query()
+            ->where('store_id', $this->store->id)
+            ->where('product_definition_id', $this->cable->id)
+            ->firstOrFail();
     }
 
     /**

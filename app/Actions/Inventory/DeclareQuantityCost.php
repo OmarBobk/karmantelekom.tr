@@ -117,7 +117,7 @@ class DeclareQuantityCost
                 QuantityCostPool::declareTotal($balance, $expectedQuantity, $totalMinor);
                 $balance->refresh();
 
-                return InventoryCostDeclaration::query()->create([
+                $declaration = InventoryCostDeclaration::query()->create([
                     'store_id' => $store->id,
                     'product_definition_id' => $lockedDefinition->id,
                     'inventory_balance_id' => $balance->id,
@@ -136,6 +136,10 @@ class DeclareQuantityCost
                     'request_fingerprint' => $fingerprint,
                     'declared_at' => now(),
                 ]);
+
+                QuantityCostPool::attachDeclaration($balance, $declaration->id);
+
+                return $declaration;
             });
         } catch (UniqueConstraintViolationException $exception) {
             $existing = InventoryCostDeclaration::query()->where('idempotency_key', $key)->first();
