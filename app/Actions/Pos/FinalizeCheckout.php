@@ -645,22 +645,32 @@ class FinalizeCheckout
             ? $balance->cost_status
             : QuantityCostStatus::from((string) $balance->cost_status);
 
+        $poolTotalBefore = $status === QuantityCostStatus::KNOWN ? $balance->cost_total : null;
+
+        // Link a declaration only when it still exactly describes this known pool. A declaration
+        // from a depleted pool must not attach to a later receipt-only pool.
+        $declarationId = null;
+
+        if ($status === QuantityCostStatus::KNOWN && $balance->cost_currency === Currency::TRY->value && $poolTotalBefore !== null) {
+            $declarationId = InventoryCostDeclaration::query()
+                ->where('inventory_balance_id', $balance->id)
+                ->where('quantity', $quantityBefore)
+                ->where('resulting_cost_status', QuantityCostStatus::KNOWN->value)
+                ->where('resulting_cost_currency', Currency::TRY->value)
+                ->where('resulting_cost_total', $poolTotalBefore)
+                ->orderByDesc('id')
+                ->value('id');
+        }
+
         $base = [
             'cost_basis' => 'quantity_wac',
             'cost_basis_version' => QuantityCostPool::BASIS_VERSION,
             'cost_exclusion_reason' => null,
             'pool_quantity_before' => $quantityBefore,
-            'pool_cost_total_before' => $status === QuantityCostStatus::KNOWN ? $balance->cost_total : null,
-            'cost_declaration_id' => null,
+            'pool_cost_total_before' => $poolTotalBefore,
+            'cost_declaration_id' => $declarationId,
             'facts' => [],
         ];
-
-        $declarationId = InventoryCostDeclaration::query()
-            ->where('inventory_balance_id', $balance->id)
-            ->orderByDesc('id')
-            ->value('id');
-
-        $base['cost_declaration_id'] = $declarationId;
 
         if ($status === QuantityCostStatus::KNOWN && $balance->cost_currency === Currency::TRY->value) {
             $removed = QuantityCostPool::shareOutbound(
@@ -675,6 +685,17 @@ class FinalizeCheckout
                 'cost_currency' => Currency::TRY->value,
                 'cost_amount' => Money::toDecimal($removed),
                 'cost_unknown_reason' => null,
+                'facts' => [[
+                    'fact_type' => 'quantity_share',
+                    'inclusion' => 'included',
+                    'category' => null,
+                    'currency' => Currency::TRY->value,
+                    'amount' => Money::toDecimal($removed),
+                    'purchase_receipt_unit_id' => null,
+                    'device_cost_entry_id' => null,
+                    'entry_reversed_at_sale' => false,
+                    'note' => 'pool_share',
+                ]],
             ];
         }
 
@@ -684,6 +705,17 @@ class FinalizeCheckout
             'cost_currency' => null,
             'cost_amount' => null,
             'cost_unknown_reason' => 'pool_unknown',
+            'facts' => [[
+                'fact_type' => 'quantity_share',
+                'inclusion' => 'unknown',
+                'category' => null,
+                'currency' => null,
+                'amount' => null,
+                'purchase_receipt_unit_id' => null,
+                'device_cost_entry_id' => null,
+                'entry_reversed_at_sale' => false,
+                'note' => 'pool_unknown',
+            ]],
         ];
     }
 

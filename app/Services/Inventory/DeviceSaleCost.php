@@ -96,6 +96,9 @@ final class DeviceSaleCost
             ->lockForUpdate()
             ->get();
 
+        // Highest entry id seen at sale — laterActivity uses this instead of timestamps.
+        $entryCursorId = $entries->max(fn (DeviceCostEntry $entry): int => (int) $entry->id);
+
         foreach ($entries as $entry) {
             if ($entry->isReversed()) {
                 continue;
@@ -177,6 +180,20 @@ final class DeviceSaleCost
             $includedMinor += Money::fromDecimal($entry->amount);
         }
 
+        if ($entryCursorId !== null) {
+            $facts[] = [
+                'fact_type' => 'entry_cursor',
+                'inclusion' => 'excluded',
+                'category' => null,
+                'currency' => null,
+                'amount' => null,
+                'purchase_receipt_unit_id' => null,
+                'device_cost_entry_id' => (int) $entryCursorId,
+                'entry_reversed_at_sale' => false,
+                'note' => 'entry_cursor',
+            ];
+        }
+
         if ($unknownReason !== null) {
             return [
                 'status' => SaleLineCostStatus::UNKNOWN,
@@ -199,79 +216,99 @@ final class DeviceSaleCost
     /**
      * Compare frozen sale facts with current device-cost rows for owner drill-down.
      *
-     * A pre-sale entry reversed after the sale is “reversed_after_sale”, not a new expense.
+     * Uses the frozen entry_cursor / snapshotted entry ids — not wall-clock equality — so
+     * same-second events stay ordered. Pre-sale reversals are not labeled as post-sale costs.
      *
+     * @param  Collection<int, SaleLineCostFact>|null  $facts
+     * @param  Collection<int, DeviceCostEntry>|null  $entries
      * @return array{
      *     snapshot: list<array<string, mixed>>,
      *     later: list<array<string, mixed>>
      * }
      */
-    public static function laterActivity(SaleLine $saleLine): array
-    {
-        $snapshot = $saleLine->costFacts()
-            ->orderBy('id')
-            ->get()
-            ->map(fn (SaleLineCostFact $fact): array => [
+    public static function laterActivity(
+        SaleLine $saleLine,
+        ?Collection $facts = null,
+        ?Collection $entries = null,
+    ): array {
+        $factRows = $facts ?? $saleLine->costFacts()->orderBy('id')->get();
+
+        $snapshot = [];
+        $snapshottedEntryIds = [];
+        $cursorId = 0;
+
+        foreach ($factRows as $fact) {
+            if ($fact->fact_type === 'entry_cursor') {
+                $cursorId = max($cursorId, (int) ($fact->device_cost_entry_id ?? 0));
+
+                continue;
+            }
+
+            if ($fact->device_cost_entry_id !== null) {
+                $snapshottedEntryIds[] = (int) $fact->device_cost_entry_id;
+            }
+
+            $snapshot[] = [
                 'kind' => 'snapshot',
                 'inclusion' => $fact->inclusion,
                 'fact_type' => $fact->fact_type,
-                'category' => $fact->category?->value ?? $fact->category,
+                'category' => $fact->category instanceof DeviceCostCategory
+                    ? $fact->category->value
+                    : ($fact->category !== null ? (string) $fact->category : null),
                 'amount' => $fact->amount,
                 'currency' => $fact->currency?->value,
                 'device_cost_entry_id' => $fact->device_cost_entry_id,
                 'purchase_receipt_unit_id' => $fact->purchase_receipt_unit_id,
                 'note' => $fact->note,
-            ])
-            ->all();
+            ];
+        }
 
         $unitId = $saleLine->inventory_unit_id;
-        $completedAt = $saleLine->sale?->completed_at;
 
-        if ($unitId === null || $completedAt === null) {
+        if ($unitId === null) {
             return ['snapshot' => $snapshot, 'later' => []];
         }
 
-        $snapshottedEntryIds = collect($snapshot)
-            ->pluck('device_cost_entry_id')
-            ->filter()
-            ->map(fn ($id): int => (int) $id)
-            ->all();
+        if ($cursorId === 0 && $snapshottedEntryIds !== []) {
+            $cursorId = max($snapshottedEntryIds);
+        }
 
-        $later = [];
-
-        $entries = DeviceCostEntry::query()
+        $currentEntries = $entries ?? DeviceCostEntry::query()
             ->where('inventory_unit_id', $unitId)
             ->orderBy('id')
             ->get();
 
-        foreach ($entries as $entry) {
-            $wasSnapshotted = in_array($entry->id, $snapshottedEntryIds, true);
-            $recordedAfter = $entry->created_at !== null && $entry->created_at->greaterThanOrEqualTo($completedAt);
-            $reversedAfter = $entry->isReversed()
-                && $entry->reversed_at !== null
-                && $entry->reversed_at->greaterThanOrEqualTo($completedAt);
+        $later = [];
 
-            if ($wasSnapshotted && $reversedAfter) {
-                $later[] = [
-                    'kind' => 'reversed_after_sale',
-                    'device_cost_entry_id' => $entry->id,
-                    'category' => $entry->category->value,
-                    'amount' => $entry->amount,
-                    'currency' => $entry->currency?->value,
-                ];
+        foreach ($currentEntries as $entry) {
+            $wasSnapshotted = in_array($entry->id, $snapshottedEntryIds, true);
+
+            if ($wasSnapshotted) {
+                if ($entry->isReversed()) {
+                    $later[] = [
+                        'kind' => 'reversed_after_sale',
+                        'device_cost_entry_id' => $entry->id,
+                        'category' => $entry->category->value,
+                        'amount' => $entry->amount,
+                        'currency' => $entry->currency?->value,
+                    ];
+                }
 
                 continue;
             }
 
-            if (! $wasSnapshotted && $recordedAfter) {
-                $later[] = [
-                    'kind' => $entry->isReversed() ? 'recorded_after_sale_reversed' : 'recorded_after_sale',
-                    'device_cost_entry_id' => $entry->id,
-                    'category' => $entry->category->value,
-                    'amount' => $entry->amount,
-                    'currency' => $entry->currency?->value,
-                ];
+            // Ids above the frozen cursor did not exist at sale completion.
+            if ((int) $entry->id <= $cursorId) {
+                continue;
             }
+
+            $later[] = [
+                'kind' => $entry->isReversed() ? 'recorded_after_sale_reversed' : 'recorded_after_sale',
+                'device_cost_entry_id' => $entry->id,
+                'category' => $entry->category->value,
+                'amount' => $entry->amount,
+                'currency' => $entry->currency?->value,
+            ];
         }
 
         return ['snapshot' => $snapshot, 'later' => $later];

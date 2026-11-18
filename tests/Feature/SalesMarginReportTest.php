@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Actions\Inventory\DeclareQuantityCost;
 use App\Actions\Inventory\DeviceCostInput;
 use App\Actions\Inventory\RecordDeviceCost;
 use App\Actions\Inventory\RecordStockCount;
@@ -32,6 +33,7 @@ use App\Services\Purchasing\Money;
 use App\Services\Reporting\LocalDateRange;
 use App\Services\Reporting\SalesMarginReport;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Livewire\Livewire;
@@ -98,7 +100,8 @@ class SalesMarginReportTest extends TestCase
         $networkSale = $this->sellNetworkPhone();
 
         $today = LocalDateRange::date(LocalDateRange::today());
-        $report = SalesMarginReport::forStores($this->owner, [$this->store->id], $today, $today);
+        $report = $this->summary();
+        $rows = $this->pagedRows();
 
         $this->assertSame(3, $report['recorded_sales_count']);
         $this->assertSame(
@@ -115,7 +118,7 @@ class SalesMarginReportTest extends TestCase
         );
         $this->assertSame(1, $report['network_sale_count']);
         $this->assertSame($networkSale->totalMinor(), $report['network_revenue_minor']);
-        $this->assertTrue(collect($report['rows'])->contains(
+        $this->assertTrue($rows->contains(
             fn (array $row): bool => $row['classification'] === 'network' && $row['margin_minor'] === null,
         ));
     }
@@ -139,9 +142,7 @@ class SalesMarginReportTest extends TestCase
             null,
         );
 
-        $today = LocalDateRange::date(LocalDateRange::today());
-        $report = SalesMarginReport::forStores($this->owner, [$this->store->id], $today, $today);
-        $row = collect($report['rows'])->firstWhere('sale_id', $sale->id);
+        $row = $this->pagedRows()->firstWhere('sale_id', $sale->id);
 
         $this->assertSame('mixed_or_unknown', $row['classification']);
         $this->assertNull($row['margin_minor']);
@@ -255,12 +256,127 @@ class SalesMarginReportTest extends TestCase
             'cost_declaration_id' => null,
         ]);
 
-        $today = LocalDateRange::date(LocalDateRange::today());
-        $report = SalesMarginReport::forStores($this->owner, [$this->store->id], $today, $today);
+        $report = $this->summary();
 
         $this->assertSame($sale->totalMinor(), $report['unknown_revenue_minor']);
         $this->assertSame(0, $report['known_cost_minor']);
         $this->assertArrayHasKey('pre_activation', $report['unknown_reasons']);
+    }
+
+    #[Test]
+    public function declaration_is_not_linked_after_pool_restarts_from_receipt(): void
+    {
+        $this->receiveCable(2, '10.00');
+        app(RecordStockCount::class)(
+            $this->owner,
+            $this->store,
+            $this->cable,
+            3,
+            RecordStockCount::latestMovementId($this->store, $this->cable),
+            'found',
+            (string) Str::uuid(),
+        );
+        app(DeclareQuantityCost::class)(
+            $this->owner,
+            $this->store,
+            $this->cable,
+            3,
+            '45.00',
+            'declared pool',
+            (string) Str::uuid(),
+        );
+        $this->sellCable(3);
+        $this->receiveCable(2, '12.00');
+        $sale = $this->sellCable(1);
+
+        $this->assertNull($sale->lines()->first()->cost_declaration_id);
+        $this->assertSame('12.00', $sale->lines()->first()->cost_amount);
+    }
+
+    #[Test]
+    public function quantity_only_permission_hides_device_costs_without_labeling_unknown(): void
+    {
+        $this->receiveCable(2, '10.00');
+        $this->sellCable(1);
+
+        $imei = self::imei('35693803564385');
+        $purchase = $this->postedPurchase($this->owner, $this->store, $this->supplier, [[$this->usedPhone, 1, '1000.00']]);
+        $line = $purchase->lines()->sole();
+        $receipt = app(ReceivePurchase::class)($this->owner, $purchase, [
+            $line->id => [['condition' => 'b', 'imei' => $imei, 'secondary_imei' => null, 'serial' => null]],
+        ], null, (string) Str::uuid());
+        $unit = $receipt->lines()->sole()->units()->sole()->unit;
+        $unit->update(['selling_price' => '2000.00', 'status' => UnitStatus::AVAILABLE]);
+        $this->finalizePhone($unit);
+
+        $today = LocalDateRange::date(LocalDateRange::today());
+        $summary = SalesMarginReport::summarize(
+            $this->owner,
+            [$this->store->id],
+            $today,
+            $today,
+            [$this->store->id => true],
+            [$this->store->id => false],
+        );
+        $rows = SalesMarginReport::paginateSales(
+            $this->owner,
+            [$this->store->id],
+            $today,
+            $today,
+            [$this->store->id => true],
+            [$this->store->id => false],
+        );
+
+        $this->assertGreaterThan(0, $summary['restricted_known_revenue_minor']);
+        $this->assertSame($summary['known_revenue_minor'] - $summary['visible_known_revenue_minor'], $summary['restricted_known_revenue_minor']);
+        // Cable known cost remains visible; device acquisition amount must not appear in visible cost.
+        $this->assertSame(1000, $summary['known_cost_minor']);
+        $deviceRow = $rows->getCollection()->first(fn (array $row): bool => collect($row['line_summaries'])->contains(
+            fn (array $line): bool => ($line['unit_identifier'] ?? null) !== null
+        ));
+        $this->assertNotNull($deviceRow);
+        $this->assertTrue(collect($deviceRow['line_summaries'])->contains(
+            fn (array $line): bool => $line['status'] === 'restricted'
+                && $line['cost_minor'] === null
+                && ($line['provenance'] ?? null) === null
+        ));
+        $encoded = json_encode($deviceRow);
+        $this->assertStringNotContainsString('1000.00', (string) $encoded);
+        $this->assertStringNotContainsString('"cost_minor":100000', (string) $encoded);
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function summary(): array
+    {
+        $today = LocalDateRange::date(LocalDateRange::today());
+
+        return SalesMarginReport::summarize(
+            $this->owner,
+            [$this->store->id],
+            $today,
+            $today,
+            [$this->store->id => true],
+            [$this->store->id => true],
+        );
+    }
+
+    /**
+     * @return Collection<int, array<string, mixed>>
+     */
+    private function pagedRows()
+    {
+        $today = LocalDateRange::date(LocalDateRange::today());
+
+        return SalesMarginReport::paginateSales(
+            $this->owner,
+            [$this->store->id],
+            $today,
+            $today,
+            [$this->store->id => true],
+            [$this->store->id => true],
+        )->getCollection();
     }
 
     private function receiveCable(int $quantity, string $unitCost): void

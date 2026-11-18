@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Actions\Inventory\DeviceCostInput;
+use App\Actions\Inventory\RecordDeviceCost;
 use App\Actions\Inventory\RecordStockCount;
 use App\Actions\Purchasing\ReceivePurchase;
 use App\Enums\QuantityCostStatus;
 use App\Enums\SaleLineCostStatus;
 use App\Enums\TrackingMode;
+use App\Enums\UnitStatus;
+use App\Models\DeviceCostEntry;
 use App\Models\InventoryBalance;
 use App\Models\InventoryCostDeclaration;
 use App\Models\OperationalSupplier;
@@ -107,7 +111,7 @@ class QuantityCostConcurrencyTest extends TestCase
     }
 
     #[Test]
-    public function declaration_racing_a_sale_keeps_one_consistent_outcome(): void
+    public function declaration_racing_a_sale_serializes_to_exact_money_and_stock(): void
     {
         $this->receiveCable(5, '10.00');
         app(RecordStockCount::class)(
@@ -136,31 +140,35 @@ class QuantityCostConcurrencyTest extends TestCase
             $this->finalizeRequest($this->cashier, $attempt, '50'),
         ]);
 
-        $this->assertContains('ok', array_column($results, 'status'));
-        $sale = Sale::query()->first();
+        $this->assertSame(1, Sale::query()->count());
+        $sale = Sale::query()->sole();
+        $line = $sale->lines()->sole();
         $balance = $this->cableBalance();
+        $statuses = array_column($results, 'status');
 
-        if ($results[0]['status'] === 'ok' && $results[1]['status'] === 'ok') {
+        // Declare first then sale: known line cost 15.00, remaining qty 5 total 75.00.
+        // Sale first then declare: declare sees qty 5 → validation; line unknown; qty 5 unknown.
+        if ($statuses === ['ok', 'ok']) {
             $this->assertSame(1, InventoryCostDeclaration::query()->count());
-            $this->assertNotNull($sale);
-            $line = $sale->lines()->first();
-            $this->assertContains($line->cost_status, [SaleLineCostStatus::KNOWN, SaleLineCostStatus::UNKNOWN]);
-            if ($line->cost_status === SaleLineCostStatus::KNOWN) {
-                $this->assertSame(QuantityCostStatus::KNOWN, $balance->cost_status);
-                $this->assertSame(5, $balance->quantity);
-            }
-        } elseif ($results[0]['status'] === 'validation') {
+            $this->assertSame(SaleLineCostStatus::KNOWN, $line->cost_status);
+            $this->assertSame('15.00', $line->cost_amount);
+            $this->assertSame(5, $balance->quantity);
+            $this->assertSame(QuantityCostStatus::KNOWN, $balance->cost_status);
+            $this->assertSame('75.00', $balance->cost_total);
+        } else {
+            $this->assertEqualsCanonicalizing(['validation', 'ok'], $statuses);
             $this->assertSame('ok', $results[1]['status']);
             $this->assertSame(0, InventoryCostDeclaration::query()->count());
-            $this->assertSame(SaleLineCostStatus::UNKNOWN, $sale->lines()->first()->cost_status);
-        } else {
-            $this->assertSame('ok', $results[0]['status']);
-            $this->assertSame(1, InventoryCostDeclaration::query()->count());
+            $this->assertSame(SaleLineCostStatus::UNKNOWN, $line->cost_status);
+            $this->assertNull($line->cost_amount);
+            $this->assertSame(5, $balance->quantity);
+            $this->assertSame(QuantityCostStatus::UNKNOWN, $balance->cost_status);
+            $this->assertNull($balance->cost_total);
         }
     }
 
     #[Test]
-    public function count_increase_racing_a_sale_never_leaves_inconsistent_pool_state(): void
+    public function count_increase_racing_a_sale_serializes_stock_and_cost(): void
     {
         $this->receiveCable(3, '10.00');
         $startedAfter = RecordStockCount::latestMovementId($this->store, $this->cable);
@@ -180,24 +188,28 @@ class QuantityCostConcurrencyTest extends TestCase
         ]);
 
         $this->assertEqualsCanonicalizing(['ok', 'ok'], array_column($results, 'status'));
-        $balance = $this->cableBalance();
-        $this->assertContains($balance->cost_status, [QuantityCostStatus::KNOWN, QuantityCostStatus::UNKNOWN]);
-        $this->assertSame(
-            $balance->quantity === 0 ? QuantityCostStatus::EMPTY : $balance->cost_status,
-            $balance->cost_status,
-        );
         $this->assertSame(1, Sale::query()->count());
-        if ($balance->cost_status === QuantityCostStatus::KNOWN) {
-            $this->assertNotNull($balance->cost_total);
-            $this->assertSame('TRY', $balance->cost_currency);
-        } else {
+        $line = Sale::query()->sole()->lines()->sole();
+        $balance = $this->cableBalance();
+
+        // Count-first: pool becomes unknown at 5, sale removes 1 → qty 4 unknown, line unknown.
+        // Sale-first: known share 10.00 from 30, qty 2 known 20; count then sets qty 5 unknown.
+        if ($line->cost_status === SaleLineCostStatus::UNKNOWN) {
+            $this->assertNull($line->cost_amount);
+            $this->assertSame(4, $balance->quantity);
+            $this->assertSame(QuantityCostStatus::UNKNOWN, $balance->cost_status);
             $this->assertNull($balance->cost_total);
-            $this->assertNull($balance->cost_currency);
+        } else {
+            $this->assertSame(SaleLineCostStatus::KNOWN, $line->cost_status);
+            $this->assertSame('10.00', $line->cost_amount);
+            $this->assertSame(5, $balance->quantity);
+            $this->assertSame(QuantityCostStatus::UNKNOWN, $balance->cost_status);
+            $this->assertNull($balance->cost_total);
         }
     }
 
     #[Test]
-    public function receipt_racing_a_sale_keeps_quantity_and_cost_consistent(): void
+    public function receipt_racing_a_sale_serializes_to_known_pool_outcomes(): void
     {
         $this->receiveCable(1, '10.00');
         $purchase = $this->postedPurchase(
@@ -220,17 +232,87 @@ class QuantityCostConcurrencyTest extends TestCase
             $this->finalizeRequest($this->cashier, $attempt, '50'),
         ]);
 
-        $this->assertContains('ok', array_column($results, 'status'));
+        $this->assertEqualsCanonicalizing(['ok', 'ok'], array_column($results, 'status'));
+        $this->assertSame(1, Sale::query()->count());
+        $line = Sale::query()->sole()->lines()->sole();
         $balance = $this->cableBalance();
-        $this->assertGreaterThanOrEqual(0, $balance->quantity);
-        if ($balance->quantity === 0) {
-            $this->assertSame(QuantityCostStatus::EMPTY, $balance->cost_status);
-        } elseif ($balance->cost_status === QuantityCostStatus::KNOWN) {
-            $this->assertNotNull($balance->cost_total);
+        $this->assertSame(SaleLineCostStatus::KNOWN, $line->cost_status);
+
+        // Receive-first: pool 3 / 50.00, sell 1 → removed floor(5000/3)=16.66, remain 2 / 33.34.
+        // Sale-first: sell the only unit for 10.00 empty, then receive 2 / 40.00.
+        $this->assertSame(2, $balance->quantity);
+        $this->assertSame(QuantityCostStatus::KNOWN, $balance->cost_status);
+
+        if ($line->cost_amount === '16.66') {
+            $this->assertSame('33.34', $balance->cost_total);
         } else {
-            $this->assertSame(QuantityCostStatus::UNKNOWN, $balance->cost_status);
-            $this->assertNull($balance->cost_total);
+            $this->assertSame('10.00', $line->cost_amount);
+            $this->assertSame('40.00', $balance->cost_total);
         }
+    }
+
+    #[Test]
+    public function device_cost_reverse_racing_finalize_keeps_one_frozen_snapshot(): void
+    {
+        $imei = self::imei('35693803564386');
+        $purchase = $this->postedPurchase(
+            $this->owner,
+            $this->store,
+            $this->supplier,
+            [[$this->usedPhone, 1, '1000.00']],
+            ['supplier_invoice_number' => 'INV-DEV-'.Str::upper(Str::random(6))],
+        );
+        $line = $purchase->lines()->sole();
+        $receipt = app(ReceivePurchase::class)($this->owner, $purchase, [
+            $line->id => [['condition' => 'b', 'imei' => $imei, 'secondary_imei' => null, 'serial' => null]],
+        ], null, (string) Str::uuid());
+        $unit = $receipt->lines()->sole()->units()->sole()->unit;
+        $unit->update(['selling_price' => '2000.00', 'status' => UnitStatus::AVAILABLE]);
+
+        app(RecordDeviceCost::class)(
+            $this->owner,
+            $this->store,
+            $unit->id,
+            DeviceCostInput::fromInput('repair_parts', 'screen', '100.00', 'TRY', false),
+            null,
+            (string) Str::uuid(),
+        );
+        $entryId = DeviceCostEntry::query()
+            ->where('inventory_unit_id', $unit->id)
+            ->whereNull('reversed_at')
+            ->value('id');
+
+        $attempt = $this->review($this->cashier, $this->phoneLine($unit));
+        $terminal = $this->createTerminal();
+        $this->approveCard($this->cashier, $attempt, $terminal, '2000.00');
+        $attempt = $attempt->fresh();
+
+        $results = $this->raceWhileLocked($this->definitionLock($this->usedPhone), [
+            [
+                'operation' => 'reverse_device_cost',
+                'actor_id' => $this->owner->id,
+                'store_id' => $this->store->id,
+                'unit_id' => $unit->id,
+                'entry_id' => $entryId,
+                'reason' => 'race reverse',
+                'key' => (string) Str::uuid(),
+            ],
+            [
+                'operation' => 'finalize',
+                'actor_id' => $this->cashier->id,
+                'store_id' => $this->store->id,
+                'attempt_key' => $attempt->key,
+                'revision' => $attempt->revision,
+                'cash' => null,
+            ],
+        ]);
+
+        $this->assertContains('ok', array_column($results, 'status'));
+        $this->assertSame(1, Sale::query()->count());
+        $saleLine = Sale::query()->sole()->lines()->sole();
+        $this->assertContains($saleLine->cost_amount, ['1000.00', '1100.00']);
+        $this->assertSame(SaleLineCostStatus::KNOWN, $saleLine->cost_status);
+        $this->assertSame(1, SaleLine::query()->whereNotNull('cost_status')->count());
     }
 
     private function receiveCable(int $quantity, string $unitCost): void
