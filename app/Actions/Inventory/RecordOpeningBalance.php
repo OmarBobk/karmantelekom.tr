@@ -12,6 +12,7 @@ use App\Models\InventoryMovement;
 use App\Models\ProductDefinition;
 use App\Models\Store;
 use App\Models\User;
+use App\Services\Inventory\QuantityCostPool;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\UniqueConstraintViolationException;
 use Illuminate\Support\Facades\Gate;
@@ -76,7 +77,7 @@ class RecordOpeningBalance
                     }
 
                     $balance = $this->ledger->lockBalance($store, $locked);
-                    $balance->update(['quantity' => $quantity]);
+                    QuantityCostPool::setQuantity($balance, $quantity);
 
                     return [
                         'type' => MovementType::OPENING_BALANCE,

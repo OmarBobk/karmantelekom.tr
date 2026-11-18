@@ -7,6 +7,7 @@ namespace App\Actions\Purchasing;
 use App\Actions\Inventory\InventoryLedger;
 use App\Actions\Inventory\UnitIdentity;
 use App\Enums\AdjustmentReason;
+use App\Enums\Currency;
 use App\Enums\MovementType;
 use App\Enums\PurchaseStatus;
 use App\Enums\UnitCondition;
@@ -22,6 +23,8 @@ use App\Models\PurchaseReceiptUnit;
 use App\Models\Store;
 use App\Models\User;
 use App\Services\Idempotency;
+use App\Services\Inventory\QuantityCostPool;
+use App\Services\Purchasing\Money;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Database\UniqueConstraintViolationException;
@@ -126,7 +129,14 @@ class ReceivePurchase
 
                     if (! $definition->tracking_mode->tracksIndividualItems()) {
                         $balance = $this->inventoryLedger->lockBalance($store, $definition);
-                        $balance->increment('quantity', $line->quantity);
+                        $unitCostMinor = Money::fromDecimal($line->unit_cost);
+                        $addedCost = Money::multiply($line->quantity, $unitCostMinor);
+                        QuantityCostPool::increase(
+                            $balance,
+                            $line->quantity,
+                            $locked->currency instanceof Currency ? $locked->currency : Currency::from((string) $locked->currency),
+                            $addedCost,
+                        );
 
                         $this->inventoryLedger->apply($actor, $store, $definition, "receipt:{$receipt->id}:{$receiptLine->id}", $fingerprint, [
                             ...$movement,

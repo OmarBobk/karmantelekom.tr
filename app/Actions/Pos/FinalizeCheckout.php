@@ -15,6 +15,8 @@ use App\Enums\CashMovementType;
 use App\Enums\CheckoutAttemptStatus;
 use App\Enums\Currency;
 use App\Enums\MovementType;
+use App\Enums\QuantityCostStatus;
+use App\Enums\SaleLineCostStatus;
 use App\Enums\SalePaymentMethod;
 use App\Enums\TrackingMode;
 use App\Enums\UnitStatus;
@@ -31,11 +33,14 @@ use App\Models\InventoryUnit;
 use App\Models\ProductDefinition;
 use App\Models\Sale;
 use App\Models\SaleLine;
+use App\Models\SaleLineCostFact;
 use App\Models\SaleNumberSequence;
 use App\Models\SalePayment;
 use App\Models\Store;
 use App\Models\User;
 use App\Services\Idempotency;
+use App\Services\Inventory\DeviceSaleCost;
+use App\Services\Inventory\QuantityCostPool;
 use App\Services\Purchasing\LocalizedMoney;
 use App\Services\Purchasing\Money;
 use Illuminate\Auth\Access\AuthorizationException;
@@ -201,11 +206,29 @@ class FinalizeCheckout
         ]);
 
         $ordered = collect($lines)->sortBy([['definition_id', 'asc'], ['key', 'asc']])->values();
+        $networkExcluded = $reservation !== null;
 
         foreach ($ordered as $index => $line) {
             $definition = $definitions->get((int) $line['definition_id']);
             $unit = $line['unit_id'] === null ? null : $units->get((int) $line['unit_id']);
             $isDiscounted = (int) $line['unit_price'] < (int) $line['list_unit_price'];
+            $costSnapshot = $networkExcluded
+                ? [
+                    'cost_status' => SaleLineCostStatus::EXCLUDED_NETWORK,
+                    'cost_currency' => null,
+                    'cost_amount' => null,
+                    'cost_basis' => null,
+                    'cost_basis_version' => QuantityCostPool::BASIS_VERSION,
+                    'cost_unknown_reason' => null,
+                    'cost_exclusion_reason' => 'network_reservation',
+                    'pool_quantity_before' => null,
+                    'pool_cost_total_before' => null,
+                    'cost_declaration_id' => null,
+                    'facts' => [],
+                ]
+                : ($unit === null
+                    ? $this->quantityCostSnapshot($balances->get($definition->id), (int) $line['quantity'])
+                    : $this->deviceCostSnapshot($unit));
 
             $saleLine = SaleLine::query()->create([
                 'sale_id' => $sale->id,
@@ -230,7 +253,24 @@ class FinalizeCheckout
                 'discount_basis_points' => $isDiscounted ? ($line['discount_basis_points'] ?? null) : null,
                 'discount_lowest_unit_price' => $isDiscounted && isset($line['lowest_unit_price']) ? Money::toDecimal((int) $line['lowest_unit_price']) : null,
                 'discounted_by' => $isDiscounted ? ($line['discounted_by'] ?? $locked->user_id) : null,
+                'cost_status' => $costSnapshot['cost_status'],
+                'cost_currency' => $costSnapshot['cost_currency'],
+                'cost_amount' => $costSnapshot['cost_amount'],
+                'cost_basis' => $costSnapshot['cost_basis'],
+                'cost_basis_version' => $costSnapshot['cost_basis_version'],
+                'cost_unknown_reason' => $costSnapshot['cost_unknown_reason'],
+                'cost_exclusion_reason' => $costSnapshot['cost_exclusion_reason'],
+                'pool_quantity_before' => $costSnapshot['pool_quantity_before'],
+                'pool_cost_total_before' => $costSnapshot['pool_cost_total_before'],
+                'cost_declaration_id' => $costSnapshot['cost_declaration_id'],
             ]);
+
+            foreach ($costSnapshot['facts'] as $fact) {
+                SaleLineCostFact::query()->create([
+                    ...$fact,
+                    'sale_line_id' => $saleLine->id,
+                ]);
+            }
 
             $movement = [
                 'type' => MovementType::SALE,
@@ -242,11 +282,12 @@ class FinalizeCheckout
 
             if ($unit === null) {
                 $balance = $balances->get($definition->id);
-                $balance->decrement('quantity', (int) $line['quantity']);
+                $soldQty = (int) $line['quantity'];
+                QuantityCostPool::decrease($balance, $soldQty);
 
                 $this->inventoryLedger->apply($actor, $store, $definition, "sale:{$sale->id}:{$saleLine->id}", $fingerprint, [
                     ...$movement,
-                    'quantity_change' => -(int) $line['quantity'],
+                    'quantity_change' => -$soldQty,
                     'quantity_after' => $balance->quantity,
                 ]);
 
@@ -589,5 +630,103 @@ class FinalizeCheckout
         } catch (Throwable) {
             // The original exception is more useful than a failure to record it.
         }
+    }
+
+    /**
+     * Read-only recorded-cost snapshot for a quantity line before the pool is decreased.
+     *
+     * @return array<string, mixed>
+     */
+    private function quantityCostSnapshot(InventoryBalance $balance, int $soldQuantity): array
+    {
+        $quantityBefore = (int) $balance->quantity;
+        $status = $balance->cost_status instanceof QuantityCostStatus
+            ? $balance->cost_status
+            : QuantityCostStatus::from((string) $balance->cost_status);
+
+        $poolTotalBefore = $status === QuantityCostStatus::KNOWN ? $balance->cost_total : null;
+
+        // Continuity marker on the balance — not coincident quantity/total matching.
+        $declarationId = $status === QuantityCostStatus::KNOWN
+            ? $balance->active_cost_declaration_id
+            : null;
+
+        $base = [
+            'cost_basis' => 'quantity_wac',
+            'cost_basis_version' => QuantityCostPool::BASIS_VERSION,
+            'cost_exclusion_reason' => null,
+            'pool_quantity_before' => $quantityBefore,
+            'pool_cost_total_before' => $poolTotalBefore,
+            'cost_declaration_id' => $declarationId,
+            'facts' => [],
+        ];
+
+        if ($status === QuantityCostStatus::KNOWN && $balance->cost_currency === Currency::TRY->value) {
+            $removed = QuantityCostPool::shareOutbound(
+                Money::fromDecimal((string) $balance->cost_total),
+                $quantityBefore,
+                $soldQuantity,
+            );
+
+            return [
+                ...$base,
+                'cost_status' => SaleLineCostStatus::KNOWN,
+                'cost_currency' => Currency::TRY->value,
+                'cost_amount' => Money::toDecimal($removed),
+                'cost_unknown_reason' => null,
+                'facts' => [[
+                    'fact_type' => 'quantity_share',
+                    'inclusion' => 'included',
+                    'category' => null,
+                    'currency' => Currency::TRY->value,
+                    'amount' => Money::toDecimal($removed),
+                    'purchase_receipt_unit_id' => null,
+                    'device_cost_entry_id' => null,
+                    'entry_reversed_at_sale' => false,
+                    'note' => 'pool_share',
+                ]],
+            ];
+        }
+
+        return [
+            ...$base,
+            'cost_status' => SaleLineCostStatus::UNKNOWN,
+            'cost_currency' => null,
+            'cost_amount' => null,
+            'cost_unknown_reason' => 'pool_unknown',
+            'facts' => [[
+                'fact_type' => 'quantity_share',
+                'inclusion' => 'unknown',
+                'category' => null,
+                'currency' => null,
+                'amount' => null,
+                'purchase_receipt_unit_id' => null,
+                'device_cost_entry_id' => null,
+                'entry_reversed_at_sale' => false,
+                'note' => 'pool_unknown',
+            ]],
+        ];
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function deviceCostSnapshot(InventoryUnit $unit): array
+    {
+        $result = DeviceSaleCost::snapshot($unit);
+
+        return [
+            'cost_status' => $result['status'],
+            'cost_currency' => $result['currency'],
+            'cost_amount' => $result['amount_minor'] === null ? null : Money::toDecimal($result['amount_minor']),
+            'cost_basis' => DeviceSaleCost::BASIS,
+            'cost_basis_version' => DeviceSaleCost::BASIS_VERSION,
+            'cost_unknown_reason' => $result['unknown_reason'],
+            'cost_exclusion_reason' => null,
+            'pool_quantity_before' => null,
+            'pool_cost_total_before' => null,
+            'cost_declaration_id' => null,
+            'facts' => $result['facts'],
+        ];
     }
 }

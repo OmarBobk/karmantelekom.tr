@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Livewire\Backend\Inventory;
 
+use App\Actions\Inventory\DeclareQuantityCost;
 use App\Actions\Inventory\FindUnitsByIdentifier;
 use App\Actions\Inventory\InventoryLedger;
 use App\Actions\Inventory\LocateDeviceForReconciliation;
@@ -15,11 +16,13 @@ use App\Actions\Inventory\RegisterOpeningUnit;
 use App\Actions\Inventory\RemoveUnit;
 use App\Actions\Storefront\SetStorefrontQuantity;
 use App\Enums\AdjustmentReason;
+use App\Enums\QuantityCostStatus;
 use App\Enums\UnitCondition;
 use App\Enums\UnitStatus;
 use App\Exceptions\Inventory\StaleUnitStateException;
 use App\Livewire\Backend\Concerns\SubmitsInventoryChanges;
 use App\Livewire\Backend\Concerns\UsesOperationalLocale;
+use App\Models\InventoryBalance;
 use App\Models\InventoryMovement;
 use App\Models\ProductDefinition;
 use App\Models\Purchase;
@@ -27,11 +30,14 @@ use App\Models\PurchaseReceiptLine;
 use App\Models\SaleLine;
 use App\Models\Store;
 use App\Models\StorefrontAllocation;
+use App\Services\Purchasing\Money;
 use Closure;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 use Illuminate\Support\Facades\Gate;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Url;
@@ -122,6 +128,17 @@ class ProductInventory extends Component
      */
     public string $storefrontQuantity = '0';
 
+    public string $declaredTotal = '';
+
+    public string $declareReason = '';
+
+    public bool $declareQuantityConfirmed = false;
+
+    #[Locked]
+    public ?int $declareExpectedQuantity = null;
+
+    public string $declareSubmissionKey = '';
+
     public function mount(Store $store, ProductDefinition $productDefinition): void
     {
         $this->authorize('viewInventory', $store);
@@ -132,6 +149,92 @@ class ProductInventory extends Component
         $this->unitCondition = UnitCondition::allowedFor($productDefinition->tracking_mode)[0]->value ?? '';
         $this->foundCondition = $this->unitCondition;
         $this->storefrontQuantity = (string) $this->storefrontAllocation();
+        $this->declareSubmissionKey = (string) Str::uuid();
+    }
+
+    public function beginDeclareCost(): void
+    {
+        $this->authorize('managePurchases', $this->store);
+
+        $balance = $this->quantityBalance();
+        $quantity = (int) ($balance?->quantity ?? 0);
+
+        if ($quantity < 1) {
+            throw ValidationException::withMessages([
+                'declaredTotal' => __('inventory.cost.errors.zero_quantity'),
+            ]);
+        }
+
+        $this->declareExpectedQuantity = $quantity;
+        $this->declareQuantityConfirmed = false;
+        $this->declaredTotal = $balance?->cost_status === QuantityCostStatus::KNOWN && $balance->cost_total !== null
+            ? Money::input(Money::fromDecimal($balance->cost_total))
+            : '';
+        $this->declareReason = '';
+        $this->declareSubmissionKey = (string) Str::uuid();
+        $this->resetErrorBag('declaredTotal', 'declareReason', 'declareQuantityConfirmed', 'expected_quantity');
+    }
+
+    public function declareCost(DeclareQuantityCost $declareQuantityCost): void
+    {
+        $this->authorize('managePurchases', $this->store);
+
+        if (! $this->declareQuantityConfirmed) {
+            throw ValidationException::withMessages([
+                'declareQuantityConfirmed' => __('inventory.cost.errors.confirm_required'),
+            ]);
+        }
+
+        if ($this->declareExpectedQuantity === null || $this->declareExpectedQuantity < 1) {
+            throw ValidationException::withMessages([
+                'declaredTotal' => __('inventory.cost.errors.zero_quantity'),
+            ]);
+        }
+
+        try {
+            $declareQuantityCost(
+                auth()->user(),
+                $this->store,
+                $this->definition,
+                $this->declareExpectedQuantity,
+                $this->declaredTotal,
+                $this->declareReason,
+                $this->declareSubmissionKey,
+            );
+        } catch (ValidationException $exception) {
+            $messages = $exception->errors();
+            $map = [
+                'declared_total' => 'declaredTotal',
+                'reason' => 'declareReason',
+                'expected_quantity' => 'declareExpectedQuantity',
+            ];
+            $remapped = [];
+
+            foreach ($messages as $field => $errors) {
+                $remapped[$map[$field] ?? $field] = $errors;
+            }
+
+            if (isset($remapped['declareExpectedQuantity'])) {
+                $balance = $this->quantityBalance();
+                $this->declareExpectedQuantity = (int) ($balance?->quantity ?? 0);
+                $this->declareQuantityConfirmed = false;
+            }
+
+            throw ValidationException::withMessages($remapped);
+        }
+
+        $this->declareSubmissionKey = (string) Str::uuid();
+        $this->declareQuantityConfirmed = false;
+        $this->declareReason = '';
+        $this->dispatch('notify', ['type' => 'success', 'message' => __('inventory.cost.saved')]);
+    }
+
+    private function quantityBalance(): ?InventoryBalance
+    {
+        return InventoryBalance::query()
+            ->where('store_id', $this->store->id)
+            ->where('product_definition_id', $this->definition->id)
+            ->first();
     }
 
     public function saveStorefrontQuantity(SetStorefrontQuantity $setStorefrontQuantity): void
@@ -464,10 +567,17 @@ class ProductInventory extends Component
                 ->paginate(25, pageName: 'units')
             : null;
 
+        $balance = $tracksUnits ? null : $this->quantityBalance();
+        $quantity = (int) ($balance?->quantity ?? 0);
+        $canDeclareCost = ! $tracksUnits && Gate::allows('managePurchases', $this->store);
+
         return view('livewire.backend.inventory.product-inventory', [
             'product' => $definition,
             'tracksUnits' => $tracksUnits,
-            'quantity' => (int) ($this->store->inventoryBalances()->where('product_definition_id', $definition->id)->value('quantity') ?? 0),
+            'quantity' => $quantity,
+            'costStatus' => $balance?->cost_status ?? QuantityCostStatus::EMPTY,
+            'costTotal' => $balance?->cost_total,
+            'costCurrency' => $balance?->cost_currency,
             'availableUnits' => $tracksUnits
                 ? $this->store->units()->where('product_definition_id', $definition->id)->where('status', UnitStatus::AVAILABLE)->count()
                 : 0,
@@ -475,6 +585,7 @@ class ProductInventory extends Component
             'movements' => $movements,
             'units' => $units,
             'canAdjust' => Gate::allows('adjustInventory', $this->store),
+            'canDeclareCost' => $canDeclareCost,
             'canAllocateStorefront' => ! $tracksUnits && Gate::allows('allocateStorefrontStock', $this->store),
             'storefrontAllocated' => $tracksUnits ? 0 : $this->storefrontAllocation(),
             'setupOpen' => $this->store->refresh()->inventorySetupIsOpen(),

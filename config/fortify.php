@@ -88,7 +88,8 @@ return [
 
     'prefix' => '',
 
-    'domain' => config('app.url'),
+    // Host only — APP_URL may include a port for local artisan serve, which must not be part of the route domain.
+    'domain' => parse_url((string) config('app.url'), PHP_URL_HOST) ?: null,
 
     /*
     |--------------------------------------------------------------------------

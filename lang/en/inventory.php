@@ -268,4 +268,33 @@ return [
         'confirm' => 'Remove this unit from available stock?',
         'already_removed' => 'This unit has been removed from stock.',
     ],
+
+    'cost' => [
+        'title' => 'Recorded cost of current quantity',
+        'status' => 'Cost status',
+        'statuses' => [
+            'empty' => 'Empty',
+            'known' => 'Known (whole pool)',
+            'unknown' => 'Unknown',
+        ],
+        'current_quantity' => 'Current on-hand quantity',
+        'pool_total' => 'Recorded pool total',
+        'declare' => 'Declare total cost',
+        'declare_help' => 'Enter the total TRY recorded cost for every unit currently on hand. This sets the known pool for future sales only. It does not change completed sales.',
+        'confirm_quantity' => 'I confirm the quantity above is still correct',
+        'declared_total' => 'Total TRY cost of current quantity',
+        'reason' => 'Reason',
+        'submit' => 'Save declaration',
+        'fields' => [
+            'reason' => 'reason',
+        ],
+        'errors' => [
+            'declared_total_invalid' => 'Enter a valid TRY amount for the total recorded cost.',
+            'zero_quantity' => 'There is no on-hand quantity to declare a cost for.',
+            'quantity_changed' => 'Stock is now :quantity. Review the quantity and declare again.',
+            'reason_required' => 'Enter a reason for this cost declaration.',
+            'confirm_required' => 'Confirm the current quantity before declaring its cost.',
+        ],
+        'saved' => 'Recorded cost declared for the current quantity.',
+    ],
 ];

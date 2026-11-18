@@ -67,6 +67,64 @@
         </form>
     @endif
 
+    @if (! $tracksUnits && $canDeclareCost)
+        <section class="space-y-4 rounded-xl bg-white p-5 shadow-sm ring-1 ring-gray-200" aria-labelledby="cost-title">
+            <div>
+                <h2 id="cost-title" class="text-base font-semibold text-gray-900">{{ __('inventory.cost.title') }}</h2>
+                <p class="text-xs text-gray-500">{{ __('inventory.cost.declare_help') }}</p>
+            </div>
+            <dl class="grid gap-2 text-sm text-gray-700 sm:grid-cols-3">
+                <div>
+                    <dt class="text-gray-500">{{ __('inventory.cost.current_quantity') }}</dt>
+                    <dd class="font-mono tabular-nums" dir="ltr">{{ $quantity }}</dd>
+                </div>
+                <div>
+                    <dt class="text-gray-500">{{ __('inventory.cost.status') }}</dt>
+                    <dd>{{ __('inventory.cost.statuses.'.$costStatus->value) }}</dd>
+                </div>
+                <div>
+                    <dt class="text-gray-500">{{ __('inventory.cost.pool_total') }}</dt>
+                    <dd class="font-mono tabular-nums" dir="ltr">
+                        @if ($costStatus === \App\Enums\QuantityCostStatus::KNOWN && $costTotal !== null)
+                            {{ $costTotal }} {{ $costCurrency }}
+                        @else
+                            —
+                        @endif
+                    </dd>
+                </div>
+            </dl>
+            @if ($quantity > 0)
+                @if ($declareExpectedQuantity === null)
+                    <button type="button" wire:click="beginDeclareCost" class="min-h-11 rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700">{{ __('inventory.cost.declare') }}</button>
+                @else
+                    <form wire:submit="declareCost" class="space-y-4">
+                        <p class="text-sm text-gray-700">{{ __('inventory.cost.current_quantity') }}: <bdi dir="ltr" class="font-mono font-semibold">{{ $declareExpectedQuantity }}</bdi></p>
+                        <label class="flex min-h-11 items-center gap-2 text-sm text-gray-800">
+                            <input type="checkbox" wire:model="declareQuantityConfirmed" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                            <span>{{ __('inventory.cost.confirm_quantity') }}</span>
+                        </label>
+                        @error('declareQuantityConfirmed') <p class="text-sm text-red-600">{{ $message }}</p> @enderror
+                        <div>
+                            <label for="declared-total" class="block text-sm font-medium text-gray-700">{{ __('inventory.cost.declared_total') }}</label>
+                            <input id="declared-total" type="text" inputmode="decimal" dir="ltr" wire:model="declaredTotal" @error('declaredTotal') aria-invalid="true" @enderror class="mt-1 block min-h-11 w-full rounded-lg border-gray-300 font-mono shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            @error('declaredTotal') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                            @error('declareExpectedQuantity') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                        </div>
+                        <div>
+                            <label for="declare-reason" class="block text-sm font-medium text-gray-700">{{ __('inventory.cost.reason') }}</label>
+                            <textarea id="declare-reason" rows="2" wire:model="declareReason" @error('declareReason') aria-invalid="true" @enderror class="mt-1 block w-full rounded-lg border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500"></textarea>
+                            @error('declareReason') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                        </div>
+                        <button type="submit" wire:loading.attr="disabled" wire:target="declareCost" class="min-h-11 w-full rounded-lg bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 disabled:opacity-60">
+                            <span wire:loading.remove wire:target="declareCost">{{ __('inventory.cost.submit') }}</span>
+                            <span wire:loading wire:target="declareCost">{{ __('inventory.form.saving') }}</span>
+                        </button>
+                    </form>
+                @endif
+            @endif
+        </section>
+    @endif
+
     <div class="grid gap-6 lg:grid-cols-5">
         <div class="space-y-6 lg:col-span-2">
             @if (! $canAdjust)

@@ -13,6 +13,7 @@ use App\Models\InventoryMovement;
 use App\Models\ProductDefinition;
 use App\Models\Store;
 use App\Models\User;
+use App\Services\Inventory\QuantityCostPool;
 use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
@@ -88,8 +89,8 @@ class RecordStockCount
                         throw new CountMatchesBalanceException($prior);
                     }
 
-                    $balance->update(['quantity' => $countedQuantity]);
                     $difference = $countedQuantity - $prior;
+                    QuantityCostPool::setQuantity($balance, $countedQuantity);
 
                     return [
                         'type' => $difference > 0 ? MovementType::ADJUSTMENT_INCREASE : MovementType::ADJUSTMENT_DECREASE,

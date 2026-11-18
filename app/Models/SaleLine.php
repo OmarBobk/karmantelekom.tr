@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Enums\SaleLineCostStatus;
 use App\Enums\TrackingMode;
 use App\Services\Purchasing\Money;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 use LogicException;
 
@@ -38,6 +40,16 @@ use LogicException;
  * @property int|null $discount_basis_points The employee's percentage limit when it applied.
  * @property string|null $discount_lowest_unit_price The lowest unit price the limit allowed at review.
  * @property int|null $discounted_by
+ * @property SaleLineCostStatus|null $cost_status
+ * @property string|null $cost_currency
+ * @property string|null $cost_amount
+ * @property string|null $cost_basis
+ * @property string|null $cost_basis_version
+ * @property string|null $cost_unknown_reason
+ * @property string|null $cost_exclusion_reason
+ * @property int|null $pool_quantity_before
+ * @property string|null $pool_cost_total_before
+ * @property int|null $cost_declaration_id
  */
 class SaleLine extends Model
 {
@@ -53,6 +65,8 @@ class SaleLine extends Model
         'product_name', 'product_model', 'sku', 'barcode', 'unit_identifier', 'unit_condition',
         'quantity', 'list_unit_price', 'unit_price', 'unit_discount', 'discount_amount', 'line_total', 'adjustment_reason',
         'discount_limit', 'discount_basis_points', 'discount_lowest_unit_price', 'discounted_by',
+        'cost_status', 'cost_currency', 'cost_amount', 'cost_basis', 'cost_basis_version',
+        'cost_unknown_reason', 'cost_exclusion_reason', 'pool_quantity_before', 'pool_cost_total_before', 'cost_declaration_id',
     ];
 
     protected static function booted(): void
@@ -68,10 +82,17 @@ class SaleLine extends Model
     {
         return [
             'tracking_mode' => TrackingMode::class,
+            'cost_status' => SaleLineCostStatus::class,
             'quantity' => 'integer',
             'line_number' => 'integer',
             'discount_basis_points' => 'integer',
+            'pool_quantity_before' => 'integer',
         ];
+    }
+
+    public function costAmountMinor(): ?int
+    {
+        return $this->cost_amount === null ? null : Money::fromDecimal($this->cost_amount);
     }
 
     public function isDiscounted(): bool
@@ -129,5 +150,21 @@ class SaleLine extends Model
     public function movements(): MorphMany
     {
         return $this->morphMany(InventoryMovement::class, 'reference');
+    }
+
+    /**
+     * @return HasMany<SaleLineCostFact, $this>
+     */
+    public function costFacts(): HasMany
+    {
+        return $this->hasMany(SaleLineCostFact::class);
+    }
+
+    /**
+     * @return BelongsTo<InventoryCostDeclaration, $this>
+     */
+    public function costDeclaration(): BelongsTo
+    {
+        return $this->belongsTo(InventoryCostDeclaration::class, 'cost_declaration_id');
     }
 }
