@@ -2,7 +2,7 @@
 
 namespace App\Http\Responses;
 
-use App\Models\Cart;
+use App\Models\Store;
 use Illuminate\Support\Facades\Auth;
 use Laravel\Fortify\Contracts\LoginResponse as LoginResponseContract;
 
@@ -16,12 +16,20 @@ class LoginResponse implements LoginResponseContract
 
         $user = Auth::user();
 
-        // Check if user is a shop owner without a shop
-        if ($user && $user->hasRole('shop_owner') && !$user->ownedShop) {
+        // Shop owners who have not created a shop yet must finish onboarding first.
+        if ($user && $user->hasRole('shop_owner') && ! $user->ownedShop) {
             return redirect()->route('shop.create');
         }
 
-        // Default redirect to main page
+        // Backend staff land on the subscriber subdomain home (owners are redirected onward).
+        if ($user && $user->hasRole(['admin', 'salesperson'])) {
+            $destination = $user->can('viewOperationsDashboard', Store::class)
+                ? route('subdomain.operations.dashboard')
+                : route('subdomain.main');
+
+            return redirect()->intended($destination);
+        }
+
         return redirect()->intended(route('main'));
     }
 }
