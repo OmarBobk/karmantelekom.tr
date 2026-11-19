@@ -10,6 +10,7 @@ use App\Models\Store;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Livewire\Livewire;
+use Mockery;
 use PHPUnit\Framework\Attributes\Test;
 use Spatie\Permission\Models\Permission;
 use Spatie\Permission\Models\Role;
@@ -112,5 +113,43 @@ class DashboardHomeTest extends TestCase
             ->get(route('subdomain.operations.dashboard'))
             ->assertOk()
             ->assertSeeLivewire(OperationsDashboard::class);
+    }
+
+    #[Test]
+    public function empty_analytics_user_types_do_not_500_the_legacy_home(): void
+    {
+        // Production 500: firstWhere(... )['activeUsers'] was null assigned to int $totalNewUsers (TypeError).
+        config([
+            'analytics.property_id' => '123456',
+            'analytics.service_account_credentials_json' => [
+                'type' => 'service_account',
+                'project_id' => 'test',
+                'client_email' => 'analytics@test.local',
+                'private_key' => "-----BEGIN RSA PRIVATE KEY-----\nfake\n-----END RSA PRIVATE KEY-----\n",
+            ],
+        ]);
+
+        $fake = Mockery::mock();
+        $fake->shouldReceive('fetchUserTypes')->andReturn(collect([]));
+        $fake->shouldReceive('fetchTotalVisitorsAndPageViews')->andReturn(collect([
+            ['date' => now(), 'activeUsers' => 1, 'screenPageViews' => 10],
+        ]));
+        $fake->shouldReceive('fetchVisitorsAndPageViews')->andReturn(collect([
+            ['pageTitle' => 'Home', 'activeUsers' => 1, 'screenPageViews' => 10],
+        ]));
+        $fake->shouldReceive('fetchVisitorsAndPageViewsByDate')->andReturn(collect([
+            ['date' => now(), 'activeUsers' => 1, 'screenPageViews' => 10],
+        ]));
+        $fake->shouldReceive('fetchMostVisitedPages')->andReturn(collect([]));
+        $this->app->instance('laravel-analytics', $fake);
+
+        $salesperson = User::factory()->create()->assignRole('salesperson');
+
+        Livewire::actingAs($salesperson)
+            ->test(DashboardComponent::class)
+            ->assertOk()
+            ->assertSet('totalNewUsers', 0)
+            ->assertSet('totalReturningUsers', 0)
+            ->assertSet('totalVisitors', 10);
     }
 }
