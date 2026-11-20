@@ -186,6 +186,12 @@ The identifier used for a lookup must not be confused with the identity of the p
 
 An IMEI identifies an individual device, not every device of the same model.
 
+#### Internal barcodes (approved)
+
+When an authorized catalog user (`manage_catalog`) saves a new product definition with a blank barcode, the system assigns one shared internal barcode: a six-digit ASCII decimal string from `200001` through `299999` inclusive, stored in `product_definitions.barcode`. A supplied manufacturer barcode is kept as entered, including leading zeros. Ordinary edits of an existing blank barcode leave it blank; an explicit authorized action generates once and returns the same persisted code on retry. A stale edit form that still shows a blank barcode must not clear a code assigned after the form was opened.
+
+Allocation skips values already used as any catalog SKU or barcode (including inactive definitions) or as a stored unit identifier across both branches, and skips the SKU submitted on the same create. Manual SKUs and barcodes inside the band remain allowed when free. New or changed identifiers inside the band that would make the same number identify a different catalog or device target are rejected. Outside the band, existing per-column uniqueness and POS chooser behavior for genuinely ambiguous legacy or device matches are unchanged. Assignment never changes stock, prices, or device tracking. Label printing and bulk backfill are deferred.
+
 ### 4.4 Product Catalog Container
 
 The system must provide a reusable catalog of known product definitions.
