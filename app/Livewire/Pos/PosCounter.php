@@ -41,6 +41,7 @@ use Illuminate\Database\Eloquent\ModelNotFoundException;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
+use Livewire\Attributes\Json;
 use Livewire\Attributes\Locked;
 use Livewire\Component;
 
@@ -268,43 +269,44 @@ class PosCounter extends Component
         }
 
         $matches = $resolver(auth()->user(), $store, $code);
-        $this->searchResults = [];
-        $this->searchTerm = '';
-
-        if ($matches === []) {
-            $this->notify('error', __('pos.scan.not_found', ['code' => $code]));
-
-            return;
-        }
-
-        if (count($matches) === 1 && $matches[0]['available'] && $matches[0]['kind'] === 'definition') {
-            $this->addTarget($matches[0]);
-
-            return;
-        }
-
-        if (count($matches) === 1 && $matches[0]['available'] && $matches[0]['kind'] === 'unit' && in_array($matches[0]['match'], ['imei', 'serial'], true)) {
-            $this->addTarget($matches[0]);
-
-            return;
-        }
-
-        if (count($matches) === 1 && ! $matches[0]['available']) {
-            $this->notify('error', self::unavailableMessage($matches[0]));
-
-            return;
-        }
-
-        $this->choices = $matches;
-        $this->choicesFor = $code;
-        $this->dispatch('open-dialog', id: self::CHOOSER_DIALOG);
+        $this->clearSearchFeedback();
+        $this->applyResolvedMatches($matches, $code, __('pos.scan.not_found', ['code' => $code]));
     }
 
-    public function search(ResolveCounterCode $resolver, string $term): void
+    /**
+     * Compact active catalog for Alpine local suggestions. Skips a full counter re-render.
+     *
+     * #[Json] invokes the method directly (no container DI), so the resolver is resolved here.
+     *
+     * @return array{items: list<array{id: int, name: string, model: ?string, sku: ?string, barcode: ?string}>, truncated: bool}
+     */
+    #[Json]
+    public function productIndex(): array
+    {
+        return app(ResolveCounterCode::class)->productIndex(auth()->user(), $this->authorizeCounter());
+    }
+
+    /**
+     * Lightweight server suggestions while the local index is cold or missing a match.
+     *
+     * @return list<array{id: int, name: string, model: ?string, sku: ?string, barcode: ?string, match: string}>
+     */
+    #[Json]
+    public function suggestProducts(string $term): array
+    {
+        return app(ResolveCounterCode::class)->suggest(auth()->user(), $this->authorizeCounter(), mb_substr(Str::trim($term), 0, 100));
+    }
+
+    /**
+     * Apply the existing authorized scan/chooser path for a product suggestion click.
+     */
+    public function selectSuggestion(ResolveCounterCode $resolver, int $definitionId): void
     {
         $store = $this->authorizeCounter();
-        $this->searchTerm = mb_substr(Str::trim($term), 0, 100);
-        $this->searchResults = $resolver->search(auth()->user(), $store, $this->searchTerm);
+        $this->clearSearchFeedback();
+        $matches = $resolver->forDefinition(auth()->user(), $store, $definitionId);
+        $label = $matches[0]['name'] ?? (string) $definitionId;
+        $this->applyResolvedMatches($matches, $label, __('pos.errors.item_unavailable'));
     }
 
     public function choose(ResolveCounterCode $resolver, int $definitionId, ?int $unitId = null): void
@@ -320,8 +322,7 @@ class PosCounter extends Component
 
         $this->addTarget($target);
         $this->choices = [];
-        $this->searchResults = [];
-        $this->searchTerm = '';
+        $this->clearSearchFeedback();
         $this->dispatch('close-dialog', id: self::CHOOSER_DIALOG);
     }
 
@@ -1026,6 +1027,46 @@ class PosCounter extends Component
         }
 
         return __('pos.errors.out_of_stock_named', ['name' => $match['name']]);
+    }
+
+    /**
+     * @param  list<array<string, mixed>>  $matches
+     */
+    private function applyResolvedMatches(array $matches, string $chooserLabel, string $emptyMessage): void
+    {
+        if ($matches === []) {
+            $this->notify('error', $emptyMessage);
+
+            return;
+        }
+
+        if (count($matches) === 1 && $matches[0]['available'] && $matches[0]['kind'] === 'definition') {
+            $this->addTarget($matches[0]);
+
+            return;
+        }
+
+        if (count($matches) === 1 && $matches[0]['available'] && $matches[0]['kind'] === 'unit' && in_array($matches[0]['match'], ['imei', 'serial'], true)) {
+            $this->addTarget($matches[0]);
+
+            return;
+        }
+
+        if (count($matches) === 1 && ! $matches[0]['available']) {
+            $this->notify('error', self::unavailableMessage($matches[0]));
+
+            return;
+        }
+
+        $this->choices = $matches;
+        $this->choicesFor = $chooserLabel;
+        $this->dispatch('open-dialog', id: self::CHOOSER_DIALOG);
+    }
+
+    private function clearSearchFeedback(): void
+    {
+        $this->searchResults = [];
+        $this->searchTerm = '';
     }
 
     /**

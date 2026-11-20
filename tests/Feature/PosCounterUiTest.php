@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature;
 
+use App\Actions\Inventory\RecordOpeningBalance;
 use App\Actions\Pos\ResolveTerminalPayment;
 use App\Enums\CheckoutAttemptStatus;
 use App\Enums\InspectionOutcome;
@@ -19,6 +20,7 @@ use App\Models\Sale;
 use App\Models\User;
 use App\Services\Purchasing\LocalizedMoney;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Str;
 use Livewire\Features\SupportTesting\Testable;
 use Livewire\Livewire;
 use PHPUnit\Framework\Attributes\Test;
@@ -138,26 +140,118 @@ class PosCounterUiTest extends TestCase
     }
 
     #[Test]
-    public function a_scan_queued_behind_a_name_search_adds_one_unit_and_replaces_the_search_feedback(): void
+    public function the_product_index_and_suggestions_stay_compact_and_do_not_touch_the_cart(): void
     {
-        $noMatch = __('pos.scan.no_search_results', ['term' => $this->cable->barcode]);
+        $internal = ProductDefinition::factory()->priced('19.90')->create([
+            'name' => 'Screen protector',
+            'tracking_mode' => TrackingMode::QUANTITY,
+            'barcode' => '200001',
+            'sku' => 'SCR-PROT-01',
+        ]);
+        app(RecordOpeningBalance::class)($this->owner, $this->store, $internal, 5, null, (string) Str::uuid());
 
+        $leadingZero = ProductDefinition::factory()->priced('9.90')->create([
+            'name' => 'Glass wipe',
+            'model' => 'عبوة',
+            'tracking_mode' => TrackingMode::QUANTITY,
+            'barcode' => '0012345678901',
+            'sku' => 'WIPE-01',
+        ]);
+        app(RecordOpeningBalance::class)($this->owner, $this->store, $leadingZero, 3, null, (string) Str::uuid());
+
+        $headset = ProductDefinition::factory()->priced('1500.00')->create([
+            'name' => 'Headset Pro',
+            'tracking_mode' => TrackingMode::SERIALIZED,
+            'barcode' => '8690000000024',
+            'sku' => 'HS-PRO',
+        ]);
+        $this->registerDevice($this->owner, $this->store, $headset, null, 'HS-001', condition: UnitCondition::NEW);
+
+        $counter = $this->counter()
+            ->call('productIndex')
+            ->assertReturned(function (array $payload) use ($internal, $leadingZero, $headset): bool {
+                $items = collect($payload['items']);
+                $internalRow = $items->firstWhere('id', $internal->id);
+                $zeroRow = $items->firstWhere('id', $leadingZero->id);
+
+                return $payload['truncated'] === false
+                    && $items->contains('id', $this->cable->id)
+                    && $items->contains('id', $internal->id)
+                    && $items->contains('id', $leadingZero->id)
+                    && $items->contains('id', $headset->id)
+                    && is_array($internalRow)
+                    && $internalRow['name'] === 'Screen protector'
+                    && $internalRow['sku'] === 'SCR-PROT-01'
+                    && $internalRow['barcode'] === '200001'
+                    && $zeroRow['barcode'] === '0012345678901'
+                    && ! array_key_exists('stock', $internalRow)
+                    && ! array_key_exists('price_minor', $internalRow);
+            })
+            ->assertSet('cart', []);
+
+        $counter->call('suggestProducts', 'USB')
+            ->assertReturned(fn (array $rows): bool => count($rows) === 1
+                && $rows[0]['id'] === $this->cable->id
+                && $rows[0]['match'] === 'name'
+                && $rows[0]['barcode'] === $this->cable->barcode
+                && ! array_key_exists('stock', $rows[0]))
+            ->assertSet('cart', []);
+
+        $counter->call('suggestProducts', '200001')
+            ->assertReturned(fn (array $rows): bool => count($rows) === 1 && $rows[0]['id'] === $internal->id && $rows[0]['match'] === 'barcode' && $rows[0]['barcode'] === '200001');
+
+        $counter->call('suggestProducts', '0012345678901')
+            ->assertReturned(fn (array $rows): bool => count($rows) === 1 && $rows[0]['id'] === $leadingZero->id && $rows[0]['barcode'] === '0012345678901');
+
+        $counter->call('suggestProducts', 'عبوة')
+            ->assertReturned(fn (array $rows): bool => count($rows) === 1 && $rows[0]['id'] === $leadingZero->id && $rows[0]['match'] === 'name');
+
+        $counter->call('suggestProducts', 'CBL-USBC-1M')
+            ->assertReturned(fn (array $rows): bool => count($rows) === 1 && $rows[0]['id'] === $this->cable->id && $rows[0]['match'] === 'sku');
+
+        $fresh = ProductDefinition::factory()->priced('4.50')->create([
+            'name' => 'Brand new dongle',
+            'tracking_mode' => TrackingMode::QUANTITY,
+            'barcode' => '200002',
+            'sku' => 'DONGLE-NEW',
+        ]);
+
+        $counter->call('suggestProducts', 'dongle')
+            ->assertReturned(fn (array $rows): bool => collect($rows)->contains(fn (array $row): bool => $row['id'] === $fresh->id))
+            ->assertSet('cart', []);
+
+        $counter->call('selectSuggestion', $internal->id)
+            ->assertSet('cart.d'.$internal->id.'.quantity', 1)
+            ->assertSet('searchTerm', '')
+            ->call('selectSuggestion', $headset->id)
+            ->assertDispatched('open-dialog', id: PosCounter::CHOOSER_DIALOG)
+            ->assertSet('cart.d'.$internal->id.'.quantity', 1)
+            ->assertSee('HS-001')
+            ->assertCount('choices', 1);
+    }
+
+    #[Test]
+    public function enter_during_a_pending_suggestion_still_adds_once_and_clears_search_feedback(): void
+    {
         $this->counter()
-            ->call('search', $this->cable->barcode)
-            ->assertSee($noMatch)
+            ->assertSeeHtml('data-pos-suggestions')
+            ->assertSeeHtml('x-show="pendingScans === 0"')
+            ->call('suggestProducts', $this->cable->barcode)
+            ->assertReturned(fn (array $rows): bool => count($rows) === 1 && $rows[0]['id'] === $this->cable->id)
+            ->assertSet('cart', [])
             ->call('scan', $this->cable->barcode)
             ->assertSet('cart.d'.$this->cable->id.'.quantity', 1)
             ->assertSet('searchTerm', '')
-            ->assertDontSee($noMatch)
-            ->assertSeeHtml('x-show="pendingScans === 0"')
+            ->assertSet('searchResults', [])
             ->assertNotDispatched('notify', fn (string $event, array $params): bool => ($params[0]['type'] ?? null) === 'error');
     }
 
     #[Test]
-    public function an_unknown_barcode_scanned_after_a_name_search_still_reports_it_was_not_found(): void
+    public function an_unknown_barcode_scanned_after_a_suggestion_lookup_still_reports_it_was_not_found(): void
     {
         $this->counter()
-            ->call('search', '8690000099999')
+            ->call('suggestProducts', '8690000099999')
+            ->assertReturned([])
             ->call('scan', '8690000099999')
             ->assertSet('cart', [])
             ->assertSet('searchTerm', '')

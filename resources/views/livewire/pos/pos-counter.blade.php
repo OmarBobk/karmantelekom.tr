@@ -18,6 +18,26 @@
         timer: null,
         pendingScans: 0,
         uncertain: false,
+        index: [],
+        indexReady: false,
+        indexTruncated: false,
+        indexError: false,
+        suggestions: [],
+        suggestionTerm: '',
+        suggestionLoading: false,
+        suggestionError: false,
+        searchGen: 0,
+        labels: {
+            results: @js(__('pos.scan.search_results', ['term' => '__TERM__'])),
+            empty: @js(__('pos.scan.no_search_results', ['term' => '__TERM__'])),
+            loading: @js(__('pos.scan.search_loading')),
+            error: @js(__('pos.scan.search_error')),
+            matchedBy: {
+                barcode: @js(__('pos.scan.matched_by.barcode')),
+                sku: @js(__('pos.scan.matched_by.sku')),
+                name: @js(__('pos.scan.matched_by.name')),
+            },
+        },
         init() {
             $wire.$intercept('finalize', ({ onSend, onFailure, onError, onSuccess }) => {
                 onSend(() => { this.uncertain = false; });
@@ -29,22 +49,159 @@
                     }
                 });
             });
-            this.$nextTick(() => this.$refs.code?.focus());
+            this.$nextTick(() => {
+                this.$refs.code?.focus();
+                this.loadIndex();
+            });
+        },
+        label(template, term) {
+            return template.replaceAll('__TERM__', term);
+        },
+        normalizeDigits(value) {
+            return String(value)
+                .replace(/[٠-٩]/g, (digit) => '٠١٢٣٤٥٦٧٨٩'.indexOf(digit))
+                .replace(/[۰-۹]/g, (digit) => '۰۱۲۳۴۵۶۷۸۹'.indexOf(digit));
+        },
+        async loadIndex() {
+            try {
+                const payload = await $wire.productIndex();
+                this.index = payload.items ?? [];
+                this.indexTruncated = !!payload.truncated;
+                this.indexReady = true;
+                this.indexError = false;
+                if (this.code.trim().length >= 2 && this.pendingScans === 0) {
+                    this.refreshSuggestions(this.code, ++this.searchGen);
+                }
+            } catch (e) {
+                this.indexError = true;
+                this.indexReady = false;
+            }
+        },
+        matchLocal(term) {
+            const raw = term.trim();
+            const normalized = this.normalizeDigits(raw);
+            const needle = raw.toLocaleLowerCase();
+            const results = [];
+
+            for (const product of this.index) {
+                let match = null;
+                const barcode = product.barcode == null ? null : String(product.barcode);
+                const sku = product.sku == null ? null : String(product.sku);
+
+                if (barcode !== null && (barcode === raw || barcode === normalized)) {
+                    match = 'barcode';
+                } else if (sku !== null && (sku === raw || sku === normalized)) {
+                    match = 'sku';
+                } else if (String(product.name).toLocaleLowerCase().includes(needle)
+                    || (product.model && String(product.model).toLocaleLowerCase().includes(needle))) {
+                    match = 'name';
+                }
+
+                if (match) {
+                    results.push({ ...product, match });
+                }
+
+                if (results.length >= 8) {
+                    break;
+                }
+            }
+
+            return results;
+        },
+        mergeSuggestions(localRows, serverRows) {
+            const merged = [];
+            const seen = new Set();
+
+            for (const row of [...localRows, ...serverRows]) {
+                if (seen.has(row.id)) {
+                    continue;
+                }
+                seen.add(row.id);
+                merged.push(row);
+                if (merged.length >= 8) {
+                    break;
+                }
+            }
+
+            return merged;
         },
         typed() {
             clearTimeout(this.timer);
+            const gen = ++this.searchGen;
             const term = this.code;
-            if (term.trim().length < 2) { return; }
-            this.timer = setTimeout(() => $wire.search(term), 350);
+
+            if (term.trim().length < 2) {
+                this.suggestions = [];
+                this.suggestionTerm = '';
+                this.suggestionLoading = false;
+                this.suggestionError = false;
+                return;
+            }
+
+            this.refreshSuggestions(term, gen);
+        },
+        refreshSuggestions(term, gen) {
+            this.suggestionError = false;
+            this.suggestionTerm = term;
+
+            if (this.indexReady) {
+                this.suggestions = this.matchLocal(term);
+                const needsServer = this.suggestions.length === 0 || this.indexTruncated;
+                if (! needsServer) {
+                    this.suggestionLoading = false;
+                    return;
+                }
+            } else {
+                this.suggestions = [];
+            }
+
+            this.suggestionLoading = true;
+            this.timer = setTimeout(async () => {
+                try {
+                    const rows = await $wire.suggestProducts(term);
+                    if (gen !== this.searchGen || this.pendingScans > 0) {
+                        return;
+                    }
+                    const local = this.indexReady ? this.matchLocal(term) : [];
+                    this.suggestions = this.indexTruncated || local.length === 0
+                        ? this.mergeSuggestions(local, rows ?? [])
+                        : local;
+                    this.suggestionTerm = term;
+                    this.suggestionLoading = false;
+                    this.suggestionError = false;
+                } catch (e) {
+                    if (gen !== this.searchGen || this.pendingScans > 0) {
+                        return;
+                    }
+                    this.suggestionLoading = false;
+                    this.suggestionError = this.suggestions.length === 0;
+                }
+            }, 350);
         },
         submit() {
             clearTimeout(this.timer);
+            this.searchGen++;
+            this.suggestions = [];
+            this.suggestionTerm = '';
+            this.suggestionLoading = false;
+            this.suggestionError = false;
             const value = this.code;
             this.code = '';
             if (value.trim() === '') { return; }
             this.pendingScans++;
             $wire.scan(value).finally(() => { this.pendingScans--; });
             this.$refs.code.focus();
+        },
+        pick(definitionId) {
+            clearTimeout(this.timer);
+            this.searchGen++;
+            this.suggestions = [];
+            this.suggestionTerm = '';
+            this.suggestionLoading = false;
+            this.suggestionError = false;
+            this.code = '';
+            $wire.selectSuggestion(definitionId);
+            this.$nextTick(() => this.$refs.code?.focus());
         },
         async checkStatus() {
             await $wire.checkStatus();
@@ -96,20 +253,47 @@
                     </div>
                 </fieldset>
 
-                {{-- A search sent before the scan answers first; hide it until the scan replaces it. --}}
-                <div x-show="pendingScans === 0">
-                @if ($searchResults !== [])
-                    <div class="mt-3" aria-live="polite">
-                        <p class="text-xs font-medium text-gray-600">{{ __('pos.scan.search_results', ['term' => $searchTerm]) }}</p>
-                        <ul class="mt-1 divide-y divide-gray-100 overflow-hidden rounded-lg ring-1 ring-gray-200">
-                            @foreach ($searchResults as $result)
-                                @include('livewire.pos.partials.target-option', ['option' => $result, 'keyPrefix' => 'search'])
-                            @endforeach
-                        </ul>
+                {{-- Suggestions stay local until Enter/click; hide while a scan is in flight so a late reply cannot replace it. --}}
+                <div x-show="pendingScans === 0" x-cloak>
+                    <div class="mt-3" x-show="suggestionLoading && suggestions.length === 0" aria-live="polite">
+                        <p class="text-sm text-gray-600" x-text="labels.loading"></p>
                     </div>
-                @elseif ($searchTerm !== '')
-                    <p class="mt-3 text-sm text-gray-600" aria-live="polite">{{ __('pos.scan.no_search_results', ['term' => $searchTerm]) }}</p>
-                @endif
+                    <div class="mt-3" x-show="!suggestionLoading && suggestionError && suggestions.length === 0" role="alert">
+                        <p class="text-sm text-red-700" x-text="labels.error"></p>
+                    </div>
+                    <div class="mt-3" x-show="suggestions.length > 0" aria-live="polite">
+                        <p class="text-xs font-medium text-gray-600" x-text="label(labels.results, suggestionTerm)"></p>
+                        <ul class="mt-1 divide-y divide-gray-100 overflow-hidden rounded-lg ring-1 ring-gray-200" data-pos-suggestions>
+                            <template x-for="item in suggestions" :key="item.id">
+                                <li>
+                                    <button
+                                        type="button"
+                                        class="flex min-h-14 w-full flex-wrap items-center gap-x-3 gap-y-1 px-3 py-2 text-start hover:bg-blue-50 focus-visible:bg-blue-50 focus-visible:outline-none"
+                                        x-on:click="pick(item.id)"
+                                    >
+                                        <span class="min-w-0 flex-1">
+                                            <span class="block font-medium text-gray-900">
+                                                <span x-text="item.name"></span>
+                                                <span class="text-gray-600" x-show="item.model"> · <span x-text="item.model"></span></span>
+                                            </span>
+                                            <span class="block text-sm text-gray-700">
+                                                <bdi dir="ltr" class="font-mono" x-show="item.match === 'barcode' && item.barcode" x-text="item.barcode"></bdi>
+                                                <bdi dir="ltr" class="font-mono" x-show="item.match === 'sku' && item.sku" x-text="item.sku"></bdi>
+                                                <span class="text-xs text-gray-500"> · <span x-text="labels.matchedBy[item.match] || labels.matchedBy.name"></span></span>
+                                            </span>
+                                        </span>
+                                    </button>
+                                </li>
+                            </template>
+                        </ul>
+                        <p class="mt-1 text-xs text-gray-500" x-show="suggestionLoading">{{ __('pos.scan.search_updating') }}</p>
+                    </div>
+                    <p
+                        class="mt-3 text-sm text-gray-600"
+                        aria-live="polite"
+                        x-show="!suggestionLoading && !suggestionError && suggestionTerm.trim().length >= 2 && suggestions.length === 0"
+                        x-text="label(labels.empty, suggestionTerm)"
+                    ></p>
                 </div>
             </form>
 

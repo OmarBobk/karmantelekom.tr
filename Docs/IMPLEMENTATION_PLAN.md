@@ -1383,12 +1383,21 @@ Inventory purchases, device costs, operating expenses, refunds, and payments mus
 - **Network margin attribution.** Network-linked sales remain wholly excluded until Omar approves inter-branch attribution.
 - **Backend shell direction.** Whether the storefront admin chrome follows the operational locale (Arabic RTL) or stays English LTR — deferred from batch 5.
 
-### Catalog batch: internal barcodes for handwriting (branch `feature/catalog-internal-barcodes`; review, Omar’s acceptance, merge, and application deployment **pending**)
+### Catalog batch: internal barcodes for handwriting (branch `feature/catalog-internal-barcodes`; merged via PR #39)
 
 - **Scope.** One PR separate from Phase 8 batch 7: auto-allocate shared internal barcodes `200001`–`299999` on blank create, one-click generate for existing blank definitions, confirmation dialog with large selectable LTR digits, create request-key replay, in-band conflict checks. No printing, label queue, bulk backfill, or new package.
 - **Approved rules.** Spec §4.3 internal barcodes (Omar). Preserve manufacturer barcodes and leading zeros; ordinary blank edits do not generate; stale blank forms cannot clear an assigned code; allocation skips catalog SKU/barcode and unit identifiers across both branches; exhaustion before any partial save.
 - **Implementation notes.** Migration `2026_11_20_182745_create_catalog_internal_barcode_tables` (`catalog_barcode_sequences`, `product_definition_submissions`). `SaveProductDefinition`, `GenerateInternalBarcode`, `InternalBarcodeAllocator`; catalog UI reveal dialog and Arabic “توليد رقم داخلي”.
 - **Verification.** `InternalBarcodeTest`, `InternalBarcodeConcurrencyTest`, plus related `OperationalCatalogUiTest` / `ProductDefinitionTest`. Livewire markup was checked for Arabic RTL and English LTR reveal copy; actual browser rendering and Omar’s catalog-to-till walkthrough remain pending. **Note:** the forward migration was applied on this machine’s local `dev.store` during Agent work (additive tables only); other environments still need deploy + migrate after review.
+
+### POS batch: fast product search (branch `fix/pos-fast-product-search`; review, Omar’s acceptance, merge, and application deployment **pending**)
+
+- **Scope.** One focused PR on the counter scan field: background compact product index in Alpine, local suggestions while typing, authorized lightweight server fallback, Enter/click still using existing scan/chooser authority. No schema change, no cart/checkout change beyond selection entry.
+- **Operator goal.** While typing a name, model, or full barcode, the cashier sees the correct selectable suggestion once it is loaded; typing alone never changes the cart.
+- **Implementation notes.** `ResolveCounterCode::productIndex` / `suggest` / `forDefinition`; Livewire `#[Json]` `productIndex` + `suggestProducts` (no full counter re-render) and `selectSuggestion` reusing scan/chooser rules. Alpine keeps the index in memory, matches barcode/SKU exactly (strings, leading zeros, Arabic digits normalized), name/model contains for AR/EN, race token so late replies cannot replace results after edit/clear/Enter. Soft index cap `5000` with server merge when truncated. Suggestions show identity only (no stock/price claims).
+- **Verification (PHP).** `PosCounterUiTest` (22 passed): compact index payload, internal barcode + leading-zero barcode + Arabic model + SKU suggestions without cart mutation, newly created product via `suggestProducts`, serialized chooser on suggestion click, Enter after suggestion lookup adds once and clears feedback. Pint dirty passed.
+- **Browser evidence (local XAMPP `dev.store` at `http://sub.dev.store/pos/1`, Admin).** Preload payload **251 bytes** / 2 active definitions / not truncated. Local loaded match: **0** `suggestProducts` requests, selectable result in **~2 ms** after index ready. Server fallback (index cold or missing match, includes 350 ms debounce): **~570–689 ms** to selectable result (under 1 s). Typing alone left cart empty; one Enter on barcode added one quantity line. Arabic RTL 1440 capture + English LTR switch verified (`dir=ltr`, `lang=en`). Newly created “dongle” discovered via fallback without reopening the counter. **Pending:** cold full-page preload wall-clock, 1024/390 viewports, isolated disposable-DB serve (Windows `pos.localhost` DNS), Omar’s cashier walkthrough.
+- **Omar try URL.** Authenticated counter: `http://sub.dev.store/pos/1` (branch checked out; XAMPP serves this tree). Login: `http://dev.store/login`.
 
 ---
 
