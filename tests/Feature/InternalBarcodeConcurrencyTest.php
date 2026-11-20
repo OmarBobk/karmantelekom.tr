@@ -101,6 +101,31 @@ class InternalBarcodeConcurrencyTest extends TestCase
         $this->assertNoCrossColumnAmbiguity();
     }
 
+    #[Test]
+    public function overlapping_same_key_creates_with_in_band_sku_replay_one_product(): void
+    {
+        $key = (string) Str::uuid();
+
+        $results = $this->raceWhileSequenceLocked([
+            $this->createRequest($this->owner, 'Shared cable', $key, sku: '200001'),
+            $this->createRequest($this->owner, 'Shared cable', $key, sku: '200001'),
+        ]);
+
+        $this->assertSame(
+            ['ok', 'ok'],
+            array_column($results, 'status'),
+            json_encode($results, JSON_THROW_ON_ERROR),
+        );
+        $this->assertSame($results[0]['definition_id'], $results[1]['definition_id']);
+        $this->assertSame($results[0]['barcode'], $results[1]['barcode']);
+        $this->assertMatchesRegularExpression('/^20\d{4}$/', (string) $results[0]['barcode']);
+        $this->assertSame(1, ProductDefinition::query()->count());
+        $this->assertSame(1, ProductDefinition::query()->where('sku', '200001')->count());
+        $product = ProductDefinition::query()->sole();
+        $this->assertSame($product->id, $results[0]['definition_id']);
+        $this->assertSame($product->barcode, $results[0]['barcode']);
+    }
+
     private function assertNoCrossColumnAmbiguity(): void
     {
         $rows = ProductDefinition::query()->get(['id', 'sku', 'barcode']);

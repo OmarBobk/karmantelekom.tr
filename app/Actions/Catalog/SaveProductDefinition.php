@@ -91,33 +91,46 @@ class SaveProductDefinition
 
         // Replay before mutable uniqueness rules can reject the original submission's identifiers.
         if ($key !== null && $fingerprint !== null) {
-            $existing = ProductDefinitionSubmission::query()->where('request_key', $key)->first();
+            $replayed = $this->findCreateReplay($key, $actor, $fingerprint);
 
-            if ($existing !== null) {
-                return $this->replayCreate($existing, $actor, $fingerprint);
+            if ($replayed !== null) {
+                return $replayed;
             }
         }
 
-        $attributes = Validator::make($input, [
-            'name' => ['required', 'string', 'max:255'],
-            'model' => ['nullable', 'string', 'max:255'],
-            'description' => ['nullable', 'string', 'max:2000'],
-            'tracking_mode' => ['required', Rule::enum(TrackingMode::class)],
-            'is_active' => ['boolean'],
-            'sku' => ['nullable', 'string', 'max:255', Rule::unique('product_definitions', 'sku')->ignore($definition?->id)],
-            'barcode' => ['nullable', 'string', 'max:255', Rule::unique('product_definitions', 'barcode')->ignore($definition?->id)],
-            'catalog_brand_id' => ['nullable', 'integer', Rule::exists('catalog_brands', 'id')],
-            'catalog_category_id' => ['nullable', 'integer', Rule::exists('catalog_categories', 'id')],
-        ], is_array($messages = __('operations.validation')) ? $messages : [], [
-            'name' => __('catalog.fields.name'),
-            'model' => __('catalog.fields.model'),
-            'description' => __('catalog.fields.description'),
-            'tracking_mode' => __('catalog.fields.tracking_mode'),
-            'sku' => __('catalog.fields.sku'),
-            'barcode' => __('catalog.fields.barcode'),
-            'catalog_brand_id' => __('catalog.fields.brand'),
-            'catalog_category_id' => __('catalog.fields.category'),
-        ])->validate();
+        try {
+            $attributes = Validator::make($input, [
+                'name' => ['required', 'string', 'max:255'],
+                'model' => ['nullable', 'string', 'max:255'],
+                'description' => ['nullable', 'string', 'max:2000'],
+                'tracking_mode' => ['required', Rule::enum(TrackingMode::class)],
+                'is_active' => ['boolean'],
+                'sku' => ['nullable', 'string', 'max:255', Rule::unique('product_definitions', 'sku')->ignore($definition?->id)],
+                'barcode' => ['nullable', 'string', 'max:255', Rule::unique('product_definitions', 'barcode')->ignore($definition?->id)],
+                'catalog_brand_id' => ['nullable', 'integer', Rule::exists('catalog_brands', 'id')],
+                'catalog_category_id' => ['nullable', 'integer', Rule::exists('catalog_categories', 'id')],
+            ], is_array($messages = __('operations.validation')) ? $messages : [], [
+                'name' => __('catalog.fields.name'),
+                'model' => __('catalog.fields.model'),
+                'description' => __('catalog.fields.description'),
+                'tracking_mode' => __('catalog.fields.tracking_mode'),
+                'sku' => __('catalog.fields.sku'),
+                'barcode' => __('catalog.fields.barcode'),
+                'catalog_brand_id' => __('catalog.fields.brand'),
+                'catalog_category_id' => __('catalog.fields.category'),
+            ])->validate();
+        } catch (ValidationException $exception) {
+            // A concurrent same-key winner may have claimed the SKU/barcode after our first miss.
+            if ($key !== null && $fingerprint !== null) {
+                $replayed = $this->findCreateReplay($key, $actor, $fingerprint);
+
+                if ($replayed !== null) {
+                    return $replayed;
+                }
+            }
+
+            throw $exception;
+        }
 
         $isUsedDevice = $attributes['tracking_mode'] === TrackingMode::USED_DEVICE->value;
 
@@ -150,21 +163,23 @@ class SaveProductDefinition
         while (true) {
             try {
                 return DB::transaction(function () use ($actor, $attributes, $key, $fingerprint, $allocateBarcode): ProductDefinition {
-                    if ($key !== null && $fingerprint !== null) {
-                        $existing = ProductDefinitionSubmission::query()->where('request_key', $key)->first();
-
-                        if ($existing !== null) {
-                            return $this->replayCreate($existing, $actor, $fingerprint);
-                        }
-                    }
-
                     $payload = $attributes;
                     $needsSequence = $allocateBarcode
                         || InternalBarcodeAllocator::isInternalRange($payload['sku'] ?? null)
                         || InternalBarcodeAllocator::isInternalRange($payload['barcode'] ?? null);
 
+                    // Sequence first, then replay: a loser waiting here must see the winner's claim
+                    // before in-band occupancy checks can reject the shared SKU.
                     if ($needsSequence) {
                         $this->allocator->lockSequence();
+                    }
+
+                    if ($key !== null && $fingerprint !== null) {
+                        $replayed = $this->findCreateReplay($key, $actor, $fingerprint);
+
+                        if ($replayed !== null) {
+                            return $replayed;
+                        }
                     }
 
                     if ($allocateBarcode) {
@@ -174,9 +189,21 @@ class SaveProductDefinition
                         $payload['barcode'] = $this->allocator->allocate($reserved);
                     }
 
-                    $this->assertInBandIfPresent('sku', $payload['sku'] ?? null);
-                    if (! $allocateBarcode) {
-                        $this->assertInBandIfPresent('barcode', $payload['barcode'] ?? null);
+                    try {
+                        $this->assertInBandIfPresent('sku', $payload['sku'] ?? null);
+                        if (! $allocateBarcode) {
+                            $this->assertInBandIfPresent('barcode', $payload['barcode'] ?? null);
+                        }
+                    } catch (ValidationException $exception) {
+                        if ($key !== null && $fingerprint !== null) {
+                            $replayed = $this->findCreateReplay($key, $actor, $fingerprint);
+
+                            if ($replayed !== null) {
+                                return $replayed;
+                            }
+                        }
+
+                        throw $exception;
                     }
 
                     $created = ProductDefinition::query()->create($payload);
@@ -196,10 +223,10 @@ class SaveProductDefinition
                 }, attempts: 5);
             } catch (UniqueConstraintViolationException $exception) {
                 if ($key !== null && $fingerprint !== null) {
-                    $existing = ProductDefinitionSubmission::query()->where('request_key', $key)->first();
+                    $replayed = $this->findCreateReplay($key, $actor, $fingerprint);
 
-                    if ($existing !== null) {
-                        return $this->replayCreate($existing, $actor, $fingerprint);
+                    if ($replayed !== null) {
+                        return $replayed;
                     }
                 }
 
@@ -262,18 +289,6 @@ class SaveProductDefinition
                     $this->assertInBandIfPresent('barcode', $attributes['barcode'] ?? null, $locked->id);
                 }
 
-                // A newly in-band identifier needs the sequence lock even when the pre-check above
-                // used the submitted (pre-resolution) values — re-lock is a no-op when already held.
-                if (
-                    ! $mayTouchInBand
-                    && (
-                        InternalBarcodeAllocator::isInternalRange($attributes['sku'] ?? null)
-                        || InternalBarcodeAllocator::isInternalRange($attributes['barcode'] ?? null)
-                    )
-                ) {
-                    $this->allocator->lockSequence();
-                }
-
                 $previousPrice = $locked->selling_price;
                 $locked->update($attributes);
                 $this->logPriceChange($actor, $locked, $previousPrice);
@@ -327,6 +342,16 @@ class SaveProductDefinition
         }
 
         $this->allocator->assertCatalogIdentifierAvailable($field, $identifier, $ignoreDefinitionId);
+    }
+
+    /**
+     * @throws IdempotencyConflictException
+     */
+    private function findCreateReplay(string $key, User $actor, string $fingerprint): ?ProductDefinition
+    {
+        $existing = ProductDefinitionSubmission::query()->where('request_key', $key)->first();
+
+        return $existing === null ? null : $this->replayCreate($existing, $actor, $fingerprint);
     }
 
     /**
