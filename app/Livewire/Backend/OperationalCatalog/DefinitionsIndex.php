@@ -46,6 +46,12 @@ class DefinitionsIndex extends Component
     #[Locked]
     public string $submissionKey = '';
 
+    /**
+     * Barcode shown when the edit form opened; distinguishes intentional clear from a stale blank.
+     */
+    #[Locked]
+    public ?string $loadedBarcode = null;
+
     public string $name = '';
 
     public string $model = '';
@@ -109,6 +115,7 @@ class DefinitionsIndex extends Component
         $this->trackingMode = $definition->tracking_mode->value;
         $this->sku = (string) $definition->sku;
         $this->barcode = (string) $definition->barcode;
+        $this->loadedBarcode = $definition->barcode;
         $this->brandId = $definition->catalog_brand_id;
         $this->categoryId = $definition->catalog_category_id;
         $this->isActive = $definition->is_active;
@@ -140,6 +147,10 @@ class DefinitionsIndex extends Component
             'catalog_category_id' => $this->categoryId,
             'is_active' => $this->isActive,
         ];
+
+        if ($definition !== null) {
+            $input['expected_barcode'] = $this->loadedBarcode;
+        }
 
         if (auth()->user()->can('setSellingPrice', ProductDefinition::class)) {
             $input['selling_price'] = $this->trackingMode === TrackingMode::USED_DEVICE->value ? '' : $this->sellingPrice;
@@ -218,7 +229,7 @@ class DefinitionsIndex extends Component
     {
         $this->reset([
             'editingDefinitionId', 'name', 'model', 'description', 'trackingMode',
-            'sku', 'barcode', 'brandId', 'categoryId', 'isActive', 'sellingPrice',
+            'sku', 'barcode', 'loadedBarcode', 'brandId', 'categoryId', 'isActive', 'sellingPrice',
         ]);
         $this->resetErrorBag();
     }

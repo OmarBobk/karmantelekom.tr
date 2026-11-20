@@ -14,8 +14,8 @@ use Illuminate\Validation\ValidationException;
 /**
  * Assign one internal barcode to a definition that still has none.
  *
- * Idempotent under the definition row lock: a retry returns the persisted code.
- * Never changes stock, price, or tracking mode.
+ * Idempotent under the sequence-then-definition lock order: a retry returns the persisted
+ * code. Never changes stock, price, or tracking mode.
  */
 final class GenerateInternalBarcode
 {
@@ -30,6 +30,9 @@ final class GenerateInternalBarcode
         Gate::forUser($actor)->authorize('update', $definition);
 
         return DB::transaction(function () use ($definition): ProductDefinition {
+            // Sequence first so generate serializes with in-band catalog writes.
+            $this->allocator->lockSequence();
+
             $locked = ProductDefinition::query()->whereKey($definition->id)->lockForUpdate()->firstOrFail();
 
             if ($locked->barcode !== null) {

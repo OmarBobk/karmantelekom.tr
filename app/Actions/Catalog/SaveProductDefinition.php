@@ -28,13 +28,10 @@ class SaveProductDefinition
     /**
      * Create or update a shared product definition. Never creates stock.
      *
-     * On create, a blank barcode receives the next free internal code. On update, a blank
-     * submitted barcode never clears an already-stored value (stale-form protection) and never
-     * auto-generates — use GenerateInternalBarcode for that. An optional request key makes a
-     * lost-response create retry return the same definition and code.
-     *
-     * The tracking mode is rechecked under the definition row lock that every stock
-     * mutation also takes, and cannot change once any store has inventory history.
+     * On create, a blank barcode receives the next free internal code. On update, blank
+     * barcodes do not auto-generate — use GenerateInternalBarcode. A create request key
+     * replays the same definition before uniqueness rules can reject the original SKU or
+     * barcode. In-band identifier claims and allocation take the shared sequence lock first.
      *
      * @param  array<string, mixed>  $input
      *
@@ -49,6 +46,13 @@ class SaveProductDefinition
             : Gate::forUser($actor)->authorize('update', $definition);
 
         $setsPrice = array_key_exists('selling_price', $input);
+        $hasExpectedBarcode = array_key_exists('expected_barcode', $input);
+        $expectedBarcode = $hasExpectedBarcode
+            ? ProductDefinition::normalizeIdentifier(is_scalar($input['expected_barcode']) || $input['expected_barcode'] === null
+                ? $input['expected_barcode']
+                : null)
+            : null;
+        unset($input['expected_barcode']);
 
         if ($setsPrice) {
             Gate::forUser($actor)->authorize('setSellingPrice', ProductDefinition::class);
@@ -62,6 +66,37 @@ class SaveProductDefinition
         $input['description'] = self::nullableTrim($input['description'] ?? null);
         $input['sku'] = ProductDefinition::normalizeIdentifier($input['sku'] ?? null);
         $input['barcode'] = ProductDefinition::normalizeIdentifier($input['barcode'] ?? null);
+
+        $fingerprintAttributes = [
+            'name' => $input['name'],
+            'model' => $input['model'],
+            'description' => $input['description'],
+            'tracking_mode' => $input['tracking_mode'] ?? null,
+            'is_active' => array_key_exists('is_active', $input) ? (bool) $input['is_active'] : true,
+            'sku' => $input['sku'],
+            'barcode' => $input['barcode'],
+            'catalog_brand_id' => $input['catalog_brand_id'] ?? null,
+            'catalog_category_id' => $input['catalog_category_id'] ?? null,
+        ];
+
+        if ($setsPrice) {
+            $fingerprintAttributes['selling_price'] = $sellingPriceMinor === null ? null : Money::toDecimal($sellingPriceMinor);
+        }
+
+        $key = ($definition === null && $requestKey !== null) ? Idempotency::key($requestKey) : null;
+        $fingerprint = $key === null ? null : Idempotency::fingerprint([
+            'operation' => 'create_product_definition',
+            'attributes' => $fingerprintAttributes,
+        ]);
+
+        // Replay before mutable uniqueness rules can reject the original submission's identifiers.
+        if ($key !== null && $fingerprint !== null) {
+            $existing = ProductDefinitionSubmission::query()->where('request_key', $key)->first();
+
+            if ($existing !== null) {
+                return $this->replayCreate($existing, $actor, $fingerprint);
+            }
+        }
 
         $attributes = Validator::make($input, [
             'name' => ['required', 'string', 'max:255'],
@@ -94,19 +129,11 @@ class SaveProductDefinition
             $attributes['selling_price'] = $sellingPriceMinor === null ? null : Money::toDecimal($sellingPriceMinor);
         }
 
-        if (isset($attributes['sku'])) {
-            $this->allocator->assertCatalogIdentifierAvailable('sku', $attributes['sku'], $definition?->id);
-        }
-
-        if (isset($attributes['barcode'])) {
-            $this->allocator->assertCatalogIdentifierAvailable('barcode', $attributes['barcode'], $definition?->id);
-        }
-
         if ($definition === null) {
-            return $this->create($actor, $attributes, $requestKey);
+            return $this->create($actor, $attributes, $key, $fingerprint);
         }
 
-        return $this->update($actor, $definition, $attributes);
+        return $this->update($actor, $definition, $attributes, $hasExpectedBarcode, $expectedBarcode);
     }
 
     /**
@@ -115,29 +142,15 @@ class SaveProductDefinition
      * @throws IdempotencyConflictException
      * @throws ValidationException
      */
-    private function create(User $actor, array $attributes, ?string $requestKey): ProductDefinition
+    private function create(User $actor, array $attributes, ?string $key, ?string $fingerprint): ProductDefinition
     {
-        $key = $requestKey === null ? null : Idempotency::key($requestKey);
-        $fingerprint = Idempotency::fingerprint([
-            'operation' => 'create_product_definition',
-            'attributes' => $attributes,
-        ]);
-
-        if ($key !== null) {
-            $existing = ProductDefinitionSubmission::query()->where('request_key', $key)->first();
-
-            if ($existing !== null) {
-                return $this->replayCreate($existing, $actor, $fingerprint);
-            }
-        }
-
         $allocateBarcode = ($attributes['barcode'] ?? null) === null;
         $attempts = 0;
 
         while (true) {
             try {
                 return DB::transaction(function () use ($actor, $attributes, $key, $fingerprint, $allocateBarcode): ProductDefinition {
-                    if ($key !== null) {
+                    if ($key !== null && $fingerprint !== null) {
                         $existing = ProductDefinitionSubmission::query()->where('request_key', $key)->first();
 
                         if ($existing !== null) {
@@ -146,6 +159,13 @@ class SaveProductDefinition
                     }
 
                     $payload = $attributes;
+                    $needsSequence = $allocateBarcode
+                        || InternalBarcodeAllocator::isInternalRange($payload['sku'] ?? null)
+                        || InternalBarcodeAllocator::isInternalRange($payload['barcode'] ?? null);
+
+                    if ($needsSequence) {
+                        $this->allocator->lockSequence();
+                    }
 
                     if ($allocateBarcode) {
                         $reserved = array_values(array_filter([
@@ -154,10 +174,15 @@ class SaveProductDefinition
                         $payload['barcode'] = $this->allocator->allocate($reserved);
                     }
 
+                    $this->assertInBandIfPresent('sku', $payload['sku'] ?? null);
+                    if (! $allocateBarcode) {
+                        $this->assertInBandIfPresent('barcode', $payload['barcode'] ?? null);
+                    }
+
                     $created = ProductDefinition::query()->create($payload);
                     $this->logPriceChange($actor, $created, null);
 
-                    if ($key !== null) {
+                    if ($key !== null && $fingerprint !== null) {
                         ProductDefinitionSubmission::query()->create([
                             'user_id' => $actor->id,
                             'request_key' => $key,
@@ -170,7 +195,7 @@ class SaveProductDefinition
                     return $created;
                 }, attempts: 5);
             } catch (UniqueConstraintViolationException $exception) {
-                if ($key !== null) {
+                if ($key !== null && $fingerprint !== null) {
                     $existing = ProductDefinitionSubmission::query()->where('request_key', $key)->first();
 
                     if ($existing !== null) {
@@ -194,11 +219,26 @@ class SaveProductDefinition
      *
      * @throws ValidationException
      */
-    private function update(User $actor, ProductDefinition $definition, array $attributes): ProductDefinition
-    {
+    private function update(
+        User $actor,
+        ProductDefinition $definition,
+        array $attributes,
+        bool $hasExpectedBarcode,
+        ?string $expectedBarcode,
+    ): ProductDefinition {
         try {
-            // Checkout reads prices under this same definition lock, so a price change and a sale serialize.
-            return DB::transaction(function () use ($actor, $definition, $attributes): ProductDefinition {
+            // Lock order: sequence (when claiming in-band identifiers) then definition.
+            return DB::transaction(function () use ($actor, $definition, $attributes, $hasExpectedBarcode, $expectedBarcode): ProductDefinition {
+                $submittedBarcode = $attributes['barcode'] ?? null;
+                $submittedSku = $attributes['sku'] ?? null;
+
+                $mayTouchInBand = InternalBarcodeAllocator::isInternalRange($submittedSku)
+                    || InternalBarcodeAllocator::isInternalRange($submittedBarcode);
+
+                if ($mayTouchInBand) {
+                    $this->allocator->lockSequence();
+                }
+
                 $locked = ProductDefinition::query()->whereKey($definition->id)->lockForUpdate()->firstOrFail();
 
                 if ($locked->tracking_mode->value !== $attributes['tracking_mode'] && $locked->isTrackingModeLocked()) {
@@ -207,9 +247,31 @@ class SaveProductDefinition
                     ]);
                 }
 
-                // A blank edit must not wipe a barcode assigned after this form was opened.
-                if (($attributes['barcode'] ?? null) === null && $locked->barcode !== null) {
-                    $attributes['barcode'] = $locked->barcode;
+                $attributes['barcode'] = $this->resolveUpdatedBarcode(
+                    $submittedBarcode,
+                    $locked->barcode,
+                    $hasExpectedBarcode,
+                    $expectedBarcode,
+                );
+
+                if (($attributes['sku'] ?? null) !== $locked->sku) {
+                    $this->assertInBandIfPresent('sku', $attributes['sku'] ?? null, $locked->id);
+                }
+
+                if (($attributes['barcode'] ?? null) !== $locked->barcode) {
+                    $this->assertInBandIfPresent('barcode', $attributes['barcode'] ?? null, $locked->id);
+                }
+
+                // A newly in-band identifier needs the sequence lock even when the pre-check above
+                // used the submitted (pre-resolution) values — re-lock is a no-op when already held.
+                if (
+                    ! $mayTouchInBand
+                    && (
+                        InternalBarcodeAllocator::isInternalRange($attributes['sku'] ?? null)
+                        || InternalBarcodeAllocator::isInternalRange($attributes['barcode'] ?? null)
+                    )
+                ) {
+                    $this->allocator->lockSequence();
                 }
 
                 $previousPrice = $locked->selling_price;
@@ -217,12 +279,54 @@ class SaveProductDefinition
                 $this->logPriceChange($actor, $locked, $previousPrice);
 
                 return $locked;
-            });
+            }, attempts: 5);
         } catch (UniqueConstraintViolationException $exception) {
             throw ValidationException::withMessages([
                 $this->uniqueFieldFromException($exception) => __('catalog.errors.identifier_taken'),
             ]);
         }
+    }
+
+    /**
+     * Stale blank form (opened with null, barcode assigned later) keeps the stored value.
+     * A fresh form that shows the current barcode and clears it intentionally stores null.
+     * Callers that omit expected_barcode keep the previous clear-on-blank edit behavior.
+     */
+    private function resolveUpdatedBarcode(
+        ?string $submittedBarcode,
+        ?string $lockedBarcode,
+        bool $hasExpectedBarcode,
+        ?string $expectedBarcode,
+    ): ?string {
+        if ($submittedBarcode !== null || $lockedBarcode === null) {
+            return $submittedBarcode;
+        }
+
+        if (! $hasExpectedBarcode) {
+            return null;
+        }
+
+        if ($expectedBarcode === null) {
+            return $lockedBarcode;
+        }
+
+        if ($expectedBarcode === $lockedBarcode) {
+            return null;
+        }
+
+        return $lockedBarcode;
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    private function assertInBandIfPresent(string $field, ?string $identifier, ?int $ignoreDefinitionId = null): void
+    {
+        if ($identifier === null) {
+            return;
+        }
+
+        $this->allocator->assertCatalogIdentifierAvailable($field, $identifier, $ignoreDefinitionId);
     }
 
     /**

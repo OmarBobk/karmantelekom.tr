@@ -209,39 +209,119 @@ class InternalBarcodeTest extends TestCase
         $this->assertSame('200001', $second->barcode);
         $this->assertSame(200001, CatalogBarcodeSequence::query()->value('last_number'));
 
-        $saved = ($this->save)($this->owner, $definition->fresh(), [
+        $stale = ($this->save)($this->owner, $definition->fresh(), [
             'name' => 'Adapter',
             'tracking_mode' => 'quantity',
             'barcode' => '',
+            'expected_barcode' => null,
         ]);
 
-        $this->assertSame('200001', $saved->fresh()->barcode);
+        $this->assertSame('200001', $stale->fresh()->barcode);
     }
 
     #[Test]
-    public function create_request_key_replays_the_same_product_and_rejects_conflicting_retries(): void
+    public function intentional_clear_from_a_fresh_form_removes_the_barcode(): void
     {
-        $key = (string) Str::uuid();
+        $definition = ProductDefinition::factory()->create([
+            'name' => 'Clearable',
+            'tracking_mode' => TrackingMode::QUANTITY,
+            'barcode' => '200010',
+        ]);
 
-        $first = ($this->save)($this->owner, null, [
+        $saved = ($this->save)($this->owner, $definition, [
+            'name' => 'Clearable',
+            'tracking_mode' => 'quantity',
+            'barcode' => '',
+            'expected_barcode' => '200010',
+        ]);
+
+        $this->assertNull($saved->fresh()->barcode);
+    }
+
+    #[Test]
+    public function unrelated_edit_keeps_legacy_in_band_ambiguity_but_new_conflicts_fail(): void
+    {
+        $legacySku = ProductDefinition::factory()->create([
+            'name' => 'Legacy SKU holder',
+            'sku' => '210000',
+            'barcode' => null,
+        ]);
+        $legacyBarcode = ProductDefinition::factory()->create([
+            'name' => 'Legacy barcode holder',
+            'sku' => 'LEGACY-B',
+            'barcode' => '210000',
+        ]);
+
+        $renamed = ($this->save)($this->owner, $legacyBarcode, [
+            'name' => 'Legacy barcode holder renamed',
+            'tracking_mode' => 'quantity',
+            'sku' => 'LEGACY-B',
+            'barcode' => '210000',
+            'expected_barcode' => '210000',
+        ]);
+
+        $this->assertSame('Legacy barcode holder renamed', $renamed->name);
+        $this->assertSame('210000', $renamed->fresh()->barcode);
+        $this->assertSame('210000', $legacySku->fresh()->sku);
+
+        $this->assertThrows(
+            fn () => ($this->save)($this->owner, null, [
+                'name' => 'New conflict',
+                'tracking_mode' => 'quantity',
+                'barcode' => '210000',
+            ]),
+            ValidationException::class,
+        );
+    }
+
+    #[Test]
+    public function create_request_key_replays_blank_and_manufacturer_submissions_before_uniqueness_checks(): void
+    {
+        $blankKey = (string) Str::uuid();
+
+        $firstBlank = ($this->save)($this->owner, null, [
             'name' => 'Replay cable',
             'tracking_mode' => 'quantity',
-        ], $key);
+            'sku' => 'ANK-REPLAY',
+        ], $blankKey);
 
-        $replay = ($this->save)($this->owner, null, [
+        $replayBlank = ($this->save)($this->owner, null, [
             'name' => 'Replay cable',
             'tracking_mode' => 'quantity',
-        ], $key);
+            'sku' => 'ANK-REPLAY',
+        ], $blankKey);
 
-        $this->assertTrue($first->is($replay));
-        $this->assertSame('200001', $replay->barcode);
-        $this->assertSame(1, ProductDefinition::query()->where('name', 'Replay cable')->count());
+        $this->assertTrue($firstBlank->is($replayBlank));
+        $this->assertSame($firstBlank->id, $replayBlank->id);
+        $this->assertSame('200001', $replayBlank->barcode);
+        $this->assertSame('ANK-REPLAY', $replayBlank->sku);
+        $this->assertSame(1, ProductDefinition::query()->where('sku', 'ANK-REPLAY')->count());
+
+        $manufacturerKey = (string) Str::uuid();
+
+        $firstManufacturer = ($this->save)($this->owner, null, [
+            'name' => 'Manufacturer cable',
+            'tracking_mode' => 'quantity',
+            'barcode' => '0012345678905',
+        ], $manufacturerKey);
+
+        $replayManufacturer = ($this->save)($this->owner, null, [
+            'name' => 'Manufacturer cable',
+            'tracking_mode' => 'quantity',
+            'barcode' => '0012345678905',
+        ], $manufacturerKey);
+
+        $this->assertTrue($firstManufacturer->is($replayManufacturer));
+        $this->assertSame($firstManufacturer->id, $replayManufacturer->id);
+        $this->assertSame('0012345678905', $replayManufacturer->barcode);
+        $this->assertSame(1, ProductDefinition::query()->where('barcode', '0012345678905')->count());
 
         $this->assertThrows(
             fn () => ($this->save)($this->owner, null, [
                 'name' => 'Different cable',
                 'tracking_mode' => 'quantity',
-            ], $key),
+                'sku' => 'ANK-REPLAY',
+            ], $blankKey),
             IdempotencyConflictException::class,
         );
 
@@ -251,7 +331,7 @@ class InternalBarcodeTest extends TestCase
         ], (string) Str::uuid());
 
         $this->assertSame('200002', $other->barcode);
-        $this->assertSame(2, ProductDefinition::count());
+        $this->assertSame(3, ProductDefinition::count());
     }
 
     #[Test]

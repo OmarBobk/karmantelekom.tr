@@ -78,35 +78,49 @@ class InternalBarcodeConcurrencyTest extends TestCase
     }
 
     #[Test]
-    public function automatic_allocation_skips_a_manual_code_saved_while_the_sequence_is_held(): void
+    public function manual_in_band_sku_and_automatic_barcode_serialize_without_cross_column_ambiguity(): void
     {
-        DB::beginTransaction();
-
-        try {
-            CatalogBarcodeSequence::query()->whereKey(1)->lockForUpdate()->firstOrFail();
-            $auto = $this->startWorker($this->createRequest($this->owner, 'Auto cable', (string) Str::uuid()));
-            $this->waitForBlockedWorkers(1);
-
-            $manual = $this->finishWorker($this->startWorker($this->createRequest(
+        $results = $this->raceWhileSequenceLocked([
+            $this->createRequest($this->owner, 'Auto cable', (string) Str::uuid()),
+            $this->createRequest(
                 $this->rival,
-                'Manual cable',
+                'Manual SKU cable',
                 (string) Str::uuid(),
-                '200001',
-            )));
-        } finally {
-            DB::commit();
+                barcode: '8690000000999',
+                sku: '200001',
+            ),
+        ]);
+
+        foreach ($results as $result) {
+            $this->assertContains($result['status'], ['ok', 'validation'], json_encode($results, JSON_THROW_ON_ERROR));
         }
 
-        $autoResult = $this->finishWorker($auto);
+        $okCount = count(array_filter($results, fn (array $row): bool => $row['status'] === 'ok'));
+        $this->assertGreaterThanOrEqual(1, $okCount, json_encode($results, JSON_THROW_ON_ERROR));
+        $this->assertSame(2, count($results));
+        $this->assertNoCrossColumnAmbiguity();
+    }
 
-        $this->assertSame('ok', $manual['status'], json_encode($manual, JSON_THROW_ON_ERROR));
-        $this->assertSame('200001', $manual['barcode']);
-        $this->assertSame('ok', $autoResult['status'], json_encode($autoResult, JSON_THROW_ON_ERROR));
-        $this->assertSame('200002', $autoResult['barcode']);
-        $this->assertSame(
-            ['200001', '200002'],
-            ProductDefinition::query()->orderBy('barcode')->pluck('barcode')->all(),
-        );
+    private function assertNoCrossColumnAmbiguity(): void
+    {
+        $rows = ProductDefinition::query()->get(['id', 'sku', 'barcode']);
+        $skuToId = [];
+        $barcodeToId = [];
+
+        foreach ($rows as $row) {
+            if ($row->sku !== null) {
+                $skuToId[$row->sku] = $row->id;
+            }
+            if ($row->barcode !== null) {
+                $barcodeToId[$row->barcode] = $row->id;
+            }
+        }
+
+        foreach ($skuToId as $value => $skuOwnerId) {
+            if (isset($barcodeToId[$value]) && $barcodeToId[$value] !== $skuOwnerId) {
+                $this->fail("Cross-column ambiguity for {$value}: sku on #{$skuOwnerId}, barcode on #{$barcodeToId[$value]}");
+            }
+        }
     }
 
     /**
@@ -137,8 +151,13 @@ class InternalBarcodeConcurrencyTest extends TestCase
     /**
      * @return array<string, mixed>
      */
-    private function createRequest(User $actor, string $name, string $requestKey, ?string $barcode = null): array
-    {
+    private function createRequest(
+        User $actor,
+        string $name,
+        string $requestKey,
+        ?string $barcode = null,
+        ?string $sku = null,
+    ): array {
         return [
             'operation' => 'create_definition',
             'actor_id' => $actor->id,
@@ -146,6 +165,7 @@ class InternalBarcodeConcurrencyTest extends TestCase
             'name' => $name,
             'request_key' => $requestKey,
             'barcode' => $barcode,
+            'sku' => $sku,
         ];
     }
 
