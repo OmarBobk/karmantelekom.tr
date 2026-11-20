@@ -201,8 +201,23 @@
 
                         <div>
                             <label for="definition-barcode" class="block text-sm font-medium text-gray-700">{{ __('catalog.fields.barcode') }}</label>
-                            <input id="definition-barcode" type="text" wire:model="barcode" dir="ltr" autocomplete="off" inputmode="numeric" @error('barcode') aria-invalid="true" @enderror class="mt-1 block min-h-11 w-full rounded-lg border-gray-300 font-mono shadow-sm focus:border-blue-500 focus:ring-blue-500">
-                            @error('barcode') <p class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                            <input id="definition-barcode" type="text" wire:model="barcode" dir="ltr" autocomplete="off" inputmode="numeric" aria-describedby="definition-barcode-help" @error('barcode') aria-invalid="true" aria-describedby="definition-barcode-error definition-barcode-help" @enderror class="mt-1 block min-h-11 w-full rounded-lg border-gray-300 font-mono shadow-sm focus:border-blue-500 focus:ring-blue-500">
+                            <p id="definition-barcode-help" class="mt-1 text-xs text-gray-500">
+                                {{ $editingDefinitionId ? __('catalog.form.generate_internal_help') : __('catalog.form.barcode_blank_help') }}
+                            </p>
+                            @error('barcode') <p id="definition-barcode-error" class="mt-1 text-sm text-red-600">{{ $message }}</p> @enderror
+                            @if ($canGenerateInternalBarcode)
+                                <button
+                                    type="button"
+                                    wire:click="generateInternalBarcode"
+                                    wire:loading.attr="disabled"
+                                    wire:target="generateInternalBarcode"
+                                    class="mt-2 inline-flex min-h-11 items-center justify-center rounded-lg border border-blue-200 bg-blue-50 px-3 text-sm font-medium text-blue-800 hover:bg-blue-100 disabled:opacity-60"
+                                >
+                                    <span wire:loading.remove wire:target="generateInternalBarcode">{{ __('catalog.actions.generate_internal_barcode') }}</span>
+                                    <span wire:loading wire:target="generateInternalBarcode">{{ __('catalog.actions.generating_internal_barcode') }}</span>
+                                </button>
+                            @endif
                         </div>
 
                         @if ($canSetPrice)
@@ -242,4 +257,41 @@
             </div>
         </div>
     @endif
+
+    <x-operations.dialog
+        :id="\App\Livewire\Backend\OperationalCatalog\DefinitionsIndex::BARCODE_REVEAL_DIALOG"
+        :title="__('catalog.barcode_reveal.title')"
+        :direction="$textDirection"
+    >
+        <div
+            class="space-y-4"
+            x-data
+            x-on:open-dialog.window="if ($event.detail.id === @js(\App\Livewire\Backend\OperationalCatalog\DefinitionsIndex::BARCODE_REVEAL_DIALOG)) { $nextTick(() => $refs.continueAfterBarcode?.focus()) }"
+        >
+            <p class="text-sm text-gray-600">{{ __('catalog.barcode_reveal.help') }}</p>
+            <div>
+                <p class="text-sm font-medium text-gray-700">{{ __('catalog.fields.name') }}</p>
+                <p class="mt-1 text-lg font-semibold text-gray-900">{{ $revealedName }}</p>
+            </div>
+            <div>
+                <p class="text-sm font-medium text-gray-700">{{ __('catalog.barcode_reveal.barcode_label') }}</p>
+                <p
+                    dir="ltr"
+                    lang="en"
+                    tabindex="0"
+                    class="mt-2 select-all rounded-lg bg-gray-50 px-4 py-3 text-center font-mono text-3xl font-semibold tracking-widest text-gray-900 ring-1 ring-gray-200 focus:outline-2 focus:outline-offset-2 focus:outline-blue-600"
+                >{{ $revealedBarcode }}</p>
+            </div>
+            <div class="flex justify-end">
+                <button
+                    type="button"
+                    wire:click="dismissBarcodeReveal"
+                    x-ref="continueAfterBarcode"
+                    class="inline-flex min-h-11 items-center justify-center rounded-lg bg-blue-600 px-4 text-sm font-medium text-white hover:bg-blue-700 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-blue-600"
+                >
+                    {{ __('catalog.actions.continue_after_barcode') }}
+                </button>
+            </div>
+        </div>
+    </x-operations.dialog>
 </div>

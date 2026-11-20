@@ -249,7 +249,8 @@ Create the product and inventory model on which purchasing, POS, used-device tra
 
 - Operational catalog entries are `ProductDefinition` (`product_definitions`), shared by all stores and separate from the e-commerce `Product`, which is unchanged.
 - A definition has a name, optional description and model, an active flag (default active), and a required `tracking_mode`: `quantity`, `serialized`, or `used_device` (`App\Enums\TrackingMode`).
-- SKU and barcode are optional strings. They are trimmed, blank values are stored as `NULL`, and barcodes keep leading zeros. Each is unique within its own column, enforced by the database with case-sensitive (binary) comparison; the same value may appear as one definition's SKU and another's barcode.
+- SKU and barcode are optional strings. They are trimmed, blank values are stored as `NULL`, and barcodes keep leading zeros. Each is unique within its own column, enforced by the database with case-sensitive (binary) comparison; the same value may appear as one definition's SKU and another's barcode outside the internal band. Inside `200001`–`299999`, a new or changed SKU/barcode that already names a different definition or unit identifier is rejected.
+- Blank barcode on create allocates the next free shared internal code (`InternalBarcodeAllocator`, sequence row in `catalog_barcode_sequences`). Existing blank barcodes stay blank on ordinary save; `GenerateInternalBarcode` assigns once under the definition lock. Create submissions may carry a request key (`product_definition_submissions`) so a lost-response retry recovers the same definition and code.
 - Lookups must name the identifier type: `ProductDefinition::findByIdentifier(CatalogIdentifierType::SKU, $value)` or `CatalogIdentifierType::BARCODE`. There is no "any identifier" lookup, so results are never ambiguous.
 - IMEI and serial numbers identify individual units (`inventory_units`), not definitions.
 - Creating a definition never creates stock or inventory movements.
@@ -1381,6 +1382,13 @@ Inventory purchases, device costs, operating expenses, refunds, and payments mus
 - **Daily operating reports.** Batches 1–7 are slices of "exact reports required for daily operations", not the final set.
 - **Network margin attribution.** Network-linked sales remain wholly excluded until Omar approves inter-branch attribution.
 - **Backend shell direction.** Whether the storefront admin chrome follows the operational locale (Arabic RTL) or stays English LTR — deferred from batch 5.
+
+### Catalog batch: internal barcodes for handwriting (branch `feature/catalog-internal-barcodes`; review, Omar’s acceptance, merge, and application deployment **pending**)
+
+- **Scope.** One PR separate from Phase 8 batch 7: auto-allocate shared internal barcodes `200001`–`299999` on blank create, one-click generate for existing blank definitions, confirmation dialog with large selectable LTR digits, create request-key replay, in-band conflict checks. No printing, label queue, bulk backfill, or new package.
+- **Approved rules.** Spec §4.3 internal barcodes (Omar). Preserve manufacturer barcodes and leading zeros; ordinary blank edits do not generate; stale blank forms cannot clear an assigned code; allocation skips catalog SKU/barcode and unit identifiers across both branches; exhaustion before any partial save.
+- **Implementation notes.** Migration `2026_11_20_182745_create_catalog_internal_barcode_tables` (`catalog_barcode_sequences`, `product_definition_submissions`). `SaveProductDefinition`, `GenerateInternalBarcode`, `InternalBarcodeAllocator`; catalog UI reveal dialog and Arabic “توليد رقم داخلي”.
+- **Verification.** `InternalBarcodeTest`, `InternalBarcodeConcurrencyTest`, plus related `OperationalCatalogUiTest` / `ProductDefinitionTest`. Rendered Arabic RTL and English LTR evidence of the reveal dialog; Omar’s walkthrough pending. **Note:** the forward migration was applied on this machine’s local `dev.store` during Agent work (additive tables only); other environments still need deploy + migrate after review.
 
 ---
 

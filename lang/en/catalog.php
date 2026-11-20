@@ -43,6 +43,9 @@ return [
         'rename' => 'Rename',
         'activate' => 'Activate',
         'deactivate' => 'Deactivate',
+        'generate_internal_barcode' => 'Generate internal number',
+        'generating_internal_barcode' => 'Generating…',
+        'continue_after_barcode' => 'Continue',
     ],
 
     'search' => [
@@ -72,6 +75,14 @@ return [
         'none' => 'None',
         'active' => 'Available for use in stores',
         'no_stock_notice' => 'Saving a definition adds no stock. Record stock from each store’s inventory page.',
+        'barcode_blank_help' => 'Leave blank to assign an internal number on save. Keep a manufacturer barcode when the package already has one.',
+        'generate_internal_help' => 'Creates one internal number for handwriting on a sticker. Does not change stock or price.',
+    ],
+
+    'barcode_reveal' => [
+        'title' => 'Write this number on the sticker',
+        'help' => 'Copy the digits exactly. The same number works at the till and for a future label printer.',
+        'barcode_label' => 'Internal number',
     ],
 
     'settings' => [
@@ -95,5 +106,8 @@ return [
     'errors' => [
         'tracking_mode_locked' => 'The tracking mode cannot change after stock or a posted purchase invoice has been recorded for this product.',
         'identifier_taken' => 'This identifier is already used by another product.',
+        'identifier_conflict' => 'This number already identifies a different product or device.',
+        'internal_barcode_exhausted' => 'No free internal numbers remain (200001–299999). Enter a manufacturer barcode or free another internal number first.',
+        'submission_conflict' => 'This create request was already used with different details. Close the form and add the product again.',
     ],
 ];

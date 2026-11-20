@@ -13,6 +13,7 @@ declare(strict_types=1);
 use App\Actions\Cashbox\CloseCashboxSession;
 use App\Actions\Cashbox\OpenCashboxSession;
 use App\Actions\Cashbox\StartSaleCashIntake;
+use App\Actions\Catalog\GenerateInternalBarcode;
 use App\Actions\Catalog\SaveProductDefinition;
 use App\Actions\Customers\RecordCustomerPayment;
 use App\Actions\Customers\SaveCounterCustomer;
@@ -38,6 +39,7 @@ use App\Models\SalePayment;
 use App\Models\Store;
 use App\Models\User;
 use Illuminate\Contracts\Console\Kernel;
+use Illuminate\Database\QueryException;
 use Illuminate\Validation\ValidationException;
 
 require __DIR__.'/../../vendor/autoload.php';
@@ -186,6 +188,32 @@ try {
 
             return ['status' => 'ok'];
         })(),
+        'create_definition' => (function () use ($actor, $payload): array {
+            $definition = app(SaveProductDefinition::class)($actor, null, [
+                'name' => $payload['name'],
+                'tracking_mode' => $payload['tracking_mode'] ?? 'quantity',
+                'sku' => $payload['sku'] ?? null,
+                'barcode' => $payload['barcode'] ?? null,
+            ], $payload['request_key'] ?? null);
+
+            return [
+                'status' => 'ok',
+                'definition_id' => $definition->id,
+                'barcode' => $definition->barcode,
+            ];
+        })(),
+        'generate_internal_barcode' => (function () use ($actor, $payload): array {
+            $definition = app(GenerateInternalBarcode::class)(
+                $actor,
+                ProductDefinition::query()->findOrFail($payload['definition_id']),
+            );
+
+            return [
+                'status' => 'ok',
+                'definition_id' => $definition->id,
+                'barcode' => $definition->barcode,
+            ];
+        })(),
     };
 } catch (ValidationException $exception) {
     $result = ['status' => 'validation', 'errors' => array_keys($exception->errors())];
@@ -193,6 +221,9 @@ try {
     $result = ['status' => 'conflict'];
 } catch (StaleUnitStateException $exception) {
     $result = ['status' => 'stale', 'current_status' => $exception->currentStatus->value];
+} catch (QueryException $exception) {
+    // Deadlocks are retried by the caller action where required; surface them for assertions.
+    $result = ['status' => 'error', 'message' => $exception->getMessage()];
 } catch (RuntimeException $exception) {
     $result = ['status' => 'error', 'message' => $exception->getMessage()];
 }

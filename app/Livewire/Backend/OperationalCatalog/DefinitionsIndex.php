@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Livewire\Backend\OperationalCatalog;
 
+use App\Actions\Catalog\GenerateInternalBarcode;
 use App\Actions\Catalog\SaveProductDefinition;
 use App\Enums\CatalogIdentifierType;
 use App\Enums\TrackingMode;
+use App\Exceptions\Inventory\IdempotencyConflictException;
 use App\Livewire\Backend\Concerns\UsesOperationalLocale;
 use App\Models\CatalogBrand;
 use App\Models\CatalogCategory;
@@ -14,6 +16,7 @@ use App\Models\ProductDefinition;
 use App\Services\Purchasing\Money;
 use Illuminate\Contracts\View\View;
 use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Support\Str;
 use Livewire\Attributes\Layout;
 use Livewire\Attributes\Locked;
 use Livewire\Attributes\Url;
@@ -27,6 +30,8 @@ class DefinitionsIndex extends Component
 
     public const SEARCH_MODES = ['name', 'sku', 'barcode'];
 
+    public const BARCODE_REVEAL_DIALOG = 'catalog-barcode-reveal';
+
     #[Url(except: '')]
     public string $search = '';
 
@@ -37,6 +42,9 @@ class DefinitionsIndex extends Component
 
     #[Locked]
     public ?int $editingDefinitionId = null;
+
+    #[Locked]
+    public string $submissionKey = '';
 
     public string $name = '';
 
@@ -58,9 +66,16 @@ class DefinitionsIndex extends Component
 
     public string $sellingPrice = '';
 
+    public bool $barcodeRevealOpen = false;
+
+    public string $revealedName = '';
+
+    public string $revealedBarcode = '';
+
     public function mount(): void
     {
         $this->authorize('viewAny', ProductDefinition::class);
+        $this->renewSubmissionKey();
     }
 
     public function updatedSearch(): void
@@ -130,13 +145,73 @@ class DefinitionsIndex extends Component
             $input['selling_price'] = $this->trackingMode === TrackingMode::USED_DEVICE->value ? '' : $this->sellingPrice;
         }
 
-        $saveProductDefinition(auth()->user(), $definition, $input);
+        $wasCreate = $definition === null;
+        $submittedBarcode = ProductDefinition::normalizeIdentifier($this->barcode);
+
+        try {
+            $saved = $saveProductDefinition(
+                auth()->user(),
+                $definition,
+                $input,
+                $wasCreate ? $this->submissionKey : null,
+            );
+        } catch (IdempotencyConflictException) {
+            $this->renewSubmissionKey();
+            $this->addError('name', __('catalog.errors.submission_conflict'));
+
+            return;
+        }
+
+        if ($wasCreate) {
+            $this->renewSubmissionKey();
+        }
 
         $this->closeForm();
+
+        if ($wasCreate && $submittedBarcode === null && $saved->barcode !== null) {
+            $this->revealBarcode($saved);
+
+            return;
+        }
+
         $this->dispatch('notify', [
             'type' => 'success',
-            'message' => $definition ? __('catalog.messages.definition_updated') : __('catalog.messages.definition_created'),
+            'message' => $wasCreate ? __('catalog.messages.definition_created') : __('catalog.messages.definition_updated'),
         ]);
+    }
+
+    public function generateInternalBarcode(GenerateInternalBarcode $generate): void
+    {
+        if ($this->editingDefinitionId === null) {
+            return;
+        }
+
+        $definition = ProductDefinition::query()->findOrFail($this->editingDefinitionId);
+
+        $saved = $generate(auth()->user(), $definition);
+        $this->barcode = (string) $saved->barcode;
+        $this->revealBarcode($saved);
+    }
+
+    public function dismissBarcodeReveal(): void
+    {
+        $this->barcodeRevealOpen = false;
+        $this->revealedName = '';
+        $this->revealedBarcode = '';
+        $this->dispatch('close-dialog', id: self::BARCODE_REVEAL_DIALOG);
+    }
+
+    private function revealBarcode(ProductDefinition $definition): void
+    {
+        $this->revealedName = $definition->name;
+        $this->revealedBarcode = (string) $definition->barcode;
+        $this->barcodeRevealOpen = true;
+        $this->dispatch('open-dialog', id: self::BARCODE_REVEAL_DIALOG);
+    }
+
+    private function renewSubmissionKey(): void
+    {
+        $this->submissionKey = (string) Str::uuid();
     }
 
     private function resetForm(): void
@@ -195,6 +270,9 @@ class DefinitionsIndex extends Component
             'brands' => $this->formOpen ? $this->brandOptions() : collect(),
             'categories' => $this->formOpen ? $this->categoryOptions() : collect(),
             'trackingModeLocked' => $editing?->isTrackingModeLocked() ?? false,
+            'canGenerateInternalBarcode' => $editing !== null
+                && $editing->barcode === null
+                && auth()->user()->can('update', $editing),
             'isFiltering' => $identifier !== null,
             'canSetPrice' => auth()->user()->can('setSellingPrice', ProductDefinition::class),
             ...$this->localeViewData(),
